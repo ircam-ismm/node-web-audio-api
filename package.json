@@ -1,17 +1,15 @@
 {
   "name": "node-web-audio-api-rs",
-  "version": "1.0.0",
-  "description": "Template project for writing node package with napi-rs",
+  "version": "0.1.0",
+  "description": "Nodejs bindings for web-audio-api-rs using napi-rs",
   "main": "index.js",
-  "repository": "git@github.com:napi-rs/package-template.git",
+  "repository": "git@github.com:b-ma/node-web-audio-api-rs.git",
   "license": "MIT",
   "keywords": [
-    "napi-rs",
-    "NAPI",
-    "N-API",
-    "Rust",
-    "node-addon",
-    "node-addon-api"
+    "audio",
+    "n-api",
+    "rust",
+    "web audio api"
   ],
   "files": [
     "index.js"
@@ -43,29 +41,15 @@
   },
   "scripts": {
     "artifacts": "napi artifacts",
-    "bench": "node -r @swc-node/register benchmark/bench.ts",
     "build": "napi build --platform --release",
     "build:debug": "napi build --platform",
-    "format:rs": "cargo fmt",
-    "lint": "eslint . -c ./.eslintrc.yml",
     "prepublishOnly": "napi prepublish -t npm",
-    "test": "ava",
     "version": "napi version"
   },
   "devDependencies": {
     "@napi-rs/cli": "^2.0.0",
-    "@swc-node/register": "^1.4.2",
-    "benny": "^3.7.1",
     "chalk": "^5.0.0",
-    "eslint": "^8.4.1",
-    "eslint-config-prettier": "^8.3.0",
-    "eslint-plugin-import": "^2.25.3",
-    "eslint-plugin-prettier": "^4.0.0",
-    "husky": "^7.0.4",
-    "lint-staged": "^12.1.2",
-    "npm-run-all": "^4.1.5",
-    "prettier": "^2.5.1",
-    "typescript": "^4.5.4"
+    "npm-run-all": "^4.1.5"
   },
   "dependencies": {
     "@node-rs/helper": "^1.2.1"

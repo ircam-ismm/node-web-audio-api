@@ -1,12 +1,8 @@
 const { AudioContext, OscillatorNode, GainNode } = require('./index');
 
-// console.assert(sync(0) === 100, 'Simple test failed')
-// console.info('Simple test passed')
-
 const audioContext = new AudioContext();
 
 setInterval(() => {
-  // console.log(audioContext.currentTime, audioContext.sampleRate);
   const now = audioContext.currentTime;
 
   const env = new GainNode(audioContext);
