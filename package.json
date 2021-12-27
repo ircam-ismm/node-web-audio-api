@@ -1,5 +1,5 @@
 {
-  "name": "@napi-rs/package-template",
+  "name": "node-web-audio-api-rs",
   "version": "1.0.0",
   "description": "Template project for writing node package with napi-rs",
   "main": "index.js",
@@ -14,11 +14,10 @@
     "node-addon-api"
   ],
   "files": [
-    "index.d.ts",
     "index.js"
   ],
   "napi": {
-    "name": "package-template",
+    "name": "node-web-audio-api-rs",
     "triples": {
       "defaults": true,
       "additional": [
@@ -45,10 +44,8 @@
   "scripts": {
     "artifacts": "napi artifacts",
     "bench": "node -r @swc-node/register benchmark/bench.ts",
-    "build": "napi build --platform --release --pipe \"prettier -w\"",
-    "build:debug": "napi build --platform --pipe \"prettier -w\"",
-    "format": "run-p format:prettier format:rs",
-    "format:prettier": "prettier . -w",
+    "build": "napi build --platform --release",
+    "build:debug": "napi build --platform",
     "format:rs": "cargo fmt",
     "lint": "eslint . -c ./.eslintrc.yml",
     "prepublishOnly": "napi prepublish -t npm",
@@ -58,9 +55,6 @@
   "devDependencies": {
     "@napi-rs/cli": "^2.0.0",
     "@swc-node/register": "^1.4.2",
-    "@typescript-eslint/eslint-plugin": "^5.7.0",
-    "@typescript-eslint/parser": "^5.7.0",
-    "ava": "^3.15.0",
     "benny": "^3.7.1",
     "chalk": "^5.0.0",
     "eslint": "^8.4.1",
@@ -75,38 +69,5 @@
   },
   "dependencies": {
     "@node-rs/helper": "^1.2.1"
-  },
-  "lint-staged": {
-    "*.@(js|ts|tsx)": [
-      "prettier --write",
-      "eslint -c .eslintrc.yml --fix"
-    ],
-    "*.@(yml|yaml)": [
-      "prettier --parser yaml --write"
-    ],
-    "*.md": [
-      "prettier --parser markdown --write"
-    ],
-    "*.json": [
-      "prettier --parser json --write"
-    ]
-  },
-  "ava": {
-    "require": [
-      "@swc-node/register"
-    ],
-    "extensions": [
-      "ts"
-    ],
-    "environmentVariables": {
-      "TS_NODE_PROJECT": "./tsconfig.json"
-    }
-  },
-  "prettier": {
-    "printWidth": 120,
-    "semi": false,
-    "trailingComma": "all",
-    "singleQuote": true,
-    "arrowParens": "always"
   }
 }
