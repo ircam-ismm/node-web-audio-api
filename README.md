@@ -1,11 +1,11 @@
 # `node-web-audio-api-rs`
 
-> Nodejs bindings for the [`web-audio-api-rs`](https://github.com/orottier/web-audio-api-rs/) crate, using [`napi-rs`](https://github.com/napi-rs/napi-rs/)
+> Nodejs bindings for [`orottier/web-audio-api-rs`](https://github.com/orottier/web-audio-api-rs/) using [`napi-rs`](https://github.com/napi-rs/napi-rs/)
 
 ## Install (@todo)
 
 ```
-npm add node-web-audio-api-rs
+npm install node-web-audio-api-rs
 ```
 
 ## Example
@@ -33,11 +33,16 @@ setInterval(() => {
 }, 50);
 ```
 
+```sh
+node simple-test.js
+```
+
 ## Roadmap
 
 - Make something simple work well with clean code
 - Generate bindings from IDL [https://webaudio.github.io/web-audio-api/#idl-index](https://webaudio.github.io/web-audio-api/#idl-index)
-- Follow development of `web-audio-api-rs`
+- Follow developments of `web-audio-api-rs`
+- See how the prototype chain could be implemented
 
 ## License
 
