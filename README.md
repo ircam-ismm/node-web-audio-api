@@ -33,7 +33,13 @@ setInterval(() => {
 }, 50);
 ```
 
+To run this example, install `rust` toolchain (cf. [https://www.rust-lang.org/tools/install](https://www.rust-lang.org/tools/install)), then:
+
 ```sh
+git clone https://github.com/b-ma/node-web-audio-api-rs.git
+cd node-web-audio-api-rs
+npm install
+npm run build
 node simple-test.js
 ```
 
