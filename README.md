@@ -45,10 +45,10 @@ node simple-test.js
 
 ## Roadmap
 
-- Make a few nodes work well with clean and predictable code
+- Make a few nodes work properly with clean and predictable code
 - Generate bindings from IDL [https://webaudio.github.io/web-audio-api/#idl-index](https://webaudio.github.io/web-audio-api/#idl-index)
 - Publish on `npm` with binaries
-- Implemented prototype chain
+- Implement prototype chain (?)
 - Follow developments of `web-audio-api-rs`
 
 ## License
