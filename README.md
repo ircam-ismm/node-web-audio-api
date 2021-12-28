@@ -46,4 +46,4 @@ node simple-test.js
 
 ## License
 
-MIT
+This project is licensed under the [MIT license](./LICENSE).
