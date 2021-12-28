@@ -39,10 +39,10 @@ node simple-test.js
 
 ## Roadmap
 
-- Make something simple work well with clean code
+- Make a few nodes work well with clean and predictable code
 - Generate bindings from IDL [https://webaudio.github.io/web-audio-api/#idl-index](https://webaudio.github.io/web-audio-api/#idl-index)
-- Follow developments of `web-audio-api-rs`
 - See how the prototype chain could be implemented
+- Follow developments of `web-audio-api-rs`
 
 ## License
 
