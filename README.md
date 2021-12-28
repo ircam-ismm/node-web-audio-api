@@ -47,7 +47,8 @@ node simple-test.js
 
 - Make a few nodes work well with clean and predictable code
 - Generate bindings from IDL [https://webaudio.github.io/web-audio-api/#idl-index](https://webaudio.github.io/web-audio-api/#idl-index)
-- See how the prototype chain could be implemented
+- Publish on `npm` with binaries
+- Implemented prototype chain
 - Follow developments of `web-audio-api-rs`
 
 ## License
