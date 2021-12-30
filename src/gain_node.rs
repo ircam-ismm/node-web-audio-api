@@ -6,7 +6,7 @@ use napi_derive::js_function;
 use web_audio_api::node::{AudioNode, GainNode};
 
 use crate::audio_context::NapiAudioContext;
-use crate::audio_param::{NapiAudioParam, ParamGetter};
+use crate::audio_param::{NapiAudioParam, ParamGetter, ParamGetter2};
 
 pub(crate) struct NapiGainNode(Rc<GainNode>);
 
@@ -48,6 +48,12 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // finalize instance creation
     let napi_node = NapiGainNode(native_node);
     ctx.env.wrap(&mut js_this, napi_node)?;
+  let native_clone = native_node.clone();
+  let param_getter2 = ParamGetter2::new(native_clone, |n| n.gain());
+
+  // finalize instance creation
+  let napi_node = NapiGainNode(native_node);
+  ctx.env.wrap(&mut this, napi_node)?;
 
     ctx.env.get_undefined()
 }

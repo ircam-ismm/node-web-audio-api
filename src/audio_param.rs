@@ -29,6 +29,21 @@ impl ParamGetter {
 // @note - we can't really create a js class here because ParamGetter must be
 // created by the AudioNode that owns the AudioParam
 // ... but probably we don't care as AudioParam can't be instanciated from JS
+use web_audio_api::node::AudioNode;
+pub(crate) struct ParamGetter2<A, F> {
+    audio_node: Rc<A>,
+    get_param_fn: F,
+}
+impl<A: AudioNode, F: Fn(&A) -> &AudioParam> ParamGetter2<A, F> {
+    pub fn new(audio_node: Rc<A>, get_param_fn: F) -> Self {
+        Self { audio_node, get_param_fn }
+    }
+
+    pub fn get_param(&self) -> &AudioParam {
+        (self.get_param_fn)(self.audio_node.as_ref())
+    }
+}
+
 pub(crate) struct NapiAudioParam(ParamGetter);
 
 impl NapiAudioParam {
