@@ -10,7 +10,7 @@ version = "0.1.0"
 crate-type = ["cdylib"]
 
 [dependencies]
-napi = "2"
+napi = {version="2", features=["napi6"]}
 napi-derive = "2"
 web-audio-api = { path = "../web-audio-api-rs" }
 
@@ -22,3 +22,4 @@ napi-build = "1"
 
 [profile.release]
 lto = true
+

@@ -3,18 +3,18 @@ use std::rc::Rc;
 use napi::{CallContext, Env, JsFunction, JsNumber, JsObject, JsUndefined, Property, Result};
 use napi_derive::js_function;
 
-use web_audio_api::node::{AudioNode, AudioScheduledSourceNode, OscillatorNode};
+use web_audio_api::node::{AudioBufferSourceNode, AudioNode};
 
 use crate::audio_context::NapiAudioContext;
 use crate::audio_param::{NapiAudioParam, ParamGetter};
 
-pub(crate) struct NapiOscillatorNode(Rc<OscillatorNode>);
+pub(crate) struct NapiAudioBufferSourceNode(Rc<AudioBufferSourceNode>);
 
-impl NapiOscillatorNode {
+impl NapiAudioBufferSourceNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
         env.define_class(
-            "OscillatorNode",
-            oscillator_node_constructor,
+            "AudioBufferSourceNode",
+            audio_buffer_source_node_constructor,
             &[
                 Property::new("connect")?.with_method(connect),
                 Property::new("start")?.with_method(start),
@@ -23,13 +23,13 @@ impl NapiOscillatorNode {
         )
     }
 
-    pub fn unwrap(&self) -> &OscillatorNode {
+    pub fn unwrap(&self) -> &AudioBufferSourceNode {
         &self.0
     }
 }
 
 #[js_function(1)]
-fn oscillator_node_constructor(ctx: CallContext) -> Result<JsUndefined> {
+fn audio_buffer_source_node_constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut this = ctx.this_unchecked::<JsObject>();
 
     let js_audio_context = ctx.get::<JsObject>(0)?;
@@ -39,39 +39,58 @@ fn oscillator_node_constructor(ctx: CallContext) -> Result<JsUndefined> {
     this.set_named_property("context", &js_audio_context)?;
     this.set_named_property(
         "Symbol.toStringTag",
-        ctx.env.create_string("OscillatorNode")?,
+        ctx.env.create_string("AudioBufferSourceNode")?,
     )?;
 
-    let native_node = Rc::new(OscillatorNode::new(audio_context, Default::default()));
+    let native_node = Rc::new(AudioBufferSourceNode::new(
+        audio_context,
+        Default::default(),
+    ));
 
     // AudioParams
     let native_clone = native_node.clone();
-    let param_getter = ParamGetter::OscillatorNodeFrequency(native_clone);
+    let param_getter = ParamGetter::AudioBufferSourceNodeDetune(native_clone);
     let napi_param = NapiAudioParam::new(param_getter);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
-    this.set_named_property("frequency", &js_obj)?;
+    this.set_named_property("detune", &js_obj)?;
+
+    let native_clone = native_node.clone();
+    let param_getter = ParamGetter::AudioBufferSourceNodePlaybackRate(native_clone);
+    let napi_param = NapiAudioParam::new(param_getter);
+    let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
+    ctx.env.wrap(&mut js_obj, napi_param)?;
+    this.set_named_property("playbackRate", &js_obj)?;
 
     // finalize instance creation
-    let napi_node = NapiOscillatorNode(native_node);
+    let napi_node = NapiAudioBufferSourceNode(native_node);
     ctx.env.wrap(&mut this, napi_node)?;
 
     ctx.env.get_undefined()
 }
 
-connect_method!(NapiOscillatorNode);
+connect_method!(NapiAudioBufferSourceNode);
 
-#[js_function(1)]
+#[js_function(3)]
 fn start(ctx: CallContext) -> Result<JsUndefined> {
     let this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&this)?;
+    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&this)?;
     let node = napi_node.unwrap();
 
     if ctx.length == 0 {
         node.start();
-    } else {
+    } else if ctx.length == 1 {
         let when = ctx.get::<JsNumber>(0)?.try_into()?;
         node.start_at(when);
+    } else if ctx.length == 2 {
+        let when = ctx.get::<JsNumber>(0)?.try_into()?;
+        let offset = ctx.get::<JsNumber>(1)?.try_into()?;
+        node.start_at_with_offset(when, offset);
+    } else if ctx.length == 2 {
+        let when = ctx.get::<JsNumber>(0)?.try_into()?;
+        let offset = ctx.get::<JsNumber>(1)?.try_into()?;
+        let duration = ctx.get::<JsNumber>(2)?.try_into()?;
+        node.start_at_with_offset_and_duration(when, offset, duration);
     };
 
     ctx.env.get_undefined()
@@ -80,7 +99,7 @@ fn start(ctx: CallContext) -> Result<JsUndefined> {
 #[js_function(1)]
 fn stop(ctx: CallContext) -> Result<JsUndefined> {
     let this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&this)?;
+    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&this)?;
     let node = napi_node.unwrap();
 
     if ctx.length == 0 {
