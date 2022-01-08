@@ -32,7 +32,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
     let audio_context = napi_audio_context.unwrap();
 
-    js_this.set_named_property("context", &js_audio_context)?;
+    // js_this.set_named_property("context", &js_audio_context)?;
     js_this.set_named_property("Symbol.toStringTag", ctx.env.create_string("GainNode")?)?;
 
     let native_node = Rc::new(GainNode::new(audio_context, Default::default()));

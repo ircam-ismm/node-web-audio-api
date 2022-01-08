@@ -1,5 +1,4 @@
 use std::rc::Rc;
-// use std::cell::Cell;
 
 use napi::{CallContext, Env, JsNumber, JsObject, JsUndefined, Property, Result};
 use napi_derive::js_function;
@@ -106,7 +105,6 @@ fn linear_ramp_to_value_at_time(ctx: CallContext) -> Result<JsUndefined> {
 
     let value = ctx.get::<JsNumber>(0)?.get_double()? as f32;
     let end_time = ctx.get::<JsNumber>(1)?.get_double()? as f64;
-
     obj.linear_ramp_to_value_at_time(value, end_time);
 
     ctx.env.get_undefined()
@@ -140,7 +138,6 @@ fn set_target_at_time(ctx: CallContext) -> Result<JsUndefined> {
     let value = ctx.get::<JsNumber>(0)?.get_double()? as f32;
     let start_time = ctx.get::<JsNumber>(1)?.get_double()? as f64;
     let time_constant = ctx.get::<JsNumber>(2)?.get_double()? as f64;
-
     obj.set_target_at_time(value, start_time, time_constant);
 
     ctx.env.get_undefined()
@@ -153,7 +150,6 @@ fn cancel_scheduled_values(ctx: CallContext) -> Result<JsUndefined> {
     let obj = napi_obj.unwrap();
 
     let cancel_time = ctx.get::<JsNumber>(0)?.get_double()? as f64;
-
     obj.cancel_scheduled_values(cancel_time);
 
     ctx.env.get_undefined()
@@ -166,7 +162,6 @@ fn cancel_and_hold_at_time(ctx: CallContext) -> Result<JsUndefined> {
     let obj = napi_obj.unwrap();
 
     let cancel_time = ctx.get::<JsNumber>(0)?.get_double()? as f64;
-
     obj.cancel_and_hold_at_time(cancel_time);
 
     ctx.env.get_undefined()
