@@ -50,14 +50,30 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
     // AudioParams
     let native_clone = native_node.clone();
-    let param_getter = ParamGetter::AudioBufferSourceNodeDetune(native_clone);
+    let param_getter = ParamGetter::new(
+        native_clone,
+        Box::new(|n| {
+            n.as_any()
+                .downcast_ref::<AudioBufferSourceNode>()
+                .unwrap()
+                .detune()
+        }),
+    );
     let napi_param = NapiAudioParam::new(param_getter);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("detune", &js_obj)?;
 
     let native_clone = native_node.clone();
-    let param_getter = ParamGetter::AudioBufferSourceNodePlaybackRate(native_clone);
+    let param_getter = ParamGetter::new(
+        native_clone,
+        Box::new(|n| {
+            n.as_any()
+                .downcast_ref::<AudioBufferSourceNode>()
+                .unwrap()
+                .playback_rate()
+        }),
+    );
     let napi_param = NapiAudioParam::new(param_getter);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;

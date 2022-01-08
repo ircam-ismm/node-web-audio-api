@@ -3,40 +3,35 @@ use std::rc::Rc;
 use napi::{CallContext, Env, JsNumber, JsObject, JsUndefined, Property, Result};
 use napi_derive::js_function;
 
-use web_audio_api::node::*;
 use web_audio_api::param::AudioParam;
 
-pub(crate) enum ParamGetter {
-    GainNodeGain(Rc<GainNode>),
-    OscillatorNodeFrequency(Rc<OscillatorNode>),
-    AudioBufferSourceNodeDetune(Rc<AudioBufferSourceNode>),
-    AudioBufferSourceNodePlaybackRate(Rc<AudioBufferSourceNode>),
-}
-
-impl ParamGetter {
-    fn get_param(&self) -> &AudioParam {
-        let param = match *self {
-            ParamGetter::GainNodeGain(ref node) => node.gain(),
-            ParamGetter::OscillatorNodeFrequency(ref node) => node.frequency(),
-            ParamGetter::AudioBufferSourceNodeDetune(ref node) => node.detune(),
-            ParamGetter::AudioBufferSourceNodePlaybackRate(ref node) => node.playback_rate(),
-        };
-
-        param
+use std::any::Any;
+impl<T: Any + AudioNode> AnyAudioNode for T {
+    fn as_any(&self) -> &dyn Any {
+        self
     }
+}
+pub trait AnyAudioNode: AudioNode {
+    fn as_any(&self) -> &dyn Any;
 }
 
 // @note - we can't really create a js class here because ParamGetter must be
 // created by the AudioNode that owns the AudioParam
 // ... but probably we don't care as AudioParam can't be instanciated from JS
 use web_audio_api::node::AudioNode;
-pub(crate) struct ParamGetter2<A, F> {
-    audio_node: Rc<A>,
-    get_param_fn: F,
+pub(crate) struct ParamGetter {
+    audio_node: Rc<dyn AnyAudioNode>,
+    get_param_fn: Box<dyn Fn(&dyn AnyAudioNode) -> &AudioParam>,
 }
-impl<A: AudioNode, F: Fn(&A) -> &AudioParam> ParamGetter2<A, F> {
-    pub fn new(audio_node: Rc<A>, get_param_fn: F) -> Self {
-        Self { audio_node, get_param_fn }
+impl ParamGetter {
+    pub fn new(
+        audio_node: Rc<dyn AnyAudioNode>,
+        get_param_fn: Box<dyn Fn(&dyn AnyAudioNode) -> &AudioParam>,
+    ) -> Self {
+        Self {
+            audio_node,
+            get_param_fn,
+        }
     }
 
     pub fn get_param(&self) -> &AudioParam {

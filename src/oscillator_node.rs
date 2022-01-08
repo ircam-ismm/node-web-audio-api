@@ -45,7 +45,15 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
     // AudioParams
     let native_clone = native_node.clone();
-    let param_getter = ParamGetter::OscillatorNodeFrequency(native_clone);
+    let param_getter = ParamGetter::new(
+        native_clone,
+        Box::new(|n| {
+            n.as_any()
+                .downcast_ref::<OscillatorNode>()
+                .unwrap()
+                .frequency()
+        }),
+    );
     let napi_param = NapiAudioParam::new(param_getter);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
