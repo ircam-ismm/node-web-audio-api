@@ -1,9 +1,12 @@
-use napi_derive::js_function;
+use std::fs::File;
 
-use napi::{CallContext, Env, JsFunction, JsNumber, JsObject, JsUndefined, Property, Result};
+use napi_derive::js_function;
+use napi::{CallContext, Env, JsFunction, JsNumber, JsObject, JsString, JsUndefined, Property, Result};
+
 use web_audio_api::context::{AsBaseAudioContext, AudioContext};
 
-use crate::audio_destination_node::NapiAudioDestinationNode;
+use crate::audio_buffer::NapiAudioBuffer;
+// use crate::utils::AudioFile;
 
 pub(crate) struct NapiAudioContext(AudioContext);
 
@@ -11,10 +14,11 @@ impl NapiAudioContext {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
         env.define_class(
             "AudioContext",
-            audio_context_constructor,
+            constructor,
             &[
                 Property::new("currentTime")?.with_getter(current_time),
                 Property::new("sampleRate")?.with_getter(sample_rate),
+                Property::new("decodeAudioData")?.with_method(decode_audio_data),
                 Property::new("createGain")?.with_method(create_gain),
                 Property::new("createOscillator")?.with_method(create_ocillator),
             ],
@@ -27,22 +31,21 @@ impl NapiAudioContext {
 }
 
 #[js_function]
-fn audio_context_constructor(ctx: CallContext) -> Result<JsUndefined> {
-    let mut this = ctx.this_unchecked::<JsObject>();
-
-    this.set_named_property("Symbol.toStringTag", ctx.env.create_string("AudioContext")?)?;
+fn constructor(ctx: CallContext) -> Result<JsUndefined> {
+    let mut js_this = ctx.this_unchecked::<JsObject>();
 
     let audio_context = AudioContext::new(None);
+    let napi_audio_context = NapiAudioContext(audio_context);
+    ctx.env.wrap(&mut js_this, napi_audio_context)?;
+
+    js_this.set_named_property("Symbol.toStringTag", ctx.env.create_string("AudioContext")?)?;
 
     // Audio Destination
-    let napi_node = NapiAudioDestinationNode::new(audio_context.destination());
-    let mut js_obj = NapiAudioDestinationNode::create_js_object(ctx.env)?;
-    ctx.env.wrap(&mut js_obj, napi_node)?;
-    this.set_named_property("destination", &js_obj)?;
-
-    // finalize instance creation
-    let napi_audio_context = NapiAudioContext(audio_context);
-    ctx.env.wrap(&mut this, napi_audio_context)?;
+    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+    let ctor: JsFunction = store.get_named_property("AudioDestinationNode")?;
+    let js_obj = ctor.new_instance(&[&js_this])?;
+    js_this.set_named_property("destination", &js_obj)?;
 
     ctx.env.get_undefined()
 }
@@ -67,24 +70,61 @@ fn sample_rate(ctx: CallContext) -> Result<JsNumber> {
     ctx.env.create_double(sample_rate)
 }
 
+#[js_function(1)]
+fn decode_audio_data(ctx: CallContext) -> Result<JsObject> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
+    let context = napi_obj.unwrap();
+
+    let js_obj = ctx.get::<JsObject>(0)?;
+    let js_path = js_obj.get_named_property::<JsString>("path")?;
+    let uf8_path = js_path.into_utf8()?.into_owned()?;
+    let str_path = &uf8_path[..];
+
+    let file = File::open(str_path).unwrap();
+    let audio_buffer = context.decode_audio_data(file).unwrap();
+
+    // create js audio buffer instance
+    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+    let ctor: JsFunction = store.get_named_property("AudioBuffer")?;
+    let init = ctx.env.get_boolean(false)?;
+    let js_audio_buffer = ctor.new_instance(&[init])?;
+    let napi_audio_buffer = ctx.env.unwrap::<NapiAudioBuffer>(&js_audio_buffer)?;
+    napi_audio_buffer.populate(audio_buffer);
+
+    Ok(js_audio_buffer)
+}
+
+#[js_function]
+fn create_buffer_source(ctx: CallContext) -> Result<JsObject> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+
+    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+    let ctor: JsFunction = store.get_named_property("AudioBufferSourceNode")?;
+
+    ctor.new_instance(&[js_this])
+}
+
 #[js_function]
 fn create_gain(ctx: CallContext) -> Result<JsObject> {
-  let js_this = ctx.this_unchecked::<JsObject>();
+    let js_this = ctx.this_unchecked::<JsObject>();
 
-  let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
-  let store: JsObject = ctx.env.get_reference_value(store_ref)?;
-  let ctor: JsFunction = store.get_named_property("GainNode")?;
+    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+    let ctor: JsFunction = store.get_named_property("GainNode")?;
 
-  ctor.new_instance(&[js_this])
+    ctor.new_instance(&[js_this])
 }
 
 #[js_function]
 fn create_ocillator(ctx: CallContext) -> Result<JsObject> {
-  let js_this = ctx.this_unchecked::<JsObject>();
+    let js_this = ctx.this_unchecked::<JsObject>();
 
-  let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
-  let store: JsObject = ctx.env.get_reference_value(store_ref)?;
-  let ctor: JsFunction = store.get_named_property("OscillatorNode")?;
+    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+    let ctor: JsFunction = store.get_named_property("OscillatorNode")?;
 
-  ctor.new_instance(&[js_this])
+    ctor.new_instance(&[js_this])
 }

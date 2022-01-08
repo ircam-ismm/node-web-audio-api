@@ -1,8 +1,8 @@
 use std::rc::Rc;
 // use std::cell::Cell;
 
-use napi::{CallContext, Env, JsNumber, JsObject, JsUndefined, Property, Result};
 use napi_derive::js_function;
+use napi::{CallContext, Env, JsNumber, JsObject, JsUndefined, Property, Result};
 
 use web_audio_api::node::*;
 use web_audio_api::param::AudioParam;
@@ -27,11 +27,14 @@ impl ParamGetter {
     }
 }
 
+// @note - we can't really create a js class here because ParamGetter must be
+// created by the AudioNode that owns the AudioParam
+// ... but probably we don't care as AudioParam can't be instanciated from JS
 pub(crate) struct NapiAudioParam(ParamGetter);
 
 impl NapiAudioParam {
-    pub fn new(audio_node_param: ParamGetter) -> Self {
-        Self(audio_node_param)
+    pub fn new(param_getter: ParamGetter) -> Self {
+        Self(param_getter)
     }
 
     pub fn create_js_object(env: &Env) -> Result<JsObject> {

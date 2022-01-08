@@ -14,7 +14,7 @@ impl NapiOscillatorNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
         env.define_class(
             "OscillatorNode",
-            oscillator_node_constructor,
+            constructor,
             &[
                 Property::new("connect")?.with_method(connect),
                 Property::new("start")?.with_method(start),
@@ -29,7 +29,7 @@ impl NapiOscillatorNode {
 }
 
 #[js_function(1)]
-fn oscillator_node_constructor(ctx: CallContext) -> Result<JsUndefined> {
+fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut this = ctx.this_unchecked::<JsObject>();
 
     let js_audio_context = ctx.get::<JsObject>(0)?;

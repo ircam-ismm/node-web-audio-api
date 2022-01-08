@@ -14,7 +14,7 @@ impl NapiGainNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
         env.define_class(
             "GainNode",
-            gain_node_constructor,
+            constructor,
             &[Property::new("connect")?.with_method(connect)],
         )
     }
@@ -25,7 +25,7 @@ impl NapiGainNode {
 }
 
 #[js_function(1)]
-fn gain_node_constructor(ctx: CallContext) -> Result<JsUndefined> {
+fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut this = ctx.this_unchecked::<JsObject>();
 
     let js_audio_context = ctx.get::<JsObject>(0)?;
@@ -44,6 +44,14 @@ fn gain_node_constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     this.set_named_property("gain", &js_obj)?;
+
+        // Audio Destination
+    // let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+    // let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+    // let ctor: JsFunction = store.get_named_property("AudioDestinationNode")?;
+    // let js_obj = ctor.new_instance(&[&js_this])?;
+    // js_this.set_named_property("destination", &js_obj)?;
+
 
     // finalize instance creation
     let napi_node = NapiGainNode(native_node);

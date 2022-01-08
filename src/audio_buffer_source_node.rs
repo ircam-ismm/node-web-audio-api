@@ -14,7 +14,7 @@ impl NapiAudioBufferSourceNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
         env.define_class(
             "AudioBufferSourceNode",
-            audio_buffer_source_node_constructor,
+            constructor,
             &[
                 Property::new("connect")?.with_method(connect),
                 Property::new("start")?.with_method(start),
@@ -29,15 +29,15 @@ impl NapiAudioBufferSourceNode {
 }
 
 #[js_function(1)]
-fn audio_buffer_source_node_constructor(ctx: CallContext) -> Result<JsUndefined> {
-    let mut this = ctx.this_unchecked::<JsObject>();
+fn constructor(ctx: CallContext) -> Result<JsUndefined> {
+    let mut js_this = ctx.this_unchecked::<JsObject>();
 
     let js_audio_context = ctx.get::<JsObject>(0)?;
     let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
     let audio_context = napi_audio_context.unwrap();
 
-    this.set_named_property("context", &js_audio_context)?;
-    this.set_named_property(
+    js_this.set_named_property("context", &js_audio_context)?;
+    js_this.set_named_property(
         "Symbol.toStringTag",
         ctx.env.create_string("AudioBufferSourceNode")?,
     )?;
@@ -53,18 +53,18 @@ fn audio_buffer_source_node_constructor(ctx: CallContext) -> Result<JsUndefined>
     let napi_param = NapiAudioParam::new(param_getter);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
-    this.set_named_property("detune", &js_obj)?;
+    js_this.set_named_property("detune", &js_obj)?;
 
     let native_clone = native_node.clone();
     let param_getter = ParamGetter::AudioBufferSourceNodePlaybackRate(native_clone);
     let napi_param = NapiAudioParam::new(param_getter);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
-    this.set_named_property("playbackRate", &js_obj)?;
+    js_this.set_named_property("playbackRate", &js_obj)?;
 
     // finalize instance creation
     let napi_node = NapiAudioBufferSourceNode(native_node);
-    ctx.env.wrap(&mut this, napi_node)?;
+    ctx.env.wrap(&mut js_this, napi_node)?;
 
     ctx.env.get_undefined()
 }
@@ -73,8 +73,8 @@ connect_method!(NapiAudioBufferSourceNode);
 
 #[js_function(3)]
 fn start(ctx: CallContext) -> Result<JsUndefined> {
-    let this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&this)?;
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     if ctx.length == 0 {
@@ -98,8 +98,8 @@ fn start(ctx: CallContext) -> Result<JsUndefined> {
 
 #[js_function(1)]
 fn stop(ctx: CallContext) -> Result<JsUndefined> {
-    let this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&this)?;
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     if ctx.length == 0 {
