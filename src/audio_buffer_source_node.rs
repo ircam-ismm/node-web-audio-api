@@ -7,6 +7,7 @@ use web_audio_api::node::{AudioBufferSourceNode, AudioNode};
 
 use crate::audio_context::NapiAudioContext;
 use crate::audio_param::{NapiAudioParam, ParamGetter};
+use crate::audio_buffer::{NapiAudioBuffer};
 
 pub(crate) struct NapiAudioBufferSourceNode(Rc<AudioBufferSourceNode>);
 
@@ -16,6 +17,7 @@ impl NapiAudioBufferSourceNode {
             "AudioBufferSourceNode",
             constructor,
             &[
+                Property::new("buffer")?.with_setter(buffer),
                 Property::new("connect")?.with_method(connect),
                 Property::new("start")?.with_method(start),
                 Property::new("stop")?.with_method(stop),
@@ -69,6 +71,21 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 
+#[js_function(1)]
+fn buffer(ctx: CallContext) -> Result<JsUndefined> {
+  let js_this = ctx.this_unchecked::<JsObject>();
+  let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+  let node = napi_node.unwrap();
+
+  let js_obj = ctx.get::<JsObject>(0)?;
+  let napi_obj = ctx.env.unwrap::<NapiAudioBuffer>(&js_obj)?;
+  let buffer = napi_obj.unwrap();
+
+  node.set_buffer(buffer.clone());
+
+  ctx.env.get_undefined()
+}
+
 connect_method!(NapiAudioBufferSourceNode);
 
 #[js_function(3)]
@@ -86,7 +103,7 @@ fn start(ctx: CallContext) -> Result<JsUndefined> {
         let when = ctx.get::<JsNumber>(0)?.try_into()?;
         let offset = ctx.get::<JsNumber>(1)?.try_into()?;
         node.start_at_with_offset(when, offset);
-    } else if ctx.length == 2 {
+    } else if ctx.length == 3 {
         let when = ctx.get::<JsNumber>(0)?.try_into()?;
         let offset = ctx.get::<JsNumber>(1)?.try_into()?;
         let duration = ctx.get::<JsNumber>(2)?.try_into()?;

@@ -31,3 +31,10 @@ console.log('sampleRate:', buffer.sampleRate);
 console.log('duration:', buffer.duration);
 console.log('length:', buffer.length);
 console.log('numberOfChannels:', buffer.numberOfChannels);
+
+setInterval(() => {
+  const src = audioContext.createBufferSource();
+  src.connect(audioContext.destination);
+  src.buffer = buffer;
+  src.start();
+}, 1000);

@@ -19,6 +19,7 @@ impl NapiAudioContext {
                 Property::new("currentTime")?.with_getter(current_time),
                 Property::new("sampleRate")?.with_getter(sample_rate),
                 Property::new("decodeAudioData")?.with_method(decode_audio_data),
+                Property::new("createBufferSource")?.with_method(create_buffer_source),
                 Property::new("createGain")?.with_method(create_gain),
                 Property::new("createOscillator")?.with_method(create_ocillator),
             ],
