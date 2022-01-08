@@ -1,5 +1,5 @@
-use napi_derive::js_function;
 use napi::{CallContext, JsObject, JsString, Result};
+use napi_derive::js_function;
 
 // dumb method provided to mock an xhr call and mimick browser's API
 #[js_function(1)]

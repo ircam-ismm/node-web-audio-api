@@ -3,9 +3,10 @@
 use napi::{Env, JsObject, Result};
 use napi_derive::module_exports;
 
-#[macro_use]
 // private
+#[macro_use]
 mod audio_node;
+
 mod audio_param;
 
 // public
@@ -52,8 +53,8 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     let napi_class = NapiAudioBuffer::create_js_class(&env)?;
     store.set_named_property("AudioBuffer", napi_class)?;
 
-    // let napi_class = NapiAudioDestination::create_js_class(&env)?;
-    // exports.set_named_property("AudioDestination", napi_class)?;
+    let napi_class = NapiAudioDestinationNode::create_js_class(&env)?;
+    exports.set_named_property("AudioDestinationNode", napi_class)?;
     let napi_class = NapiAudioDestinationNode::create_js_class(&env)?;
     store.set_named_property("AudioDestinationNode", napi_class)?;
 

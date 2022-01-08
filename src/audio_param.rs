@@ -1,8 +1,8 @@
 use std::rc::Rc;
 // use std::cell::Cell;
 
-use napi_derive::js_function;
 use napi::{CallContext, Env, JsNumber, JsObject, JsUndefined, Property, Result};
+use napi_derive::js_function;
 
 use web_audio_api::node::*;
 use web_audio_api::param::AudioParam;
@@ -65,8 +65,8 @@ impl NapiAudioParam {
 
 #[js_function]
 fn get_value(ctx: CallContext) -> Result<JsNumber> {
-    let this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&this)?;
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_this)?;
     let obj = napi_obj.unwrap();
 
     let value = obj.value();
@@ -75,8 +75,8 @@ fn get_value(ctx: CallContext) -> Result<JsNumber> {
 
 #[js_function(1)]
 fn set_value(ctx: CallContext) -> Result<JsUndefined> {
-    let this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&this)?;
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_this)?;
     let obj = napi_obj.unwrap();
 
     let value = ctx.get::<JsNumber>(0)?.get_double()? as f32;
@@ -87,8 +87,8 @@ fn set_value(ctx: CallContext) -> Result<JsUndefined> {
 
 #[js_function(2)]
 fn set_value_at_time(ctx: CallContext) -> Result<JsUndefined> {
-    let this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&this)?;
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_this)?;
     let obj = napi_obj.unwrap();
 
     let value = ctx.get::<JsNumber>(0)?.get_double()?;
@@ -100,8 +100,8 @@ fn set_value_at_time(ctx: CallContext) -> Result<JsUndefined> {
 
 #[js_function(2)]
 fn linear_ramp_to_value_at_time(ctx: CallContext) -> Result<JsUndefined> {
-    let this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&this)?;
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_this)?;
     let obj = napi_obj.unwrap();
 
     let value = ctx.get::<JsNumber>(0)?.get_double()? as f32;
@@ -114,8 +114,8 @@ fn linear_ramp_to_value_at_time(ctx: CallContext) -> Result<JsUndefined> {
 
 #[js_function(2)]
 fn exponential_ramp_to_value_at_time(ctx: CallContext) -> Result<JsUndefined> {
-    let this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&this)?;
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_this)?;
     let obj = napi_obj.unwrap();
 
     let value = ctx.get::<JsNumber>(0)?.get_double()? as f32;
@@ -133,8 +133,8 @@ fn exponential_ramp_to_value_at_time(ctx: CallContext) -> Result<JsUndefined> {
 
 #[js_function(3)]
 fn set_target_at_time(ctx: CallContext) -> Result<JsUndefined> {
-    let this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&this)?;
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_this)?;
     let obj = napi_obj.unwrap();
 
     let value = ctx.get::<JsNumber>(0)?.get_double()? as f32;
@@ -148,8 +148,8 @@ fn set_target_at_time(ctx: CallContext) -> Result<JsUndefined> {
 
 #[js_function(1)]
 fn cancel_scheduled_values(ctx: CallContext) -> Result<JsUndefined> {
-    let this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&this)?;
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_this)?;
     let obj = napi_obj.unwrap();
 
     let cancel_time = ctx.get::<JsNumber>(0)?.get_double()? as f64;
@@ -161,8 +161,8 @@ fn cancel_scheduled_values(ctx: CallContext) -> Result<JsUndefined> {
 
 #[js_function(1)]
 fn cancel_and_hold_at_time(ctx: CallContext) -> Result<JsUndefined> {
-    let this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&this)?;
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_this)?;
     let obj = napi_obj.unwrap();
 
     let cancel_time = ctx.get::<JsNumber>(0)?.get_double()? as f64;

@@ -1,7 +1,9 @@
 use std::fs::File;
 
+use napi::{
+    CallContext, Env, JsFunction, JsNumber, JsObject, JsString, JsUndefined, Property, Result,
+};
 use napi_derive::js_function;
-use napi::{CallContext, Env, JsFunction, JsNumber, JsObject, JsString, JsUndefined, Property, Result};
 
 use web_audio_api::context::{AsBaseAudioContext, AudioContext};
 

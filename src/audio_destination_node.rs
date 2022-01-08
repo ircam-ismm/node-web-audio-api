@@ -1,8 +1,8 @@
-use napi_derive::js_function;
 use napi::{CallContext, Env, JsFunction, JsObject, JsUndefined, Result};
+use napi_derive::js_function;
 
-use web_audio_api::context::{AsBaseAudioContext};
-use web_audio_api::node::DestinationNode;
+use web_audio_api::context::AsBaseAudioContext;
+use web_audio_api::node::DestinationNode; // inconsistency here
 
 use crate::audio_context::NapiAudioContext;
 
@@ -10,11 +10,7 @@ pub struct NapiAudioDestinationNode(DestinationNode);
 
 impl NapiAudioDestinationNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
-        env.define_class(
-            "AudioDestination",
-            constructor,
-            &[],
-        )
+        env.define_class("AudioDestination", constructor, &[])
     }
 
     pub fn unwrap(&self) -> &DestinationNode {
@@ -31,7 +27,10 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let audio_context = napi_audio_context.unwrap();
 
     js_this.set_named_property("context", &js_audio_context)?;
-    js_this.set_named_property("Symbol.toStringTag", ctx.env.create_string("AudioDestinationNode")?)?;
+    js_this.set_named_property(
+        "Symbol.toStringTag",
+        ctx.env.create_string("AudioDestinationNode")?,
+    )?;
 
     let native_node = audio_context.destination();
     let napi_node = NapiAudioDestinationNode(native_node);
