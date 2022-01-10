@@ -27,15 +27,18 @@ const engine = {
     env.connect(audioContext.destination);
     env.gain.value = 0;
 
+    const detune = 4;
     const src = audioContext.createBufferSource();
     src.connect(env);
+    src.detune.value = Math.random() * 2 * detune - detune;
     src.buffer = buffer;
 
     env.gain.setValueAtTime(0, now);
     env.gain.linearRampToValueAtTime(1, now + grainDuration / 2);
     env.gain.linearRampToValueAtTime(0, now + grainDuration);
 
-    src.start(now, position, grainDuration);
+    src.start(now, position);
+    src.stop(now + grainDuration);
 
     position += incr;
 
