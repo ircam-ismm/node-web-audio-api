@@ -61,7 +61,7 @@ fn sample_rate(ctx: CallContext) -> Result<JsNumber> {
     let napi_obj = ctx.env.unwrap::<NapiAudioBuffer>(&js_this)?;
     let obj = napi_obj.unwrap();
 
-    let sample_rate = obj.sample_rate().0;
+    let sample_rate = obj.sample_rate();
     ctx.env.create_double(sample_rate as f64)
 }
 

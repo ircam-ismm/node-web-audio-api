@@ -17,7 +17,7 @@ impl NapiAudioBufferSourceNode {
             "AudioBufferSourceNode",
             constructor,
             &[
-                Property::new("buffer")?.with_setter(buffer),
+                Property::new("buffer")?.with_setter(set_buffer),
                 Property::new("connect")?.with_method(connect),
                 Property::new("start")?.with_method(start),
                 Property::new("stop")?.with_method(stop),
@@ -71,7 +71,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 }
 
 #[js_function(1)]
-fn buffer(ctx: CallContext) -> Result<JsUndefined> {
+fn set_buffer(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
     let node = napi_node.unwrap();

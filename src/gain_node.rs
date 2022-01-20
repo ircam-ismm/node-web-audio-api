@@ -1,12 +1,8 @@
 use std::rc::Rc;
-
-use napi::{CallContext, Env, JsFunction, JsObject, JsUndefined, Property, Result};
+use napi::*;
 use napi_derive::js_function;
-
-use web_audio_api::node::{AudioNode, GainNode};
-
-use crate::audio_context::NapiAudioContext;
-use crate::audio_param::{NapiAudioParam, ParamGetter};
+use web_audio_api::node::*;
+use crate::*;
 
 pub(crate) struct NapiGainNode(Rc<GainNode>);
 
@@ -32,7 +28,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
     let audio_context = napi_audio_context.unwrap();
 
-    // js_this.set_named_property("context", &js_audio_context)?;
     js_this.set_named_property("Symbol.toStringTag", ctx.env.create_string("GainNode")?)?;
 
     let native_node = Rc::new(GainNode::new(audio_context, Default::default()));

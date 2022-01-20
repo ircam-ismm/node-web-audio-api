@@ -2,18 +2,18 @@ use napi::{CallContext, Env, JsFunction, JsObject, JsUndefined, Result};
 use napi_derive::js_function;
 
 use web_audio_api::context::AsBaseAudioContext;
-use web_audio_api::node::DestinationNode; // inconsistency here
+use web_audio_api::node::AudioDestinationNode;
 
 use crate::audio_context::NapiAudioContext;
 
-pub struct NapiAudioDestinationNode(DestinationNode);
+pub struct NapiAudioDestinationNode(AudioDestinationNode);
 
 impl NapiAudioDestinationNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
         env.define_class("AudioDestination", constructor, &[])
     }
 
-    pub fn unwrap(&self) -> &DestinationNode {
+    pub fn unwrap(&self) -> &AudioDestinationNode {
         &self.0
     }
 }

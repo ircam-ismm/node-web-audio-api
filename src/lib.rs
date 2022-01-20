@@ -8,14 +8,14 @@ use napi_derive::module_exports;
 mod audio_node;
 
 mod audio_param;
-
+use crate::audio_param::{NapiAudioParam, ParamGetter};
 // public
 mod audio_context;
 use crate::audio_context::NapiAudioContext;
 mod audio_buffer;
 use crate::audio_buffer::NapiAudioBuffer;
 
-// nodes
+// nodes (generated)
 mod audio_buffer_source_node;
 use crate::audio_buffer_source_node::NapiAudioBufferSourceNode;
 mod audio_destination_node;
@@ -58,6 +58,7 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     let napi_class = NapiAudioDestinationNode::create_js_class(&env)?;
     store.set_named_property("AudioDestinationNode", napi_class)?;
 
+    // generated
     let napi_class = NapiAudioBufferSourceNode::create_js_class(&env)?;
     exports.set_named_property("AudioBufferSourceNode", napi_class)?;
     let napi_class = NapiAudioBufferSourceNode::create_js_class(&env)?;

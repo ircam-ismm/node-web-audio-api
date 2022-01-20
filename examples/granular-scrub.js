@@ -1,10 +1,11 @@
+const path = require('path');
 const { Scheduler } = require('waves-masters');
 const { AudioContext, load } = require('../index.js');
 
 const audioContext = new AudioContext();
 const scheduler = new Scheduler(() => audioContext.currentTime);
 
-const file = load('sample.wav');
+const file = load(path.join(__dirname, 'sample.wav'));
 const buffer = audioContext.decodeAudioData(file);
 
 const period = 0.05;

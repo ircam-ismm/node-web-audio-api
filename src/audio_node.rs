@@ -1,7 +1,7 @@
 #[macro_export]
 macro_rules! connect_method {
     ($napi_struct:ident) => {
-        #[js_function(1)]
+        #[js_function(3)]
         fn connect(ctx: napi::CallContext) -> napi::Result<napi::JsObject> {
             let this = ctx.this_unchecked::<napi::JsObject>();
             let napi_src = ctx.env.unwrap::<$napi_struct>(&this)?;
@@ -13,6 +13,12 @@ macro_rules! connect_method {
             let dest_uf8_name = dest_name.into_utf8()?.into_owned()?;
             let dest_str = &dest_uf8_name[..];
 
+            let output: Option<JsNumber> = ctx.try_get::<JsNumber>(1)?.into();
+            let output = if let Some(n) = output { n.try_into()? } else { 0 };
+
+            let input: Option<JsNumber> = ctx.try_get::<JsNumber>(2)?.into();
+            let input = if let Some(n) = input { n.try_into()? } else { 0 };
+
             match dest_str {
                 "AudioDestinationNode" => {
                     let napi_dest = ctx
@@ -21,7 +27,7 @@ macro_rules! connect_method {
                         &js_dest,
                     )?;
                     let native_dest = napi_dest.unwrap();
-                    native_src.connect(native_dest);
+                    let _res = native_src.connect_at(native_dest, output, input);
 
                     Ok(js_dest)
                 }
@@ -30,7 +36,7 @@ macro_rules! connect_method {
                         .env
                         .unwrap::<$crate::gain_node::NapiGainNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
-                    native_src.connect(native_dest);
+                    let _res = native_src.connect_at(native_dest, output, input);
 
                     Ok(js_dest)
                 }
@@ -39,7 +45,7 @@ macro_rules! connect_method {
                         .env
                         .unwrap::<$crate::oscillator_node::NapiOscillatorNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
-                    native_src.connect(native_dest);
+                    let _res = native_src.connect_at(native_dest, output, input);
 
                     Ok(js_dest)
                 }
@@ -48,7 +54,7 @@ macro_rules! connect_method {
                         .env
                         .unwrap::<$crate::audio_param::NapiAudioParam>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
-                    native_src.connect(native_dest);
+                    let _res = native_src.connect_at(native_dest, output, input);
 
                     Ok(js_dest)
                 }
