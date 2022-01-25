@@ -1,8 +1,3 @@
-// ----------------------------------------------------------
-// /! WARNING
-// This file has been generated, do not edit
-// ----------------------------------------------------------
-
 use std::fs::File;
 use napi::*;
 use napi_derive::js_function;
@@ -25,8 +20,11 @@ impl NapiAudioContext {
                 // ----------------------------------------------------
                 // Factory methods
                 // ----------------------------------------------------
-                
-                Property::new("createOscillator")?.with_method(create_oscillator),
+                ${d.nodes.map(n => {
+                    let factory = d.factoryName(n);
+                    return `
+                Property::new("${factory}")?.with_method(${d.slug(factory)}),`
+                }).join('')}
             ],
         )
     }
@@ -105,17 +103,18 @@ fn decode_audio_data(ctx: CallContext) -> Result<JsObject> {
 // ----------------------------------------------------
 // Factory methods
 // ----------------------------------------------------
-
+${d.nodes.map(n => {
+    let factory = d.factoryName(n);
+    return `
 #[js_function]
-fn create_oscillator(ctx: CallContext) -> Result<JsObject> {
+fn ${d.slug(factory)}(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
 
     let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
     let store: JsObject = ctx.env.get_reference_value(store_ref)?;
-    let ctor: JsFunction = store.get_named_property("OscillatorNode")?;
+    let ctor: JsFunction = store.get_named_property("${d.name(n)}")?;
 
     ctor.new_instance(&[js_this])
 }
-    
-
-  
+    `;
+}).join('')}

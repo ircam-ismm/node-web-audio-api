@@ -5,12 +5,13 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "generate": "node index.js"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "@sindresorhus/slugify": "^2.1.0",
+    "camelcase": "^6.3.0",
     "template-literal": "^1.0.4",
     "webidl2": "^24.2.0"
   }

@@ -1,9 +1,0 @@
-[Exposed=Window]
-interface GainNode : AudioNode {
-  constructor (BaseAudioContext context, optional GainOptions options = {});
-  readonly attribute AudioParam gain;
-};
-
-dictionary GainOptions : AudioNodeOptions {
-  float gain = 1.0;
-};

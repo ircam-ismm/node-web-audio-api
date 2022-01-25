@@ -1,8 +1,3 @@
-// ----------------------------------------------------------
-// /! WARNING
-// This file has been generated, do not edit
-// ----------------------------------------------------------
-
 use std::rc::Rc;
 use napi::*;
 use napi_derive::js_function;
@@ -10,16 +5,22 @@ use web_audio_api::node::*;
 use web_audio_api::param::*;
 
 pub(crate) enum ParamGetter {
+    GainNodeGain(Rc<GainNode>),
     OscillatorNodeFrequency(Rc<OscillatorNode>),
-    OscillatorNodeDetune(Rc<OscillatorNode>),
+    AudioBufferSourceNodeDetune(Rc<AudioBufferSourceNode>),
+    AudioBufferSourceNodePlaybackRate(Rc<AudioBufferSourceNode>),
 }
 
 impl ParamGetter {
-    fn downcast(&self) -> &AudioParam {
-        match *self {
+    fn get_param(&self) -> &AudioParam {
+        let param = match *self {
+            ParamGetter::GainNodeGain(ref node) => node.gain(),
             ParamGetter::OscillatorNodeFrequency(ref node) => node.frequency(),
-            ParamGetter::OscillatorNodeDetune(ref node) => node.detune(),
-        }
+            ParamGetter::AudioBufferSourceNodeDetune(ref node) => node.detune(),
+            ParamGetter::AudioBufferSourceNodePlaybackRate(ref node) => node.playback_rate(),
+        };
+
+        param
     }
 }
 
@@ -55,7 +56,7 @@ impl NapiAudioParam {
     }
 
     pub fn unwrap(&self) -> &AudioParam {
-        self.0.downcast()
+        self.0.get_param()
     }
 }
 
@@ -163,5 +164,3 @@ fn cancel_and_hold_at_time(ctx: CallContext) -> Result<JsUndefined> {
 
     ctx.env.get_undefined()
 }
-
-  

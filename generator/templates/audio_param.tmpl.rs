@@ -1,24 +1,17 @@
-// ----------------------------------------------------------
-// /! WARNING
-// This file has been generated, do not edit
-// ----------------------------------------------------------
-
 use std::rc::Rc;
 use napi::*;
 use napi_derive::js_function;
 use web_audio_api::node::*;
 use web_audio_api::param::*;
 
-pub(crate) enum ParamGetter {
-    OscillatorNodeFrequency(Rc<OscillatorNode>),
-    OscillatorNodeDetune(Rc<OscillatorNode>),
+pub(crate) enum ParamGetter {${d.nodes.map(n => { return d.audioParams(n).map(p => { return `
+    ${d.name(n)}${d.camelcase(p)}(Rc<${d.name(n)}>),`}).join('') }).join('')}
 }
 
 impl ParamGetter {
     fn downcast(&self) -> &AudioParam {
-        match *self {
-            ParamGetter::OscillatorNodeFrequency(ref node) => node.frequency(),
-            ParamGetter::OscillatorNodeDetune(ref node) => node.detune(),
+        match *self {${d.nodes.map(n => { return d.audioParams(n).map(p => { return `
+            ParamGetter::${d.name(n)}${d.camelcase(p)}(ref node) => node.${d.slug(p)}(),`}).join('') }).join('')}
         }
     }
 }
@@ -163,5 +156,3 @@ fn cancel_and_hold_at_time(ctx: CallContext) -> Result<JsUndefined> {
 
     ctx.env.get_undefined()
 }
-
-  

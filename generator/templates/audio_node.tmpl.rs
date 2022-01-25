@@ -1,8 +1,3 @@
-// ----------------------------------------------------------
-// /! WARNING
-// This file has been generated, do not edit
-// ----------------------------------------------------------
-
 #[macro_export]
 macro_rules! connect_method {
     ($napi_struct:ident) => {
@@ -45,16 +40,16 @@ macro_rules! connect_method {
 
                     Ok(js_dest)
                 }
-                "OscillatorNode" => {
+                ${d.nodes.map(n => { return `"${d.name(n)}" => {
                     let napi_dest = ctx
                         .env
-                        .unwrap::<$crate::oscillator_node::NapiOscillatorNode>(&js_dest)?;
+                        .unwrap::<$crate::${d.slug(n)}::${d.napiName(n)}>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     let _res = native_src.connect_at(native_dest, output, input);
 
                     Ok(js_dest)
                 }
-                
+                `}).join('')}
                 _ => Err(napi::Error::from_reason(
                     "Cannot connect: Invalid destination node".to_string(),
                 )),
@@ -62,5 +57,3 @@ macro_rules! connect_method {
         }
     };
 }
-
-  

@@ -1,8 +1,3 @@
-// ----------------------------------------------------------
-// /! WARNING
-// This file has been generated, do not edit
-// ----------------------------------------------------------
-
 #![deny(clippy::all)]
 
 use napi::{Env, JsObject, Result};
@@ -23,9 +18,9 @@ mod audio_destination_node;
 use crate::audio_destination_node::NapiAudioDestinationNode;
 
 // import audio nodes (generated)
-
-mod oscillator_node;
-use crate::oscillator_node::NapiOscillatorNode;
+${d.nodes.map(n => { return `
+mod ${d.slug(n)};
+use crate::${d.slug(n)}::${d.napiName(n)};`}).join('')}
 
 // misc
 mod utils;
@@ -61,12 +56,12 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     store.set_named_property("AudioDestinationNode", napi_class)?;
 
     // export audio nodes (generated)
-    
-    let napi_class = NapiOscillatorNode::create_js_class(&env)?;
-    exports.set_named_property("OscillatorNode", napi_class)?;
-    let napi_class = NapiOscillatorNode::create_js_class(&env)?;
-    store.set_named_property("OscillatorNode", napi_class)?;
-    
+    ${d.nodes.map(n => { return `
+    let napi_class = ${d.napiName(n)}::create_js_class(&env)?;
+    exports.set_named_property("${d.name(n)}", napi_class)?;
+    let napi_class = ${d.napiName(n)}::create_js_class(&env)?;
+    store.set_named_property("${d.name(n)}", napi_class)?;
+    `}).join('')}
 
     // utils
     exports.create_named_method("load", load)?;
@@ -80,5 +75,3 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
 
     Ok(())
 }
-
-  

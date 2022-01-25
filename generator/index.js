@@ -1,60 +1,195 @@
 import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 import { parse, write, validate } from 'webidl2';
-
-import AudioNodeInterpreter from './AudioNodeInterpreter.js';
-
-const buffer = fs.readFileSync('web-audio.idl');
-const content = buffer.toString();
-const tree = parse(content);
-
-function log(idl) {
-  console.log(JSON.stringify(idl, null, 2));
-}
-
-let audioNodes = new Set();
+import slugify from '@sindresorhus/slugify';
+import camelcase from 'camelcase';
+import compile from 'template-literal';
 
 let supportedNodes = [
-  `GainNode`,
-  `AudioBufferSourceNode`,
-  `OscillatorNode`,
-
-  // `AnalyserNode`,
+  // `AudioBufferSourceNode`,
+  // // `AnalyserNode`,
   // `BiquadFilterNode`,
-  // `ChannelMergerNode`,
-  // `ChannelSplitterNode`,
+  // // `ChannelMergerNode`,
+  // // `ChannelSplitterNode`,
   // `ConstantSourceNode`,
   // `DelayNode`,
   // `GainNode`,
-  // `IIRFilterNode`,
-  // `OscillatorNode`,
-  // `PannerNode`,
+  // // `IIRFilterNode`,
+  `OscillatorNode`,
+  // // `PannerNode`,
   // `StereoPannerNode`,
   // `WaveShaperNode`,
 ];
 
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+let templates = path.join(__dirname, 'templates');
+let output = path.join(process.cwd(), 'src');
+
+const buffer = fs.readFileSync(path.join(__dirname, 'web-audio.idl'));
+const content = buffer.toString();
+const tree = parse(content);
+
+function generated(str) {
+  return `// ----------------------------------------------------------
+// /!\ WARNING
+// This file has been generated, do not edit
+// ----------------------------------------------------------
+
+${str}
+  `;
+}
+
+const utils = {
+  log(idl) {
+    console.log(JSON.stringify(idl, null, 2));
+  },
+
+  findInTree(name) {
+    return tree.find(l => l.name === name);
+  },
+
+  parent(idl) {
+    return idl.inheritance;
+  },
+
+  type(idl) {
+    return idl.type;
+  },
+
+  memberType(idl) {
+    return idl.idlType.idlType;
+  },
+
+  attributes(idl) {
+    let attrs = idl.members
+      .filter(member => member.constructor.name === 'Attribute')
+      .filter(member => member.idlType.idlType !== 'AudioParam');
+
+    attrs = attrs.filter(attr => {
+      if (attr.idlType.idlType === 'float' ||
+        attr.idlType.idlType === 'double' ||
+        attr.idlType.idlType === 'boolean' ||
+        attr.idlType.idlType === 'OscillatorType'
+      ) {
+        return true;
+      } else {
+        console.log(`+ attribute "${this.name(attr)}: ${this.type(attr)}" not parsed`);
+      }
+    });
+
+    return attrs;
+  },
+
+  methods(idl) {
+    let methods = idl.members
+      .filter(member => member.constructor.name === 'Operation')
+      .filter(member => member.name !== 'start')
+      .filter(member => member.name !== 'stop')
+
+    // return methods;
+    console.log('+ bypass parsing methods');
+    return []; // not implemented yet
+  },
+
+  audioParams(idl) {
+    let params = idl.members
+      .filter(member => member.constructor.name === 'Attribute')
+      .filter(member => member.idlType.idlType === 'AudioParam');
+
+    return params;
+  },
+
+  name(idl) {
+    return idl.name;
+  },
+
+  napiName(idl) {
+    return `Napi${idl.name}`
+  },
+
+  factoryName(idl) {
+    let factory = this.name(idl);
+    factory = factory.replace(/^Audio/, '').replace(/Node$/, '');
+    factory = `create${factory}`;
+    console.log(factory);
+    return factory;
+  },
+
+  slug(idl, sanitize = false) {
+    if (typeof idl === 'string') {
+      return slugify(idl, { separator: '_', preserveTrailingDash: true });
+    }
+
+    let slug = slugify(idl.name, { separator: '_', preserveTrailingDash: true });
+
+    if (sanitize) {
+      if (slug === 'loop' || slug === 'type') {
+        slug += '_';
+      }
+    }
+    return slug;
+  },
+
+  camelcase(idl) {
+    if (typeof idl === 'string') {
+      return camelcase(idl, { pascalCase: true, preserveConsecutiveUppercase: true });
+    }
+
+    return camelcase(idl.name, { pascalCase: true, preserveConsecutiveUppercase: true });
+  },
+};
+
+// const audioBufferIdl = tree.find(l => l.name === 'AudioBuffer');
+// log(audioBufferIdl);
+
+let audioNodes = [];
+
 // for stats
-let parsed = new Set();
-let ignored = new Set();
+const parsed = new Set();
+const ignored = new Set();
 
 function findInTree(name) {
   return tree.find(l => l.name === name);
 }
 
-supportedNodes.forEach((name, index) => {
-  let nodeIdl = findInTree(name);
-  console.log(nodeIdl);
+let nodesCodeTmpl = fs.readFileSync(path.join(templates, `audio_nodes.tmpl.rs`), 'utf8');
+let nodesTmpl = compile(nodesCodeTmpl);
 
-  let nodeInterpreter = new AudioNodeInterpreter(nodeIdl, tree);
-  let code = nodeInterpreter.render();
-  // console.log(code);
+supportedNodes.sort().forEach((name, index) => {
+  const nodeIdl = findInTree(name);
+  const nodeCode = nodesTmpl({
+    node: nodeIdl,
+    tree,
+    ...utils
+  });
 
-  fs.writeFileSync(`output/${nodeInterpreter.slug}.rs`, code);
+  let pathname = path.join(output, `${utils.slug(nodeIdl)}.rs`);
+  console.log('> generating file: ', pathname);
+  fs.writeFileSync(pathname, generated(nodeCode));
 
-  audioNodes.add(nodeInterpreter);
+  audioNodes.push(nodeIdl);
 });
 
 // write AudioNode macros
-// write lib.rs
 
-setInterval(() => {}, 1000);
+// write AudioParam getters
+['audio_param', 'audio_node', 'lib', 'audio_context'].forEach(src => {
+  let codeTmpl = fs.readFileSync(path.join(templates, `${src}.tmpl.rs`), 'utf8');
+  let tmpl = compile(codeTmpl);
+  let code = tmpl({
+    nodes: audioNodes,
+    tree,
+    ...utils,
+  });
+
+  let pathname = path.join(output, `${src}.rs`);
+  console.log('> generating file: ', pathname);
+  fs.writeFileSync(pathname, generated(code));
+});
+
+// // setInterval(() => {}, 1000);
 

@@ -1,8 +1,3 @@
-// ----------------------------------------------------------
-// /! WARNING
-// This file has been generated, do not edit
-// ----------------------------------------------------------
-
 #[macro_export]
 macro_rules! connect_method {
     ($napi_struct:ident) => {
@@ -25,21 +20,21 @@ macro_rules! connect_method {
             let input = if let Some(n) = input { n.try_into()? } else { 0 };
 
             match dest_str {
-                "AudioParam" => {
-                    let napi_dest = ctx
-                        .env
-                        .unwrap::<$crate::audio_param::NapiAudioParam>(&js_dest)?;
-                    let native_dest = napi_dest.unwrap();
-                    let _res = native_src.connect_at(native_dest, output, input);
-
-                    Ok(js_dest)
-                }
                 "AudioDestinationNode" => {
                     let napi_dest = ctx
                         .env
                         .unwrap::<$crate::audio_destination_node::NapiAudioDestinationNode>(
                         &js_dest,
                     )?;
+                    let native_dest = napi_dest.unwrap();
+                    let _res = native_src.connect_at(native_dest, output, input);
+
+                    Ok(js_dest)
+                }
+                "GainNode" => {
+                    let napi_dest = ctx
+                        .env
+                        .unwrap::<$crate::gain_node::NapiGainNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     let _res = native_src.connect_at(native_dest, output, input);
 
@@ -54,7 +49,15 @@ macro_rules! connect_method {
 
                     Ok(js_dest)
                 }
-                
+                "AudioParam" => {
+                    let napi_dest = ctx
+                        .env
+                        .unwrap::<$crate::audio_param::NapiAudioParam>(&js_dest)?;
+                    let native_dest = napi_dest.unwrap();
+                    let _res = native_src.connect_at(native_dest, output, input);
+
+                    Ok(js_dest)
+                }
                 _ => Err(napi::Error::from_reason(
                     "Cannot connect: Invalid destination node".to_string(),
                 )),
@@ -62,5 +65,3 @@ macro_rules! connect_method {
         }
     };
 }
-
-  

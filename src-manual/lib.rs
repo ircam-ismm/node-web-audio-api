@@ -1,8 +1,3 @@
-// ----------------------------------------------------------
-// /! WARNING
-// This file has been generated, do not edit
-// ----------------------------------------------------------
-
 #![deny(clippy::all)]
 
 use napi::{Env, JsObject, Result};
@@ -19,11 +14,14 @@ mod audio_context;
 use crate::audio_context::NapiAudioContext;
 mod audio_buffer;
 use crate::audio_buffer::NapiAudioBuffer;
+
+// nodes (generated)
+mod audio_buffer_source_node;
+use crate::audio_buffer_source_node::NapiAudioBufferSourceNode;
 mod audio_destination_node;
 use crate::audio_destination_node::NapiAudioDestinationNode;
-
-// import audio nodes (generated)
-
+mod gain_node;
+use crate::gain_node::NapiGainNode;
 mod oscillator_node;
 use crate::oscillator_node::NapiOscillatorNode;
 
@@ -60,13 +58,21 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     let napi_class = NapiAudioDestinationNode::create_js_class(&env)?;
     store.set_named_property("AudioDestinationNode", napi_class)?;
 
-    // export audio nodes (generated)
-    
+    // generated
+    let napi_class = NapiAudioBufferSourceNode::create_js_class(&env)?;
+    exports.set_named_property("AudioBufferSourceNode", napi_class)?;
+    let napi_class = NapiAudioBufferSourceNode::create_js_class(&env)?;
+    store.set_named_property("AudioBufferSourceNode", napi_class)?;
+
+    let napi_class = NapiGainNode::create_js_class(&env)?;
+    exports.set_named_property("GainNode", napi_class)?;
+    let napi_class = NapiGainNode::create_js_class(&env)?;
+    store.set_named_property("GainNode", napi_class)?;
+
     let napi_class = NapiOscillatorNode::create_js_class(&env)?;
     exports.set_named_property("OscillatorNode", napi_class)?;
     let napi_class = NapiOscillatorNode::create_js_class(&env)?;
     store.set_named_property("OscillatorNode", napi_class)?;
-    
 
     // utils
     exports.create_named_method("load", load)?;
@@ -80,5 +86,3 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
 
     Ok(())
 }
-
-  

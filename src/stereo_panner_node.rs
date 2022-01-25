@@ -9,12 +9,12 @@ use napi_derive::js_function;
 use web_audio_api::node::*;
 use crate::*;
 
-pub(crate) struct NapiGainNode(Rc<GainNode>);
+pub(crate) struct NapiStereoPannerNode(Rc<StereoPannerNode>);
 
-impl NapiGainNode {
+impl NapiStereoPannerNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
         env.define_class(
-            "GainNode",
+            "StereoPannerNode",
             constructor,
             &[
                 // Attributes
@@ -29,7 +29,7 @@ impl NapiGainNode {
         )
     }
 
-    pub fn unwrap(&self) -> &GainNode {
+    pub fn unwrap(&self) -> &StereoPannerNode {
         &self.0
     }
 }
@@ -43,20 +43,20 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let audio_context = napi_audio_context.unwrap();
 
     js_this.set_named_property("context", js_audio_context)?;
-    js_this.set_named_property("Symbol.toStringTag", ctx.env.create_string("GainNode")?)?;
+    js_this.set_named_property("Symbol.toStringTag", ctx.env.create_string("StereoPannerNode")?)?;
 
-    let native_node = Rc::new(GainNode::new(audio_context, Default::default()));
+    let native_node = Rc::new(StereoPannerNode::new(audio_context, Default::default()));
     
-    // AudioParam: GainNode::gain
+    // AudioParam: StereoPannerNode::pan
     let native_clone = native_node.clone();
-    let param_getter = ParamGetter::GainNodeGain(native_clone);
+    let param_getter = ParamGetter::StereoPannerNodePan(native_clone);
     let napi_param = NapiAudioParam::new(param_getter);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
-    js_this.set_named_property("gain", &js_obj)?;
+    js_this.set_named_property("pan", &js_obj)?;
         
     // finalize instance creation
-    let napi_node = NapiGainNode(native_node);
+    let napi_node = NapiStereoPannerNode(native_node);
     ctx.env.wrap(&mut js_this, napi_node)?;
 
     ctx.env.get_undefined()
@@ -65,8 +65,8 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 // -------------------------------------------------
 // AudioNode Interface
 // -------------------------------------------------
-connect_method!(NapiGainNode);
-// disconnect_method!(NapiGainNode);
+connect_method!(NapiStereoPannerNode);
+// disconnect_method!(NapiStereoPannerNode);
 
 // -------------------------------------------------
 // GETTERS
