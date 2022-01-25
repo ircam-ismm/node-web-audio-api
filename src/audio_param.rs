@@ -1,6 +1,8 @@
 // ----------------------------------------------------------
-// /! WARNING
-// This file has been generated, do not edit
+// ----------------------------------------------------------
+// /! WARNING - DO NOT EDIT
+// This file has been generated
+// ----------------------------------------------------------
 // ----------------------------------------------------------
 
 use std::rc::Rc;
@@ -10,15 +12,35 @@ use web_audio_api::node::*;
 use web_audio_api::param::*;
 
 pub(crate) enum ParamGetter {
+    AudioBufferSourceNodePlaybackRate(Rc<AudioBufferSourceNode>),
+    AudioBufferSourceNodeDetune(Rc<AudioBufferSourceNode>),
+    BiquadFilterNodeFrequency(Rc<BiquadFilterNode>),
+    BiquadFilterNodeDetune(Rc<BiquadFilterNode>),
+    BiquadFilterNodeQ(Rc<BiquadFilterNode>),
+    BiquadFilterNodeGain(Rc<BiquadFilterNode>),
+    ConstantSourceNodeOffset(Rc<ConstantSourceNode>),
+    DelayNodeDelayTime(Rc<DelayNode>),
+    GainNodeGain(Rc<GainNode>),
     OscillatorNodeFrequency(Rc<OscillatorNode>),
     OscillatorNodeDetune(Rc<OscillatorNode>),
+    StereoPannerNodePan(Rc<StereoPannerNode>),
 }
 
 impl ParamGetter {
     fn downcast(&self) -> &AudioParam {
         match *self {
+            ParamGetter::AudioBufferSourceNodePlaybackRate(ref node) => node.playback_rate(),
+            ParamGetter::AudioBufferSourceNodeDetune(ref node) => node.detune(),
+            ParamGetter::BiquadFilterNodeFrequency(ref node) => node.frequency(),
+            ParamGetter::BiquadFilterNodeDetune(ref node) => node.detune(),
+            ParamGetter::BiquadFilterNodeQ(ref node) => node.q(),
+            ParamGetter::BiquadFilterNodeGain(ref node) => node.gain(),
+            ParamGetter::ConstantSourceNodeOffset(ref node) => node.offset(),
+            ParamGetter::DelayNodeDelayTime(ref node) => node.delay_time(),
+            ParamGetter::GainNodeGain(ref node) => node.gain(),
             ParamGetter::OscillatorNodeFrequency(ref node) => node.frequency(),
             ParamGetter::OscillatorNodeDetune(ref node) => node.detune(),
+            ParamGetter::StereoPannerNodePan(ref node) => node.pan(),
         }
     }
 }

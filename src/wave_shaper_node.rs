@@ -1,6 +1,8 @@
 // ----------------------------------------------------------
-// /! WARNING
-// This file has been generated, do not edit
+// ----------------------------------------------------------
+// /! WARNING - DO NOT EDIT
+// This file has been generated
+// ----------------------------------------------------------
 // ----------------------------------------------------------
 
 use std::rc::Rc;
@@ -18,6 +20,9 @@ impl NapiWaveShaperNode {
             constructor,
             &[
                 // Attributes
+                Property::new("oversample")?
+                    .with_getter(get_oversample)
+                    .with_setter(set_oversample),
                 
                 // Methods
                 
@@ -64,10 +69,46 @@ connect_method!(NapiWaveShaperNode);
 // GETTERS
 // -------------------------------------------------
 
+#[js_function(0)]
+fn get_oversample(ctx: CallContext) -> Result<JsString> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiWaveShaperNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let value = node.oversample();
+    let js_value = match value {
+        OverSampleType::None => "none",
+        OverSampleType::X2 => "2x",
+        OverSampleType::X4 => "4x",
+    };
+
+    ctx.env.create_string(&js_value)
+}
+                    
 // -------------------------------------------------
 // SETTERS
 // -------------------------------------------------
 
+#[js_function(0)]
+fn set_oversample(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiWaveShaperNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let js_str = ctx.get::<JsString>(0)?;
+    let uf8_str = js_str.into_utf8()?.into_owned()?;
+    let value = match uf8_str.as_str() {
+        "none" => OverSampleType::None,
+        "2x" => OverSampleType::X2,
+        "4x" => OverSampleType::X4,
+        _ => panic!("undefined value for OverSampleType"),
+    };
+
+    node.set_oversample(value);
+
+    ctx.env.get_undefined()
+}
+                    
 
 
   

@@ -8,19 +8,19 @@ import camelcase from 'camelcase';
 import compile from 'template-literal';
 
 let supportedNodes = [
-  // `AudioBufferSourceNode`,
+  `AudioBufferSourceNode`,
   // // `AnalyserNode`,
-  // `BiquadFilterNode`,
+  `BiquadFilterNode`,
   // // `ChannelMergerNode`,
   // // `ChannelSplitterNode`,
-  // `ConstantSourceNode`,
-  // `DelayNode`,
-  // `GainNode`,
+  `ConstantSourceNode`,
+  `DelayNode`,
+  `GainNode`,
   // // `IIRFilterNode`,
   `OscillatorNode`,
   // // `PannerNode`,
-  // `StereoPannerNode`,
-  // `WaveShaperNode`,
+  `StereoPannerNode`,
+  `WaveShaperNode`,
 ];
 
 
@@ -35,8 +35,10 @@ const tree = parse(content);
 
 function generated(str) {
   return `// ----------------------------------------------------------
-// /!\ WARNING
-// This file has been generated, do not edit
+// ----------------------------------------------------------
+// /!\ WARNING - DO NOT EDIT
+// This file has been generated
+// ----------------------------------------------------------
 // ----------------------------------------------------------
 
 ${str}
@@ -73,11 +75,12 @@ const utils = {
       if (attr.idlType.idlType === 'float' ||
         attr.idlType.idlType === 'double' ||
         attr.idlType.idlType === 'boolean' ||
-        attr.idlType.idlType === 'OscillatorType'
+        (this.findInTree(attr.idlType.idlType) &&
+          this.findInTree(attr.idlType.idlType).type === 'enum')
       ) {
         return true;
       } else {
-        console.log(`+ attribute "${this.name(attr)}: ${this.type(attr)}" not parsed`);
+        console.log(`+ attribute "${this.name(attr)}: ${this.memberType(attr)}" not parsed`);
       }
     });
 
@@ -136,7 +139,12 @@ const utils = {
 
   camelcase(idl) {
     if (typeof idl === 'string') {
-      return camelcase(idl, { pascalCase: true, preserveConsecutiveUppercase: true });
+      let str = idl;
+      if (str.match(/[0-9]/)) { // oversampling
+        str = str.split('').reverse().join('');
+      }
+
+      return camelcase(str, { pascalCase: true, preserveConsecutiveUppercase: true });
     }
 
     return camelcase(idl.name, { pascalCase: true, preserveConsecutiveUppercase: true });
