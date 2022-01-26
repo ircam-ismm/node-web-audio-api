@@ -8,6 +8,11 @@ const scheduler = new Scheduler(() => audioContext.currentTime);
 const file = load(path.join(__dirname, 'sample.wav'));
 const buffer = audioContext.decodeAudioData(file);
 
+// const src = audioContext.createBufferSource();
+// src.buffer = buffer;
+// console.log(buffer, src.buffer, buffer === src.buffer);
+// console.log(src);
+
 const period = 0.05;
 const grainDuration = 0.2;
 let incr = period / 2;
@@ -38,6 +43,7 @@ const engine = {
     env.gain.linearRampToValueAtTime(1, now + grainDuration / 2);
     env.gain.linearRampToValueAtTime(0, now + grainDuration);
 
+    // console.log(now, position);
     src.start(now, position);
     src.stop(now + grainDuration);
 

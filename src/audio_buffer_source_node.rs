@@ -1,9 +1,9 @@
-// ----------------------------------------------------------
-// ----------------------------------------------------------
-// /! WARNING - DO NOT EDIT
-// This file has been generated
-// ----------------------------------------------------------
-// ----------------------------------------------------------
+// ---------------------------------------------------------- //
+// ---------------------------------------------------------- //
+//    - WARNING - DO NOT EDIT                               - //
+//    - This file has been generated                        - //
+// ---------------------------------------------------------- //
+// ---------------------------------------------------------- //
 
 use std::rc::Rc;
 use napi::*;
@@ -20,6 +20,9 @@ impl NapiAudioBufferSourceNode {
             constructor,
             &[
                 // Attributes
+                Property::new("buffer")?
+                    .with_getter(get_buffer)
+                    .with_setter(set_buffer),
                 Property::new("loop")?
                     .with_getter(get_loop)
                     .with_setter(set_loop),
@@ -101,10 +104,19 @@ fn start(ctx: CallContext) -> Result<JsUndefined> {
 
     if ctx.length == 0 {
         node.start();
-    } else {
+    } else if ctx.length == 1 {
         let when = ctx.get::<JsNumber>(0)?.try_into()?;
         node.start_at(when);
-    };
+    } else if ctx.length == 2 {
+        let when = ctx.get::<JsNumber>(0)?.try_into()?;
+        let offset = ctx.get::<JsNumber>(1)?.try_into()?;
+        node.start_at_with_offset(when, offset);
+    } else if ctx.length == 3 {
+        let when = ctx.get::<JsNumber>(0)?.try_into()?;
+        let offset = ctx.get::<JsNumber>(1)?.try_into()?;
+        let duration = ctx.get::<JsNumber>(2)?.try_into()?;
+        node.start_at_with_offset_and_duration(when, offset, duration);
+    }
 
     ctx.env.get_undefined()
 }
@@ -129,6 +141,17 @@ fn stop(ctx: CallContext) -> Result<JsUndefined> {
 // GETTERS
 // -------------------------------------------------
 
+#[js_function(0)]
+fn get_buffer(ctx: CallContext) -> Result<JsUnknown> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+
+    if js_this.has_named_property("__buffer__")? {
+        Ok(js_this.get_named_property::<JsObject>("__buffer__")?.into_unknown())
+    } else {
+        Ok(ctx.env.get_null()?.into_unknown())
+    }
+}
+                    
 #[js_function(0)]
 fn get_loop(ctx: CallContext) -> Result<JsBoolean> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -163,6 +186,23 @@ fn get_loop_end(ctx: CallContext) -> Result<JsNumber> {
 // SETTERS
 // -------------------------------------------------
 
+#[js_function(1)]
+fn set_buffer(ctx: CallContext) -> Result<JsUndefined> {
+    let mut js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let js_obj = ctx.get::<JsObject>(0)?;
+    let napi_obj = ctx.env.unwrap::<NapiAudioBuffer>(&js_obj)?;
+    let obj = napi_obj.unwrap();
+    // store in "private" field for getter (not very clean, to review)
+    js_this.set_named_property("__buffer__", js_obj)?;
+
+    node.set_buffer(obj.clone());
+
+    ctx.env.get_undefined()
+}
+                    
 #[js_function(1)]
 fn set_loop(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();

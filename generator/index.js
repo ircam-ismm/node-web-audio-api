@@ -9,7 +9,7 @@ import compile from 'template-literal';
 
 let supportedNodes = [
   `AudioBufferSourceNode`,
-  // // `AnalyserNode`,
+  // `AnalyserNode`,
   `BiquadFilterNode`,
   // // `ChannelMergerNode`,
   // // `ChannelSplitterNode`,
@@ -34,12 +34,13 @@ const content = buffer.toString();
 const tree = parse(content);
 
 function generated(str) {
-  return `// ----------------------------------------------------------
-// ----------------------------------------------------------
-// /!\ WARNING - DO NOT EDIT
-// This file has been generated
-// ----------------------------------------------------------
-// ----------------------------------------------------------
+  return `\
+// ---------------------------------------------------------- //
+// ---------------------------------------------------------- //
+//    - WARNING - DO NOT EDIT                               - //
+//    - This file has been generated                        - //
+// ---------------------------------------------------------- //
+// ---------------------------------------------------------- //
 
 ${str}
   `;
@@ -76,7 +77,9 @@ const utils = {
         attr.idlType.idlType === 'double' ||
         attr.idlType.idlType === 'boolean' ||
         (this.findInTree(attr.idlType.idlType) &&
-          this.findInTree(attr.idlType.idlType).type === 'enum')
+          this.findInTree(attr.idlType.idlType).type === 'enum') ||
+        (this.findInTree(attr.idlType.idlType) &&
+          this.findInTree(attr.idlType.idlType).type === 'interface')
       ) {
         return true;
       } else {
@@ -118,7 +121,6 @@ const utils = {
     let factory = this.name(idl);
     factory = factory.replace(/^Audio/, '').replace(/Node$/, '');
     factory = `create${factory}`;
-    console.log(factory);
     return factory;
   },
 

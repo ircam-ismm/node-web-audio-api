@@ -89,14 +89,14 @@ fn start(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
     let node = napi_node.unwrap();
-${d.name !== 'AudioBufferSourceNode' ?
+${d.name(d.node) !== 'AudioBufferSourceNode' ?
 `
     if ctx.length == 0 {
         node.start();
     } else {
         let when = ctx.get::<JsNumber>(0)?.try_into()?;
         node.start_at(when);
-    };
+    }
 ` : `
     if ctx.length == 0 {
         node.start();
@@ -112,7 +112,7 @@ ${d.name !== 'AudioBufferSourceNode' ?
         let offset = ctx.get::<JsNumber>(1)?.try_into()?;
         let duration = ctx.get::<JsNumber>(2)?.try_into()?;
         node.start_at_with_offset_and_duration(when, offset, duration);
-    };
+    }
 `}
     ctx.env.get_undefined()
 }
@@ -190,6 +190,21 @@ fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsString> {
     ctx.env.create_string(&js_value)
 }
                     `;
+                    break;
+                case 'interface':
+                    return `
+#[js_function(0)]
+fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsUnknown> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+
+    if js_this.has_named_property("__${d.slug(attr)}__")? {
+        Ok(js_this.get_named_property::<JsObject>("__${d.slug(attr)}__")?.into_unknown())
+    } else {
+        Ok(ctx.env.get_null()?.into_unknown())
+    }
+}
+                    `;
+                    break;
             }
             break;
         }
@@ -275,6 +290,27 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
                     `;
+                    break
+                case 'interface':
+                    return `
+#[js_function(1)]
+fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
+    let mut js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let js_obj = ctx.get::<JsObject>(0)?;
+    let napi_obj = ctx.env.unwrap::<${d.napiName(idl)}>(&js_obj)?;
+    let obj = napi_obj.unwrap();
+    // store in "private" field for getter (not very clean, to review)
+    js_this.set_named_property("__${d.slug(attr)}__", js_obj)?;
+
+    node.set_${d.slug(attr)}(obj.clone());
+
+    ctx.env.get_undefined()
+}
+                    `;
+                    break;
             }
             break;
         }
