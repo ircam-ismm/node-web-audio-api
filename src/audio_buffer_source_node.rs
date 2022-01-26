@@ -195,9 +195,9 @@ fn set_buffer(ctx: CallContext) -> Result<JsUndefined> {
     let js_obj = ctx.get::<JsObject>(0)?;
     let napi_obj = ctx.env.unwrap::<NapiAudioBuffer>(&js_obj)?;
     let obj = napi_obj.unwrap();
+    node.set_buffer(obj.clone());
     // store in "private" field for getter (not very clean, to review)
     js_this.set_named_property("__buffer__", js_obj)?;
-    node.set_buffer(obj.clone());
 
     ctx.env.get_undefined()
 }

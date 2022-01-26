@@ -289,12 +289,11 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
     let js_obj = ctx.get::<JsTypedArray>(0)?;
     let buffer = js_obj.into_value()?;
     let buffer_ref: &[f32] = buffer.as_ref();
-
+    // @todo - remove this vec![]
+    node.set_${d.slug(attr)}(buffer_ref.to_vec());
     // weird but seems we can have twice the same owned value...
     let js_obj = ctx.get::<JsTypedArray>(0)?;
     js_this.set_named_property("__${d.slug(attr)}__", js_obj)?;
-    // @todo - remove this vec![]
-    node.set_${d.slug(attr)}(buffer_ref.to_vec());
 
     ctx.env.get_undefined()
 }
@@ -339,9 +338,9 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
     let js_obj = ctx.get::<JsObject>(0)?;
     let napi_obj = ctx.env.unwrap::<${d.napiName(idl)}>(&js_obj)?;
     let obj = napi_obj.unwrap();
+    node.set_${d.slug(attr)}(obj.clone());
     // store in "private" field for getter (not very clean, to review)
     js_this.set_named_property("__${d.slug(attr)}__", js_obj)?;
-    node.set_${d.slug(attr)}(obj.clone());
 
     ctx.env.get_undefined()
 }

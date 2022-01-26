@@ -112,11 +112,11 @@ fn set_curve(ctx: CallContext) -> Result<JsUndefined> {
     let js_obj = ctx.get::<JsTypedArray>(0)?;
     let buffer = js_obj.into_value()?;
     let buffer_ref: &[f32] = buffer.as_ref();
-
-    let js_obj = ctx.get::<JsTypedArray>(0)?;
-    js_this.set_named_property("__curve__", js_obj)?;
     // @todo - remove this vec![]
     node.set_curve(buffer_ref.to_vec());
+    // weird but seems we can have twice the same owned value...
+    let js_obj = ctx.get::<JsTypedArray>(0)?;
+    js_this.set_named_property("__curve__", js_obj)?;
 
     ctx.env.get_undefined()
 }
