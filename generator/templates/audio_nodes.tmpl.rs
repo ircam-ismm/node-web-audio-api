@@ -168,6 +168,20 @@ fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsNumber> {
 }
             `;
             break;
+        case 'Float32Array':
+                    return `
+#[js_function(0)]
+fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsUnknown> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+
+    if js_this.has_named_property("__${d.slug(attr)}__")? {
+        Ok(js_this.get_named_property::<JsObject>("__${d.slug(attr)}__")?.into_unknown())
+    } else {
+        Ok(ctx.env.get_null()?.into_unknown())
+    }
+}
+                    `;
+            break;
         // IDL types
         default: {
             let idl = d.findInTree(attrType);
@@ -264,6 +278,29 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
 }
             `;
             break;
+        case 'Float32Array':
+            return `
+#[js_function(1)]
+fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
+    let mut js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let js_obj = ctx.get::<JsTypedArray>(0)?;
+    let buffer = js_obj.into_value()?;
+    let buffer_ref: &[f32] = buffer.as_ref();
+
+    // weird but seems we can have twice the same owned value...
+    let js_obj = ctx.get::<JsTypedArray>(0)?;
+    js_this.set_named_property("__${d.slug(attr)}__", js_obj)?;
+    // @todo - remove this vec![]
+    node.set_${d.slug(attr)}(buffer_ref.to_vec());
+
+    ctx.env.get_undefined()
+}
+            `;
+            break;
+
         // IDL types
         default: {
             let idl = d.findInTree(attrType);
@@ -304,7 +341,6 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
     let obj = napi_obj.unwrap();
     // store in "private" field for getter (not very clean, to review)
     js_this.set_named_property("__${d.slug(attr)}__", js_obj)?;
-
     node.set_${d.slug(attr)}(obj.clone());
 
     ctx.env.get_undefined()

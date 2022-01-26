@@ -43,7 +43,6 @@ const engine = {
     env.gain.linearRampToValueAtTime(1, now + grainDuration / 2);
     env.gain.linearRampToValueAtTime(0, now + grainDuration);
 
-    // console.log(now, position);
     src.start(now, position);
     src.stop(now + grainDuration);
 

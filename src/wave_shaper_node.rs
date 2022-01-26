@@ -20,6 +20,9 @@ impl NapiWaveShaperNode {
             constructor,
             &[
                 // Attributes
+                Property::new("curve")?
+                    .with_getter(get_curve)
+                    .with_setter(set_curve),
                 Property::new("oversample")?
                     .with_getter(get_oversample)
                     .with_setter(set_oversample),
@@ -70,6 +73,17 @@ connect_method!(NapiWaveShaperNode);
 // -------------------------------------------------
 
 #[js_function(0)]
+fn get_curve(ctx: CallContext) -> Result<JsUnknown> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+
+    if js_this.has_named_property("__curve__")? {
+        Ok(js_this.get_named_property::<JsObject>("__curve__")?.into_unknown())
+    } else {
+        Ok(ctx.env.get_null()?.into_unknown())
+    }
+}
+                    
+#[js_function(0)]
 fn get_oversample(ctx: CallContext) -> Result<JsString> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiWaveShaperNode>(&js_this)?;
@@ -89,6 +103,24 @@ fn get_oversample(ctx: CallContext) -> Result<JsString> {
 // SETTERS
 // -------------------------------------------------
 
+#[js_function(1)]
+fn set_curve(ctx: CallContext) -> Result<JsUndefined> {
+    let mut js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiWaveShaperNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let js_obj = ctx.get::<JsTypedArray>(0)?;
+    let buffer = js_obj.into_value()?;
+    let buffer_ref: &[f32] = buffer.as_ref();
+
+    let js_obj = ctx.get::<JsTypedArray>(0)?;
+    js_this.set_named_property("__curve__", js_obj)?;
+    // @todo - remove this vec![]
+    node.set_curve(buffer_ref.to_vec());
+
+    ctx.env.get_undefined()
+}
+            
 #[js_function(0)]
 fn set_oversample(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();

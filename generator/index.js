@@ -76,6 +76,7 @@ const utils = {
       if (attr.idlType.idlType === 'float' ||
         attr.idlType.idlType === 'double' ||
         attr.idlType.idlType === 'boolean' ||
+        attr.idlType.idlType === 'Float32Array' ||
         (this.findInTree(attr.idlType.idlType) &&
           this.findInTree(attr.idlType.idlType).type === 'enum') ||
         (this.findInTree(attr.idlType.idlType) &&
