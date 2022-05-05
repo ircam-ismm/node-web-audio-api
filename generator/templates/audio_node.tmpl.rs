@@ -13,11 +13,11 @@ macro_rules! connect_method {
             let dest_uf8_name = dest_name.into_utf8()?.into_owned()?;
             let dest_str = &dest_uf8_name[..];
 
-            let output: Option<JsNumber> = ctx.try_get::<JsNumber>(1)?.into();
-            let output = if let Some(n) = output { n.try_into()? } else { 0 };
+            let output_js: Option<JsNumber> = ctx.try_get::<JsNumber>(1)?.into();
+            let output: u32 = if let Some(n) = output_js { n.try_into()? } else { 0 };
 
-            let input: Option<JsNumber> = ctx.try_get::<JsNumber>(2)?.into();
-            let input = if let Some(n) = input { n.try_into()? } else { 0 };
+            let input_js: Option<JsNumber> = ctx.try_get::<JsNumber>(2)?.into();
+            let input: u32 = if let Some(n) = input_js { n.try_into()? } else { 0 };
 
             match dest_str {
                 "AudioParam" => {
@@ -25,7 +25,7 @@ macro_rules! connect_method {
                         .env
                         .unwrap::<$crate::audio_param::NapiAudioParam>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
-                    let _res = native_src.connect_at(native_dest, output, input);
+                    let _res = native_src.connect_at(native_dest, output as usize, input as usize);
 
                     Ok(js_dest)
                 }
@@ -36,7 +36,7 @@ macro_rules! connect_method {
                         &js_dest,
                     )?;
                     let native_dest = napi_dest.unwrap();
-                    let _res = native_src.connect_at(native_dest, output, input);
+                    let _res = native_src.connect_at(native_dest, output as usize, input as usize);
 
                     Ok(js_dest)
                 }
@@ -45,7 +45,7 @@ macro_rules! connect_method {
                         .env
                         .unwrap::<$crate::${d.slug(n)}::${d.napiName(n)}>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
-                    let _res = native_src.connect_at(native_dest, output, input);
+                    let _res = native_src.connect_at(native_dest, output as usize, input as usize);
 
                     Ok(js_dest)
                 }

@@ -38,7 +38,7 @@ impl NapiAudioContext {
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
-    let audio_context = AudioContext::new(None);
+    let audio_context = AudioContext::new(Default::default());
     let napi_audio_context = NapiAudioContext(audio_context);
     ctx.env.wrap(&mut js_this, napi_audio_context)?;
 
@@ -86,7 +86,7 @@ fn decode_audio_data(ctx: CallContext) -> Result<JsObject> {
     let str_path = &uf8_path[..];
 
     let file = File::open(str_path).unwrap();
-    let audio_buffer = context.decode_audio_data(file).unwrap();
+    let audio_buffer = context.decode_audio_data_sync(file).unwrap();
 
     // create js audio buffer instance
     let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();

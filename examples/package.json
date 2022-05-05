@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "tone": "^14.7.77",
     "waves-masters": "^2.3.1"
   }
 }

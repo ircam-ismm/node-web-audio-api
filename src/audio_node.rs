@@ -20,11 +20,11 @@ macro_rules! connect_method {
             let dest_uf8_name = dest_name.into_utf8()?.into_owned()?;
             let dest_str = &dest_uf8_name[..];
 
-            let output: Option<JsNumber> = ctx.try_get::<JsNumber>(1)?.into();
-            let output = if let Some(n) = output { n.try_into()? } else { 0 };
+            let output_js: Option<JsNumber> = ctx.try_get::<JsNumber>(1)?.into();
+            let output: u32 = if let Some(n) = output_js { n.try_into()? } else { 0 };
 
-            let input: Option<JsNumber> = ctx.try_get::<JsNumber>(2)?.into();
-            let input = if let Some(n) = input { n.try_into()? } else { 0 };
+            let input_js: Option<JsNumber> = ctx.try_get::<JsNumber>(2)?.into();
+            let input: u32 = if let Some(n) = input_js { n.try_into()? } else { 0 };
 
             match dest_str {
                 "AudioParam" => {
@@ -32,7 +32,7 @@ macro_rules! connect_method {
                         .env
                         .unwrap::<$crate::audio_param::NapiAudioParam>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
-                    let _res = native_src.connect_at(native_dest, output, input);
+                    let _res = native_src.connect_at(native_dest, output as usize, input as usize);
 
                     Ok(js_dest)
                 }
@@ -43,7 +43,7 @@ macro_rules! connect_method {
                         &js_dest,
                     )?;
                     let native_dest = napi_dest.unwrap();
-                    let _res = native_src.connect_at(native_dest, output, input);
+                    let _res = native_src.connect_at(native_dest, output as usize, input as usize);
 
                     Ok(js_dest)
                 }
@@ -52,7 +52,7 @@ macro_rules! connect_method {
                         .env
                         .unwrap::<$crate::audio_buffer_source_node::NapiAudioBufferSourceNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
-                    let _res = native_src.connect_at(native_dest, output, input);
+                    let _res = native_src.connect_at(native_dest, output as usize, input as usize);
 
                     Ok(js_dest)
                 }
@@ -61,7 +61,7 @@ macro_rules! connect_method {
                         .env
                         .unwrap::<$crate::biquad_filter_node::NapiBiquadFilterNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
-                    let _res = native_src.connect_at(native_dest, output, input);
+                    let _res = native_src.connect_at(native_dest, output as usize, input as usize);
 
                     Ok(js_dest)
                 }
@@ -70,7 +70,7 @@ macro_rules! connect_method {
                         .env
                         .unwrap::<$crate::constant_source_node::NapiConstantSourceNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
-                    let _res = native_src.connect_at(native_dest, output, input);
+                    let _res = native_src.connect_at(native_dest, output as usize, input as usize);
 
                     Ok(js_dest)
                 }
@@ -79,7 +79,7 @@ macro_rules! connect_method {
                         .env
                         .unwrap::<$crate::delay_node::NapiDelayNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
-                    let _res = native_src.connect_at(native_dest, output, input);
+                    let _res = native_src.connect_at(native_dest, output as usize, input as usize);
 
                     Ok(js_dest)
                 }
@@ -88,7 +88,7 @@ macro_rules! connect_method {
                         .env
                         .unwrap::<$crate::gain_node::NapiGainNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
-                    let _res = native_src.connect_at(native_dest, output, input);
+                    let _res = native_src.connect_at(native_dest, output as usize, input as usize);
 
                     Ok(js_dest)
                 }
@@ -97,7 +97,7 @@ macro_rules! connect_method {
                         .env
                         .unwrap::<$crate::oscillator_node::NapiOscillatorNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
-                    let _res = native_src.connect_at(native_dest, output, input);
+                    let _res = native_src.connect_at(native_dest, output as usize, input as usize);
 
                     Ok(js_dest)
                 }
@@ -106,7 +106,7 @@ macro_rules! connect_method {
                         .env
                         .unwrap::<$crate::stereo_panner_node::NapiStereoPannerNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
-                    let _res = native_src.connect_at(native_dest, output, input);
+                    let _res = native_src.connect_at(native_dest, output as usize, input as usize);
 
                     Ok(js_dest)
                 }
@@ -115,7 +115,7 @@ macro_rules! connect_method {
                         .env
                         .unwrap::<$crate::wave_shaper_node::NapiWaveShaperNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
-                    let _res = native_src.connect_at(native_dest, output, input);
+                    let _res = native_src.connect_at(native_dest, output as usize, input as usize);
 
                     Ok(js_dest)
                 }
