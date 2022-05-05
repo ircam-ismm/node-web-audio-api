@@ -11,9 +11,6 @@
     "rust",
     "web audio api"
   ],
-  "files": [
-    "index.js"
-  ],
   "napi": {
     "name": "node-web-audio-api-rs",
     "triples": {
@@ -34,10 +31,6 @@
   },
   "engines": {
     "node": ">= 12"
-  },
-  "publishConfig": {
-    "registry": "https://registry.npmjs.org/",
-    "access": "public"
   },
   "scripts": {
     "artifacts": "napi artifacts",
