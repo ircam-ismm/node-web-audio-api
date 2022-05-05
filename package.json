@@ -44,7 +44,7 @@
     "build": "napi build --platform --release",
     "build:debug": "napi build --platform",
     "generate": "node generator/index.js",
-    "postinstall": "cd node_modules/node-web-audio-api-rs && npm run build",
+    "postinstall": "echo $(pwd)",
     "prepublishOnly": "napi prepublish -t npm",
     "version": "napi version"
   },
