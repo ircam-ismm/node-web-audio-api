@@ -201,7 +201,7 @@ fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsString> {
         ${idl.name}::${d.camelcase(v.value)} => "${v.value}",`).join('')}
     };
 
-    ctx.env.create_string(&js_value)
+    ctx.env.create_string(js_value)
 }
                     `;
                     break;

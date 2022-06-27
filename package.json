@@ -43,6 +43,7 @@
     "artifacts": "napi artifacts",
     "build": "napi build --platform --release",
     "build:debug": "napi build --platform",
+    "check": "cargo fmt && cargo clippy",
     "generate": "node generator/index.js",
     "postinstall": "npm run build",
     "prepublishOnly": "napi prepublish -t npm",

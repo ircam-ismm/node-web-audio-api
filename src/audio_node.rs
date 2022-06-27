@@ -21,10 +21,18 @@ macro_rules! connect_method {
             let dest_str = &dest_uf8_name[..];
 
             let output_js: Option<JsNumber> = ctx.try_get::<JsNumber>(1)?.into();
-            let output: u32 = if let Some(n) = output_js { n.try_into()? } else { 0 };
+            let output: u32 = if let Some(n) = output_js {
+                n.try_into()?
+            } else {
+                0
+            };
 
             let input_js: Option<JsNumber> = ctx.try_get::<JsNumber>(2)?.into();
-            let input: u32 = if let Some(n) = input_js { n.try_into()? } else { 0 };
+            let input: u32 = if let Some(n) = input_js {
+                n.try_into()?
+            } else {
+                0
+            };
 
             match dest_str {
                 "AudioParam" => {
@@ -50,7 +58,9 @@ macro_rules! connect_method {
                 "AudioBufferSourceNode" => {
                     let napi_dest = ctx
                         .env
-                        .unwrap::<$crate::audio_buffer_source_node::NapiAudioBufferSourceNode>(&js_dest)?;
+                        .unwrap::<$crate::audio_buffer_source_node::NapiAudioBufferSourceNode>(
+                        &js_dest,
+                    )?;
                     let native_dest = napi_dest.unwrap();
                     let _res = native_src.connect_at(native_dest, output as usize, input as usize);
 
@@ -119,7 +129,7 @@ macro_rules! connect_method {
 
                     Ok(js_dest)
                 }
-                
+
                 _ => Err(napi::Error::from_reason(
                     "Cannot connect: Invalid destination node".to_string(),
                 )),
@@ -127,5 +137,3 @@ macro_rules! connect_method {
         }
     };
 }
-
-  
