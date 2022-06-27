@@ -93,7 +93,7 @@ jobs:
             target: armv7-unknown-linux-gnueabihf
             setup: |
               sudo apt-get update
-              sudo apt-get install gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf -y
+              sudo apt-get install gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf  pkg-config libasound2-dev -y
             build: |
               yarn build --target=armv7-unknown-linux-gnueabihf
               arm-linux-gnueabihf-strip *.node
