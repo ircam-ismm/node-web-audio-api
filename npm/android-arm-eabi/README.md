@@ -1,3 +1,3 @@
-# `@napi-rs/package-template-android-arm-eabi`
+# `@node-web-audio-api/build-android-arm-eabi`
 
-This is the **armv7-linux-androideabi** binary for `@napi-rs/package-template`
+This is the **armv7-linux-androideabi** binary for `node-web-audio-api`

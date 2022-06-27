@@ -122,4 +122,6 @@ dist
 /target
 Cargo.lock
 
+*.bak
+
 *.node

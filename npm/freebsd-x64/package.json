@@ -1,24 +1,22 @@
 {
-  "name": "@napi-rs/package-template-freebsd-x64",
-  "version": "1.0.0",
+  "name": "@node-web-audio-api/build-freebsd-x64",
+  "version": "0.1.0",
   "os": [
     "freebsd"
   ],
   "cpu": [
     "x64"
   ],
-  "main": "package-template.freebsd-x64.node",
+  "main": "node-web-audio-api.freebsd-x64.node",
   "files": [
-    "package-template.freebsd-x64.node"
+    "node-web-audio-api.freebsd-x64.node"
   ],
-  "description": "Template project for writing node package with napi-rs",
+  "description": "Node.js bindings for web-audio-api-rs using napi-rs",
   "keywords": [
-    "napi-rs",
-    "NAPI",
-    "N-API",
-    "Rust",
-    "node-addon",
-    "node-addon-api"
+    "audio",
+    "n-api",
+    "rust",
+    "web audio api"
   ],
   "license": "MIT",
   "engines": {
@@ -28,5 +26,5 @@
     "registry": "https://registry.npmjs.org/",
     "access": "public"
   },
-  "repository": "git@github.com:napi-rs/package-template.git"
+  "repository": "git@github.com:b-ma/node-web-audio-api-rs.git"
 }

@@ -1,3 +1,3 @@
-# `@napi-rs/package-template-linux-x64-gnu`
+# `@node-web-audio-api/build-linux-x64-gnu`
 
-This is the **x86_64-unknown-linux-gnu** binary for `@napi-rs/package-template`
+This is the **x86_64-unknown-linux-gnu** binary for `node-web-audio-api`
