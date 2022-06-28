@@ -74,9 +74,9 @@ jobs:
             downloadTarget: 'armv7-unknown-linux-gnueabihf'
             setup: |
               sudo apt-get update
-              sudo apt-get install gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf libasound-dev libasound-dev:armhf -y
+              sudo apt-get install gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf libasound-dev -y
             build: |
-              yarn build --target armv7-unknown-linux-gnueabihf
+              PKG_CONFIG_ALLOW_CROSS=1 yarn build --target armv7-unknown-linux-gnueabihf --features "alsa-backend"
               arm-linux-gnueabihf-strip *.node
 
           # These 3 rely on a docker image, check later...
