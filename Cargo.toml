@@ -10,6 +10,7 @@ version = "0.1.0"
 crate-type = ["cdylib"]
 
 [dependencies]
+alsa = { version = "0.2.1", optional = true }
 napi = {version="2", features=["napi6"]}
 napi-derive = "2"
 web-audio-api = "0"
@@ -22,4 +23,7 @@ napi-build = "1"
 
 [profile.release]
 lto = true
+
+[features]
+alsa-backend = ["alsa"]
 
