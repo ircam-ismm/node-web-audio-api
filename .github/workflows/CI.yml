@@ -26,9 +26,8 @@ jobs:
       matrix:
         settings:
           # # ---------------------------------------------------------
-          # # MAC
+          # # MAC (ok)
           # # ---------------------------------------------------------
-          # # All mac OS ok
           # - host: macos-latest
           #   target: x86_64-apple-darwin
           #   architecture: x64
@@ -48,9 +47,8 @@ jobs:
           #     strip -x *.node
 
           # # ---------------------------------------------------------
-          # # WINDOWS
+          # # WINDOWS (ok)
           # # ---------------------------------------------------------
-          # # All windows ok
           # - host: windows-latest
           #   build: yarn build
           #   target: x86_64-pc-windows-msvc
@@ -69,6 +67,18 @@ jobs:
           # # ---------------------------------------------------------
           # # LINUX
           # # ---------------------------------------------------------
+
+          # # ARM7
+          - host: ubuntu-18.04
+            target: 'armv7-unknown-linux-gnueabihf'
+            downloadTarget: 'armv7-unknown-linux-gnueabihf'
+            setup: |
+              sudo apt-get update
+              sudo apt-get install gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf -y
+            build: |
+              yarn build --target armv7-unknown-linux-gnueabihf
+              arm-linux-gnueabihf-strip *.node
+
           # These 3 rely on a docker image, check later...
           # - host: ubuntu-latest
           #   target: x86_64-unknown-linux-gnu
@@ -116,22 +126,22 @@ jobs:
           #     arm-linux-gnueabihf-strip *.node
 
           # # ---------------------------------------------------------
-          # # ANDROID
+          # # ANDROID (ok)
           # # ---------------------------------------------------------
-          - host: ubuntu-latest
-            target: 'aarch64-linux-android'
-            downloadTarget: 'aarch64-linux-android'
-            build: |
-              export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang"
-              export CC="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang"
-              export CXX="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++"
-              export AR="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
-              export PATH="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin:${PATH}"
-              touch /usr/local/lib/android/sdk/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.9/lib/linux/aarch64/libgcc.a
-              chmod 777 /usr/local/lib/android/sdk/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.9/lib/linux/aarch64/libgcc.a
-              echo "INPUT(-lunwind)" > /usr/local/lib/android/sdk/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.9/lib/linux/aarch64/libgcc.a
-              yarn build --target aarch64-linux-android
-              ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip *.node
+          # - host: ubuntu-latest
+          #   target: 'aarch64-linux-android'
+          #   downloadTarget: 'aarch64-linux-android'
+          #   build: |
+          #     export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang"
+          #     export CC="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang"
+          #     export CXX="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++"
+          #     export AR="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
+          #     export PATH="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin:${PATH}"
+          #     touch /usr/local/lib/android/sdk/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.9/lib/linux/aarch64/libgcc.a
+          #     chmod 777 /usr/local/lib/android/sdk/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.9/lib/linux/aarch64/libgcc.a
+          #     echo "INPUT(-lunwind)" > /usr/local/lib/android/sdk/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.9/lib/linux/aarch64/libgcc.a
+          #     yarn build --target aarch64-linux-android
+          #     ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip *.node
 
 
     name: stable - ${{ matrix.settings.target }} - node@16
