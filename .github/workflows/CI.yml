@@ -25,7 +25,10 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          # All mac OS ok
+          # # ---------------------------------------------------------
+          # # MAC
+          # # ---------------------------------------------------------
+          # # All mac OS ok
           # - host: macos-latest
           #   target: x86_64-apple-darwin
           #   architecture: x64
@@ -33,11 +36,21 @@ jobs:
           #     yarn build
           #     strip -x *.node
           # - host: macos-latest
-          #   target: aarch64-apple-darwin
+          #   architecture: x64
+          #   target: 'aarch64-apple-darwin'
           #   build: |
-          #     yarn build --target=aarch64-apple-darwin
+          #     sudo rm -Rf /Library/Developer/CommandLineTools/SDKs/*;
+          #     export CC=$(xcrun -f clang);
+          #     export CXX=$(xcrun -f clang++);
+          #     SYSROOT=$(xcrun --sdk macosx --show-sdk-path);
+          #     export CFLAGS="-isysroot $SYSROOT -isystem $SYSROOT";
+          #     yarn build --target aarch64-apple-darwin
           #     strip -x *.node
-          # All windows ok
+
+          # # ---------------------------------------------------------
+          # # WINDOWS
+          # # ---------------------------------------------------------
+          # # All windows ok
           # - host: windows-latest
           #   build: yarn build
           #   target: x86_64-pc-windows-msvc
@@ -53,6 +66,9 @@ jobs:
           #   target: i686-pc-windows-msvc
           #   architecture: x86
 
+          # # ---------------------------------------------------------
+          # # LINUX
+          # # ---------------------------------------------------------
           # These 3 rely on a docker image, check later...
           # - host: ubuntu-latest
           #   target: x86_64-unknown-linux-gnu
@@ -79,7 +95,7 @@ jobs:
           #   build: |
           #     docker run --rm -v ~/.cargo/git:/root/.cargo/git -v ~/.cargo/registry:/root/.cargo/registry -v $(pwd):/build -w /build builder sh -c "yarn build --target=aarch64-unknown-linux-musl && /aarch64-linux-musl-cross/bin/aarch64-linux-musl-strip *.node"
 
-          # does not work, probably need some docket image (fail pkg-config and alsa stuff is probably not ok neither)
+          # does not work neither, probably need some docker image (fail pkg-config and alsa stuff is probably not ok neither)
           # - host: ubuntu-latest
           #   architecture: x64
           #   target: aarch64-unknown-linux-gnu
@@ -99,7 +115,9 @@ jobs:
           #     yarn build --target=armv7-unknown-linux-gnueabihf
           #     arm-linux-gnueabihf-strip *.node
 
-          # Android targets
+          # # ---------------------------------------------------------
+          # # ANDROID
+          # # ---------------------------------------------------------
           - host: ubuntu-latest
             architecture: x64
             target: aarch64-linux-android
@@ -120,6 +138,7 @@ jobs:
               export PATH="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin:${PATH}"
               yarn build --target armv7-linux-androideabi
               ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/arm-linux-androideabi-strip *.node
+
 
     name: stable - ${{ matrix.settings.target }} - node@16
     runs-on: ${{ matrix.settings.host }}
