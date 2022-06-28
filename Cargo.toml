@@ -22,7 +22,3 @@ napi-build = "1"
 
 [profile.release]
 lto = true
-
-[features]
-alsa-backend = ["alsa"]
-
