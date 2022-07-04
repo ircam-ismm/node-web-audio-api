@@ -2,7 +2,7 @@ use std::rc::Rc;
 use napi::*;
 use napi_derive::js_function;
 use web_audio_api::node::*;
-use web_audio_api::param::*;
+use web_audio_api::AudioParam;
 
 pub(crate) enum ParamGetter {${d.nodes.map(n => { return d.audioParams(n).map(p => { return `
     ${d.name(n)}${d.camelcase(p)}(Rc<${d.name(n)}>),`}).join('') }).join('')}

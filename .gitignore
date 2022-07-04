@@ -125,3 +125,5 @@ Cargo.lock
 *.bak
 
 *.node
+
+*.test.yml

@@ -1,8 +1,14 @@
+[target.arm-unknown-linux-gnueabihf]
+linker = "arm-linux-gnueabihf-gcc"
+rustflags = [
+  "-L",
+  "/usr/lib/arm-linux-gnueabihf",
+  "-L",
+  "/usr/arm-linux-gnueabihf/lib",
+]
+
 [target.aarch64-unknown-linux-gnu]
 linker = "aarch64-linux-gnu-gcc"
-
-[target.armv7-unknown-linux-gnueabihf]
-linker = "arm-linux-gnueabihf-gcc"
 
 [target.x86_64-unknown-linux-musl]
 rustflags = [

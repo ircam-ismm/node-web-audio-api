@@ -5,11 +5,11 @@
 // ---------------------------------------------------------- //
 // ---------------------------------------------------------- //
 
+use std::rc::Rc;
 use napi::*;
 use napi_derive::js_function;
-use std::rc::Rc;
 use web_audio_api::node::*;
-use web_audio_api::param::*;
+use web_audio_api::AudioParam;
 
 pub(crate) enum ParamGetter {
     AudioBufferSourceNodePlaybackRate(Rc<AudioBufferSourceNode>),
@@ -185,3 +185,5 @@ fn cancel_and_hold_at_time(ctx: CallContext) -> Result<JsUndefined> {
 
     ctx.env.get_undefined()
 }
+
+  

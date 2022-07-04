@@ -5,11 +5,11 @@
 // ---------------------------------------------------------- //
 // ---------------------------------------------------------- //
 
-use crate::*;
+use std::rc::Rc;
 use napi::*;
 use napi_derive::js_function;
-use std::rc::Rc;
 use web_audio_api::node::*;
+use crate::*;
 
 pub(crate) struct NapiAudioBufferSourceNode(Rc<AudioBufferSourceNode>);
 
@@ -32,16 +32,17 @@ impl NapiAudioBufferSourceNode {
                 Property::new("loopEnd")?
                     .with_getter(get_loop_end)
                     .with_setter(set_loop_end),
+                
                 // Methods
-
+                
                 // AudioNode interface
                 Property::new("connect")?.with_method(connect),
                 // Property::new("disconnect")?.with_method(disconnect),
-
+                
                 // AudioScheduledSourceNode interface
                 Property::new("start")?.with_method(start),
                 Property::new("stop")?.with_method(stop),
-            ],
+            ]
         )
     }
 
@@ -59,16 +60,10 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let audio_context = napi_audio_context.unwrap();
 
     js_this.set_named_property("context", js_audio_context)?;
-    js_this.set_named_property(
-        "Symbol.toStringTag",
-        ctx.env.create_string("AudioBufferSourceNode")?,
-    )?;
+    js_this.set_named_property("Symbol.toStringTag", ctx.env.create_string("AudioBufferSourceNode")?)?;
 
-    let native_node = Rc::new(AudioBufferSourceNode::new(
-        audio_context,
-        Default::default(),
-    ));
-
+    let native_node = Rc::new(AudioBufferSourceNode::new(audio_context, Default::default()));
+    
     // AudioParam: AudioBufferSourceNode::playbackRate
     let native_clone = native_node.clone();
     let param_getter = ParamGetter::AudioBufferSourceNodePlaybackRate(native_clone);
@@ -76,7 +71,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("playbackRate", &js_obj)?;
-
+        
     // AudioParam: AudioBufferSourceNode::detune
     let native_clone = native_node.clone();
     let param_getter = ParamGetter::AudioBufferSourceNodeDetune(native_clone);
@@ -84,7 +79,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("detune", &js_obj)?;
-
+        
     // finalize instance creation
     let napi_node = NapiAudioBufferSourceNode(native_node);
     ctx.env.wrap(&mut js_this, napi_node)?;
@@ -151,14 +146,12 @@ fn get_buffer(ctx: CallContext) -> Result<JsUnknown> {
     let js_this = ctx.this_unchecked::<JsObject>();
 
     if js_this.has_named_property("__buffer__")? {
-        Ok(js_this
-            .get_named_property::<JsObject>("__buffer__")?
-            .into_unknown())
+        Ok(js_this.get_named_property::<JsObject>("__buffer__")?.into_unknown())
     } else {
         Ok(ctx.env.get_null()?.into_unknown())
     }
 }
-
+                    
 #[js_function(0)]
 fn get_loop(ctx: CallContext) -> Result<JsBoolean> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -168,7 +161,7 @@ fn get_loop(ctx: CallContext) -> Result<JsBoolean> {
     let value = node.loop_();
     ctx.env.get_boolean(value)
 }
-
+            
 #[js_function(0)]
 fn get_loop_start(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -178,7 +171,7 @@ fn get_loop_start(ctx: CallContext) -> Result<JsNumber> {
     let value = node.loop_start();
     ctx.env.create_double(value as f64)
 }
-
+            
 #[js_function(0)]
 fn get_loop_end(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -188,7 +181,7 @@ fn get_loop_end(ctx: CallContext) -> Result<JsNumber> {
     let value = node.loop_end();
     ctx.env.create_double(value as f64)
 }
-
+            
 // -------------------------------------------------
 // SETTERS
 // -------------------------------------------------
@@ -208,7 +201,7 @@ fn set_buffer(ctx: CallContext) -> Result<JsUndefined> {
 
     ctx.env.get_undefined()
 }
-
+                    
 #[js_function(1)]
 fn set_loop(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -220,7 +213,7 @@ fn set_loop(ctx: CallContext) -> Result<JsUndefined> {
 
     ctx.env.get_undefined()
 }
-
+            
 #[js_function(1)]
 fn set_loop_start(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -232,7 +225,7 @@ fn set_loop_start(ctx: CallContext) -> Result<JsUndefined> {
 
     ctx.env.get_undefined()
 }
-
+            
 #[js_function(1)]
 fn set_loop_end(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -244,3 +237,7 @@ fn set_loop_end(ctx: CallContext) -> Result<JsUndefined> {
 
     ctx.env.get_undefined()
 }
+            
+
+
+  

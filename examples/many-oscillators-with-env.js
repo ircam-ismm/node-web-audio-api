@@ -1,6 +1,6 @@
 const { AudioContext } = require('../index.js');
 
-const audioContext = new AudioContext();
+process.audioContext = new AudioContext();
 
 setInterval(() => {
   const now = audioContext.currentTime;

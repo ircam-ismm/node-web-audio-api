@@ -4,7 +4,7 @@ use napi::{
 };
 use napi_derive::js_function;
 
-use web_audio_api::buffer::AudioBuffer;
+use web_audio_api::AudioBuffer;
 
 pub(crate) struct NapiAudioBuffer(Option<AudioBuffer>);
 

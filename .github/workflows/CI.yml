@@ -75,13 +75,13 @@ jobs:
 
           # # ARMv7
           - host: ubuntu-18.04
-            target: 'armv7-unknown-linux-gnueabihf'
+            target: 'arm-unknown-linux-gnueabihf'
             downloadTarget: 'arm-unknown-linux-gnueabihf'
             docker: |
               docker pull dlecan/rust-crosscompiler-arm:stable
               docker tag dlecan/rust-crosscompiler-arm:stable builder
             build: |
-              docker run --rm -v ~/.cargo/git:/root/.cargo/git -v ~/.cargo/registry:/root/.cargo/registry -v $(pwd):/canvas -w /canvas builder sh -c "PKG_CONFIG_ALLOW_CROSS=1 yarn build --target arm-unknown-linux-gnueabihf && arm-linux-gnueabihf-strip *.node skia.linux-x64-gnu.node"
+              docker run --rm -v ~/.cargo/git:/root/.cargo/git -v ~/.cargo/registry:/root/.cargo/registry -v $(pwd):/sources -w /sources builder sh -c "yarn build --target arm-unknown-linux-gnueabihf && arm-linux-gnueabihf-strip *.node"
 
           # # ARMv8 64
           # - host: ubuntu-18.04
