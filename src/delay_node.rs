@@ -5,11 +5,11 @@
 // ---------------------------------------------------------- //
 // ---------------------------------------------------------- //
 
-use std::rc::Rc;
+use crate::*;
 use napi::*;
 use napi_derive::js_function;
+use std::rc::Rc;
 use web_audio_api::node::*;
-use crate::*;
 
 pub(crate) struct NapiDelayNode(Rc<DelayNode>);
 
@@ -20,14 +20,13 @@ impl NapiDelayNode {
             constructor,
             &[
                 // Attributes
-                
+
                 // Methods
-                
+
                 // AudioNode interface
                 Property::new("connect")?.with_method(connect),
                 // Property::new("disconnect")?.with_method(disconnect),
-                
-            ]
+            ],
         )
     }
 
@@ -48,7 +47,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     js_this.set_named_property("Symbol.toStringTag", ctx.env.create_string("DelayNode")?)?;
 
     let native_node = Rc::new(DelayNode::new(audio_context, Default::default()));
-    
+
     // AudioParam: DelayNode::delayTime
     let native_clone = native_node.clone();
     let param_getter = ParamGetter::DelayNodeDelayTime(native_clone);
@@ -56,7 +55,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("delayTime", &js_obj)?;
-        
+
     // finalize instance creation
     let napi_node = NapiDelayNode(native_node);
     ctx.env.wrap(&mut js_this, napi_node)?;
@@ -77,7 +76,3 @@ connect_method!(NapiDelayNode);
 // -------------------------------------------------
 // SETTERS
 // -------------------------------------------------
-
-
-
-  
