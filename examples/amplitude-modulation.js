@@ -1,6 +1,7 @@
 const { AudioContext, load } = require('../index.js');
 
-const audioContext = new AudioContext();
+audioContext = new AudioContext();
+process.audioContext = audioContext; // prevent garbage collection
 
 console.log('AM synth');
 
@@ -26,4 +27,4 @@ mod.start();
 carrier.start();
 
 // @fix: nodes gets garbage collected somehow so we log one of them to avoid that
-setInterval(() => { console.log(tremolo); }, 10 * 1000);
+setInterval(() => {}, 10 * 1000);
