@@ -12,7 +12,7 @@ crate-type = ["cdylib"]
 [dependencies]
 napi = {version="2", features=["napi6"]}
 napi-derive = "2"
-web-audio-api = "0.22"
+web-audio-api = "0.23"
 
 [target.'cfg(all(any(windows, unix), target_arch = "x86_64", not(target_env = "musl")))'.dependencies]
 mimalloc = {version = "0.1"}
