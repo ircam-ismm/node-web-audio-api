@@ -13,7 +13,7 @@
     "n-api"
   ],
   "engines": {
-    "node": ">= 16"
+    "node": ">= 14"
   },
   "napi": {
     "name": "node-web-audio-api"
