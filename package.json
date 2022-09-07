@@ -27,7 +27,8 @@
     "build": "napi build --platform --release",
     "build:debug": "napi build --platform",
     "check": "cargo fmt && cargo clippy",
-    "generate": "node generator/index.js"
+    "generate": "node generator/index.js",
+    "preversion": "npm run generate"
   },
   "devDependencies": {
     "chalk": "^5.0.1",
