@@ -8,13 +8,6 @@ const scheduler = new Scheduler(() => audioContext.currentTime);
 const file = load(path.join(__dirname, 'sample.wav'));
 const buffer = audioContext.decodeAudioData(file);
 
-console.log(buffer.getChannelData(0));
-
-// const src = audioContext.createBufferSource();
-// src.buffer = buffer;
-// console.log(buffer, src.buffer, buffer === src.buffer);
-// console.log(src);
-
 const period = 0.05;
 const grainDuration = 0.2;
 let incr = period / 2;

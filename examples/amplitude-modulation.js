@@ -1,9 +1,8 @@
 const { AudioContext, load } = require('../index.js');
 
-audioContext = new AudioContext();
-process.audioContext = audioContext; // prevent garbage collection
-
 console.log('AM synth');
+
+audioContext = new AudioContext();
 
 const tremolo = audioContext.createGain(); // the gain that will be modulated [0, 1]
 tremolo.connect(audioContext.destination);

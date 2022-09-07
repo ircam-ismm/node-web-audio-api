@@ -130,3 +130,5 @@ Cargo.lock
 *.test.yml
 
 *.env
+
+src-manual

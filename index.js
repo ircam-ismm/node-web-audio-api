@@ -1,196 +1,94 @@
 const { existsSync, readFileSync } = require('fs');
 const { join } = require('path');
+const { patchAudioContext } = require('./monkey-patch.js');
 
 const { platform, arch } = process;
 
 let nativeBinding = null;
-let localFileExisted = false;
-let isMusl = false;
 let loadError = null;
 
 switch (platform) {
-  case 'android':
-    if (arch !== 'arm64') {
-      throw new Error(`Unsupported architecture on Android ${arch}`)
-    }
-    localFileExisted = existsSync(join(__dirname, 'node-web-audio-api.android-arm64.node'))
-    try {
-      if (localFileExisted) {
-        nativeBinding = require('./node-web-audio-api.android-arm64.node')
-      } else {
-        nativeBinding = require('@node-web-audio-api/build-android-arm64')
-      }
-    } catch (e) {
-      loadError = e
-    }
-    break
   case 'win32':
     switch (arch) {
       case 'x64':
-        localFileExisted = existsSync(join(__dirname, 'node-web-audio-api.win32-x64-msvc.node'))
         try {
-          if (localFileExisted) {
-            nativeBinding = require('./node-web-audio-api.win32-x64-msvc.node')
-          } else {
-            nativeBinding = require('@node-web-audio-api/build-win32-x64-msvc')
-          }
-        } catch (e) {
-          loadError = e
-        }
-        break
-      case 'ia32':
-        localFileExisted = existsSync(join(__dirname, 'node-web-audio-api.win32-ia32-msvc.node'))
-        try {
-          if (localFileExisted) {
-            nativeBinding = require('./node-web-audio-api.win32-ia32-msvc.node')
-          } else {
-            nativeBinding = require('@node-web-audio-api/build-win32-ia32-msvc')
-          }
+          nativeBinding = require('./node-web-audio-api.win32-x64-msvc.node');
         } catch (e) {
           loadError = e
         }
         break
       case 'arm64':
-        localFileExisted = existsSync(join(__dirname, 'node-web-audio-api.win32-arm64-msvc.node'))
         try {
-          if (localFileExisted) {
-            nativeBinding = require('./node-web-audio-api.win32-arm64-msvc.node')
-          } else {
-            nativeBinding = require('@node-web-audio-api/build-win32-arm64-msvc')
-          }
+          nativeBinding = require('./node-web-audio-api.win32-arm64-msvc.node');
         } catch (e) {
           loadError = e
         }
         break
       default:
-        throw new Error(`Unsupported architecture on Windows: ${arch}`)
+        throw new Error(`Unsupported architecture on Windows: ${arch}`);
     }
     break
   case 'darwin':
     switch (arch) {
       case 'x64':
-        localFileExisted = existsSync(join(__dirname, 'node-web-audio-api.darwin-x64.node'))
         try {
-          if (localFileExisted) {
-            nativeBinding = require('./node-web-audio-api.darwin-x64.node')
-          } else {
-            nativeBinding = require('@node-web-audio-api/build-darwin-x64')
-          }
+          nativeBinding = require('./node-web-audio-api.darwin-x64.node');
         } catch (e) {
           loadError = e
         }
         break
       case 'arm64':
-        localFileExisted = existsSync(join(__dirname, 'node-web-audio-api.darwin-arm64.node'))
         try {
-          if (localFileExisted) {
-            nativeBinding = require('./node-web-audio-api.darwin-arm64.node')
-          } else {
-            nativeBinding = require('@node-web-audio-api/build-darwin-arm64')
-          }
+          nativeBinding = require('./node-web-audio-api.darwin-arm64.node');
         } catch (e) {
           loadError = e
         }
         break
       default:
-        throw new Error(`Unsupported architecture on macOS: ${arch}`)
-    }
-    break
-  case 'freebsd':
-    if (arch !== 'x64') {
-      throw new Error(`Unsupported architecture on FreeBSD: ${arch}`)
-    }
-    localFileExisted = existsSync(join(__dirname, 'node-web-audio-api.freebsd-x64.node'))
-    try {
-      if (localFileExisted) {
-        nativeBinding = require('./node-web-audio-api.freebsd-x64.node')
-      } else {
-        nativeBinding = require('@node-web-audio-api/build-freebsd-x64')
-      }
-    } catch (e) {
-      loadError = e
+        throw new Error(`Unsupported architecture on macOS: ${arch}`);
     }
     break
   case 'linux':
     switch (arch) {
       case 'x64':
-        isMusl = readFileSync('/usr/bin/ldd', 'utf8').includes('musl')
-        if (isMusl) {
-          localFileExisted = existsSync(join(__dirname, 'node-web-audio-api.linux-x64-musl.node'))
-          try {
-            if (localFileExisted) {
-              nativeBinding = require('./node-web-audio-api.linux-x64-musl.node')
-            } else {
-              nativeBinding = require('@node-web-audio-api/build-linux-x64-musl')
-            }
-          } catch (e) {
-            loadError = e
-          }
-        } else {
-          localFileExisted = existsSync(join(__dirname, 'node-web-audio-api.linux-x64-gnu.node'))
-          try {
-            if (localFileExisted) {
-              nativeBinding = require('./node-web-audio-api.linux-x64-gnu.node')
-            } else {
-              nativeBinding = require('@node-web-audio-api/build-linux-x64-gnu')
-            }
-          } catch (e) {
-            loadError = e
-          }
+        try {
+          nativeBinding = require('./node-web-audio-api.linux-x64-gnu.node');
+        } catch (e) {
+          loadError = e
         }
         break
       case 'arm64':
-        isMusl = readFileSync('/usr/bin/ldd', 'utf8').includes('musl')
-        if (isMusl) {
-          localFileExisted = existsSync(join(__dirname, 'node-web-audio-api.linux-arm64-musl.node'))
-          try {
-            if (localFileExisted) {
-              nativeBinding = require('./node-web-audio-api.linux-arm64-musl.node')
-            } else {
-              nativeBinding = require('@node-web-audio-api/build-linux-arm64-musl')
-            }
-          } catch (e) {
-            loadError = e
-          }
-        } else {
-          localFileExisted = existsSync(join(__dirname, 'node-web-audio-api.linux-arm64-gnu.node'))
-          try {
-            if (localFileExisted) {
-              nativeBinding = require('./node-web-audio-api.linux-arm64-gnu.node')
-            } else {
-              nativeBinding = require('@node-web-audio-api/build-linux-arm64-gnu')
-            }
-          } catch (e) {
-            loadError = e
-          }
+        try {
+          nativeBinding = require('./node-web-audio-api.linux-arm64-gnu.node');
+        } catch (e) {
+          loadError = e
         }
         break
       case 'arm':
-        localFileExisted = existsSync(join(__dirname, 'node-web-audio-api.linux-arm-gnueabihf.node'))
         try {
-          if (localFileExisted) {
-            nativeBinding = require('./node-web-audio-api.linux-arm-gnueabihf.node')
-          } else {
-            nativeBinding = require('@node-web-audio-api/build-linux-arm-gnueabihf')
-          }
+          nativeBinding = require('./node-web-audio-api.linux-arm-gnueabihf.node');
         } catch (e) {
           loadError = e
         }
         break
       default:
-        throw new Error(`Unsupported architecture on Linux: ${arch}`)
+        throw new Error(`Unsupported architecture on Linux: ${arch}`);
     }
     break
   default:
-    throw new Error(`Unsupported OS: ${platform}, architecture: ${arch}`)
+    throw new Error(`Unsupported OS: ${platform}, architecture: ${arch}`);
 }
 
 if (!nativeBinding) {
   if (loadError) {
-    throw loadError
+    throw loadError;
   }
-  throw new Error(`Failed to load native binding`)
+
+  throw new Error(`Failed to load native binding for OS: ${platform}, architecture: ${arch}`);
 }
 
-module.exports = nativeBinding
+nativeBinding.AudioContext = patchAudioContext(nativeBinding.AudioContext);
+console.log(nativeBinding.AudioContext.constructor);
+
+module.exports = nativeBinding;
 

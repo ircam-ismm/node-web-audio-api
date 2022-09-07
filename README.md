@@ -2,6 +2,11 @@
 
 > Nodejs bindings for [`orottier/web-audio-api-rs`](https://github.com/orottier/web-audio-api-rs/) using [`napi-rs`](https://github.com/napi-rs/napi-rs/)
 
+## Install
+
+```
+npm install [--save] node-web-audio-api
+```
 
 ## Install
 
