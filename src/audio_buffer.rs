@@ -1,6 +1,6 @@
 use napi::{
-    CallContext, Either, Env, JsBoolean, JsFunction, JsTypedArray, JsNumber, JsObject, JsUndefined, Property,
-    Result, TypedArrayType,
+    CallContext, Either, Env, JsBoolean, JsFunction, JsNumber, JsObject, JsTypedArray, JsUndefined,
+    Property, Result, TypedArrayType,
 };
 
 use napi_derive::js_function;
@@ -10,9 +10,7 @@ use web_audio_api::AudioBuffer;
 // helper convert [f32] to [u8]
 // https://users.rust-lang.org/t/vec-f32-to-u8/21522/7
 fn to_byte_slice<'a>(floats: &'a [f32]) -> &'a [u8] {
-    unsafe {
-        std::slice::from_raw_parts(floats.as_ptr() as *const _, floats.len() * 4)
-    }
+    unsafe { std::slice::from_raw_parts(floats.as_ptr() as *const _, floats.len() * 4) }
 }
 
 pub(crate) struct NapiAudioBuffer(Option<AudioBuffer>);
@@ -27,7 +25,6 @@ impl NapiAudioBuffer {
                 Property::new("duration")?.with_getter(duration),
                 Property::new("length")?.with_getter(length),
                 Property::new("numberOfChannels")?.with_getter(number_of_channels),
-
                 Property::new("getChannelData")?.with_method(get_channel_data),
             ],
         )
@@ -119,7 +116,11 @@ fn get_channel_data(ctx: CallContext) -> Result<JsTypedArray> {
     // convert channel [f32] to [u8]
     let data = to_byte_slice(channel_data);
     // create array buffer and cast it into Float32Array
-    ctx.env.create_arraybuffer_with_data(data.to_vec()).and_then(|array_buffer| {
-        array_buffer.into_raw().into_typedarray(TypedArrayType::Float32, length, 0)
-    })
+    ctx.env
+        .create_arraybuffer_with_data(data.to_vec())
+        .and_then(|array_buffer| {
+            array_buffer
+                .into_raw()
+                .into_typedarray(TypedArrayType::Float32, length, 0)
+        })
 }

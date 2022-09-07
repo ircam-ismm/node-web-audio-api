@@ -45,11 +45,56 @@ impl NapiAudioContext {
     }
 }
 
-#[js_function]
+#[js_function(1)]
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
-    let audio_context = AudioContext::new(Default::default());
+    // parse AudioContext options
+    let options_js: Option<JsObject> = ctx.try_get::<JsObject>(0)?.into();
+    let audio_context_options = if let Some(options) = options_js {
+        // LatencyHint
+        let latency_hint = if let Some(latency_hint_js) =
+            options.get::<&str, Either<JsString, JsNumber>>("latencyHint")?
+        {
+            match latency_hint_js {
+                Either::A(js_string) => {
+                    let uf8_category = js_string.into_utf8()?.into_owned()?;
+                    let category = &uf8_category[..];
+
+                    match category {
+                        "interactive" => AudioContextLatencyCategory::Interactive,
+                        "balanced" => AudioContextLatencyCategory::Balanced,
+                        "playback" => AudioContextLatencyCategory::Playback,
+                        _ => AudioContextLatencyCategory::Interactive, // default
+                    }
+                }
+                Either::B(js_number) => {
+                    let latency = js_number.get_double()? as f64;
+                    AudioContextLatencyCategory::Custom(latency)
+                }
+            }
+        } else {
+            AudioContextLatencyCategory::Interactive
+        };
+
+        // SampleRate
+        let sample_rate =
+            if let Some(sample_rate_js) = options.get::<&str, JsNumber>("sampleRate")? {
+                let sample_rate = sample_rate_js.get_double()? as f32;
+                Some(sample_rate)
+            } else {
+                None
+            };
+
+        AudioContextOptions {
+            latency_hint,
+            sample_rate,
+        }
+    } else {
+        AudioContextOptions::default()
+    };
+
+    let audio_context = AudioContext::new(audio_context_options);
     let napi_audio_context = NapiAudioContext(audio_context);
     ctx.env.wrap(&mut js_this, napi_audio_context)?;
 
