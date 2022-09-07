@@ -88,7 +88,6 @@ if (!nativeBinding) {
 }
 
 nativeBinding.AudioContext = patchAudioContext(nativeBinding.AudioContext);
-console.log(nativeBinding.AudioContext.constructor);
 
 module.exports = nativeBinding;
 

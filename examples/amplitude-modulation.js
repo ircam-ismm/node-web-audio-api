@@ -24,6 +24,3 @@ carrier.connect(tremolo);
 
 mod.start();
 carrier.start();
-
-// @fix: nodes gets garbage collected somehow so we log one of them to avoid that
-setInterval(() => {}, 10 * 1000);
