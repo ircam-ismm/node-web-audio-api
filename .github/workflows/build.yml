@@ -4,7 +4,6 @@ env:
   APP_NAME: node-web-audio-api
   MACOSX_DEPLOYMENT_TARGET: '10.13'
 on:
-  on:
   create:
     tags:
       - v*
