@@ -1,4 +1,4 @@
-# `node-web-audio-api-rs`
+# `node-web-audio-api`
 
 > Nodejs bindings for [`orottier/web-audio-api-rs`](https://github.com/orottier/web-audio-api-rs/) using [`napi-rs`](https://github.com/napi-rs/napi-rs/)
 
@@ -6,34 +6,6 @@
 
 ```
 npm install [--save] node-web-audio-api
-```
-
-## Install
-
-For now the package is not yet released on npm so you will need to install the rust
-toolchain and install and build the package from github.
-
-1. Install rust toolchain
-
-```
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
-
-2. Install from github
-
-```
-npm install --save git+https://github.com/b-ma/node-web-audio-api-rs.git
-```
-
-Note that tha package will be built on your machine, so the install process might be a bit long
-
-### @todo
-
-In the future, we will release the package on the npm with prebuilt binaries so we 
-should be able to simply:
-
-```
-npm install node-web-audio-api-rs
 ```
 
 ## Example
@@ -61,6 +33,26 @@ setInterval(() => {
 }, 50);
 ```
 
+
+
+## Build manually
+
+If prebuilt binaries are not shippped for your platform, you will need to install 
+the rust toolchain and install and build the package from github.
+
+1. Install rust toolchain
+
+```
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+2. Install from github
+
+```
+npm install --save git+https://github.com/b-ma/node-web-audio-api.git
+```
+
+Note that the package will be built on your machine, so the install process might be a bit long
 
 ## Roadmap
 
