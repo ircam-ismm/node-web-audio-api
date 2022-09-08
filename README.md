@@ -49,7 +49,7 @@ On Raspberry Pi, the default render quantum size (128) is too small and underrun
 occurs frequently. To prevent that you should provide a latency hint when building
 an audio context:
 
-```
+```js
 const audioContext = new AudioContext({ latencyHint: 'playback' });
 ```
 
