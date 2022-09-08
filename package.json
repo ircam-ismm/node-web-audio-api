@@ -1,6 +1,6 @@
 {
   "name": "node-web-audio-api",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "author": "Benjamin Matuszewski",
   "description": "Node.js bindings for web-audio-api-rs using napi-rs",
   "main": "index.js",
