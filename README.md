@@ -74,13 +74,13 @@ If prebuilt binaries are not shippped for your platform, you will need to:
 
 1. Install rust toolchain
 
-```
+```sh
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
 2. Install and build from github
 
-```
+```sh
 npm install --save git+https://github.com/b-ma/node-web-audio-api.git
 cd node_modules/node-web-audio-api
 npm run build
