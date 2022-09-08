@@ -24,19 +24,23 @@
   },
   "scripts": {
     "artifacts": "napi artifacts",
-    "build": "napi build --platform --release",
-    "build:debug": "napi build --platform",
+    "build": "npm run generate && napi build --platform --release",
+    "build:debug": "npm run generate && napi build --platform",
     "check": "cargo fmt && cargo clippy",
-    "generate": "node generator/index.js",
+    "generate": "node generator/index.mjs && cargo fmt",
     "preversion": "npm run generate"
   },
   "devDependencies": {
+    "@sindresorhus/slugify": "^2.1.0",
     "chalk": "^5.0.1",
+    "camelcase": "^6.3.0",
     "dotenv": "^16.0.2",
     "node-ssh": "^13.0.0",
     "octokit": "^2.0.7",
     "ping": "^0.4.2",
-    "waves-masters": "^2.3.1"
+    "template-literal": "^1.0.4",
+    "waves-masters": "^2.3.1",
+    "webidl2": "^24.2.0"
   },
   "dependencies": {
     "@napi-rs/cli": "^2.10.0",

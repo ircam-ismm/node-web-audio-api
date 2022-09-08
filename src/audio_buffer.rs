@@ -1,11 +1,11 @@
 use napi::{
-    CallContext, Either, Env, JsBoolean, JsFunction, JsNumber, JsObject, JsTypedArray, JsUndefined,
-    Property, Result, TypedArrayType,
+    CallContext, Env, JsFunction, JsNumber, JsObject, JsTypedArray, JsUndefined, Property, Result,
+    TypedArrayType,
 };
 
 use napi_derive::js_function;
 
-use web_audio_api::AudioBuffer;
+use web_audio_api::{AudioBuffer, AudioBufferOptions};
 
 // helper convert [f32] to [u8]
 // https://users.rust-lang.org/t/vec-f32-to-u8/21522/7
@@ -26,6 +26,7 @@ impl NapiAudioBuffer {
                 Property::new("length")?.with_getter(length),
                 Property::new("numberOfChannels")?.with_getter(number_of_channels),
                 Property::new("getChannelData")?.with_method(get_channel_data),
+                Property::new("copyToChannel")?.with_method(copy_to_channel),
             ],
         )
     }
@@ -38,27 +39,56 @@ impl NapiAudioBuffer {
         }
     }
 
+    pub fn unwrap_mut(&mut self) -> &mut AudioBuffer {
+        if self.0.is_none() {
+            panic!("AudioBuffer - invalid unwrap call, inner AudioBuffer not yet set");
+        } else {
+            self.0.as_mut().unwrap()
+        }
+    }
+
     pub fn populate(&mut self, audio_buffer: AudioBuffer) {
         self.0 = Some(audio_buffer);
     }
 }
 
+// dictionary AudioBufferOptions {
+//   unsigned long numberOfChannels = 1;
+//   required unsigned long length;
+//   required float sampleRate;
+// };
 #[js_function(1)]
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
-    // A should be an object, but it does not compile anymore for some reason...
-    // let arg = ctx.get::<Either<JsObject, JsBoolean>>(0)?;
-    let arg = ctx.get::<Either<JsNumber, JsBoolean>>(0)?;
+    let options = ctx.get::<JsObject>(0)?;
 
-    match arg {
-        Either::A(_obj) => {
-            todo!();
-        }
-        // private constructor for decode_audio_data
-        Either::B(_bool) => {
-            let napi_node = NapiAudioBuffer(None);
-            ctx.env.wrap(&mut js_this, napi_node)?;
-        }
+    if options.has_own_property("__decode_audio_data_caller__")? {
+        let napi_node = NapiAudioBuffer(None);
+        ctx.env.wrap(&mut js_this, napi_node)?;
+    } else {
+        let number_of_channels = match options.get::<&str, JsNumber>("numberOfChannels") {
+            Ok(some_number_of_channels) => some_number_of_channels.unwrap().get_double()? as usize,
+            Err(_) => 1,
+        };
+
+        let length = match options.get::<&str, JsNumber>("length") {
+            Ok(some_length) => some_length.unwrap().get_double()? as usize,
+            Err(_) => panic!("length is required"),
+        };
+
+        let sample_rate = match options.get::<&str, JsNumber>("sampleRate") {
+            Ok(some_length) => some_length.unwrap().get_double()? as f32,
+            Err(_) => panic!("sampleRate is required"),
+        };
+
+        let audio_buffer = AudioBuffer::new(AudioBufferOptions {
+            number_of_channels,
+            length,
+            sample_rate,
+        });
+
+        let napi_node = NapiAudioBuffer(Some(audio_buffer));
+        ctx.env.wrap(&mut js_this, napi_node)?;
     }
 
     ctx.env.get_undefined()
@@ -123,4 +153,30 @@ fn get_channel_data(ctx: CallContext) -> Result<JsTypedArray> {
                 .into_raw()
                 .into_typedarray(TypedArrayType::Float32, length, 0)
         })
+}
+
+// let mut buffer = ctx.get::<JsTypedArray>(0)?.into_value()?;
+// let buffer_mut_ref: &mut [u16] = buffer.as_mut();
+// buffer_mut_ref[0] = 65535;
+
+#[js_function(3)]
+fn copy_to_channel(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioBuffer>(&js_this)?;
+    let obj = napi_obj.unwrap_mut();
+
+    let source_js = ctx.get::<JsTypedArray>(0)?.into_value()?;
+    let source: &[f32] = source_js.as_ref();
+
+    let channel_number = ctx.get::<JsNumber>(1)?.get_double()? as usize;
+
+    let some_offset_js: Option<JsNumber> = ctx.try_get::<JsNumber>(2)?.into();
+    if let Some(offset_js) = some_offset_js {
+        let offset = offset_js.get_double()? as usize;
+        obj.copy_to_channel_with_offset(source, channel_number, offset);
+    } else {
+        obj.copy_to_channel(source, channel_number);
+    }
+
+    ctx.env.get_undefined()
 }

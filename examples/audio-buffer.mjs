@@ -1,19 +1,21 @@
 import webaudioapi from '../index.js';
-const { AudioContext } = webaudioapi;
+const { AudioContext, AudioBuffer } = webaudioapi;
 
 const context = new AudioContext();
 
 // create a 1 second buffer filled with a sine at 200Hz
 console.log("> Play sine at 200Hz created manually in an AudioBuffer");
 
+const numberOfChannels = 1;
 const length = context.sampleRate;
 const sample_rate = context.sampleRate;
-const buffer = context.createBuffer(1, length, sample_rate);
-const sine = new Float32Array();
+const buffer = context.createBuffer(numberOfChannels, length, sample_rate);
+// const buffer = new AudioBuffer({ numberOfChannels, length, sample_rate });
+const sine = new Float32Array(length);
 
 for (let i = 0; i < length; i++) {
-    let phase = i / length * 2. * Math.PI * 200.;
-    sine.push(Math.sin(phase));
+  let phase = i / length * 2. * Math.PI * 200.;
+  sine[i] = Math.sin(phase);
 }
 
 buffer.copyToChannel(sine, 0);
@@ -26,7 +28,7 @@ src.connect(context.destination);
 src.start(context.currentTime);
 src.stop(context.currentTime + 3.);
 
-await new Promise(resolve => setTimeout(resolve, 3 * 1000));
+await new Promise(resolve => setTimeout(resolve, 3.5 * 1000));
 
 // play a sine at 200Hz
 console.log("> Play sine at 200Hz from an OscillatorNode");

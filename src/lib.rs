@@ -77,47 +77,46 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     store.set_named_property("AudioDestinationNode", napi_class)?;
 
     // export audio nodes (generated)
-    
+
     let napi_class = NapiAudioBufferSourceNode::create_js_class(&env)?;
     exports.set_named_property("AudioBufferSourceNode", napi_class)?;
     let napi_class = NapiAudioBufferSourceNode::create_js_class(&env)?;
     store.set_named_property("AudioBufferSourceNode", napi_class)?;
-    
+
     let napi_class = NapiBiquadFilterNode::create_js_class(&env)?;
     exports.set_named_property("BiquadFilterNode", napi_class)?;
     let napi_class = NapiBiquadFilterNode::create_js_class(&env)?;
     store.set_named_property("BiquadFilterNode", napi_class)?;
-    
+
     let napi_class = NapiConstantSourceNode::create_js_class(&env)?;
     exports.set_named_property("ConstantSourceNode", napi_class)?;
     let napi_class = NapiConstantSourceNode::create_js_class(&env)?;
     store.set_named_property("ConstantSourceNode", napi_class)?;
-    
+
     let napi_class = NapiDelayNode::create_js_class(&env)?;
     exports.set_named_property("DelayNode", napi_class)?;
     let napi_class = NapiDelayNode::create_js_class(&env)?;
     store.set_named_property("DelayNode", napi_class)?;
-    
+
     let napi_class = NapiGainNode::create_js_class(&env)?;
     exports.set_named_property("GainNode", napi_class)?;
     let napi_class = NapiGainNode::create_js_class(&env)?;
     store.set_named_property("GainNode", napi_class)?;
-    
+
     let napi_class = NapiOscillatorNode::create_js_class(&env)?;
     exports.set_named_property("OscillatorNode", napi_class)?;
     let napi_class = NapiOscillatorNode::create_js_class(&env)?;
     store.set_named_property("OscillatorNode", napi_class)?;
-    
+
     let napi_class = NapiStereoPannerNode::create_js_class(&env)?;
     exports.set_named_property("StereoPannerNode", napi_class)?;
     let napi_class = NapiStereoPannerNode::create_js_class(&env)?;
     store.set_named_property("StereoPannerNode", napi_class)?;
-    
+
     let napi_class = NapiWaveShaperNode::create_js_class(&env)?;
     exports.set_named_property("WaveShaperNode", napi_class)?;
     let napi_class = NapiWaveShaperNode::create_js_class(&env)?;
     store.set_named_property("WaveShaperNode", napi_class)?;
-    
 
     // utils
     exports.create_named_method("load", load)?;
@@ -131,5 +130,3 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
 
     Ok(())
 }
-
-  

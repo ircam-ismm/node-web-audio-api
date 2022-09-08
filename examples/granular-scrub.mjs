@@ -17,8 +17,8 @@ let position = 0;
 const engine = {
   advanceTime(currentTime) {
     if (
-      position + incr > buffer.duration - 2 * grainDuration ||
-      position + incr < 0
+      position + incr > buffer.duration - 2 * grainDuration
+      || position + incr < 0
     ) {
       incr *= -1;
     }

@@ -16,6 +16,7 @@ impl NapiAudioContext {
                 Property::new("currentTime")?.with_getter(current_time),
                 Property::new("sampleRate")?.with_getter(sample_rate),
                 Property::new("decodeAudioData")?.with_method(decode_audio_data),
+                Property::new("createBuffer")?.with_method(create_buffer),
 
                 // ----------------------------------------------------
                 // Factory methods
@@ -137,12 +138,33 @@ fn decode_audio_data(ctx: CallContext) -> Result<JsObject> {
     let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
     let store: JsObject = ctx.env.get_reference_value(store_ref)?;
     let ctor: JsFunction = store.get_named_property("AudioBuffer")?;
-    let init = ctx.env.get_boolean(false)?;
-    let js_audio_buffer = ctor.new_instance(&[init])?;
+    let mut options = ctx.env.create_object()?;
+    options.set("__decode_audio_data_caller__", ctx.env.get_null())?;
+
+    // populate with audio buffer
+    let js_audio_buffer = ctor.new_instance(&[options])?;
     let napi_audio_buffer = ctx.env.unwrap::<NapiAudioBuffer>(&js_audio_buffer)?;
     napi_audio_buffer.populate(audio_buffer);
 
     Ok(js_audio_buffer)
+}
+
+#[js_function(3)]
+fn create_buffer(ctx: CallContext) -> Result<JsObject> {
+    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+    let ctor: JsFunction = store.get_named_property("AudioBuffer")?;
+
+    let number_of_channels = ctx.get::<JsNumber>(0)?;
+    let length = ctx.get::<JsNumber>(1)?;
+    let sample_rate = ctx.get::<JsNumber>(2)?;
+
+    let mut options = ctx.env.create_object()?;
+    options.set("numberOfChannels", number_of_channels)?;
+    options.set("length", length)?;
+    options.set("sampleRate", sample_rate)?;
+
+    ctor.new_instance(&[options])
 }
 
 // ----------------------------------------------------

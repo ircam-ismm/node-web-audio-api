@@ -5,12 +5,11 @@
 // ---------------------------------------------------------- //
 // ---------------------------------------------------------- //
 
-use std::fs::File;
+use crate::*;
 use napi::*;
 use napi_derive::js_function;
+use std::fs::File;
 use web_audio_api::context::*;
-use crate::*;
-
 
 pub(crate) struct NapiAudioContext(AudioContext);
 
@@ -23,11 +22,10 @@ impl NapiAudioContext {
                 Property::new("currentTime")?.with_getter(current_time),
                 Property::new("sampleRate")?.with_getter(sample_rate),
                 Property::new("decodeAudioData")?.with_method(decode_audio_data),
-
+                Property::new("createBuffer")?.with_method(create_buffer),
                 // ----------------------------------------------------
                 // Factory methods
                 // ----------------------------------------------------
-                
                 Property::new("createBufferSource")?.with_method(create_buffer_source),
                 Property::new("createBiquadFilter")?.with_method(create_biquad_filter),
                 Property::new("createConstantSource")?.with_method(create_constant_source),
@@ -148,12 +146,33 @@ fn decode_audio_data(ctx: CallContext) -> Result<JsObject> {
     let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
     let store: JsObject = ctx.env.get_reference_value(store_ref)?;
     let ctor: JsFunction = store.get_named_property("AudioBuffer")?;
-    let init = ctx.env.get_boolean(false)?;
-    let js_audio_buffer = ctor.new_instance(&[init])?;
+    let mut options = ctx.env.create_object()?;
+    options.set("__decode_audio_data_caller__", ctx.env.get_null())?;
+
+    // populate with audio buffer
+    let js_audio_buffer = ctor.new_instance(&[options])?;
     let napi_audio_buffer = ctx.env.unwrap::<NapiAudioBuffer>(&js_audio_buffer)?;
     napi_audio_buffer.populate(audio_buffer);
 
     Ok(js_audio_buffer)
+}
+
+#[js_function(3)]
+fn create_buffer(ctx: CallContext) -> Result<JsObject> {
+    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+    let ctor: JsFunction = store.get_named_property("AudioBuffer")?;
+
+    let number_of_channels = ctx.get::<JsNumber>(0)?;
+    let length = ctx.get::<JsNumber>(1)?;
+    let sample_rate = ctx.get::<JsNumber>(2)?;
+
+    let mut options = ctx.env.create_object()?;
+    options.set("numberOfChannels", number_of_channels)?;
+    options.set("length", length)?;
+    options.set("sampleRate", sample_rate)?;
+
+    ctor.new_instance(&[options])
 }
 
 // ----------------------------------------------------
@@ -170,7 +189,7 @@ fn create_buffer_source(ctx: CallContext) -> Result<JsObject> {
 
     ctor.new_instance(&[js_this])
 }
-    
+
 #[js_function]
 fn create_biquad_filter(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -181,7 +200,7 @@ fn create_biquad_filter(ctx: CallContext) -> Result<JsObject> {
 
     ctor.new_instance(&[js_this])
 }
-    
+
 #[js_function]
 fn create_constant_source(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -192,7 +211,7 @@ fn create_constant_source(ctx: CallContext) -> Result<JsObject> {
 
     ctor.new_instance(&[js_this])
 }
-    
+
 #[js_function]
 fn create_delay(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -203,7 +222,7 @@ fn create_delay(ctx: CallContext) -> Result<JsObject> {
 
     ctor.new_instance(&[js_this])
 }
-    
+
 #[js_function]
 fn create_gain(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -214,7 +233,7 @@ fn create_gain(ctx: CallContext) -> Result<JsObject> {
 
     ctor.new_instance(&[js_this])
 }
-    
+
 #[js_function]
 fn create_oscillator(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -225,7 +244,7 @@ fn create_oscillator(ctx: CallContext) -> Result<JsObject> {
 
     ctor.new_instance(&[js_this])
 }
-    
+
 #[js_function]
 fn create_stereo_panner(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -236,7 +255,7 @@ fn create_stereo_panner(ctx: CallContext) -> Result<JsObject> {
 
     ctor.new_instance(&[js_this])
 }
-    
+
 #[js_function]
 fn create_wave_shaper(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -247,6 +266,3 @@ fn create_wave_shaper(ctx: CallContext) -> Result<JsObject> {
 
     ctor.new_instance(&[js_this])
 }
-    
-
-  
