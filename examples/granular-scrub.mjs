@@ -1,11 +1,12 @@
-const path = require('path');
-const { Scheduler } = require('waves-masters');
-const { AudioContext, load } = require('../index.js');
+import path from 'node:path';
+import { Scheduler } from 'waves-masters';
+import webaudioapi from '../index.js';
+const { AudioContext, load } = webaudioapi;
 
 const audioContext = new AudioContext();
 const scheduler = new Scheduler(() => audioContext.currentTime);
 
-const file = load(path.join(__dirname, 'sample.wav'));
+const file = load(path.join(process.cwd(), 'samples', 'sample.wav'));
 const buffer = audioContext.decodeAudioData(file);
 
 const period = 0.05;

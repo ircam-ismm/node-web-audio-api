@@ -1,6 +1,7 @@
-const { AudioContext } = require('../index.js');
+import webaudioapi from '../index.js';
+const { AudioContext, load } = webaudioapi;
 
-process.audioContext = new AudioContext();
+const audioContext = new AudioContext();
 
 setInterval(() => {
   const now = audioContext.currentTime;

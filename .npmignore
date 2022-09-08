@@ -14,6 +14,7 @@ generator
 src
 src-manual
 target
+samples
 
 *.tgz
 *.bak

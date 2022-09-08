@@ -35,7 +35,8 @@
     "dotenv": "^16.0.2",
     "node-ssh": "^13.0.0",
     "octokit": "^2.0.7",
-    "ping": "^0.4.2"
+    "ping": "^0.4.2",
+    "waves-masters": "^2.3.1"
   },
   "dependencies": {
     "@napi-rs/cli": "^2.10.0",
