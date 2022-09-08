@@ -40,23 +40,35 @@ import wabaudioapi from 'node-web-audio-api';
 const { AudioContext, OscillatorNode, GainNode } = webaudioapi;
 
 const audioContext = new AudioContext();
-
 //...
 ```
 
+### Raspberry Pi
+
+On Raspberry Pi, the default render quantum size (128) is too small and underruns 
+occurs frequently. To prevent that you should provide a latency hint when building
+an audio context:
+
+```
+const audioContext = new AudioContext({ latencyHint: 'playback' });
+```
+
+The 'playback' latency hint, 1024 samples / ~21ms at 48000Hz, has been found 
+a good value.
+
 ## Supported Platforms
 
-|                       | binaries | tested |
-| --------------------- | ------   | ------ |
-| Windows x64           | ✓        |        |
-| Windows arm64         | ✓        |        |
-| macOS x64             | ✓        | ✓      |
-| macOS aarch64         | ✓        |        |
-| Linux x64 gnu         | ✓        |        |
-| Linux arm gnueabihf   | ✓        | ✓      |
+|                            | binaries | tested |
+| ---------------------------| ------   | ------ |
+| Windows x64                | ✓        |        |
+| Windows arm64              | ✓        |        |
+| macOS x64                  | ✓        | ✓      |
+| macOS aarch64              | ✓        |        |
+| Linux x64 gnu              | ✓        |        |
+| Linux arm gnueabihf (RPi)  | ✓        | ✓      |
 
 
-### Build manually
+### Manual Build
 
 If prebuilt binaries are not shippped for your platform, you will need to:
 
