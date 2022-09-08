@@ -11,7 +11,7 @@ npm install [--save] node-web-audio-api
 ## Example
 
 ```js
-import { AudioContext, OscillatorNode, GainNode } from 'node-web-audio-api';
+const { AudioContext, OscillatorNode, GainNode } = require('node-web-audio-api');
 
 const audioContext = new AudioContext();
 
@@ -33,12 +33,32 @@ setInterval(() => {
 }, 50);
 ```
 
+or using with EcmaScript module syntax
+
+```js
+import wabaudioapi from 'node-web-audio-api';
+const { AudioContext, OscillatorNode, GainNode } = webaudioapi;
+
+const audioContext = new AudioContext();
+
+//...
+```
+
+## Supported Platforms
+
+|                       | binaries | tested |
+| --------------------- | ------   | ------ |
+| Windows x64           | ✓        |        |
+| Windows arm64         | ✓        |        |
+| macOS x64             | ✓        | ✓      |
+| macOS aarch64         | ✓        |        |
+| Linux x64 gnu         | ✓        |        |
+| Linux arm gnueabihf   | ✓        | ✓      |
 
 
-## Build manually
+### Build manually
 
-If prebuilt binaries are not shippped for your platform, you will need to install 
-the rust toolchain and install and build the package from github.
+If prebuilt binaries are not shippped for your platform, you will need to:
 
 1. Install rust toolchain
 
@@ -46,21 +66,16 @@ the rust toolchain and install and build the package from github.
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-2. Install from github
+2. Install and build from github
 
 ```
 npm install --save git+https://github.com/b-ma/node-web-audio-api.git
+cd node_modules/node-web-audio-api
+npm run build
 ```
 
-Note that the package will be built on your machine, so the install process might be a bit long
+The package will then be built on your machine, which might take some time
 
-## Roadmap
-
-- Make a few nodes work properly with clean and predictable code
-- Generate bindings from IDL [https://webaudio.github.io/web-audio-api/#idl-index](https://webaudio.github.io/web-audio-api/#idl-index)
-- Publish on `npm` with binaries
-- Implement prototype chain (?)
-- Follow developments of `web-audio-api-rs`
 
 ## License
 

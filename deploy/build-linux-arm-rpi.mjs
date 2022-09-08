@@ -65,6 +65,10 @@ if (res.stdout == '') {
   process.exit(1)
 }
 
+console.log('> pull source on main');
+res = await conn.execCommand(`git pull origin main`, { cwd: rpiCwd });
+logResult(res);
+
 console.log('> reinstall node_modules');
 res = await conn.execCommand(`rm -Rf node_modules`, { cwd: rpiCwd });
 logResult(res);

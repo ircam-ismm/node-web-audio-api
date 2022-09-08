@@ -12,8 +12,10 @@ deploy
 examples
 generator
 src
+src-manual
 target
 
+*.tgz
 *.bak
 
 
