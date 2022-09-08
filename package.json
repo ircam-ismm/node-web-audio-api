@@ -4,7 +4,7 @@
   "author": "Benjamin Matuszewski",
   "description": "Node.js bindings for web-audio-api-rs using napi-rs",
   "main": "index.js",
-  "repository": "git@github.com:b-ma/node-web-audio-api.git",
+  "repository": "https://github.com/ircam-ismm/node-web-audio-api",
   "license": "BSD-3-Clause",
   "keywords": [
     "audio",
