@@ -32,6 +32,8 @@ mod biquad_filter_node;
 use crate::biquad_filter_node::NapiBiquadFilterNode;
 mod gain_node;
 use crate::gain_node::NapiGainNode;
+mod oscillator_node;
+use crate::oscillator_node::NapiOscillatorNode;
 
 // misc
 mod utils;
@@ -82,6 +84,11 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     exports.set_named_property("GainNode", napi_class)?;
     let napi_class = NapiGainNode::create_js_class(&env)?;
     store.set_named_property("GainNode", napi_class)?;
+
+    let napi_class = NapiOscillatorNode::create_js_class(&env)?;
+    exports.set_named_property("OscillatorNode", napi_class)?;
+    let napi_class = NapiOscillatorNode::create_js_class(&env)?;
+    store.set_named_property("OscillatorNode", napi_class)?;
 
     // utils
     exports.create_named_method("load", load)?;

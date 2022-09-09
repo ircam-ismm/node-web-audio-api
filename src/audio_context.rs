@@ -22,8 +22,14 @@ impl NapiAudioContext {
                 Property::new("Symbol.toStringTag")?
                     .with_value(&env.create_string("AudioContext")?)
                     .with_property_attributes(PropertyAttributes::Static),
-                Property::new("currentTime")?.with_getter(current_time),
-                Property::new("sampleRate")?.with_getter(sample_rate),
+                Property::new("currentTime")?.with_getter(get_current_time),
+                Property::new("sampleRate")?.with_getter(get_sample_rate),
+                Property::new("state")?.with_getter(get_state),
+                // for now async methods are sync, from a JS perpspective the
+                // API will nonetheless be the same... (see monkey-patch.js)
+                Property::new("resume")?.with_method(resume),
+                Property::new("suspend")?.with_method(suspend),
+                Property::new("close")?.with_method(close),
                 Property::new("decodeAudioData")?.with_method(decode_audio_data),
                 Property::new("createBuffer")?.with_method(create_buffer),
                 // ----------------------------------------------------
@@ -32,6 +38,7 @@ impl NapiAudioContext {
                 Property::new("createBufferSource")?.with_method(create_buffer_source),
                 Property::new("createBiquadFilter")?.with_method(create_biquad_filter),
                 Property::new("createGain")?.with_method(create_gain),
+                Property::new("createOscillator")?.with_method(create_oscillator),
             ],
         )
     }
@@ -105,7 +112,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 }
 
 #[js_function]
-fn current_time(ctx: CallContext) -> Result<JsNumber> {
+fn get_current_time(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
     let obj = napi_obj.unwrap();
@@ -115,7 +122,7 @@ fn current_time(ctx: CallContext) -> Result<JsNumber> {
 }
 
 #[js_function]
-fn sample_rate(ctx: CallContext) -> Result<JsNumber> {
+fn get_sample_rate(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
     let obj = napi_obj.unwrap();
@@ -124,6 +131,23 @@ fn sample_rate(ctx: CallContext) -> Result<JsNumber> {
     ctx.env.create_double(sample_rate)
 }
 
+#[js_function]
+fn get_state(ctx: CallContext) -> Result<JsString> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
+    let obj = napi_obj.unwrap();
+
+    let state = obj.state();
+    let state_str = match state {
+        AudioContextState::Suspended => "suspended",
+        AudioContextState::Running => "running",
+        AudioContextState::Closed => "closed",
+    };
+
+    ctx.env.create_string(state_str)
+}
+
+// @todo - async version
 #[js_function(1)]
 fn decode_audio_data(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -151,6 +175,42 @@ fn decode_audio_data(ctx: CallContext) -> Result<JsObject> {
     napi_audio_buffer.populate(audio_buffer);
 
     Ok(js_audio_buffer)
+}
+
+// @todo - async version
+#[js_function]
+fn resume(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
+    let obj = napi_obj.unwrap();
+
+    obj.resume_sync();
+
+    ctx.env.get_undefined()
+}
+
+// @todo - async version
+#[js_function]
+fn suspend(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
+    let obj = napi_obj.unwrap();
+
+    obj.suspend_sync();
+
+    ctx.env.get_undefined()
+}
+
+// @todo - async version
+#[js_function]
+fn close(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
+    let obj = napi_obj.unwrap();
+
+    obj.close_sync();
+
+    ctx.env.get_undefined()
 }
 
 #[js_function(3)]
@@ -204,6 +264,17 @@ fn create_gain(ctx: CallContext) -> Result<JsObject> {
     let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
     let store: JsObject = ctx.env.get_reference_value(store_ref)?;
     let ctor: JsFunction = store.get_named_property("GainNode")?;
+
+    ctor.new_instance(&[js_this])
+}
+
+#[js_function]
+fn create_oscillator(ctx: CallContext) -> Result<JsObject> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+
+    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+    let ctor: JsFunction = store.get_named_property("OscillatorNode")?;
 
     ctor.new_instance(&[js_this])
 }

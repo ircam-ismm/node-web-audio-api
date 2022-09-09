@@ -376,11 +376,16 @@ if (method.idlType.idlType !== 'undefined') {
     console.log(`return type ${method.idlType.idlType} for method ${method.name} not parsed`);
     return '';
 }
+
+let doWriteMethodCall = true;
+
 return `
 #[js_function(${method.arguments.length})]
 fn ${d.slug(method)}(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+    // avoid warnings while we don't support all methods
+    #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
     ${method.arguments.map((arg, index) => {
@@ -395,6 +400,7 @@ fn ${d.slug(method)}(ctx: CallContext) -> Result<JsUndefined> {
                 break;
             default:
                 console.log(`argument ${arg.name} for method ${method} with type ${memberType} not parsed`);
+                doWriteMethodCall = false;
                 break;
 
         }
@@ -405,7 +411,10 @@ fn ${d.slug(method)}(ctx: CallContext) -> Result<JsUndefined> {
         // console.log(arg.optionnal);
     }).join('')}
 
-    node.${d.slug(method)}(${method.arguments.map(arg => d.slug(arg.name)).join(', ')});
+    ${doWriteMethodCall ?
+    `node.${d.slug(method)}(${method.arguments.map(arg => d.slug(arg.name)).join(', ')});` :
+    ``
+    }
 
     ctx.env.get_undefined()
 }

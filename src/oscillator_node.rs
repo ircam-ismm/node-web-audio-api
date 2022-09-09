@@ -25,7 +25,9 @@ impl NapiOscillatorNode {
                     .with_setter(set_type)
                     .with_property_attributes(PropertyAttributes::Enumerable),
                 // Methods
-
+                Property::new("setPeriodicWave")?
+                    .with_method(set_periodic_wave)
+                    .with_property_attributes(PropertyAttributes::Enumerable),
                 // AudioNode interface
                 Property::new("connect")?
                     .with_method(connect)
@@ -176,6 +178,21 @@ fn set_type(ctx: CallContext) -> Result<JsUndefined> {
     };
 
     node.set_type(value);
+
+    ctx.env.get_undefined()
+}
+
+// -------------------------------------------------
+// METHODS
+// -------------------------------------------------
+
+#[js_function(1)]
+fn set_periodic_wave(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
+    // avoid cliipy warning while we don't support all methods
+    #[allow(unused_variables)]
+    let node = napi_node.unwrap();
 
     ctx.env.get_undefined()
 }

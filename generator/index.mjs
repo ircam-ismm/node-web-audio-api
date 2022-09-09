@@ -17,7 +17,7 @@ let supportedNodes = [
   // `DelayNode`,
   `GainNode`,
   // `IIRFilterNode`,
-  // `OscillatorNode`,
+  `OscillatorNode`,
   // `PannerNode`,
   // `StereoPannerNode`,
   // `WaveShaperNode`,

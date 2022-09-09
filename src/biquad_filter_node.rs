@@ -169,6 +169,8 @@ fn set_type(ctx: CallContext) -> Result<JsUndefined> {
 fn get_frequency_response(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiBiquadFilterNode>(&js_this)?;
+    // avoid cliipy warning while we don't support all methods
+    #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
     #[allow(clippy::unnecessary_mut_passed)]

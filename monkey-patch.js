@@ -22,28 +22,32 @@ module.exports.patchAudioContext = function(NativeAudioContext) {
       Object.defineProperty(this, '__keepAwakeId', {
         value: keepAwakeId,
         enumerable: false,
-        writable: false,
+        writable: true,
         configurable: false,
       });
     }
 
-    // @todo
-    // resume() {
-    //   this.__keepAwakeId = setInterval(() => {}, 2000);
-    //   return super.resume();
-    // }
+    // promisify sync APIs
+    resume() {
+      clearTimeout(this.__keepAwakeId);
+      this.__keepAwakeId = setInterval(() => {}, 2000);
+      return Promise.resolve(super.resume());
+    }
 
-    // suspend() {
-    //   // not sure to be confirmed
-    //   clearTimeout(this.__keepAwakeId);
-    //   return super.suspend();
-    // }
+    suspend() {
+      return Promise.resolve(super.suspend());
+    }
 
-    // close() {
-    //    delete process[this.__processId];
-    //    clearTimeout(this.__keepAwakeId);
-    //    return super.close();
-    // }
+    close() {
+       delete process[this.__processId];
+       clearTimeout(this.__keepAwakeId);
+       return Promise.resolve(super.close());
+    }
+
+    decodeAudioData(audioData) {
+      const audioBuffer = super.decodeAudioData(audioData);
+      return Promise.resolve(audioBuffer);
+    }
   }
 
   return AudioContext;

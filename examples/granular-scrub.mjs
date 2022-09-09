@@ -7,7 +7,7 @@ const audioContext = new AudioContext();
 const scheduler = new Scheduler(() => audioContext.currentTime);
 
 const file = load(path.join(process.cwd(), 'samples', 'sample.wav'));
-const buffer = audioContext.decodeAudioData(file);
+const buffer = await audioContext.decodeAudioData(file);
 
 const period = 0.05;
 const grainDuration = 0.2;
