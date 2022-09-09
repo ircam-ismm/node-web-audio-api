@@ -68,6 +68,13 @@ const utils = {
     return idl.idlType.idlType;
   },
 
+  constructor(idl) {
+    let ctor = idl.members
+      .filter(member => member.constructor.name === 'Constructor');
+
+    return ctor[0];
+  },
+
   attributes(idl) {
     let attrs = idl.members
       .filter(member => member.constructor.name === 'Attribute')

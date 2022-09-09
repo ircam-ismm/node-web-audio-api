@@ -37,6 +37,8 @@ impl NapiChannelMergerNode {
     }
 }
 
+// undefined
+
 #[js_function(1)]
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
