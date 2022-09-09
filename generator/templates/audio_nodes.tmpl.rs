@@ -234,6 +234,9 @@ fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsUnknown> {
 }
                     `;
                     break;
+                default:
+                    console.log(`[WARNING] getter for ${attr} with type ${attrType}/${idlType} not parsed`);
+                    break;
             }
             break;
         }
@@ -361,6 +364,9 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
                     `;
+                    break;
+                default:
+                    console.log(`[WARNING] getter for ${attr} with type ${attrType}/${idlType} not parsed`);
                     break;
             }
             break;

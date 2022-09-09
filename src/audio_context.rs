@@ -37,6 +37,8 @@ impl NapiAudioContext {
                 // ----------------------------------------------------
                 Property::new("createBufferSource")?.with_method(create_buffer_source),
                 Property::new("createBiquadFilter")?.with_method(create_biquad_filter),
+                Property::new("createChannelMerger")?.with_method(create_channel_merger),
+                Property::new("createConstantSource")?.with_method(create_constant_source),
                 Property::new("createDynamicsCompressor")?.with_method(create_dynamics_compressor),
                 Property::new("createGain")?.with_method(create_gain),
                 Property::new("createOscillator")?.with_method(create_oscillator),
@@ -258,6 +260,28 @@ fn create_biquad_filter(ctx: CallContext) -> Result<JsObject> {
     let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
     let store: JsObject = ctx.env.get_reference_value(store_ref)?;
     let ctor: JsFunction = store.get_named_property("BiquadFilterNode")?;
+
+    ctor.new_instance(&[js_this])
+}
+
+#[js_function]
+fn create_channel_merger(ctx: CallContext) -> Result<JsObject> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+
+    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+    let ctor: JsFunction = store.get_named_property("ChannelMergerNode")?;
+
+    ctor.new_instance(&[js_this])
+}
+
+#[js_function]
+fn create_constant_source(ctx: CallContext) -> Result<JsObject> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+
+    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+    let ctor: JsFunction = store.get_named_property("ConstantSourceNode")?;
 
     ctor.new_instance(&[js_this])
 }

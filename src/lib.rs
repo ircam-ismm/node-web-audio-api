@@ -30,6 +30,10 @@ mod audio_buffer_source_node;
 use crate::audio_buffer_source_node::NapiAudioBufferSourceNode;
 mod biquad_filter_node;
 use crate::biquad_filter_node::NapiBiquadFilterNode;
+mod channel_merger_node;
+use crate::channel_merger_node::NapiChannelMergerNode;
+mod constant_source_node;
+use crate::constant_source_node::NapiConstantSourceNode;
 mod dynamics_compressor_node;
 use crate::dynamics_compressor_node::NapiDynamicsCompressorNode;
 mod gain_node;
@@ -81,6 +85,16 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     exports.set_named_property("BiquadFilterNode", napi_class)?;
     let napi_class = NapiBiquadFilterNode::create_js_class(&env)?;
     store.set_named_property("BiquadFilterNode", napi_class)?;
+
+    let napi_class = NapiChannelMergerNode::create_js_class(&env)?;
+    exports.set_named_property("ChannelMergerNode", napi_class)?;
+    let napi_class = NapiChannelMergerNode::create_js_class(&env)?;
+    store.set_named_property("ChannelMergerNode", napi_class)?;
+
+    let napi_class = NapiConstantSourceNode::create_js_class(&env)?;
+    exports.set_named_property("ConstantSourceNode", napi_class)?;
+    let napi_class = NapiConstantSourceNode::create_js_class(&env)?;
+    store.set_named_property("ConstantSourceNode", napi_class)?;
 
     let napi_class = NapiDynamicsCompressorNode::create_js_class(&env)?;
     exports.set_named_property("DynamicsCompressorNode", napi_class)?;

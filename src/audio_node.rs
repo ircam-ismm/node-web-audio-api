@@ -76,6 +76,24 @@ macro_rules! connect_method {
 
                     Ok(js_dest)
                 }
+                "ChannelMergerNode" => {
+                    let napi_dest = ctx
+                        .env
+                        .unwrap::<$crate::channel_merger_node::NapiChannelMergerNode>(&js_dest)?;
+                    let native_dest = napi_dest.unwrap();
+                    let _res = native_src.connect_at(native_dest, output as usize, input as usize);
+
+                    Ok(js_dest)
+                }
+                "ConstantSourceNode" => {
+                    let napi_dest = ctx
+                        .env
+                        .unwrap::<$crate::constant_source_node::NapiConstantSourceNode>(&js_dest)?;
+                    let native_dest = napi_dest.unwrap();
+                    let _res = native_src.connect_at(native_dest, output as usize, input as usize);
+
+                    Ok(js_dest)
+                }
                 "DynamicsCompressorNode" => {
                     let napi_dest = ctx
                         .env
