@@ -8,11 +8,23 @@ module.exports.patchAudioContext = function(NativeAudioContext) {
       // prevent garbage collection
       const processId = `__AudioContext_${contextId}`;
       process[processId] = this;
-      this.__processId = processId;
+
+      Object.defineProperty(this, '__processId', {
+        value: processId,
+        enumerable: false,
+        writable: false,
+        configurable: false,
+      });
 
       contextId += 1;
       // keep process awake
-      this.__keepAwakeId = setInterval(() => {}, 10000);
+      const keepAwakeId = setInterval(() => {}, 10000);
+      Object.defineProperty(this, '__keepAwakeId', {
+        value: keepAwakeId,
+        enumerable: false,
+        writable: false,
+        configurable: false,
+      });
     }
 
     // @todo

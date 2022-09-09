@@ -71,6 +71,12 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             Err(_) => 1,
         };
 
+        // @todo - JsError
+        // return Err(Error::new(
+        //   Status::ArrayExpected,
+        //   "Object is not array".to_owned(),
+        // ));
+
         let length = match options.get::<&str, JsNumber>("length") {
             Ok(some_length) => some_length.unwrap().get_double()? as usize,
             Err(_) => panic!("length is required"),
@@ -155,10 +161,6 @@ fn get_channel_data(ctx: CallContext) -> Result<JsTypedArray> {
         })
 }
 
-// let mut buffer = ctx.get::<JsTypedArray>(0)?.into_value()?;
-// let buffer_mut_ref: &mut [u16] = buffer.as_mut();
-// buffer_mut_ref[0] = 65535;
-
 #[js_function(3)]
 fn copy_to_channel(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -180,3 +182,10 @@ fn copy_to_channel(ctx: CallContext) -> Result<JsUndefined> {
 
     ctx.env.get_undefined()
 }
+
+// let mut buffer = ctx.get::<JsTypedArray>(0)?.into_value()?;
+// let buffer_mut_ref: &mut [u16] = buffer.as_mut();
+// buffer_mut_ref[0] = 65535;
+//
+// #[js_function(3)]
+// fn copy_from_channel() {}

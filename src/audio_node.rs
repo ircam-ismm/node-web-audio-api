@@ -17,6 +17,7 @@ macro_rules! connect_method {
             // get destination
             let js_dest = ctx.get::<napi::JsObject>(0)?;
             let dest_name = js_dest.get_named_property::<napi::JsString>("Symbol.toStringTag")?;
+
             let dest_uf8_name = dest_name.into_utf8()?.into_owned()?;
             let dest_str = &dest_uf8_name[..];
 

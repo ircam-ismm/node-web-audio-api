@@ -1,4 +1,6 @@
-use napi::{CallContext, Env, JsFunction, JsObject, JsUndefined, Result};
+use napi::{
+    CallContext, Env, JsFunction, JsObject, JsUndefined, Property, PropertyAttributes, Result,
+};
 use napi_derive::js_function;
 
 use web_audio_api::context::BaseAudioContext;
@@ -26,10 +28,15 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
     let audio_context = napi_audio_context.unwrap();
 
-    js_this.set_named_property(
-        "Symbol.toStringTag",
-        ctx.env.create_string("AudioDestinationNode")?,
-    )?;
+    js_this.define_properties(&[
+        Property::new("context")?
+            .with_value(&js_audio_context)
+            .with_property_attributes(PropertyAttributes::Enumerable),
+        // this must be put on the instance and not in the prototype to be reachable
+        Property::new("Symbol.toStringTag")?
+            .with_value(&ctx.env.create_string("AudioDestinationNode")?)
+            .with_property_attributes(PropertyAttributes::Static),
+    ])?;
 
     let native_node = audio_context.destination();
     let napi_node = NapiAudioDestinationNode(native_node);

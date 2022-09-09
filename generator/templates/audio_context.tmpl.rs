@@ -13,6 +13,10 @@ impl NapiAudioContext {
             "AudioContext",
             constructor,
             &[
+                Property::new("Symbol.toStringTag")?
+                    .with_value(&env.create_string("AudioContext")?)
+                    .with_property_attributes(PropertyAttributes::Static),
+
                 Property::new("currentTime")?.with_getter(current_time),
                 Property::new("sampleRate")?.with_getter(sample_rate),
                 Property::new("decodeAudioData")?.with_method(decode_audio_data),
@@ -87,8 +91,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let audio_context = AudioContext::new(audio_context_options);
     let napi_audio_context = NapiAudioContext(audio_context);
     ctx.env.wrap(&mut js_this, napi_audio_context)?;
-
-    js_this.set_named_property("Symbol.toStringTag", ctx.env.create_string("AudioContext")?)?;
 
     // Audio Destination
     let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();

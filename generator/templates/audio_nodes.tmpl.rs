@@ -15,22 +15,30 @@ impl ${d.napiName(d.node)} {
                 // Attributes
                 ${d.attributes(d.node).map(attr => `Property::new("${attr.name}")?
                     .with_getter(get_${d.slug(attr)})${attr.readonly === false ? `
-                    .with_setter(set_${d.slug(attr)})` : ``},
+                    .with_setter(set_${d.slug(attr)})` : ``}
+                    .with_property_attributes(PropertyAttributes::Enumerable),
                 `
                 ).join('')}
                 // Methods
                 ${d.methods(d.node).map(method => `Property::new("${method.name}")?
-                    .with_method(${d.slug(method)}),
+                    .with_method(${d.slug(method)})
+                    .with_property_attributes(PropertyAttributes::Enumerable),
                 `
                 ).join('')}
                 // AudioNode interface
-                Property::new("connect")?.with_method(connect),
+                Property::new("connect")?
+                    .with_method(connect)
+                    .with_property_attributes(PropertyAttributes::Enumerable),
                 // Property::new("disconnect")?.with_method(disconnect),
                 ${d.parent(d.node) === 'AudioScheduledSourceNode' ?
                 `
                 // AudioScheduledSourceNode interface
-                Property::new("start")?.with_method(start),
-                Property::new("stop")?.with_method(stop),` : ``
+                Property::new("start")?
+                    .with_method(start)
+                    .with_property_attributes(PropertyAttributes::Enumerable),
+                Property::new("stop")?.
+                    with_method(stop)
+                    .with_property_attributes(PropertyAttributes::Enumerable),` : ``
                 }
             ]
         )
@@ -49,8 +57,15 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
     let audio_context = napi_audio_context.unwrap();
 
-    js_this.set_named_property("context", js_audio_context)?;
-    js_this.set_named_property("Symbol.toStringTag", ctx.env.create_string("${d.name(d.node)}")?)?;
+    js_this.define_properties(&[
+        Property::new("context")?
+            .with_value(&js_audio_context)
+            .with_property_attributes(PropertyAttributes::Enumerable),
+        // this must be put on the instance and not in the prototype to be reachable
+        Property::new("Symbol.toStringTag")?
+            .with_value(&ctx.env.create_string("${d.name(d.node)}")?)
+            .with_property_attributes(PropertyAttributes::Static),
+    ])?;
 
     let native_node = Rc::new(${d.name(d.node)}::new(audio_context, Default::default()));
     ${d.audioParams(d.node).map((param) => {

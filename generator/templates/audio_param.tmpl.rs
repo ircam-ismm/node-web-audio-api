@@ -30,6 +30,10 @@ impl NapiAudioParam {
         let mut obj = env.create_object()?;
 
         obj.define_properties(&[
+            Property::new("Symbol.toStringTag")?
+                .with_value(&env.create_string("AudioParam")?)
+                .with_property_attributes(PropertyAttributes::Static),
+
             Property::new("value")?
                 .with_getter(get_value)
                 .with_setter(set_value),
@@ -37,12 +41,10 @@ impl NapiAudioParam {
             Property::new("linearRampToValueAtTime")?.with_method(linear_ramp_to_value_at_time),
             Property::new("exponentialRampToValueAtTime")?
                 .with_method(exponential_ramp_to_value_at_time),
-            Property::new("set_target_at_time")?.with_method(set_target_at_time),
-            Property::new("cancel_scheduled_values")?.with_method(cancel_scheduled_values),
-            Property::new("cancel_and_hold_at_time")?.with_method(cancel_and_hold_at_time),
+            Property::new("setTargetAtTime")?.with_method(set_target_at_time),
+            Property::new("CancelScheduledValues")?.with_method(cancel_scheduled_values),
+            Property::new("CancelAndOldAtTime")?.with_method(cancel_and_hold_at_time),
         ])?;
-
-        obj.set_named_property("Symbol.toStringTag", env.create_string("AudioParam")?)?;
 
         Ok(obj)
     }

@@ -11,6 +11,10 @@ const carrier = audioContext.createOscillator();
 carrier.connect(modulated);
 carrier.frequency.value = 300;
 
+console.log(Object.keys(carrier));
+
+for (let n in carrier) { console.log(n); }
+
 const depth = audioContext.createGain();
 depth.connect(modulated.gain);
 depth.gain.value = 0.5;

@@ -22,11 +22,14 @@ impl NapiBiquadFilterNode {
                 // Attributes
                 Property::new("type")?
                     .with_getter(get_type)
-                    .with_setter(set_type),
+                    .with_setter(set_type)
+                    .with_property_attributes(PropertyAttributes::Enumerable),
                 // Methods
 
                 // AudioNode interface
-                Property::new("connect")?.with_method(connect),
+                Property::new("connect")?
+                    .with_method(connect)
+                    .with_property_attributes(PropertyAttributes::Enumerable),
                 // Property::new("disconnect")?.with_method(disconnect),
             ],
         )
@@ -45,11 +48,15 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
     let audio_context = napi_audio_context.unwrap();
 
-    js_this.set_named_property("context", js_audio_context)?;
-    js_this.set_named_property(
-        "Symbol.toStringTag",
-        ctx.env.create_string("BiquadFilterNode")?,
-    )?;
+    js_this.define_properties(&[
+        Property::new("context")?
+            .with_value(&js_audio_context)
+            .with_property_attributes(PropertyAttributes::Enumerable),
+        // this must be put on the instance and not in the prototype to be reachable
+        Property::new("Symbol.toStringTag")?
+            .with_value(&ctx.env.create_string("BiquadFilterNode")?)
+            .with_property_attributes(PropertyAttributes::Static),
+    ])?;
 
     let native_node = Rc::new(BiquadFilterNode::new(audio_context, Default::default()));
 
