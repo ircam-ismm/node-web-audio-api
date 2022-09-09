@@ -7,7 +7,7 @@ const context = new AudioContext();
 // setup background music:
 // read from local file
 const file = load(path.join(process.cwd(), 'samples', 'think-stereo-48000.wav'));
-const buffer = context.decodeAudioData(file);
+const buffer = await context.decodeAudioData(file);
 let now = context.currentTime;
 
 console.log("> smoothly open low-pass filter for 10 sec");
