@@ -27,6 +27,7 @@ impl NapiAudioBuffer {
                 Property::new("numberOfChannels")?.with_getter(number_of_channels),
                 Property::new("getChannelData")?.with_method(get_channel_data),
                 Property::new("copyToChannel")?.with_method(copy_to_channel),
+                Property::new("copyFromChannel")?.with_method(copy_from_channel),
             ],
         )
     }
@@ -70,12 +71,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             Ok(some_number_of_channels) => some_number_of_channels.unwrap().get_double()? as usize,
             Err(_) => 1,
         };
-
-        // @todo - JsError
-        // return Err(Error::new(
-        //   Status::ArrayExpected,
-        //   "Object is not array".to_owned(),
-        // ));
 
         let length = match options.get::<&str, JsNumber>("length") {
             Ok(some_length) => some_length.unwrap().get_double()? as usize,
@@ -173,19 +168,36 @@ fn copy_to_channel(ctx: CallContext) -> Result<JsUndefined> {
     let channel_number = ctx.get::<JsNumber>(1)?.get_double()? as usize;
 
     let some_offset_js: Option<JsNumber> = ctx.try_get::<JsNumber>(2)?.into();
-    if let Some(offset_js) = some_offset_js {
-        let offset = offset_js.get_double()? as usize;
-        obj.copy_to_channel_with_offset(source, channel_number, offset);
+    let offset = if let Some(offset_js) = some_offset_js {
+        offset_js.get_double()? as usize
     } else {
-        obj.copy_to_channel(source, channel_number);
-    }
+        0
+    };
+
+    obj.copy_to_channel_with_offset(source, channel_number, offset);
 
     ctx.env.get_undefined()
 }
 
-// let mut buffer = ctx.get::<JsTypedArray>(0)?.into_value()?;
-// let buffer_mut_ref: &mut [u16] = buffer.as_mut();
-// buffer_mut_ref[0] = 65535;
-//
-// #[js_function(3)]
-// fn copy_from_channel() {}
+#[js_function(3)]
+fn copy_from_channel(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioBuffer>(&js_this)?;
+    let obj = napi_obj.unwrap_mut();
+
+    let mut dest_js = ctx.get::<JsTypedArray>(0)?.into_value()?;
+    let dest: &mut [f32] = dest_js.as_mut();
+
+    let channel_number = ctx.get::<JsNumber>(1)?.get_double()? as usize;
+
+    let some_offset_js: Option<JsNumber> = ctx.try_get::<JsNumber>(2)?.into();
+    let offset = if let Some(offset_js) = some_offset_js {
+        offset_js.get_double()? as usize
+    } else {
+        0
+    };
+
+    obj.copy_from_channel_with_offset(dest, channel_number, offset);
+
+    ctx.env.get_undefined()
+}

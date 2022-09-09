@@ -1,3 +1,4 @@
+import assert from 'node:assert';
 import webaudioapi from '../index.js';
 const { AudioContext, AudioBuffer } = webaudioapi;
 
@@ -8,9 +9,8 @@ console.log("> Play sine at 200Hz created manually in an AudioBuffer");
 
 const numberOfChannels = 1;
 const length = context.sampleRate;
-const sample_rate = context.sampleRate;
-const buffer = context.createBuffer(numberOfChannels, length, sample_rate);
-// const buffer = new AudioBuffer({ numberOfChannels, length, sample_rate });
+const sampleRate = context.sampleRate;
+const buffer = context.createBuffer(numberOfChannels, length, sampleRate);
 const sine = new Float32Array(length);
 
 for (let i = 0; i < length; i++) {
@@ -19,6 +19,12 @@ for (let i = 0; i < length; i++) {
 }
 
 buffer.copyToChannel(sine, 0);
+
+{
+  const test = new Float32Array(length);
+  buffer.copyFromChannel(test, 0);
+  assert.deepStrictEqual(sine, test);
+}
 
 // play the buffer in a loop
 const src = context.createBufferSource();
