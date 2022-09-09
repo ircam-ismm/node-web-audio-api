@@ -373,7 +373,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
 // -------------------------------------------------
 ${d.methods(d.node).map(method => {
 if (method.idlType.idlType !== 'undefined') {
-    console.log(`return type ${method.idlType.idlType} for method ${method.name} not parsed`);
+    console.log(`[WARNING] return type ${method.idlType.idlType} for method ${method.name} not parsed`);
     return '';
 }
 
@@ -399,7 +399,7 @@ fn ${d.slug(method)}(ctx: CallContext) -> Result<JsUndefined> {
                 `;
                 break;
             default:
-                console.log(`argument ${arg.name} for method ${method} with type ${memberType} not parsed`);
+                console.log(`[WARNING] argument ${arg.name} for method ${method.name} with type ${memberType} not parsed`);
                 doWriteMethodCall = false;
                 break;
 

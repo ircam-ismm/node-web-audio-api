@@ -146,6 +146,23 @@ fn get_state(ctx: CallContext) -> Result<JsString> {
     ctx.env.create_string(state_str)
 }
 
+// ----------------------------------------------------
+// METHODS
+// ----------------------------------------------------
+${['resume', 'suspend', 'close'].map(method => `
+// @todo - async version
+#[js_function]
+fn ${method}(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
+    let obj = napi_obj.unwrap();
+
+    obj.${method}_sync();
+
+    ctx.env.get_undefined()
+}
+`).join('')}
+
 // @todo - async version
 #[js_function(1)]
 fn decode_audio_data(ctx: CallContext) -> Result<JsObject> {
@@ -175,21 +192,6 @@ fn decode_audio_data(ctx: CallContext) -> Result<JsObject> {
 
     Ok(js_audio_buffer)
 }
-
-
-${['resume', 'suspend', 'close'].map(method => `
-// @todo - async version
-#[js_function]
-fn ${method}(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
-    let obj = napi_obj.unwrap();
-
-    obj.${method}_sync();
-
-    ctx.env.get_undefined()
-}
-`).join('')}
 
 #[js_function(3)]
 fn create_buffer(ctx: CallContext) -> Result<JsObject> {

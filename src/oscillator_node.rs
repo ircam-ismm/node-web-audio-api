@@ -190,7 +190,7 @@ fn set_type(ctx: CallContext) -> Result<JsUndefined> {
 fn set_periodic_wave(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
-    // avoid cliipy warning while we don't support all methods
+    // avoid warnings while we don't support all methods
     #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
