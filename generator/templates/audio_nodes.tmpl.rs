@@ -30,8 +30,7 @@ impl ${d.napiName(d.node)} {
                     .with_method(connect)
                     .with_property_attributes(PropertyAttributes::Enumerable),
                 // Property::new("disconnect")?.with_method(disconnect),
-                ${d.parent(d.node) === 'AudioScheduledSourceNode' ?
-                `
+                ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `
                 // AudioScheduledSourceNode interface
                 Property::new("start")?
                     .with_method(start)
@@ -150,6 +149,7 @@ fn stop(ctx: CallContext) -> Result<JsUndefined> {
 `
 : ``
 }
+
 // -------------------------------------------------
 // GETTERS
 // -------------------------------------------------
@@ -239,6 +239,7 @@ fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsUnknown> {
         }
     }
 }).join('')}
+
 // -------------------------------------------------
 // SETTERS
 // -------------------------------------------------
@@ -365,5 +366,49 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
             break;
         }
     }
+}).join('')}
+
+// -------------------------------------------------
+// METHODS
+// -------------------------------------------------
+${d.methods(d.node).map(method => {
+if (method.idlType.idlType !== 'undefined') {
+    console.log(`return type ${method.idlType.idlType} for method ${method.name} not parsed`);
+    return '';
+}
+return `
+#[js_function(${method.arguments.length})]
+fn ${d.slug(method)}(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    ${method.arguments.map((arg, index) => {
+        const memberType = d.memberType(arg);
+        switch (d.memberType(arg)) {
+            case 'Float32Array':
+                return `
+    #[allow(clippy::unnecessary_mut_passed)]
+    let mut ${d.slug(arg.name)}_js = ctx.get::<JsTypedArray>(${index})?.into_value()?;
+    let ${d.slug(arg.name)}: &mut [f32] = ${d.slug(arg.name)}_js.as_mut();
+                `;
+                break;
+            default:
+                console.log(`argument ${arg.name} for method ${method} with type ${memberType} not parsed`);
+                break;
+
+        }
+        // for (let name in arg) console.log(name);
+        // console.log(arg.name);
+        // console.log();
+        // console.log(arg.nullable);
+        // console.log(arg.optionnal);
+    }).join('')}
+
+    node.${d.slug(method)}(${method.arguments.map(arg => d.slug(arg.name)).join(', ')});
+
+    ctx.env.get_undefined()
+}
+`;
 }).join('')}
 

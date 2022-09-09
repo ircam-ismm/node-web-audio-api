@@ -258,3 +258,7 @@ fn set_loop_end(ctx: CallContext) -> Result<JsUndefined> {
 
     ctx.env.get_undefined()
 }
+
+// -------------------------------------------------
+// METHODS
+// -------------------------------------------------

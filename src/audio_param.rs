@@ -18,12 +18,7 @@ pub(crate) enum ParamGetter {
     BiquadFilterNodeDetune(Rc<BiquadFilterNode>),
     BiquadFilterNodeQ(Rc<BiquadFilterNode>),
     BiquadFilterNodeGain(Rc<BiquadFilterNode>),
-    ConstantSourceNodeOffset(Rc<ConstantSourceNode>),
-    DelayNodeDelayTime(Rc<DelayNode>),
     GainNodeGain(Rc<GainNode>),
-    OscillatorNodeFrequency(Rc<OscillatorNode>),
-    OscillatorNodeDetune(Rc<OscillatorNode>),
-    StereoPannerNodePan(Rc<StereoPannerNode>),
 }
 
 impl ParamGetter {
@@ -35,12 +30,7 @@ impl ParamGetter {
             ParamGetter::BiquadFilterNodeDetune(ref node) => node.detune(),
             ParamGetter::BiquadFilterNodeQ(ref node) => node.q(),
             ParamGetter::BiquadFilterNodeGain(ref node) => node.gain(),
-            ParamGetter::ConstantSourceNodeOffset(ref node) => node.offset(),
-            ParamGetter::DelayNodeDelayTime(ref node) => node.delay_time(),
             ParamGetter::GainNodeGain(ref node) => node.gain(),
-            ParamGetter::OscillatorNodeFrequency(ref node) => node.frequency(),
-            ParamGetter::OscillatorNodeDetune(ref node) => node.detune(),
-            ParamGetter::StereoPannerNodePan(ref node) => node.pan(),
         }
     }
 }

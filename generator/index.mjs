@@ -13,14 +13,14 @@ let supportedNodes = [
   `BiquadFilterNode`,
   // `ChannelMergerNode`,
   // `ChannelSplitterNode`,
-  `ConstantSourceNode`,
-  `DelayNode`,
+  // `ConstantSourceNode`,
+  // `DelayNode`,
   `GainNode`,
   // `IIRFilterNode`,
-  `OscillatorNode`,
+  // `OscillatorNode`,
   // `PannerNode`,
-  `StereoPannerNode`,
-  `WaveShaperNode`,
+  // `StereoPannerNode`,
+  // `WaveShaperNode`,
 ];
 
 
@@ -97,9 +97,7 @@ const utils = {
       .filter(member => member.name !== 'start')
       .filter(member => member.name !== 'stop')
 
-    // return methods;
-    console.log('+ bypass parsing methods');
-    return []; // not implemented yet
+    return methods;
   },
 
   audioParams(idl) {

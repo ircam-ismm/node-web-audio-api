@@ -25,7 +25,9 @@ impl NapiBiquadFilterNode {
                     .with_setter(set_type)
                     .with_property_attributes(PropertyAttributes::Enumerable),
                 // Methods
-
+                Property::new("getFrequencyResponse")?
+                    .with_method(get_frequency_response)
+                    .with_property_attributes(PropertyAttributes::Enumerable),
                 // AudioNode interface
                 Property::new("connect")?
                     .with_method(connect)
@@ -155,6 +157,33 @@ fn set_type(ctx: CallContext) -> Result<JsUndefined> {
     };
 
     node.set_type(value);
+
+    ctx.env.get_undefined()
+}
+
+// -------------------------------------------------
+// METHODS
+// -------------------------------------------------
+
+#[js_function(3)]
+fn get_frequency_response(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiBiquadFilterNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    #[allow(clippy::unnecessary_mut_passed)]
+    let mut frequency_hz_js = ctx.get::<JsTypedArray>(0)?.into_value()?;
+    let frequency_hz: &mut [f32] = frequency_hz_js.as_mut();
+
+    #[allow(clippy::unnecessary_mut_passed)]
+    let mut mag_response_js = ctx.get::<JsTypedArray>(1)?.into_value()?;
+    let mag_response: &mut [f32] = mag_response_js.as_mut();
+
+    #[allow(clippy::unnecessary_mut_passed)]
+    let mut phase_response_js = ctx.get::<JsTypedArray>(2)?.into_value()?;
+    let phase_response: &mut [f32] = phase_response_js.as_mut();
+
+    node.get_frequency_response(frequency_hz, mag_response, phase_response);
 
     ctx.env.get_undefined()
 }
