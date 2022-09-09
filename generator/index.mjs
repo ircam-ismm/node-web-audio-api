@@ -12,15 +12,15 @@ let supportedNodes = [
   // `AnalyserNode`,
   `BiquadFilterNode`,
   `ChannelMergerNode`,
-  // `ChannelSplitterNode`,
+  `ChannelSplitterNode`,
   `ConstantSourceNode`,
-  // `DelayNode`,
+  `DelayNode`,
   'DynamicsCompressorNode',
   `GainNode`,
-  // `IIRFilterNode`,
+  `IIRFilterNode`,
   `OscillatorNode`,
-  // `PannerNode`,
-  // `StereoPannerNode`,
+  // `PannerNode`, // review rs wise, lots of inconsistencies
+  `StereoPannerNode`,
   // `WaveShaperNode`,
 ];
 
@@ -80,21 +80,21 @@ const utils = {
       .filter(member => member.constructor.name === 'Attribute')
       .filter(member => member.idlType.idlType !== 'AudioParam');
 
-    attrs = attrs.filter(attr => {
-      if (attr.idlType.idlType === 'float' ||
-        attr.idlType.idlType === 'double' ||
-        attr.idlType.idlType === 'boolean' ||
-        attr.idlType.idlType === 'Float32Array' ||
-        (this.findInTree(attr.idlType.idlType) &&
-          this.findInTree(attr.idlType.idlType).type === 'enum') ||
-        (this.findInTree(attr.idlType.idlType) &&
-          this.findInTree(attr.idlType.idlType).type === 'interface')
-      ) {
-        return true;
-      } else {
-        console.log(`+ attribute "${this.name(attr)}: ${this.memberType(attr)}" not parsed`);
-      }
-    });
+    // attrs = attrs.filter(attr => {
+    //   if (attr.idlType.idlType === 'float' ||
+    //     attr.idlType.idlType === 'double' ||
+    //     attr.idlType.idlType === 'boolean' ||
+    //     attr.idlType.idlType === 'Float32Array' ||
+    //     (this.findInTree(attr.idlType.idlType) &&
+    //       this.findInTree(attr.idlType.idlType).type === 'enum') ||
+    //     (this.findInTree(attr.idlType.idlType) &&
+    //       this.findInTree(attr.idlType.idlType).type === 'interface')
+    //   ) {
+    //     return true;
+    //   } else {
+    //     console.log(`+ attribute "${this.name(attr)}: ${this.memberType(attr)}" not parsed`);
+    //   }
+    // });
 
     return attrs;
   },

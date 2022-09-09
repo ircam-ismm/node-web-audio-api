@@ -37,10 +37,11 @@ impl NapiStereoPannerNode {
     }
 }
 
-#[js_function(1)]
+#[js_function(2)]
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
+    // first argument is always AudioContext
     let js_audio_context = ctx.get::<JsObject>(0)?;
     let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
     let audio_context = napi_audio_context.unwrap();
@@ -55,7 +56,26 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_property_attributes(PropertyAttributes::Static),
     ])?;
 
-    let native_node = Rc::new(StereoPannerNode::new(audio_context, Default::default()));
+    // parse options
+
+    let options = match ctx.try_get::<JsObject>(1)? {
+        Either::A(options_js) => {
+            let some_pan_js = options_js.get::<&str, JsNumber>("pan")?;
+            let pan = if let Some(pan_js) = some_pan_js {
+                pan_js.get_double()? as f32
+            } else {
+                0.
+            };
+
+            StereoPannerOptions {
+                pan,
+                channel_config: ChannelConfigOptions::default(),
+            }
+        }
+        Either::B(_) => Default::default(),
+    };
+
+    let native_node = Rc::new(StereoPannerNode::new(audio_context, options));
 
     // AudioParam: StereoPannerNode::pan
     let native_clone = native_node.clone();
@@ -84,4 +104,8 @@ connect_method!(NapiStereoPannerNode);
 
 // -------------------------------------------------
 // SETTERS
+// -------------------------------------------------
+
+// -------------------------------------------------
+// METHODS
 // -------------------------------------------------

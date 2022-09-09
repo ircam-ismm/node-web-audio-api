@@ -2,9 +2,7 @@ use napi::{
     CallContext, Env, JsFunction, JsNumber, JsObject, JsTypedArray, JsUndefined, Property, Result,
     TypedArrayType,
 };
-
 use napi_derive::js_function;
-
 use web_audio_api::{AudioBuffer, AudioBufferOptions};
 
 // helper convert [f32] to [u8]

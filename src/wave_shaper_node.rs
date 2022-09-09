@@ -44,10 +44,11 @@ impl NapiWaveShaperNode {
     }
 }
 
-#[js_function(1)]
+#[js_function(2)]
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
+    // first argument is always AudioContext
     let js_audio_context = ctx.get::<JsObject>(0)?;
     let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
     let audio_context = napi_audio_context.unwrap();
@@ -62,7 +63,33 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_property_attributes(PropertyAttributes::Static),
     ])?;
 
-    let native_node = Rc::new(WaveShaperNode::new(audio_context, Default::default()));
+    // parse options
+
+    let options = match ctx.try_get::<JsObject>(1)? {
+        Either::A(options_js) => {
+            let some_oversample_js = options_js.get::<&str, JsString>("oversample")?;
+            let oversample = if let Some(oversample_js) = some_oversample_js {
+                let oversample_str = oversample_js.into_utf8()?.into_owned()?;
+
+                match oversample_str.as_str() {
+                    "none" => OverSampleType::None,
+                    "2x" => OverSampleType::X2,
+                    "4x" => OverSampleType::X4,
+                    _ => panic!("undefined value for OverSampleType"),
+                }
+            } else {
+                OverSampleType::default()
+            };
+
+            WaveShaperOptions { curve, oversample }
+        }
+        Either::B(_) => {
+            // some nodes don't provide default options
+            Default::default()
+        }
+    };
+
+    let native_node = Rc::new(WaveShaperNode::new(audio_context, options));
 
     // finalize instance creation
     let napi_node = NapiWaveShaperNode(native_node);
@@ -151,3 +178,7 @@ fn set_oversample(ctx: CallContext) -> Result<JsUndefined> {
 
     ctx.env.get_undefined()
 }
+
+// -------------------------------------------------
+// METHODS
+// -------------------------------------------------

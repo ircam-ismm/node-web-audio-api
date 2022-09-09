@@ -39,12 +39,11 @@ impl NapiDynamicsCompressorNode {
     }
 }
 
-// undefined
-
-#[js_function(1)]
+#[js_function(2)]
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
+    // first argument is always AudioContext
     let js_audio_context = ctx.get::<JsObject>(0)?;
     let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
     let audio_context = napi_audio_context.unwrap();
@@ -59,10 +58,58 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_property_attributes(PropertyAttributes::Static),
     ])?;
 
-    let native_node = Rc::new(DynamicsCompressorNode::new(
-        audio_context,
-        Default::default(),
-    ));
+    // parse options
+
+    let options = match ctx.try_get::<JsObject>(1)? {
+        Either::A(options_js) => {
+            let some_attack_js = options_js.get::<&str, JsNumber>("attack")?;
+            let attack = if let Some(attack_js) = some_attack_js {
+                attack_js.get_double()? as f32
+            } else {
+                0.003
+            };
+
+            let some_knee_js = options_js.get::<&str, JsNumber>("knee")?;
+            let knee = if let Some(knee_js) = some_knee_js {
+                knee_js.get_double()? as f32
+            } else {
+                30.
+            };
+
+            let some_ratio_js = options_js.get::<&str, JsNumber>("ratio")?;
+            let ratio = if let Some(ratio_js) = some_ratio_js {
+                ratio_js.get_double()? as f32
+            } else {
+                12.
+            };
+
+            let some_release_js = options_js.get::<&str, JsNumber>("release")?;
+            let release = if let Some(release_js) = some_release_js {
+                release_js.get_double()? as f32
+            } else {
+                0.25
+            };
+
+            let some_threshold_js = options_js.get::<&str, JsNumber>("threshold")?;
+            let threshold = if let Some(threshold_js) = some_threshold_js {
+                threshold_js.get_double()? as f32
+            } else {
+                -24.
+            };
+
+            DynamicsCompressorOptions {
+                attack,
+                knee,
+                ratio,
+                release,
+                threshold,
+                channel_config: ChannelConfigOptions::default(),
+            }
+        }
+        Either::B(_) => Default::default(),
+    };
+
+    let native_node = Rc::new(DynamicsCompressorNode::new(audio_context, options));
 
     // AudioParam: DynamicsCompressorNode::threshold
     let native_clone = native_node.clone();

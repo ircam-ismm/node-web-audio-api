@@ -37,12 +37,11 @@ impl NapiChannelMergerNode {
     }
 }
 
-// undefined
-
-#[js_function(1)]
+#[js_function(2)]
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
+    // first argument is always AudioContext
     let js_audio_context = ctx.get::<JsObject>(0)?;
     let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
     let audio_context = napi_audio_context.unwrap();
@@ -57,7 +56,26 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_property_attributes(PropertyAttributes::Static),
     ])?;
 
-    let native_node = Rc::new(ChannelMergerNode::new(audio_context, Default::default()));
+    // parse options
+
+    let options = match ctx.try_get::<JsObject>(1)? {
+        Either::A(options_js) => {
+            let some_number_of_inputs_js = options_js.get::<&str, JsNumber>("numberOfInputs")?;
+            let number_of_inputs = if let Some(number_of_inputs_js) = some_number_of_inputs_js {
+                number_of_inputs_js.get_double()? as usize
+            } else {
+                6
+            };
+
+            ChannelMergerOptions {
+                number_of_inputs,
+                channel_config: ChannelConfigOptions::default(),
+            }
+        }
+        Either::B(_) => Default::default(),
+    };
+
+    let native_node = Rc::new(ChannelMergerNode::new(audio_context, options));
 
     // finalize instance creation
     let napi_node = NapiChannelMergerNode(native_node);

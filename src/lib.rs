@@ -23,6 +23,8 @@ mod audio_buffer;
 use crate::audio_buffer::NapiAudioBuffer;
 mod audio_destination_node;
 use crate::audio_destination_node::NapiAudioDestinationNode;
+mod periodic_wave;
+use crate::periodic_wave::NapiPeriodicWave;
 
 // import audio nodes (generated)
 
@@ -32,14 +34,22 @@ mod biquad_filter_node;
 use crate::biquad_filter_node::NapiBiquadFilterNode;
 mod channel_merger_node;
 use crate::channel_merger_node::NapiChannelMergerNode;
+mod channel_splitter_node;
+use crate::channel_splitter_node::NapiChannelSplitterNode;
 mod constant_source_node;
 use crate::constant_source_node::NapiConstantSourceNode;
+mod delay_node;
+use crate::delay_node::NapiDelayNode;
 mod dynamics_compressor_node;
 use crate::dynamics_compressor_node::NapiDynamicsCompressorNode;
 mod gain_node;
 use crate::gain_node::NapiGainNode;
+mod iir_filter_node;
+use crate::iir_filter_node::NapiIIRFilterNode;
 mod oscillator_node;
 use crate::oscillator_node::NapiOscillatorNode;
+mod stereo_panner_node;
+use crate::stereo_panner_node::NapiStereoPannerNode;
 
 #[cfg(all(
     any(windows, unix),
@@ -70,6 +80,11 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     let napi_class = NapiAudioDestinationNode::create_js_class(&env)?;
     store.set_named_property("AudioDestinationNode", napi_class)?;
 
+    let napi_class = NapiPeriodicWave::create_js_class(&env)?;
+    exports.set_named_property("PeriodicWave", napi_class)?;
+    let napi_class = NapiPeriodicWave::create_js_class(&env)?;
+    store.set_named_property("PeriodicWave", napi_class)?;
+
     // export audio nodes (generated)
 
     let napi_class = NapiAudioBufferSourceNode::create_js_class(&env)?;
@@ -87,10 +102,20 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     let napi_class = NapiChannelMergerNode::create_js_class(&env)?;
     store.set_named_property("ChannelMergerNode", napi_class)?;
 
+    let napi_class = NapiChannelSplitterNode::create_js_class(&env)?;
+    exports.set_named_property("ChannelSplitterNode", napi_class)?;
+    let napi_class = NapiChannelSplitterNode::create_js_class(&env)?;
+    store.set_named_property("ChannelSplitterNode", napi_class)?;
+
     let napi_class = NapiConstantSourceNode::create_js_class(&env)?;
     exports.set_named_property("ConstantSourceNode", napi_class)?;
     let napi_class = NapiConstantSourceNode::create_js_class(&env)?;
     store.set_named_property("ConstantSourceNode", napi_class)?;
+
+    let napi_class = NapiDelayNode::create_js_class(&env)?;
+    exports.set_named_property("DelayNode", napi_class)?;
+    let napi_class = NapiDelayNode::create_js_class(&env)?;
+    store.set_named_property("DelayNode", napi_class)?;
 
     let napi_class = NapiDynamicsCompressorNode::create_js_class(&env)?;
     exports.set_named_property("DynamicsCompressorNode", napi_class)?;
@@ -102,10 +127,20 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     let napi_class = NapiGainNode::create_js_class(&env)?;
     store.set_named_property("GainNode", napi_class)?;
 
+    let napi_class = NapiIIRFilterNode::create_js_class(&env)?;
+    exports.set_named_property("IIRFilterNode", napi_class)?;
+    let napi_class = NapiIIRFilterNode::create_js_class(&env)?;
+    store.set_named_property("IIRFilterNode", napi_class)?;
+
     let napi_class = NapiOscillatorNode::create_js_class(&env)?;
     exports.set_named_property("OscillatorNode", napi_class)?;
     let napi_class = NapiOscillatorNode::create_js_class(&env)?;
     store.set_named_property("OscillatorNode", napi_class)?;
+
+    let napi_class = NapiStereoPannerNode::create_js_class(&env)?;
+    exports.set_named_property("StereoPannerNode", napi_class)?;
+    let napi_class = NapiStereoPannerNode::create_js_class(&env)?;
+    store.set_named_property("StereoPannerNode", napi_class)?;
 
     // store the store into instance so that it can be globally accessed
     let store_ref = env.create_reference(store)?;

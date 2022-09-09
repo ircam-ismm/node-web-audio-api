@@ -11,12 +11,12 @@ use napi_derive::js_function;
 use std::rc::Rc;
 use web_audio_api::node::*;
 
-pub(crate) struct NapiGainNode(Rc<GainNode>);
+pub(crate) struct NapiChannelSplitterNode(Rc<ChannelSplitterNode>);
 
-impl NapiGainNode {
+impl NapiChannelSplitterNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
         env.define_class(
-            "GainNode",
+            "ChannelSplitterNode",
             constructor,
             &[
                 // Attributes
@@ -32,7 +32,7 @@ impl NapiGainNode {
         )
     }
 
-    pub fn unwrap(&self) -> &GainNode {
+    pub fn unwrap(&self) -> &ChannelSplitterNode {
         &self.0
     }
 }
@@ -52,7 +52,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_property_attributes(PropertyAttributes::Enumerable),
         // this must be put on the instance and not in the prototype to be reachable
         Property::new("Symbol.toStringTag")?
-            .with_value(&ctx.env.create_string("GainNode")?)
+            .with_value(&ctx.env.create_string("ChannelSplitterNode")?)
             .with_property_attributes(PropertyAttributes::Static),
     ])?;
 
@@ -60,33 +60,25 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
     let options = match ctx.try_get::<JsObject>(1)? {
         Either::A(options_js) => {
-            let some_gain_js = options_js.get::<&str, JsNumber>("gain")?;
-            let gain = if let Some(gain_js) = some_gain_js {
-                gain_js.get_double()? as f32
+            let some_number_of_outputs_js = options_js.get::<&str, JsNumber>("numberOfOutputs")?;
+            let number_of_outputs = if let Some(number_of_outputs_js) = some_number_of_outputs_js {
+                number_of_outputs_js.get_double()? as usize
             } else {
-                1.
+                6
             };
 
-            GainOptions {
-                gain,
+            ChannelSplitterOptions {
+                number_of_outputs,
                 channel_config: ChannelConfigOptions::default(),
             }
         }
         Either::B(_) => Default::default(),
     };
 
-    let native_node = Rc::new(GainNode::new(audio_context, options));
-
-    // AudioParam: GainNode::gain
-    let native_clone = native_node.clone();
-    let param_getter = ParamGetter::GainNodeGain(native_clone);
-    let napi_param = NapiAudioParam::new(param_getter);
-    let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
-    ctx.env.wrap(&mut js_obj, napi_param)?;
-    js_this.set_named_property("gain", &js_obj)?;
+    let native_node = Rc::new(ChannelSplitterNode::new(audio_context, options));
 
     // finalize instance creation
-    let napi_node = NapiGainNode(native_node);
+    let napi_node = NapiChannelSplitterNode(native_node);
     ctx.env.wrap(&mut js_this, napi_node)?;
 
     ctx.env.get_undefined()
@@ -95,8 +87,8 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 // -------------------------------------------------
 // AudioNode Interface
 // -------------------------------------------------
-connect_method!(NapiGainNode);
-// disconnect_method!(NapiGainNode);
+connect_method!(NapiChannelSplitterNode);
+// disconnect_method!(NapiChannelSplitterNode);
 
 // -------------------------------------------------
 // GETTERS

@@ -16,6 +16,8 @@ mod audio_buffer;
 use crate::audio_buffer::NapiAudioBuffer;
 mod audio_destination_node;
 use crate::audio_destination_node::NapiAudioDestinationNode;
+mod periodic_wave;
+use crate::periodic_wave::NapiPeriodicWave;
 
 // import audio nodes (generated)
 ${d.nodes.map(n => { return `
@@ -50,6 +52,11 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     exports.set_named_property("AudioDestinationNode", napi_class)?;
     let napi_class = NapiAudioDestinationNode::create_js_class(&env)?;
     store.set_named_property("AudioDestinationNode", napi_class)?;
+
+    let napi_class = NapiPeriodicWave::create_js_class(&env)?;
+    exports.set_named_property("PeriodicWave", napi_class)?;
+    let napi_class = NapiPeriodicWave::create_js_class(&env)?;
+    store.set_named_property("PeriodicWave", napi_class)?;
 
     // export audio nodes (generated)
     ${d.nodes.map(n => { return `

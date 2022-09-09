@@ -42,12 +42,11 @@ impl NapiBiquadFilterNode {
     }
 }
 
-// undefined
-
-#[js_function(1)]
+#[js_function(2)]
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
+    // first argument is always AudioContext
     let js_audio_context = ctx.get::<JsObject>(0)?;
     let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
     let audio_context = napi_audio_context.unwrap();
@@ -62,7 +61,70 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_property_attributes(PropertyAttributes::Static),
     ])?;
 
-    let native_node = Rc::new(BiquadFilterNode::new(audio_context, Default::default()));
+    // parse options
+
+    let options = match ctx.try_get::<JsObject>(1)? {
+        Either::A(options_js) => {
+            let some_type_js = options_js.get::<&str, JsString>("type")?;
+            let type_ = if let Some(type_js) = some_type_js {
+                let type_str = type_js.into_utf8()?.into_owned()?;
+
+                match type_str.as_str() {
+                    "lowpass" => BiquadFilterType::Lowpass,
+                    "highpass" => BiquadFilterType::Highpass,
+                    "bandpass" => BiquadFilterType::Bandpass,
+                    "lowshelf" => BiquadFilterType::Lowshelf,
+                    "highshelf" => BiquadFilterType::Highshelf,
+                    "peaking" => BiquadFilterType::Peaking,
+                    "notch" => BiquadFilterType::Notch,
+                    "allpass" => BiquadFilterType::Allpass,
+                    _ => panic!("undefined value for BiquadFilterType"),
+                }
+            } else {
+                BiquadFilterType::default()
+            };
+
+            let some_q_js = options_js.get::<&str, JsNumber>("Q")?;
+            let q = if let Some(q_js) = some_q_js {
+                q_js.get_double()? as f32
+            } else {
+                1.
+            };
+
+            let some_detune_js = options_js.get::<&str, JsNumber>("detune")?;
+            let detune = if let Some(detune_js) = some_detune_js {
+                detune_js.get_double()? as f32
+            } else {
+                0.
+            };
+
+            let some_frequency_js = options_js.get::<&str, JsNumber>("frequency")?;
+            let frequency = if let Some(frequency_js) = some_frequency_js {
+                frequency_js.get_double()? as f32
+            } else {
+                350.
+            };
+
+            let some_gain_js = options_js.get::<&str, JsNumber>("gain")?;
+            let gain = if let Some(gain_js) = some_gain_js {
+                gain_js.get_double()? as f32
+            } else {
+                0.
+            };
+
+            BiquadFilterOptions {
+                type_,
+                q,
+                detune,
+                frequency,
+                gain,
+                channel_config: ChannelConfigOptions::default(),
+            }
+        }
+        Either::B(_) => Default::default(),
+    };
+
+    let native_node = Rc::new(BiquadFilterNode::new(audio_context, options));
 
     // AudioParam: BiquadFilterNode::frequency
     let native_clone = native_node.clone();

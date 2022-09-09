@@ -60,12 +60,11 @@ impl NapiAudioBufferSourceNode {
     }
 }
 
-// undefined
-
-#[js_function(1)]
+#[js_function(2)]
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
+    // first argument is always AudioContext
     let js_audio_context = ctx.get::<JsObject>(0)?;
     let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
     let audio_context = napi_audio_context.unwrap();
@@ -80,10 +79,66 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_property_attributes(PropertyAttributes::Static),
     ])?;
 
-    let native_node = Rc::new(AudioBufferSourceNode::new(
-        audio_context,
-        Default::default(),
-    ));
+    // parse options
+
+    let options = match ctx.try_get::<JsObject>(1)? {
+        Either::A(options_js) => {
+            let some_buffer_js = options_js.get::<&str, JsObject>("buffer")?;
+            let buffer = if let Some(buffer_js) = some_buffer_js {
+                let buffer_napi = ctx.env.unwrap::<NapiAudioBuffer>(&buffer_js)?;
+                Some(buffer_napi.unwrap().clone())
+            } else {
+                None
+            };
+
+            let some_detune_js = options_js.get::<&str, JsNumber>("detune")?;
+            let detune = if let Some(detune_js) = some_detune_js {
+                detune_js.get_double()? as f32
+            } else {
+                0.
+            };
+
+            let some_loop_js = options_js.get::<&str, JsBoolean>("loop")?;
+            let loop_ = if let Some(loop_js) = some_loop_js {
+                loop_js.try_into()?
+            } else {
+                false
+            };
+
+            let some_loop_end_js = options_js.get::<&str, JsNumber>("loopEnd")?;
+            let loop_end = if let Some(loop_end_js) = some_loop_end_js {
+                loop_end_js.get_double()? as f64
+            } else {
+                0.
+            };
+
+            let some_loop_start_js = options_js.get::<&str, JsNumber>("loopStart")?;
+            let loop_start = if let Some(loop_start_js) = some_loop_start_js {
+                loop_start_js.get_double()? as f64
+            } else {
+                0.
+            };
+
+            let some_playback_rate_js = options_js.get::<&str, JsNumber>("playbackRate")?;
+            let playback_rate = if let Some(playback_rate_js) = some_playback_rate_js {
+                playback_rate_js.get_double()? as f32
+            } else {
+                1.
+            };
+
+            AudioBufferSourceOptions {
+                buffer,
+                detune,
+                loop_,
+                loop_end,
+                loop_start,
+                playback_rate,
+            }
+        }
+        Either::B(_) => Default::default(),
+    };
+
+    let native_node = Rc::new(AudioBufferSourceNode::new(audio_context, options));
 
     // AudioParam: AudioBufferSourceNode::playbackRate
     let native_clone = native_node.clone();

@@ -50,12 +50,11 @@ impl NapiOscillatorNode {
     }
 }
 
-// undefined
-
-#[js_function(1)]
+#[js_function(2)]
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
+    // first argument is always AudioContext
     let js_audio_context = ctx.get::<JsObject>(0)?;
     let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
     let audio_context = napi_audio_context.unwrap();
@@ -70,7 +69,60 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_property_attributes(PropertyAttributes::Static),
     ])?;
 
-    let native_node = Rc::new(OscillatorNode::new(audio_context, Default::default()));
+    // parse options
+
+    let options = match ctx.try_get::<JsObject>(1)? {
+        Either::A(options_js) => {
+            let some_type_js = options_js.get::<&str, JsString>("type")?;
+            let type_ = if let Some(type_js) = some_type_js {
+                let type_str = type_js.into_utf8()?.into_owned()?;
+
+                match type_str.as_str() {
+                    "sine" => OscillatorType::Sine,
+                    "square" => OscillatorType::Square,
+                    "sawtooth" => OscillatorType::Sawtooth,
+                    "triangle" => OscillatorType::Triangle,
+                    "custom" => OscillatorType::Custom,
+                    _ => panic!("undefined value for OscillatorType"),
+                }
+            } else {
+                OscillatorType::default()
+            };
+
+            let some_frequency_js = options_js.get::<&str, JsNumber>("frequency")?;
+            let frequency = if let Some(frequency_js) = some_frequency_js {
+                frequency_js.get_double()? as f32
+            } else {
+                440.
+            };
+
+            let some_detune_js = options_js.get::<&str, JsNumber>("detune")?;
+            let detune = if let Some(detune_js) = some_detune_js {
+                detune_js.get_double()? as f32
+            } else {
+                0.
+            };
+
+            let some_periodic_wave_js = options_js.get::<&str, JsObject>("periodicWave")?;
+            let periodic_wave = if let Some(periodic_wave_js) = some_periodic_wave_js {
+                let periodic_wave_napi = ctx.env.unwrap::<NapiPeriodicWave>(&periodic_wave_js)?;
+                Some(periodic_wave_napi.unwrap().clone())
+            } else {
+                None
+            };
+
+            OscillatorOptions {
+                type_,
+                frequency,
+                detune,
+                periodic_wave,
+                channel_config: ChannelConfigOptions::default(),
+            }
+        }
+        Either::B(_) => Default::default(),
+    };
+
+    let native_node = Rc::new(OscillatorNode::new(audio_context, options));
 
     // AudioParam: OscillatorNode::frequency
     let native_clone = native_node.clone();
@@ -195,6 +247,12 @@ fn set_periodic_wave(ctx: CallContext) -> Result<JsUndefined> {
     // avoid warnings while we don't support all methods
     #[allow(unused_variables)]
     let node = napi_node.unwrap();
+
+    let periodic_wave_js = ctx.get::<JsObject>(0)?;
+    let periodic_wave_napi = ctx.env.unwrap::<NapiPeriodicWave>(&periodic_wave_js)?;
+    let periodic_wave = periodic_wave_napi.unwrap().clone();
+
+    node.set_periodic_wave(periodic_wave);
 
     ctx.env.get_undefined()
 }

@@ -37,10 +37,11 @@ impl NapiDelayNode {
     }
 }
 
-#[js_function(1)]
+#[js_function(2)]
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
+    // first argument is always AudioContext
     let js_audio_context = ctx.get::<JsObject>(0)?;
     let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
     let audio_context = napi_audio_context.unwrap();
@@ -55,7 +56,34 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_property_attributes(PropertyAttributes::Static),
     ])?;
 
-    let native_node = Rc::new(DelayNode::new(audio_context, Default::default()));
+    // parse options
+
+    let options = match ctx.try_get::<JsObject>(1)? {
+        Either::A(options_js) => {
+            let some_max_delay_time_js = options_js.get::<&str, JsNumber>("maxDelayTime")?;
+            let max_delay_time = if let Some(max_delay_time_js) = some_max_delay_time_js {
+                max_delay_time_js.get_double()? as f64
+            } else {
+                1.
+            };
+
+            let some_delay_time_js = options_js.get::<&str, JsNumber>("delayTime")?;
+            let delay_time = if let Some(delay_time_js) = some_delay_time_js {
+                delay_time_js.get_double()? as f64
+            } else {
+                0.
+            };
+
+            DelayOptions {
+                max_delay_time,
+                delay_time,
+                channel_config: ChannelConfigOptions::default(),
+            }
+        }
+        Either::B(_) => Default::default(),
+    };
+
+    let native_node = Rc::new(DelayNode::new(audio_context, options));
 
     // AudioParam: DelayNode::delayTime
     let native_clone = native_node.clone();
@@ -84,4 +112,8 @@ connect_method!(NapiDelayNode);
 
 // -------------------------------------------------
 // SETTERS
+// -------------------------------------------------
+
+// -------------------------------------------------
+// METHODS
 // -------------------------------------------------

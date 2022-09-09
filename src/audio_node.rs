@@ -85,10 +85,30 @@ macro_rules! connect_method {
 
                     Ok(js_dest)
                 }
+                "ChannelSplitterNode" => {
+                    let napi_dest = ctx
+                        .env
+                        .unwrap::<$crate::channel_splitter_node::NapiChannelSplitterNode>(
+                        &js_dest,
+                    )?;
+                    let native_dest = napi_dest.unwrap();
+                    let _res = native_src.connect_at(native_dest, output as usize, input as usize);
+
+                    Ok(js_dest)
+                }
                 "ConstantSourceNode" => {
                     let napi_dest = ctx
                         .env
                         .unwrap::<$crate::constant_source_node::NapiConstantSourceNode>(&js_dest)?;
+                    let native_dest = napi_dest.unwrap();
+                    let _res = native_src.connect_at(native_dest, output as usize, input as usize);
+
+                    Ok(js_dest)
+                }
+                "DelayNode" => {
+                    let napi_dest = ctx
+                        .env
+                        .unwrap::<$crate::delay_node::NapiDelayNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     let _res = native_src.connect_at(native_dest, output as usize, input as usize);
 
@@ -114,10 +134,28 @@ macro_rules! connect_method {
 
                     Ok(js_dest)
                 }
+                "IIRFilterNode" => {
+                    let napi_dest = ctx
+                        .env
+                        .unwrap::<$crate::iir_filter_node::NapiIIRFilterNode>(&js_dest)?;
+                    let native_dest = napi_dest.unwrap();
+                    let _res = native_src.connect_at(native_dest, output as usize, input as usize);
+
+                    Ok(js_dest)
+                }
                 "OscillatorNode" => {
                     let napi_dest = ctx
                         .env
                         .unwrap::<$crate::oscillator_node::NapiOscillatorNode>(&js_dest)?;
+                    let native_dest = napi_dest.unwrap();
+                    let _res = native_src.connect_at(native_dest, output as usize, input as usize);
+
+                    Ok(js_dest)
+                }
+                "StereoPannerNode" => {
+                    let napi_dest = ctx
+                        .env
+                        .unwrap::<$crate::stereo_panner_node::NapiStereoPannerNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     let _res = native_src.connect_at(native_dest, output as usize, input as usize);
 

@@ -48,12 +48,11 @@ impl ${d.napiName(d.node)} {
     }
 }
 
-// ${console.log(d.node.name, d.constructor(d.node))}
-
-#[js_function(1)]
+#[js_function(${d.constructor(d.node).arguments.length})]
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
+    // first argument is always AudioContext
     let js_audio_context = ctx.get::<JsObject>(0)?;
     let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
     let audio_context = napi_audio_context.unwrap();
@@ -68,7 +67,147 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_property_attributes(PropertyAttributes::Static),
     ])?;
 
-    let native_node = Rc::new(${d.name(d.node)}::new(audio_context, Default::default()));
+    // parse options
+    ${d.constructor(d.node).arguments.map((argument, index) => {
+        if (index == 0) { // index 0 is always AudioContext
+            return;
+        }
+
+        if (d.constructor(d.node).arguments.length != 2) {
+            console.log(d.node.name, 'constructor has arguments.length != 2');
+            return ``;
+        }
+
+        const arg = d.constructor(d.node).arguments[1];
+        const argIdlType = d.memberType(arg);
+        const argumentIdl = d.findInTree(argIdlType);
+        // console.log(arg, idlType, argumentIdl);
+        return `
+    let options = match ctx.try_get::<JsObject>(${index})? {
+        Either::A(options_js) => {
+            ${argumentIdl.members.map(m => {
+                const simple_slug = d.slug(m);
+                const slug = d.slug(m, true);
+
+                switch (d.memberType(m)) {
+                    case 'boolean':
+                        return `
+            let some_${simple_slug}_js = options_js.get::<&str, JsBoolean>("${m.name}")?;
+            let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
+                ${simple_slug}_js.try_into()?
+            } else {
+                ${m.default.value}
+            };
+                        `;
+                    case 'unsigned long':
+                        return `
+            let some_${simple_slug}_js = options_js.get::<&str, JsNumber>("${m.name}")?;
+            let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
+                ${simple_slug}_js.get_double()? as usize
+            } else {
+                ${m.default.value}
+            };
+                        `;
+                    case 'float':
+                        return `
+            let some_${simple_slug}_js = options_js.get::<&str, JsNumber>("${m.name}")?;
+            let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
+                ${simple_slug}_js.get_double()? as f32
+            } else {
+                ${parseInt(m.default.value) ==  m.default.value ? `${parseInt(m.default.value)}.` : m.default.value}
+            };
+                        `;
+                    case 'double':
+                        return `
+            let some_${simple_slug}_js = options_js.get::<&str, JsNumber>("${m.name}")?;
+            let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
+                ${simple_slug}_js.get_double()? as f64
+            } else {
+                ${parseInt(m.default.value) ==  m.default.value ? `${parseInt(m.default.value)}.` : m.default.value}
+            };
+                        `;
+                        break;
+                    default: '';
+                        const idl = d.findInTree(d.memberType(m));
+                        // handle special cases
+                        // for `Float64Array` the idl is missing (cf. IIRFilter)
+                        if (!idl) {
+                            if (d.name(d.node) === 'IIRFilterNode' &&
+                                (d.name(m) === 'feedforward' || d.name(m) === 'feedback')
+                            ) {
+                                return `
+            let ${simple_slug} = if let Some(${simple_slug}_js) = options_js.get::<&str, JsTypedArray>("${m.name}")? {
+                let ${simple_slug}_value = ${simple_slug}_js.into_value()?;
+                let ${simple_slug}: &[f64] = ${simple_slug}_value.as_ref();
+                ${simple_slug}.to_vec()
+            } else {
+                vec!()
+            };
+                                `;
+                            } else {
+                                console.log(`[constructor] > could not parse ${d.name(m)} for class ${d.name(d.node)}`);
+                                console.log(m);
+                                return '';
+                            }
+                        }
+
+                        const idlType = d.type(idl);
+
+                        switch (idlType) {
+
+                            case 'enum':
+                                return `
+            let some_${simple_slug}_js = options_js.get::<&str, JsString>("${m.name}")?;
+            let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
+                let ${simple_slug}_str = ${simple_slug}_js.into_utf8()?.into_owned()?;
+
+                match ${simple_slug}_str.as_str() {${idl.values.map(v => `
+                    "${v.value}" => ${idl.name}::${d.camelcase(v.value)},`).join('')}
+                    _ => panic!("undefined value for ${idl.name}"),
+                }
+            } else {
+                ${idl.name}::default()
+            };
+                                `;
+                                break;
+
+                            case 'interface':
+                                return `
+            let some_${simple_slug}_js = options_js.get::<&str, JsObject>("${m.name}")?;
+            let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
+                let ${simple_slug}_napi = ctx.env.unwrap::<${d.napiName(idl)}>(&${simple_slug}_js)?;
+                Some(${simple_slug}_napi.unwrap().clone())
+            } else {
+                None
+            };
+                                `;
+                            default:
+                                console.log(`constructor: cannot parse argument ${d.name(idl)} - idlType ${idlType}`);
+                                break;
+                        }
+                        break;
+                }
+            }).join('')}
+
+            ${argIdlType} {
+                ${argumentIdl.members.map(m => d.slug(m, true)).join(', ')},
+                ${d.parent(argumentIdl) === 'AudioNodeOptions' ?
+                `channel_config: ChannelConfigOptions::default(),` : ``}
+            }
+        },
+        Either::B(_) => { ${d.name(d.node) == "IIRFilterNode" ? `
+            // some nodes don't provide default options
+            return Err(napi::Error::from_reason(
+                "Options are mandatory for node ${d.name(d.node)}".to_string(),
+            ));` : `
+            Default::default()` }
+        }
+    };
+        `;
+    }).join('')}
+
+
+    let native_node = Rc::new(${d.name(d.node)}::new(audio_context, options));
     ${d.audioParams(d.node).map((param) => {
         return `
     // AudioParam: ${d.name(d.node)}::${param.name}
@@ -397,8 +536,13 @@ fn ${d.slug(method)}(ctx: CallContext) -> Result<JsUndefined> {
     let node = napi_node.unwrap();
 
     ${method.arguments.map((arg, index) => {
-        const memberType = d.memberType(arg);
         switch (d.memberType(arg)) {
+            case 'float':
+                return `
+    let mut ${d.slug(arg.name)}_js = ctx.get::<JsNumber>(${index})?;
+    let ${d.slug(arg.name)} = ${d.slug(arg.name)}_js.get_double() as f32;
+                `;
+                break;
             case 'Float32Array':
                 return `
     #[allow(clippy::unnecessary_mut_passed)]
@@ -407,16 +551,30 @@ fn ${d.slug(method)}(ctx: CallContext) -> Result<JsUndefined> {
                 `;
                 break;
             default:
-                console.log(`[WARNING] argument ${arg.name} for method ${method.name} with type ${memberType} not parsed`);
-                doWriteMethodCall = false;
+                let idl = d.findInTree(d.memberType(arg));
+
+                // this is a not implemented primitive
+                if (idl === undefined) {
+                    console.log(`[method] argument ${arg.name} for method ${method.name} with type ${d.memberType(arg)} not parsed`);
+                    doWriteMethodCall = false;
+                } else {
+                    switch (d.type(idl)) {
+                        case 'interface':
+                            return `
+        let ${d.slug(arg.name)}_js = ctx.get::<JsObject>(${index})?;
+        let ${d.slug(arg.name)}_napi = ctx.env.unwrap::<${d.napiName(idl)}>(&${d.slug(arg.name)}_js)?;
+        let ${d.slug(arg.name)} = ${d.slug(arg.name)}_napi.unwrap().clone();
+                            `;
+                            break;
+                        default:
+                            console.log(`[method] argument ${arg.name} for method ${method.name} with type ${d.memberType(arg)} not parsed`);
+                            doWriteMethodCall = false;
+                            break;
+                    }
+                }
                 break;
 
         }
-        // for (let name in arg) console.log(name);
-        // console.log(arg.name);
-        // console.log();
-        // console.log(arg.nullable);
-        // console.log(arg.optionnal);
     }).join('')}
 
     ${doWriteMethodCall ?

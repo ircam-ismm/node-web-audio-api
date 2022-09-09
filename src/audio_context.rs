@@ -38,10 +38,14 @@ impl NapiAudioContext {
                 Property::new("createBufferSource")?.with_method(create_buffer_source),
                 Property::new("createBiquadFilter")?.with_method(create_biquad_filter),
                 Property::new("createChannelMerger")?.with_method(create_channel_merger),
+                Property::new("createChannelSplitter")?.with_method(create_channel_splitter),
                 Property::new("createConstantSource")?.with_method(create_constant_source),
+                Property::new("createDelay")?.with_method(create_delay),
                 Property::new("createDynamicsCompressor")?.with_method(create_dynamics_compressor),
                 Property::new("createGain")?.with_method(create_gain),
+                Property::new("createIIRFilter")?.with_method(create_iir_filter),
                 Property::new("createOscillator")?.with_method(create_oscillator),
+                Property::new("createStereoPanner")?.with_method(create_stereo_panner),
             ],
         )
     }
@@ -281,12 +285,34 @@ fn create_channel_merger(ctx: CallContext) -> Result<JsObject> {
 }
 
 #[js_function]
+fn create_channel_splitter(ctx: CallContext) -> Result<JsObject> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+
+    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+    let ctor: JsFunction = store.get_named_property("ChannelSplitterNode")?;
+
+    ctor.new_instance(&[js_this])
+}
+
+#[js_function]
 fn create_constant_source(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
 
     let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
     let store: JsObject = ctx.env.get_reference_value(store_ref)?;
     let ctor: JsFunction = store.get_named_property("ConstantSourceNode")?;
+
+    ctor.new_instance(&[js_this])
+}
+
+#[js_function]
+fn create_delay(ctx: CallContext) -> Result<JsObject> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+
+    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+    let ctor: JsFunction = store.get_named_property("DelayNode")?;
 
     ctor.new_instance(&[js_this])
 }
@@ -314,12 +340,34 @@ fn create_gain(ctx: CallContext) -> Result<JsObject> {
 }
 
 #[js_function]
+fn create_iir_filter(ctx: CallContext) -> Result<JsObject> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+
+    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+    let ctor: JsFunction = store.get_named_property("IIRFilterNode")?;
+
+    ctor.new_instance(&[js_this])
+}
+
+#[js_function]
 fn create_oscillator(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
 
     let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
     let store: JsObject = ctx.env.get_reference_value(store_ref)?;
     let ctor: JsFunction = store.get_named_property("OscillatorNode")?;
+
+    ctor.new_instance(&[js_this])
+}
+
+#[js_function]
+fn create_stereo_panner(ctx: CallContext) -> Result<JsObject> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+
+    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+    let ctor: JsFunction = store.get_named_property("StereoPannerNode")?;
 
     ctor.new_instance(&[js_this])
 }
