@@ -22,10 +22,6 @@ ${d.nodes.map(n => { return `
 mod ${d.slug(n)};
 use crate::${d.slug(n)}::${d.napiName(n)};`}).join('')}
 
-// misc
-mod utils;
-use crate::utils::load;
-
 #[cfg(all(
     any(windows, unix),
     target_arch = "x86_64",
@@ -62,9 +58,6 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     let napi_class = ${d.napiName(n)}::create_js_class(&env)?;
     store.set_named_property("${d.name(n)}", napi_class)?;
     `}).join('')}
-
-    // utils
-    exports.create_named_method("load", load)?;
 
     // store the store into instance so that it can be globally accessed
     let store_ref = env.create_reference(store)?;

@@ -1,6 +1,5 @@
 const { existsSync, readFileSync } = require('fs');
 const { join } = require('path');
-const { patchAudioContext } = require('./monkey-patch.js');
 
 const { platform, arch } = process;
 
@@ -87,7 +86,10 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding for OS: ${platform}, architecture: ${arch}`);
 }
 
+const { patchAudioContext, load } = require('./monkey-patch.js');
+
 nativeBinding.AudioContext = patchAudioContext(nativeBinding.AudioContext);
+nativeBinding.load = load;
 
 module.exports = nativeBinding;
 

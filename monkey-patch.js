@@ -1,3 +1,4 @@
+const fs = require('fs');
 
 let contextId = 0;
 
@@ -45,10 +46,24 @@ module.exports.patchAudioContext = function(NativeAudioContext) {
     }
 
     decodeAudioData(audioData) {
-      const audioBuffer = super.decodeAudioData(audioData);
-      return Promise.resolve(audioBuffer);
+      try {
+        const audioBuffer = super.decodeAudioData(audioData);
+        return Promise.resolve(audioBuffer);
+      } catch (err) {
+        return Promise.reject(err);
+      }
     }
   }
 
   return AudioContext;
+}
+
+// dumb method provided to mock an xhr call and mimick browser's API
+// see also `AudioContext.decodeAudioData`
+module.exports.load = function(path) {
+  if (!fs.existsSync(path)) {
+    throw new Error(`File not found: "${path}"`);
+  }
+
+  return { path };
 }

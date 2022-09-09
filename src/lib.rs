@@ -41,10 +41,6 @@ use crate::gain_node::NapiGainNode;
 mod oscillator_node;
 use crate::oscillator_node::NapiOscillatorNode;
 
-// misc
-mod utils;
-use crate::utils::load;
-
 #[cfg(all(
     any(windows, unix),
     target_arch = "x86_64",
@@ -110,9 +106,6 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     exports.set_named_property("OscillatorNode", napi_class)?;
     let napi_class = NapiOscillatorNode::create_js_class(&env)?;
     store.set_named_property("OscillatorNode", napi_class)?;
-
-    // utils
-    exports.create_named_method("load", load)?;
 
     // store the store into instance so that it can be globally accessed
     let store_ref = env.create_reference(store)?;

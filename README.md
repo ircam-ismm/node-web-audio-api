@@ -88,6 +88,12 @@ npm run build
 
 The package will then be built on your machine, which might take some time
 
+## Known limitation / caveats
+
+- async function are not trully async but only monkey patched on the JS side, this will
+be updated once `web-audio-api-rs` provide async version of the methods.
+- see `web-audio-api-rs`
+
 ## Development notes
 
 The npm script rely on [`cargo-bump`](https://crates.io/crates/cargo-bump) to maintain version synced between

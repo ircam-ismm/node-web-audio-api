@@ -178,7 +178,7 @@ supportedNodes.sort().forEach((name, index) => {
   });
 
   let pathname = path.join(output, `${utils.slug(nodeIdl)}.rs`);
-  console.log('> generating file: ', pathname);
+  console.log('> generating file: ', path.relative(process.cwd(), pathname));
   fs.writeFileSync(pathname, generated(nodeCode));
 
   audioNodes.push(nodeIdl);
@@ -197,7 +197,7 @@ supportedNodes.sort().forEach((name, index) => {
   });
 
   let pathname = path.join(output, `${src}.rs`);
-  console.log('> generating file: ', pathname);
+  console.log('> generating file: ', path.relative(process.cwd(), pathname));
   fs.writeFileSync(pathname, generated(code));
 });
 

@@ -176,21 +176,28 @@ fn decode_audio_data(ctx: CallContext) -> Result<JsObject> {
     let str_path = &uf8_path[..];
 
     let file = File::open(str_path).unwrap();
-    let audio_buffer = context.decode_audio_data_sync(file).unwrap();
+    let audio_buffer = context.decode_audio_data_sync(file);
 
-    // create js audio buffer instance
-    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
-    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
-    let ctor: JsFunction = store.get_named_property("AudioBuffer")?;
-    let mut options = ctx.env.create_object()?;
-    options.set("__decode_audio_data_caller__", ctx.env.get_null())?;
+    match audio_buffer {
+        Ok(audio_buffer) => {
+            // create js audio buffer instance
+            let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+            let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+            let ctor: JsFunction = store.get_named_property("AudioBuffer")?;
+            let mut options = ctx.env.create_object()?;
+            options.set("__decode_audio_data_caller__", ctx.env.get_null())?;
 
-    // populate with audio buffer
-    let js_audio_buffer = ctor.new_instance(&[options])?;
-    let napi_audio_buffer = ctx.env.unwrap::<NapiAudioBuffer>(&js_audio_buffer)?;
-    napi_audio_buffer.populate(audio_buffer);
+            // populate with audio buffer
+            let js_audio_buffer = ctor.new_instance(&[options])?;
+            let napi_audio_buffer = ctx.env.unwrap::<NapiAudioBuffer>(&js_audio_buffer)?;
+            napi_audio_buffer.populate(audio_buffer);
 
-    Ok(js_audio_buffer)
+            Ok(js_audio_buffer)
+        },
+        Err(e) => {
+            Err(napi::Error::from_reason(e.to_string()))
+        },
+    }
 }
 
 #[js_function(3)]
