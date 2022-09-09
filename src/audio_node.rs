@@ -76,6 +76,17 @@ macro_rules! connect_method {
 
                     Ok(js_dest)
                 }
+                "DynamicsCompressorNode" => {
+                    let napi_dest = ctx
+                        .env
+                        .unwrap::<$crate::dynamics_compressor_node::NapiDynamicsCompressorNode>(
+                        &js_dest,
+                    )?;
+                    let native_dest = napi_dest.unwrap();
+                    let _res = native_src.connect_at(native_dest, output as usize, input as usize);
+
+                    Ok(js_dest)
+                }
                 "GainNode" => {
                     let napi_dest = ctx
                         .env

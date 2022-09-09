@@ -30,6 +30,8 @@ mod audio_buffer_source_node;
 use crate::audio_buffer_source_node::NapiAudioBufferSourceNode;
 mod biquad_filter_node;
 use crate::biquad_filter_node::NapiBiquadFilterNode;
+mod dynamics_compressor_node;
+use crate::dynamics_compressor_node::NapiDynamicsCompressorNode;
 mod gain_node;
 use crate::gain_node::NapiGainNode;
 mod oscillator_node;
@@ -79,6 +81,11 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     exports.set_named_property("BiquadFilterNode", napi_class)?;
     let napi_class = NapiBiquadFilterNode::create_js_class(&env)?;
     store.set_named_property("BiquadFilterNode", napi_class)?;
+
+    let napi_class = NapiDynamicsCompressorNode::create_js_class(&env)?;
+    exports.set_named_property("DynamicsCompressorNode", napi_class)?;
+    let napi_class = NapiDynamicsCompressorNode::create_js_class(&env)?;
+    store.set_named_property("DynamicsCompressorNode", napi_class)?;
 
     let napi_class = NapiGainNode::create_js_class(&env)?;
     exports.set_named_property("GainNode", napi_class)?;

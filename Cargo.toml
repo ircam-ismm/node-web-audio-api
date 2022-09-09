@@ -17,6 +17,9 @@ web-audio-api = "0.23"
 [target.'cfg(all(any(windows, unix), target_arch = "x86_64", not(target_env = "musl")))'.dependencies]
 mimalloc = {version = "0.1"}
 
+[dev-dependencies]
+cargo-bump = "1.1.0"
+
 [build-dependencies]
 napi-build = "1"
 

@@ -15,6 +15,7 @@ let supportedNodes = [
   // `ChannelSplitterNode`,
   // `ConstantSourceNode`,
   // `DelayNode`,
+  'DynamicsCompressorNode',
   `GainNode`,
   // `IIRFilterNode`,
   `OscillatorNode`,
