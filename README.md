@@ -88,6 +88,15 @@ npm run build
 
 The package will then be built on your machine, which might take some time
 
+## Development notes
+
+The npm script rely on [`cargo-bump`](https://crates.io/crates/cargo-bump) to maintain version synced between
+the `package.json` and the `Cargo.toml` files. Therefore, you will need to install 
+`cargo-bump` on your machine
+
+```
+cargo install cargo-bump
+```
 
 ## License
 

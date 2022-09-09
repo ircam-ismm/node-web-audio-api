@@ -29,7 +29,7 @@
     "check": "cargo fmt && cargo clippy",
     "generate": "node generator/index.mjs && cargo fmt",
     "preversion": "npm run generate",
-    "postversion": "cargo bump $npm_package_version"
+    "postversion": "cargo bump $npm_package_version && git commit -am \"v$npm_package_version\""
   },
   "devDependencies": {
     "@sindresorhus/slugify": "^2.1.0",
