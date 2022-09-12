@@ -61,6 +61,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_property_attributes(PropertyAttributes::Static),
     ])?;
 
+    // parse options
     let options = match ctx.try_get::<JsObject>(1)? {
         Either::A(options_js) => {
             let some_type_js = options_js.get::<&str, JsString>("type")?;

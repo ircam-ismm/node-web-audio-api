@@ -25,6 +25,8 @@ impl NapiAudioContext {
                 Property::new("currentTime")?.with_getter(get_current_time),
                 Property::new("sampleRate")?.with_getter(get_sample_rate),
                 Property::new("state")?.with_getter(get_state),
+                Property::new("baseLatency")?.with_getter(get_base_latency),
+                Property::new("outputLatency")?.with_getter(get_output_latency),
                 // for now async methods are sync, from a JS perpspective the
                 // API will nonetheless be the same... (see monkey-patch.js)
                 Property::new("resume")?.with_method(resume),
@@ -153,6 +155,26 @@ fn get_state(ctx: CallContext) -> Result<JsString> {
     };
 
     ctx.env.create_string(state_str)
+}
+
+#[js_function]
+fn get_base_latency(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
+    let obj = napi_obj.unwrap();
+
+    let base_latency = obj.base_latency() as f64;
+    ctx.env.create_double(base_latency)
+}
+
+#[js_function]
+fn get_output_latency(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
+    let obj = napi_obj.unwrap();
+
+    let output_latency = obj.output_latency() as f64;
+    ctx.env.create_double(output_latency)
 }
 
 // ----------------------------------------------------

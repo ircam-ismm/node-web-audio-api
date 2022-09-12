@@ -63,6 +63,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_property_attributes(PropertyAttributes::Static),
     ])?;
 
+    // parse options
     let options = match ctx.try_get::<JsObject>(1)? {
         Either::A(options_js) => {
             let curve = if let Some(curve_js) = options_js.get::<&str, JsTypedArray>("curve")? {
