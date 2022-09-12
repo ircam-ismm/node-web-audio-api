@@ -6,6 +6,7 @@
 // ---------------------------------------------------------- //
 
 use crate::*;
+use napi::*;
 use napi_derive::js_function;
 use std::rc::Rc;
 use web_audio_api::node::*;
@@ -13,25 +14,25 @@ use web_audio_api::node::*;
 pub(crate) struct NapiBiquadFilterNode(Rc<BiquadFilterNode>);
 
 impl NapiBiquadFilterNode {
-    pub fn create_js_class(env: &napi::Env) -> napi::Result<napi::JsFunction> {
+    pub fn create_js_class(env: &Env) -> Result<JsFunction> {
         env.define_class(
             "BiquadFilterNode",
             constructor,
             &[
                 // Attributes
-                napi::Property::new("type")?
+                Property::new("type")?
                     .with_getter(get_type)
                     .with_setter(set_type)
-                    .with_property_attributes(napi::PropertyAttributes::Enumerable),
+                    .with_property_attributes(PropertyAttributes::Enumerable),
                 // Methods
-                napi::Property::new("getFrequencyResponse")?
+                Property::new("getFrequencyResponse")?
                     .with_method(get_frequency_response)
-                    .with_property_attributes(napi::PropertyAttributes::Enumerable),
+                    .with_property_attributes(PropertyAttributes::Enumerable),
                 // AudioNode interface
-                napi::Property::new("connect")?
+                Property::new("connect")?
                     .with_method(connect)
-                    .with_property_attributes(napi::PropertyAttributes::Enumerable),
-                // napi::Property::new("disconnect")?.with_method(disconnect),
+                    .with_property_attributes(PropertyAttributes::Enumerable),
+                // Property::new("disconnect")?.with_method(disconnect),
             ],
         )
     }
@@ -42,29 +43,27 @@ impl NapiBiquadFilterNode {
 }
 
 #[js_function(2)]
-fn constructor(ctx: napi::CallContext) -> napi::Result<napi::JsUndefined> {
-    let mut js_this = ctx.this_unchecked::<napi::JsObject>();
+fn constructor(ctx: CallContext) -> Result<JsUndefined> {
+    let mut js_this = ctx.this_unchecked::<JsObject>();
 
     // first argument is always AudioContext
-    let js_audio_context = ctx.get::<napi::JsObject>(0)?;
+    let js_audio_context = ctx.get::<JsObject>(0)?;
     let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
     let audio_context = napi_audio_context.unwrap();
 
     js_this.define_properties(&[
-        napi::Property::new("context")?
+        Property::new("context")?
             .with_value(&js_audio_context)
-            .with_property_attributes(napi::PropertyAttributes::Enumerable),
+            .with_property_attributes(PropertyAttributes::Enumerable),
         // this must be put on the instance and not in the prototype to be reachable
-        napi::Property::new("Symbol.toStringTag")?
+        Property::new("Symbol.toStringTag")?
             .with_value(&ctx.env.create_string("BiquadFilterNode")?)
-            .with_property_attributes(napi::PropertyAttributes::Static),
+            .with_property_attributes(PropertyAttributes::Static),
     ])?;
 
-    // parse options
-
-    let options = match ctx.try_get::<napi::JsObject>(1)? {
-        napi::Either::A(options_js) => {
-            let some_type_js = options_js.get::<&str, napi::JsString>("type")?;
+    let options = match ctx.try_get::<JsObject>(1)? {
+        Either::A(options_js) => {
+            let some_type_js = options_js.get::<&str, JsString>("type")?;
             let type_ = if let Some(type_js) = some_type_js {
                 let type_str = type_js.into_utf8()?.into_owned()?;
 
@@ -83,28 +82,28 @@ fn constructor(ctx: napi::CallContext) -> napi::Result<napi::JsUndefined> {
                 BiquadFilterType::default()
             };
 
-            let some_q_js = options_js.get::<&str, napi::JsNumber>("Q")?;
+            let some_q_js = options_js.get::<&str, JsNumber>("Q")?;
             let q = if let Some(q_js) = some_q_js {
                 q_js.get_double()? as f32
             } else {
                 1.
             };
 
-            let some_detune_js = options_js.get::<&str, napi::JsNumber>("detune")?;
+            let some_detune_js = options_js.get::<&str, JsNumber>("detune")?;
             let detune = if let Some(detune_js) = some_detune_js {
                 detune_js.get_double()? as f32
             } else {
                 0.
             };
 
-            let some_frequency_js = options_js.get::<&str, napi::JsNumber>("frequency")?;
+            let some_frequency_js = options_js.get::<&str, JsNumber>("frequency")?;
             let frequency = if let Some(frequency_js) = some_frequency_js {
                 frequency_js.get_double()? as f32
             } else {
                 350.
             };
 
-            let some_gain_js = options_js.get::<&str, napi::JsNumber>("gain")?;
+            let some_gain_js = options_js.get::<&str, JsNumber>("gain")?;
             let gain = if let Some(gain_js) = some_gain_js {
                 gain_js.get_double()? as f32
             } else {
@@ -120,11 +119,7 @@ fn constructor(ctx: napi::CallContext) -> napi::Result<napi::JsUndefined> {
                 channel_config: ChannelConfigOptions::default(),
             }
         }
-        napi::Either::B(_) => {
-            return Err(napi::Error::from_reason(
-                "Options are mandatory for node BiquadFilterNode".to_string(),
-            ));
-        }
+        Either::B(_) => Default::default(),
     };
 
     let native_node = Rc::new(BiquadFilterNode::new(audio_context, options));
@@ -179,8 +174,8 @@ connect_method!(NapiBiquadFilterNode);
 // -------------------------------------------------
 
 #[js_function(0)]
-fn get_type(ctx: napi::CallContext) -> napi::Result<napi::JsString> {
-    let js_this = ctx.this_unchecked::<napi::JsObject>();
+fn get_type(ctx: CallContext) -> Result<JsString> {
+    let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiBiquadFilterNode>(&js_this)?;
     let node = napi_node.unwrap();
 
@@ -204,12 +199,12 @@ fn get_type(ctx: napi::CallContext) -> napi::Result<napi::JsString> {
 // -------------------------------------------------
 
 #[js_function(0)]
-fn set_type(ctx: napi::CallContext) -> napi::Result<napi::JsUndefined> {
-    let js_this = ctx.this_unchecked::<napi::JsObject>();
+fn set_type(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiBiquadFilterNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let js_str = ctx.get::<napi::JsString>(0)?;
+    let js_str = ctx.get::<JsString>(0)?;
     let uf8_str = js_str.into_utf8()?.into_owned()?;
     let value = match uf8_str.as_str() {
         "lowpass" => BiquadFilterType::Lowpass,
@@ -233,23 +228,23 @@ fn set_type(ctx: napi::CallContext) -> napi::Result<napi::JsUndefined> {
 // -------------------------------------------------
 
 #[js_function(3)]
-fn get_frequency_response(ctx: napi::CallContext) -> napi::Result<napi::JsUndefined> {
-    let js_this = ctx.this_unchecked::<napi::JsObject>();
+fn get_frequency_response(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiBiquadFilterNode>(&js_this)?;
     // avoid warnings while we don't support all methods
     #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
     #[allow(clippy::unnecessary_mut_passed)]
-    let mut frequency_hz_js = ctx.get::<napi::JsTypedArray>(0)?.into_value()?;
+    let mut frequency_hz_js = ctx.get::<JsTypedArray>(0)?.into_value()?;
     let frequency_hz: &mut [f32] = frequency_hz_js.as_mut();
 
     #[allow(clippy::unnecessary_mut_passed)]
-    let mut mag_response_js = ctx.get::<napi::JsTypedArray>(1)?.into_value()?;
+    let mut mag_response_js = ctx.get::<JsTypedArray>(1)?.into_value()?;
     let mag_response: &mut [f32] = mag_response_js.as_mut();
 
     #[allow(clippy::unnecessary_mut_passed)]
-    let mut phase_response_js = ctx.get::<napi::JsTypedArray>(2)?.into_value()?;
+    let mut phase_response_js = ctx.get::<JsTypedArray>(2)?.into_value()?;
     let phase_response: &mut [f32] = phase_response_js.as_mut();
 
     node.get_frequency_response(frequency_hz, mag_response, phase_response);

@@ -131,6 +131,16 @@ const utils = {
     return factory;
   },
 
+  factoryIdl(name) {
+    let idl = utils.findInTree('BaseAudioContext').members.find(m => m.name === name);
+
+    if (!idl) {
+      throw new Error(`couldn't find idl for factory: ${name}`);
+    }
+
+    return idl;
+  },
+
   slug(idl, sanitize = false) {
     if (typeof idl === 'string') {
       return slugify(idl, { separator: '_', preserveTrailingDash: true });
@@ -178,14 +188,15 @@ let nodesTmpl = compile(nodesCodeTmpl);
 
 supportedNodes.sort().forEach((name, index) => {
   const nodeIdl = findInTree(name);
+  const pathname = path.join(output, `${utils.slug(nodeIdl)}.rs`);
+  console.log('> generating file: ', path.relative(process.cwd(), pathname));
+
   const nodeCode = nodesTmpl({
     node: nodeIdl,
     tree,
     ...utils
   });
 
-  let pathname = path.join(output, `${utils.slug(nodeIdl)}.rs`);
-  console.log('> generating file: ', path.relative(process.cwd(), pathname));
   fs.writeFileSync(pathname, generated(nodeCode));
 
   audioNodes.push(nodeIdl);
@@ -195,6 +206,9 @@ supportedNodes.sort().forEach((name, index) => {
 
 // write AudioParam getters
 ['audio_param', 'audio_node', 'lib', 'audio_context'].forEach(src => {
+  const pathname = path.join(output, `${src}.rs`);
+  console.log('> generating file: ', path.relative(process.cwd(), pathname));
+
   let codeTmpl = fs.readFileSync(path.join(templates, `${src}.tmpl.rs`), 'utf8');
   let tmpl = compile(codeTmpl);
   let code = tmpl({
@@ -203,8 +217,6 @@ supportedNodes.sort().forEach((name, index) => {
     ...utils,
   });
 
-  let pathname = path.join(output, `${src}.rs`);
-  console.log('> generating file: ', path.relative(process.cwd(), pathname));
   fs.writeFileSync(pathname, generated(code));
 });
 

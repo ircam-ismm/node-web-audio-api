@@ -67,9 +67,10 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_value(&ctx.env.create_string("${d.name(d.node)}")?)
             .with_property_attributes(PropertyAttributes::Static),
     ])?;
-
-    // parse options
     ${d.constructor(d.node).arguments.map((argument, index) => {
+        // ----------------------------------------------
+        // parse options
+        // ----------------------------------------------
 
         if (index == 0) { // index 0 is always AudioContext
             return;
@@ -83,11 +84,11 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         const arg = d.constructor(d.node).arguments[1];
         const argIdlType = d.memberType(arg);
         const argumentIdl = d.findInTree(argIdlType);
-
-        console.log(d.name(d.node))
+        // console.log(d.name(d.node))
         // argumentIdl.members.map((m) => console.log(d.name(m), JSON.stringify(d.memberType(m), null, 2)))
 
         return `
+    // parse options
     let options = match ctx.try_get::<JsObject>(${index})? {
         Either::A(options_js) => {
             ${argumentIdl.members.map(m => {
@@ -149,7 +150,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                     default: '';
 
                         if (m.idlType.type === 'dictionary-type' && m.idlType.generic === 'sequence') {
-                            console.log(JSON.stringify(m.idlType.idlType));
                             return `
             let ${simple_slug} = if let Some(${simple_slug}_js) = options_js.get::<&str, JsTypedArray>("${m.name}")? {
                 let ${simple_slug}_value = ${simple_slug}_js.into_value()?;
@@ -212,7 +212,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                 `channel_config: ChannelConfigOptions::default(),` : ``}
             }
         },
-        Either::B(_) => { ${argumentIdl.members.reduce((acc, current) => acc || current, false) ? `
+        Either::B(_) => { ${argumentIdl.members.reduce((acc, current) => acc || current.required, false) ? `
             return Err(napi::Error::from_reason(
                 "Options are mandatory for node ${d.name(d.node)}".to_string(),
             ));` : `

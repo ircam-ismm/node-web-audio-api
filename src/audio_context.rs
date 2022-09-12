@@ -252,7 +252,7 @@ fn create_buffer(ctx: CallContext) -> Result<JsObject> {
 // Factory methods
 // ----------------------------------------------------
 
-#[js_function]
+#[js_function(0)]
 fn create_buffer_source(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
 
@@ -263,7 +263,7 @@ fn create_buffer_source(ctx: CallContext) -> Result<JsObject> {
     ctor.new_instance(&[js_this])
 }
 
-#[js_function]
+#[js_function(0)]
 fn create_biquad_filter(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
 
@@ -274,7 +274,7 @@ fn create_biquad_filter(ctx: CallContext) -> Result<JsObject> {
     ctor.new_instance(&[js_this])
 }
 
-#[js_function]
+#[js_function(1)]
 fn create_channel_merger(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
 
@@ -282,10 +282,17 @@ fn create_channel_merger(ctx: CallContext) -> Result<JsObject> {
     let store: JsObject = ctx.env.get_reference_value(store_ref)?;
     let ctor: JsFunction = store.get_named_property("ChannelMergerNode")?;
 
-    ctor.new_instance(&[js_this])
+    let mut options = ctx.env.create_object()?;
+
+    match ctx.try_get::<JsNumber>(0)? {
+        Either::A(value) => options.set("numberOfInputs", value)?,
+        Either::B(_) => (),
+    }
+
+    ctor.new_instance(&[js_this, options])
 }
 
-#[js_function]
+#[js_function(1)]
 fn create_channel_splitter(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
 
@@ -293,10 +300,17 @@ fn create_channel_splitter(ctx: CallContext) -> Result<JsObject> {
     let store: JsObject = ctx.env.get_reference_value(store_ref)?;
     let ctor: JsFunction = store.get_named_property("ChannelSplitterNode")?;
 
-    ctor.new_instance(&[js_this])
+    let mut options = ctx.env.create_object()?;
+
+    match ctx.try_get::<JsNumber>(0)? {
+        Either::A(value) => options.set("numberOfOutputs", value)?,
+        Either::B(_) => (),
+    }
+
+    ctor.new_instance(&[js_this, options])
 }
 
-#[js_function]
+#[js_function(0)]
 fn create_constant_source(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
 
@@ -307,7 +321,7 @@ fn create_constant_source(ctx: CallContext) -> Result<JsObject> {
     ctor.new_instance(&[js_this])
 }
 
-#[js_function]
+#[js_function(1)]
 fn create_delay(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
 
@@ -315,10 +329,17 @@ fn create_delay(ctx: CallContext) -> Result<JsObject> {
     let store: JsObject = ctx.env.get_reference_value(store_ref)?;
     let ctor: JsFunction = store.get_named_property("DelayNode")?;
 
-    ctor.new_instance(&[js_this])
+    let mut options = ctx.env.create_object()?;
+
+    match ctx.try_get::<JsNumber>(0)? {
+        Either::A(value) => options.set("maxDelayTime", value)?,
+        Either::B(_) => (),
+    }
+
+    ctor.new_instance(&[js_this, options])
 }
 
-#[js_function]
+#[js_function(0)]
 fn create_dynamics_compressor(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
 
@@ -329,7 +350,7 @@ fn create_dynamics_compressor(ctx: CallContext) -> Result<JsObject> {
     ctor.new_instance(&[js_this])
 }
 
-#[js_function]
+#[js_function(0)]
 fn create_gain(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
 
@@ -340,7 +361,7 @@ fn create_gain(ctx: CallContext) -> Result<JsObject> {
     ctor.new_instance(&[js_this])
 }
 
-#[js_function]
+#[js_function(2)]
 fn create_iir_filter(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
 
@@ -348,10 +369,22 @@ fn create_iir_filter(ctx: CallContext) -> Result<JsObject> {
     let store: JsObject = ctx.env.get_reference_value(store_ref)?;
     let ctor: JsFunction = store.get_named_property("IIRFilterNode")?;
 
-    ctor.new_instance(&[js_this])
+    let mut options = ctx.env.create_object()?;
+
+    match ctx.try_get::<JsTypedArray>(0)? {
+        Either::A(value) => options.set("feedforward", value)?,
+        Either::B(_) => (),
+    }
+
+    match ctx.try_get::<JsTypedArray>(1)? {
+        Either::A(value) => options.set("feedback", value)?,
+        Either::B(_) => (),
+    }
+
+    ctor.new_instance(&[js_this, options])
 }
 
-#[js_function]
+#[js_function(0)]
 fn create_oscillator(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
 
@@ -362,7 +395,7 @@ fn create_oscillator(ctx: CallContext) -> Result<JsObject> {
     ctor.new_instance(&[js_this])
 }
 
-#[js_function]
+#[js_function(0)]
 fn create_stereo_panner(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
 
@@ -373,7 +406,7 @@ fn create_stereo_panner(ctx: CallContext) -> Result<JsObject> {
     ctor.new_instance(&[js_this])
 }
 
-#[js_function]
+#[js_function(0)]
 fn create_wave_shaper(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
 
