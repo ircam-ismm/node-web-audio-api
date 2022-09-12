@@ -168,7 +168,7 @@ fn set_curve(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 
-#[js_function(0)]
+#[js_function(1)]
 fn set_oversample(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiWaveShaperNode>(&js_this)?;

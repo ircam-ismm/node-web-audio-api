@@ -14,9 +14,9 @@ sine.start();
 console.log("- BaseLatency: {:?}", context.baseLatency);
 
 (function loop() {
-    console.log("-------------------------------------------------");
-    console.log("+ currentTime {:?}", context.currentTime);
-    console.log("+ OutputLatency: {:?}", context.outputLatency);
+  console.log("-------------------------------------------------");
+  console.log("+ currentTime {:?}", context.currentTime);
+  console.log("+ OutputLatency: {:?}", context.outputLatency);
 
-    setTimeout(loop, 1000);
+  setTimeout(loop, 1000);
 }());

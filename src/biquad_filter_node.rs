@@ -199,7 +199,7 @@ fn get_type(ctx: CallContext) -> Result<JsString> {
 // SETTERS
 // -------------------------------------------------
 
-#[js_function(0)]
+#[js_function(1)]
 fn set_type(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiBiquadFilterNode>(&js_this)?;

@@ -484,7 +484,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
             switch (idlType) {
                 case 'enum':
                     return `
-#[js_function(0)]
+#[js_function(1)]
 fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;

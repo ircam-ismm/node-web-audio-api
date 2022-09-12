@@ -33,6 +33,7 @@ impl NapiAudioContext {
                 Property::new("suspend")?.with_method(suspend),
                 Property::new("close")?.with_method(close),
                 Property::new("decodeAudioData")?.with_method(decode_audio_data),
+                Property::new("createPeriodicWave")?.with_method(create_periodic_wave),
                 Property::new("createBuffer")?.with_method(create_buffer),
                 // ----------------------------------------------------
                 // Factory methods
@@ -268,6 +269,38 @@ fn create_buffer(ctx: CallContext) -> Result<JsObject> {
     options.set("sampleRate", sample_rate)?;
 
     ctor.new_instance(&[options])
+}
+
+#[js_function(3)]
+fn create_periodic_wave(ctx: CallContext) -> Result<JsObject> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+
+    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+    let ctor: JsFunction = store.get_named_property("PeriodicWave")?;
+
+    let real = ctx.get::<JsTypedArray>(0)?;
+    let imag = ctx.get::<JsTypedArray>(1)?;
+    // this differ slightly from the spec
+    let disable_normalization = match ctx.try_get::<JsObject>(2)? {
+        Either::A(constraints_js) => {
+            if let Some(disable_nomalization) =
+                constraints_js.get::<&str, JsBoolean>("disableNormalization")?
+            {
+                disable_nomalization
+            } else {
+                ctx.env.get_boolean(false)?
+            }
+        }
+        Either::B(_) => ctx.env.get_boolean(false)?,
+    };
+
+    let mut options = ctx.env.create_object()?;
+    options.set("real", real)?;
+    options.set("imag", imag)?;
+    options.set("disableNormalization", disable_normalization)?;
+
+    ctor.new_instance(&[js_this, options])
 }
 
 // ----------------------------------------------------
