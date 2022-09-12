@@ -2,6 +2,8 @@ import path from 'node:path';
 import webaudioapi from '../index.js';
 const { AudioContext, load } = webaudioapi;
 
+console.log('@todo - Panner issue');
+
 /*
  * This example feature a 'true physics' Doppler effect.
  *
@@ -14,31 +16,31 @@ const { AudioContext, load } = webaudioapi;
  * node moves closer to the listener, we decrease the delay time linearly. This gives the Doppler
  * effect.
  */
-const context = AudioContext::default();
-const file = File::open("samples/siren.mp3").unwrap();
-const buffer = context.decode_audio_data_sync(file).unwrap();
+// const context = AudioContext::default();
+// const file = File::open("samples/siren.mp3").unwrap();
+// const buffer = context.decode_audio_data_sync(file).unwrap();
 
-const src = context.create_buffer_source();
-src.set_buffer(buffer);
-src.set_loop(true);
+// const src = context.create_buffer_source();
+// src.set_buffer(buffer);
+// src.set_loop(true);
 
-const pannerOptions = {
-  panning_model: PanningModelType::EqualPower,
-  distance_model: DistanceModelType::Inverse,
-  position_x: 0.,
-  position_y: 100., // siren starts 100 meters away
-  position_z: 1.,   // we stand 1 meter away from the road
-  orientation_x: 1.,
-  orientation_y: 0.,
-  orientation_z: 0.,
-  ref_distance: 1.,
-  max_distance: 10000.,
-  rolloff_factor: 1.,
-  // no cone effect:
-  cone_inner_angle: 360.,
-  cone_outer_angle: 0.,
-  cone_outer_gain: 0.,
-};
+// const pannerOptions = {
+//   panning_model: PanningModelType::EqualPower,
+//   distance_model: DistanceModelType::Inverse,
+//   position_x: 0.,
+//   position_y: 100., // siren starts 100 meters away
+//   position_z: 1.,   // we stand 1 meter away from the road
+//   orientation_x: 1.,
+//   orientation_y: 0.,
+//   orientation_z: 0.,
+//   ref_distance: 1.,
+//   max_distance: 10000.,
+//   rolloff_factor: 1.,
+//   // no cone effect:
+//   cone_inner_angle: 360.,
+//   cone_outer_angle: 0.,
+//   cone_outer_gain: 0.,
+// };
 
 // const panner = new PannerNode(&context, opts);
 // // move the siren in 10 seconds from y = 100 to y = -100
