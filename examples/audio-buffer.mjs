@@ -47,4 +47,4 @@ osc.stop(context.currentTime + 3.);
 
 await new Promise(resolve => setTimeout(resolve, 3.5 * 1000));
 
-process.exit(0);
+audioContext.close();

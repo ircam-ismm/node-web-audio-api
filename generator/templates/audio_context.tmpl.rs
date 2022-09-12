@@ -225,9 +225,9 @@ ${d.nodes.map(n => {
     let factoryName = d.factoryName(n);
     let factoryIdl = d.factoryIdl(factoryName);
     let args = factoryIdl.arguments;
-
     // console.log(factoryName);
     // d.log(d.factoryIdl(factoryName).arguments);
+
     return `
 #[js_function(${args.length})]
 fn ${d.slug(factoryName)}(ctx: CallContext) -> Result<JsObject> {
