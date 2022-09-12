@@ -6,7 +6,6 @@
 // ---------------------------------------------------------- //
 
 use crate::*;
-use napi::*;
 use napi_derive::js_function;
 use std::rc::Rc;
 use web_audio_api::node::*;
@@ -14,33 +13,33 @@ use web_audio_api::node::*;
 pub(crate) struct NapiOscillatorNode(Rc<OscillatorNode>);
 
 impl NapiOscillatorNode {
-    pub fn create_js_class(env: &Env) -> Result<JsFunction> {
+    pub fn create_js_class(env: &napi::Env) -> napi::Result<napi::JsFunction> {
         env.define_class(
             "OscillatorNode",
             constructor,
             &[
                 // Attributes
-                Property::new("type")?
+                napi::Property::new("type")?
                     .with_getter(get_type)
                     .with_setter(set_type)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
+                    .with_property_attributes(napi::PropertyAttributes::Enumerable),
                 // Methods
-                Property::new("setPeriodicWave")?
+                napi::Property::new("setPeriodicWave")?
                     .with_method(set_periodic_wave)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
+                    .with_property_attributes(napi::PropertyAttributes::Enumerable),
                 // AudioNode interface
-                Property::new("connect")?
+                napi::Property::new("connect")?
                     .with_method(connect)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                // Property::new("disconnect")?.with_method(disconnect),
+                    .with_property_attributes(napi::PropertyAttributes::Enumerable),
+                // napi::Property::new("disconnect")?.with_method(disconnect),
 
                 // AudioScheduledSourceNode interface
-                Property::new("start")?
+                napi::Property::new("start")?
                     .with_method(start)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                Property::new("stop")?
+                    .with_property_attributes(napi::PropertyAttributes::Enumerable),
+                napi::Property::new("stop")?
                     .with_method(stop)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
+                    .with_property_attributes(napi::PropertyAttributes::Enumerable),
             ],
         )
     }
@@ -51,29 +50,29 @@ impl NapiOscillatorNode {
 }
 
 #[js_function(2)]
-fn constructor(ctx: CallContext) -> Result<JsUndefined> {
-    let mut js_this = ctx.this_unchecked::<JsObject>();
+fn constructor(ctx: napi::CallContext) -> napi::Result<napi::JsUndefined> {
+    let mut js_this = ctx.this_unchecked::<napi::JsObject>();
 
     // first argument is always AudioContext
-    let js_audio_context = ctx.get::<JsObject>(0)?;
+    let js_audio_context = ctx.get::<napi::JsObject>(0)?;
     let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
     let audio_context = napi_audio_context.unwrap();
 
     js_this.define_properties(&[
-        Property::new("context")?
+        napi::Property::new("context")?
             .with_value(&js_audio_context)
-            .with_property_attributes(PropertyAttributes::Enumerable),
+            .with_property_attributes(napi::PropertyAttributes::Enumerable),
         // this must be put on the instance and not in the prototype to be reachable
-        Property::new("Symbol.toStringTag")?
+        napi::Property::new("Symbol.toStringTag")?
             .with_value(&ctx.env.create_string("OscillatorNode")?)
-            .with_property_attributes(PropertyAttributes::Static),
+            .with_property_attributes(napi::PropertyAttributes::Static),
     ])?;
 
     // parse options
 
-    let options = match ctx.try_get::<JsObject>(1)? {
-        Either::A(options_js) => {
-            let some_type_js = options_js.get::<&str, JsString>("type")?;
+    let options = match ctx.try_get::<napi::JsObject>(1)? {
+        napi::Either::A(options_js) => {
+            let some_type_js = options_js.get::<&str, napi::JsString>("type")?;
             let type_ = if let Some(type_js) = some_type_js {
                 let type_str = type_js.into_utf8()?.into_owned()?;
 
@@ -89,21 +88,21 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                 OscillatorType::default()
             };
 
-            let some_frequency_js = options_js.get::<&str, JsNumber>("frequency")?;
+            let some_frequency_js = options_js.get::<&str, napi::JsNumber>("frequency")?;
             let frequency = if let Some(frequency_js) = some_frequency_js {
                 frequency_js.get_double()? as f32
             } else {
                 440.
             };
 
-            let some_detune_js = options_js.get::<&str, JsNumber>("detune")?;
+            let some_detune_js = options_js.get::<&str, napi::JsNumber>("detune")?;
             let detune = if let Some(detune_js) = some_detune_js {
                 detune_js.get_double()? as f32
             } else {
                 0.
             };
 
-            let some_periodic_wave_js = options_js.get::<&str, JsObject>("periodicWave")?;
+            let some_periodic_wave_js = options_js.get::<&str, napi::JsObject>("periodicWave")?;
             let periodic_wave = if let Some(periodic_wave_js) = some_periodic_wave_js {
                 let periodic_wave_napi = ctx.env.unwrap::<NapiPeriodicWave>(&periodic_wave_js)?;
                 Some(periodic_wave_napi.unwrap().clone())
@@ -119,7 +118,11 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                 channel_config: ChannelConfigOptions::default(),
             }
         }
-        Either::B(_) => Default::default(),
+        napi::Either::B(_) => {
+            return Err(napi::Error::from_reason(
+                "Options are mandatory for node OscillatorNode".to_string(),
+            ));
+        }
     };
 
     let native_node = Rc::new(OscillatorNode::new(audio_context, options));
@@ -157,15 +160,15 @@ connect_method!(NapiOscillatorNode);
 // AudioScheduledSourceNode Interface
 // -------------------------------------------------
 #[js_function(1)]
-fn start(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
+fn start(ctx: napi::CallContext) -> napi::Result<napi::JsUndefined> {
+    let js_this = ctx.this_unchecked::<napi::JsObject>();
     let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     if ctx.length == 0 {
         node.start();
     } else {
-        let when = ctx.get::<JsNumber>(0)?.try_into()?;
+        let when = ctx.get::<napi::JsNumber>(0)?.try_into()?;
         node.start_at(when);
     }
 
@@ -173,15 +176,15 @@ fn start(ctx: CallContext) -> Result<JsUndefined> {
 }
 
 #[js_function(1)]
-fn stop(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
+fn stop(ctx: napi::CallContext) -> napi::Result<napi::JsUndefined> {
+    let js_this = ctx.this_unchecked::<napi::JsObject>();
     let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     if ctx.length == 0 {
         node.stop();
     } else {
-        let when = ctx.get::<JsNumber>(0)?.try_into()?;
+        let when = ctx.get::<napi::JsNumber>(0)?.try_into()?;
         node.stop_at(when);
     };
 
@@ -193,8 +196,8 @@ fn stop(ctx: CallContext) -> Result<JsUndefined> {
 // -------------------------------------------------
 
 #[js_function(0)]
-fn get_type(ctx: CallContext) -> Result<JsString> {
-    let js_this = ctx.this_unchecked::<JsObject>();
+fn get_type(ctx: napi::CallContext) -> napi::Result<napi::JsString> {
+    let js_this = ctx.this_unchecked::<napi::JsObject>();
     let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
     let node = napi_node.unwrap();
 
@@ -215,12 +218,12 @@ fn get_type(ctx: CallContext) -> Result<JsString> {
 // -------------------------------------------------
 
 #[js_function(0)]
-fn set_type(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
+fn set_type(ctx: napi::CallContext) -> napi::Result<napi::JsUndefined> {
+    let js_this = ctx.this_unchecked::<napi::JsObject>();
     let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let js_str = ctx.get::<JsString>(0)?;
+    let js_str = ctx.get::<napi::JsString>(0)?;
     let uf8_str = js_str.into_utf8()?.into_owned()?;
     let value = match uf8_str.as_str() {
         "sine" => OscillatorType::Sine,
@@ -241,14 +244,14 @@ fn set_type(ctx: CallContext) -> Result<JsUndefined> {
 // -------------------------------------------------
 
 #[js_function(1)]
-fn set_periodic_wave(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
+fn set_periodic_wave(ctx: napi::CallContext) -> napi::Result<napi::JsUndefined> {
+    let js_this = ctx.this_unchecked::<napi::JsObject>();
     let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
     // avoid warnings while we don't support all methods
     #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
-    let periodic_wave_js = ctx.get::<JsObject>(0)?;
+    let periodic_wave_js = ctx.get::<napi::JsObject>(0)?;
     let periodic_wave_napi = ctx.env.unwrap::<NapiPeriodicWave>(&periodic_wave_js)?;
     let periodic_wave = periodic_wave_napi.unwrap().clone();
 

@@ -12,6 +12,7 @@ impl ${d.napiName(d.node)} {
             "${d.name(d.node)}",
             constructor,
             &[
+
                 // Attributes
                 ${d.attributes(d.node).map(attr => `Property::new("${attr.name}")?
                     .with_getter(get_${d.slug(attr)})${attr.readonly === false ? `
@@ -69,6 +70,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
     // parse options
     ${d.constructor(d.node).arguments.map((argument, index) => {
+
         if (index == 0) { // index 0 is always AudioContext
             return;
         }
@@ -81,7 +83,10 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         const arg = d.constructor(d.node).arguments[1];
         const argIdlType = d.memberType(arg);
         const argumentIdl = d.findInTree(argIdlType);
-        // console.log(arg, idlType, argumentIdl);
+
+        console.log(d.name(d.node))
+        // argumentIdl.members.map((m) => console.log(d.name(m), JSON.stringify(d.memberType(m), null, 2)))
+
         return `
     let options = match ctx.try_get::<JsObject>(${index})? {
         Either::A(options_js) => {
@@ -90,68 +95,77 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                 const slug = d.slug(m, true);
 
                 switch (d.memberType(m)) {
+
                     case 'boolean':
                         return `
             let some_${simple_slug}_js = options_js.get::<&str, JsBoolean>("${m.name}")?;
             let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
                 ${simple_slug}_js.try_into()?
             } else {
-                ${m.default.value}
+                ${m.required ? `return Err(napi::Error::from_reason(
+                    "Parameter ${d.name(m)} is required".to_string(),
+                ));` : m.default.value}
             };
                         `;
+
                     case 'unsigned long':
                         return `
             let some_${simple_slug}_js = options_js.get::<&str, JsNumber>("${m.name}")?;
             let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
                 ${simple_slug}_js.get_double()? as usize
             } else {
-                ${m.default.value}
+                ${m.required ? `return Err(napi::Error::from_reason(
+                    "Parameter ${d.name(m)} is required".to_string(),
+                ));` : m.default.value}
             };
                         `;
+
                     case 'float':
                         return `
             let some_${simple_slug}_js = options_js.get::<&str, JsNumber>("${m.name}")?;
             let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
                 ${simple_slug}_js.get_double()? as f32
             } else {
-                ${parseInt(m.default.value) ==  m.default.value ? `${parseInt(m.default.value)}.` : m.default.value}
+                ${m.required ? `return Err(napi::Error::from_reason(
+                    "Parameter ${d.name(m)} is required".to_string(),
+                ));` : parseInt(m.default.value) ==  m.default.value ? `${parseInt(m.default.value)}.` : m.default.value}
+
             };
                         `;
+
                     case 'double':
                         return `
             let some_${simple_slug}_js = options_js.get::<&str, JsNumber>("${m.name}")?;
             let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
                 ${simple_slug}_js.get_double()? as f64
             } else {
-                ${parseInt(m.default.value) ==  m.default.value ? `${parseInt(m.default.value)}.` : m.default.value}
+                ${m.required ? `return Err(napi::Error::from_reason(
+                    "Parameter ${d.name(m)} is required".to_string(),
+                ));` : parseInt(m.default.value) ==  m.default.value ? `${parseInt(m.default.value)}.` : m.default.value}
             };
                         `;
                         break;
+
                     default: '';
-                        const idl = d.findInTree(d.memberType(m));
-                        // handle special cases
-                        // for `Float64Array` the idl is missing (cf. IIRFilter)
-                        if (!idl) {
-                            if (d.name(d.node) === 'IIRFilterNode' &&
-                                (d.name(m) === 'feedforward' || d.name(m) === 'feedback')
-                            ) {
-                                console.log(JSON.stringify(m, null, 2))
-                                return `
+
+                        if (m.idlType.type === 'dictionary-type' && m.idlType.generic === 'sequence') {
+                            console.log(JSON.stringify(m.idlType.idlType));
+                            return `
             let ${simple_slug} = if let Some(${simple_slug}_js) = options_js.get::<&str, JsTypedArray>("${m.name}")? {
                 let ${simple_slug}_value = ${simple_slug}_js.into_value()?;
-                let ${simple_slug}: &[f64] = ${simple_slug}_value.as_ref();
-                ${simple_slug}.to_vec()
+                let ${simple_slug}: &[${m.idlType.idlType[0].idlType === 'double' ? 'f64' : 'f32'}] = ${simple_slug}_value.as_ref();
+
+                ${m.required ? `${simple_slug}.to_vec()` : `Some(${simple_slug}.to_vec())`}
             } else {
-                vec!()
+                ${m.required ? `return Err(napi::Error::from_reason(
+                    "Parameter ${d.name(m)} is required".to_string(),
+                ));` : `None`}
             };
-                                `;
-                            } else {
-                                console.log(`[constructor1] > could not parse ${d.name(m)} for class ${d.name(d.node)}`);
-                                console.log(JSON.stringify(m, null, 2));
-                                return '';
-                            }
+                            `;
                         }
 
+                        // type is defined in idl
+                        const idl = d.findInTree(d.memberType(m));
                         const idlType = d.type(idl);
 
                         switch (idlType) {
@@ -167,7 +181,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                     _ => panic!("undefined value for ${idl.name}"),
                 }
             } else {
-                ${idl.name}::default()
+                ${m.required ? `return Err(napi::Error::from_reason(
+                    "Parameter ${d.name(m)} is required".to_string(),
+                ));` : `${idl.name}::default()`}
             };
                                 `;
                                 break;
@@ -196,8 +212,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                 `channel_config: ChannelConfigOptions::default(),` : ``}
             }
         },
-        Either::B(_) => { ${d.name(d.node) == "IIRFilterNode" ? `
-            // some nodes don't provide default options
+        Either::B(_) => { ${argumentIdl.members.reduce((acc, current) => acc || current, false) ? `
             return Err(napi::Error::from_reason(
                 "Options are mandatory for node ${d.name(d.node)}".to_string(),
             ));` : `

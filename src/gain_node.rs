@@ -6,7 +6,6 @@
 // ---------------------------------------------------------- //
 
 use crate::*;
-use napi::*;
 use napi_derive::js_function;
 use std::rc::Rc;
 use web_audio_api::node::*;
@@ -14,7 +13,7 @@ use web_audio_api::node::*;
 pub(crate) struct NapiGainNode(Rc<GainNode>);
 
 impl NapiGainNode {
-    pub fn create_js_class(env: &Env) -> Result<JsFunction> {
+    pub fn create_js_class(env: &napi::Env) -> napi::Result<napi::JsFunction> {
         env.define_class(
             "GainNode",
             constructor,
@@ -24,10 +23,10 @@ impl NapiGainNode {
                 // Methods
 
                 // AudioNode interface
-                Property::new("connect")?
+                napi::Property::new("connect")?
                     .with_method(connect)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                // Property::new("disconnect")?.with_method(disconnect),
+                    .with_property_attributes(napi::PropertyAttributes::Enumerable),
+                // napi::Property::new("disconnect")?.with_method(disconnect),
             ],
         )
     }
@@ -38,29 +37,29 @@ impl NapiGainNode {
 }
 
 #[js_function(2)]
-fn constructor(ctx: CallContext) -> Result<JsUndefined> {
-    let mut js_this = ctx.this_unchecked::<JsObject>();
+fn constructor(ctx: napi::CallContext) -> napi::Result<napi::JsUndefined> {
+    let mut js_this = ctx.this_unchecked::<napi::JsObject>();
 
     // first argument is always AudioContext
-    let js_audio_context = ctx.get::<JsObject>(0)?;
+    let js_audio_context = ctx.get::<napi::JsObject>(0)?;
     let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
     let audio_context = napi_audio_context.unwrap();
 
     js_this.define_properties(&[
-        Property::new("context")?
+        napi::Property::new("context")?
             .with_value(&js_audio_context)
-            .with_property_attributes(PropertyAttributes::Enumerable),
+            .with_property_attributes(napi::PropertyAttributes::Enumerable),
         // this must be put on the instance and not in the prototype to be reachable
-        Property::new("Symbol.toStringTag")?
+        napi::Property::new("Symbol.toStringTag")?
             .with_value(&ctx.env.create_string("GainNode")?)
-            .with_property_attributes(PropertyAttributes::Static),
+            .with_property_attributes(napi::PropertyAttributes::Static),
     ])?;
 
     // parse options
 
-    let options = match ctx.try_get::<JsObject>(1)? {
-        Either::A(options_js) => {
-            let some_gain_js = options_js.get::<&str, JsNumber>("gain")?;
+    let options = match ctx.try_get::<napi::JsObject>(1)? {
+        napi::Either::A(options_js) => {
+            let some_gain_js = options_js.get::<&str, napi::JsNumber>("gain")?;
             let gain = if let Some(gain_js) = some_gain_js {
                 gain_js.get_double()? as f32
             } else {
@@ -72,7 +71,11 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                 channel_config: ChannelConfigOptions::default(),
             }
         }
-        Either::B(_) => Default::default(),
+        napi::Either::B(_) => {
+            return Err(napi::Error::from_reason(
+                "Options are mandatory for node GainNode".to_string(),
+            ));
+        }
     };
 
     let native_node = Rc::new(GainNode::new(audio_context, options));

@@ -14,10 +14,10 @@ macro_rules! connect_method {
             let dest_uf8_name = dest_name.into_utf8()?.into_owned()?;
             let dest_str = &dest_uf8_name[..];
 
-            let output_js: Option<JsNumber> = ctx.try_get::<JsNumber>(1)?.into();
+            let output_js: Option<napi::JsNumber> = ctx.try_get::<napi::JsNumber>(1)?.into();
             let output: u32 = if let Some(n) = output_js { n.try_into()? } else { 0 };
 
-            let input_js: Option<JsNumber> = ctx.try_get::<JsNumber>(2)?.into();
+            let input_js: Option<napi::JsNumber> = ctx.try_get::<napi::JsNumber>(2)?.into();
             let input: u32 = if let Some(n) = input_js { n.try_into()? } else { 0 };
 
             match dest_str {
