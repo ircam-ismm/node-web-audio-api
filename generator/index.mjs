@@ -21,7 +21,7 @@ let supportedNodes = [
   `OscillatorNode`,
   // `PannerNode`, // review rs wise, lots of inconsistencies
   `StereoPannerNode`,
-  // `WaveShaperNode`,
+  `WaveShaperNode`,
 ];
 
 

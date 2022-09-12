@@ -43,6 +43,11 @@ const audioContext = new AudioContext();
 //...
 ```
 
+## Caveats
+
+- Currently the library does not provide any way of chosing the output interface, system default interface will be used. As the spec and web-audio-api evolve evolve, thus should change in the future see [https://github.com/orottier/web-audio-api-rs/issues/216](https://github.com/orottier/web-audio-api-rs/issues/216)
+- On Linux systems, the audio backend is Alsa, this is subject to change in the future.
+
 ### Raspberry Pi
 
 On Raspberry Pi, the default render quantum size (128) is too small and underruns 

@@ -50,6 +50,8 @@ mod oscillator_node;
 use crate::oscillator_node::NapiOscillatorNode;
 mod stereo_panner_node;
 use crate::stereo_panner_node::NapiStereoPannerNode;
+mod wave_shaper_node;
+use crate::wave_shaper_node::NapiWaveShaperNode;
 
 #[cfg(all(
     any(windows, unix),
@@ -141,6 +143,11 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     exports.set_named_property("StereoPannerNode", napi_class)?;
     let napi_class = NapiStereoPannerNode::create_js_class(&env)?;
     store.set_named_property("StereoPannerNode", napi_class)?;
+
+    let napi_class = NapiWaveShaperNode::create_js_class(&env)?;
+    exports.set_named_property("WaveShaperNode", napi_class)?;
+    let napi_class = NapiWaveShaperNode::create_js_class(&env)?;
+    store.set_named_property("WaveShaperNode", napi_class)?;
 
     // store the store into instance so that it can be globally accessed
     let store_ref = env.create_reference(store)?;

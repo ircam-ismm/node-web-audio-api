@@ -81,12 +81,13 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                 OverSampleType::default()
             };
 
-            WaveShaperOptions { curve, oversample }
+            WaveShaperOptions {
+                curve,
+                oversample,
+                channel_config: ChannelConfigOptions::default(),
+            }
         }
-        Either::B(_) => {
-            // some nodes don't provide default options
-            Default::default()
-        }
+        Either::B(_) => Default::default(),
     };
 
     let native_node = Rc::new(WaveShaperNode::new(audio_context, options));

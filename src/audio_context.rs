@@ -46,6 +46,7 @@ impl NapiAudioContext {
                 Property::new("createIIRFilter")?.with_method(create_iir_filter),
                 Property::new("createOscillator")?.with_method(create_oscillator),
                 Property::new("createStereoPanner")?.with_method(create_stereo_panner),
+                Property::new("createWaveShaper")?.with_method(create_wave_shaper),
             ],
         )
     }
@@ -368,6 +369,17 @@ fn create_stereo_panner(ctx: CallContext) -> Result<JsObject> {
     let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
     let store: JsObject = ctx.env.get_reference_value(store_ref)?;
     let ctor: JsFunction = store.get_named_property("StereoPannerNode")?;
+
+    ctor.new_instance(&[js_this])
+}
+
+#[js_function]
+fn create_wave_shaper(ctx: CallContext) -> Result<JsObject> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+
+    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+    let ctor: JsFunction = store.get_named_property("WaveShaperNode")?;
 
     ctor.new_instance(&[js_this])
 }

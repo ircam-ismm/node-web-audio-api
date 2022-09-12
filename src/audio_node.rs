@@ -161,6 +161,15 @@ macro_rules! connect_method {
 
                     Ok(js_dest)
                 }
+                "WaveShaperNode" => {
+                    let napi_dest = ctx
+                        .env
+                        .unwrap::<$crate::wave_shaper_node::NapiWaveShaperNode>(&js_dest)?;
+                    let native_dest = napi_dest.unwrap();
+                    let _res = native_src.connect_at(native_dest, output as usize, input as usize);
+
+                    Ok(js_dest)
+                }
 
                 _ => Err(napi::Error::from_reason(
                     "Cannot connect: Invalid destination node".to_string(),

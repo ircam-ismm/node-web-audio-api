@@ -135,6 +135,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                             if (d.name(d.node) === 'IIRFilterNode' &&
                                 (d.name(m) === 'feedforward' || d.name(m) === 'feedback')
                             ) {
+                                console.log(JSON.stringify(m, null, 2))
                                 return `
             let ${simple_slug} = if let Some(${simple_slug}_js) = options_js.get::<&str, JsTypedArray>("${m.name}")? {
                 let ${simple_slug}_value = ${simple_slug}_js.into_value()?;
@@ -145,8 +146,8 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             };
                                 `;
                             } else {
-                                console.log(`[constructor] > could not parse ${d.name(m)} for class ${d.name(d.node)}`);
-                                console.log(m);
+                                console.log(`[constructor1] > could not parse ${d.name(m)} for class ${d.name(d.node)}`);
+                                console.log(JSON.stringify(m, null, 2));
                                 return '';
                             }
                         }
@@ -182,7 +183,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             };
                                 `;
                             default:
-                                console.log(`constructor: cannot parse argument ${d.name(idl)} - idlType ${idlType}`);
+                                console.log(`[constructor2] > cannot parse argument ${d.name(idl)} - idlType ${idlType}`);
                                 break;
                         }
                         break;
