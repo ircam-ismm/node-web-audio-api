@@ -41,6 +41,4 @@ setInterval(function loop() {
   panner2.pan.setValueAtTime(pan2, now);
   pan2 *= -1;
   panner2.pan.linearRampToValueAtTime(pan2, now + 1.);
-
-
 }, 4 * 1000);
