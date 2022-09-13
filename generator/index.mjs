@@ -120,6 +120,10 @@ const utils = {
     return idl.name;
   },
 
+  optionsName(idl) {
+    return idl.name.replace('Node', 'Options');
+  },
+
   napiName(idl) {
     return `Napi${idl.name}`
   },

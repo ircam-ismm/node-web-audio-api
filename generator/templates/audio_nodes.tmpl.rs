@@ -29,16 +29,13 @@ impl ${d.napiName(d.node)} {
                 // AudioNode interface
                 Property::new("channelCount")?
                     .with_getter(get_channel_count)
-                    .with_setter(set_channel_count)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
+                    .with_setter(set_channel_count),
                 Property::new("channelCountMode")?
                     .with_getter(get_channel_count_mode)
-                    .with_setter(set_channel_count_mode)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
+                    .with_setter(set_channel_count_mode),
                 Property::new("channelInterpretation")?
                     .with_getter(get_channel_interpretation)
-                    .with_setter(set_channel_interpretation)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
+                    .with_setter(set_channel_interpretation),
 
                 Property::new("connect")?
                     .with_method(connect)
@@ -219,10 +216,58 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                 }
             }).join('')}
 
+            ${d.parent(argumentIdl) === 'AudioNodeOptions' ? `
+                ${argumentIdl.members.reduce((acc, current) => acc || current.required, false) ? `
+            // can't create default from ${argIdlType}
+            let channel_config_defaults = ChannelConfigOptions::default();
+                ` : `
+            let node_defaults = ${argIdlType}::default();
+            let channel_config_defaults = node_defaults.channel_config;
+                `}
+
+            let some_channel_count_js = options_js.get::<&str, JsNumber>("channelCount")?;
+            let channel_count = if let Some(channel_count_js) = some_channel_count_js {
+                channel_count_js.get_double()? as usize
+            } else {
+                channel_config_defaults.count
+            };
+
+            let some_channel_count_mode_js = options_js.get::<&str, JsString>("channelCountMode")?;
+            let channel_count_mode = if let Some(channel_count_mode_js) = some_channel_count_mode_js {
+                let channel_count_mode_str = channel_count_mode_js.into_utf8()?.into_owned()?;
+
+                match channel_count_mode_str.as_str() {
+                    "max" => ChannelCountMode::Max,
+                    "clamped-max" => ChannelCountMode::ClampedMax,
+                    "explicit" => ChannelCountMode::Explicit,
+                    _ => panic!("undefined value for ChannelCountMode"),
+                }
+            } else {
+                channel_config_defaults.mode
+            };
+
+            let some_channel_interpretation_js = options_js.get::<&str, JsString>("channelInterpretation")?;
+            let channel_interpretation = if let Some(channel_interpretation_js) = some_channel_interpretation_js {
+                let channel_interpretation_str = channel_interpretation_js.into_utf8()?.into_owned()?;
+
+                match channel_interpretation_str.as_str() {
+                    "speakers" => ChannelInterpretation::Speakers,
+                    "discrete" => ChannelInterpretation::Discrete,
+                    _ => panic!("undefined value for ChannelInterpretation"),
+                }
+            } else {
+                channel_config_defaults.interpretation
+            };
+            ` : ``}
+
             ${argIdlType} {
                 ${argumentIdl.members.map(m => d.slug(m, true)).join(', ')},
                 ${d.parent(argumentIdl) === 'AudioNodeOptions' ?
-                `channel_config: ChannelConfigOptions::default(),` : ``}
+                `channel_config: ChannelConfigOptions {
+                    count: channel_count,
+                    mode: channel_count_mode,
+                    interpretation: channel_interpretation,
+                },` : ``}
             }
         },
         Either::B(_) => { ${argumentIdl.members.reduce((acc, current) => acc || current.required, false) ? `

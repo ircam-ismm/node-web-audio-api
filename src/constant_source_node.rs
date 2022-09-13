@@ -26,16 +26,13 @@ impl NapiConstantSourceNode {
                 // AudioNode interface
                 Property::new("channelCount")?
                     .with_getter(get_channel_count)
-                    .with_setter(set_channel_count)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
+                    .with_setter(set_channel_count),
                 Property::new("channelCountMode")?
                     .with_getter(get_channel_count_mode)
-                    .with_setter(set_channel_count_mode)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
+                    .with_setter(set_channel_count_mode),
                 Property::new("channelInterpretation")?
                     .with_getter(get_channel_interpretation)
-                    .with_setter(set_channel_interpretation)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
+                    .with_setter(set_channel_interpretation),
                 Property::new("connect")?
                     .with_method(connect)
                     .with_property_attributes(PropertyAttributes::Enumerable),
