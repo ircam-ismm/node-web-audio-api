@@ -2,6 +2,10 @@ const fs = require('fs');
 
 let contextId = 0;
 
+const isPlainObject = function(obj) {
+  return Object.prototype.toString.call(obj) === '[object Object]';
+};
+
 module.exports.patchAudioContext = function(NativeAudioContext) {
   class AudioContext extends NativeAudioContext {
     constructor(...args) {
@@ -46,6 +50,10 @@ module.exports.patchAudioContext = function(NativeAudioContext) {
     }
 
     decodeAudioData(audioData) {
+      if (!isPlainObject(audioData) || !('path' in audioData)) {
+        throw new Error(`Invalid argument, please consider using the load helper`);
+      }
+
       try {
         const audioBuffer = super.decodeAudioData(audioData);
         return Promise.resolve(audioBuffer);
