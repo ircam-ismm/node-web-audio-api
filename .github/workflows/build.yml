@@ -113,7 +113,7 @@ jobs:
         if: ${{ matrix.settings.setup }}
         shell: bash
       - name: Install dependencies
-        run: yarn install --ignore-scripts --frozen-lockfile --registry https://registry.npmjs.org --network-timeout 300000
+        run: yarn install --ignore-scripts --registry https://registry.npmjs.org --network-timeout 300000
       - name: Build
         run: ${{ matrix.settings.build }}
         shell: bash
@@ -151,7 +151,7 @@ jobs:
   #         restore-keys: |
   #           npm-cache-
   #     - name: Install dependencies
-  #       run: yarn install --ignore-scripts --frozen-lockfile --registry https://registry.npmjs.org --network-timeout 300000
+  #       run: yarn install --ignore-scripts --registry https://registry.npmjs.org --network-timeout 300000
   #     - name: Download all artifacts
   #       uses: actions/download-artifact@v2
   #       with:
