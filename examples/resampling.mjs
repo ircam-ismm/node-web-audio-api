@@ -3,10 +3,7 @@ import webaudioapi from '../index.js';
 const { AudioContext, load } = webaudioapi;
 
 const audioContext = new AudioContext();
-console.log(
-    "> AudioContext sampleRate: %f",
-    audioContext.sampleRate
-);
+console.log("> AudioContext sampleRate: %f", audioContext.sampleRate);
 
 {
   console.log("--------------------------------------------------------------");
@@ -24,10 +21,8 @@ console.log(
 
   // audio context at default system sample rate
   {
-    console.log(
-        "+ playing sample-38000.wav - decoded sample rate: %f",
-        buffer38000.sampleRate
-    );
+    console.log("+ playing sample-38000.wav - decoded sample rate: %f", buffer38000.sampleRate);
+
     const src = audioContext.createBufferSource();
     src.connect(audioContext.destination);
     src.buffer = buffer38000;
@@ -37,10 +32,8 @@ console.log(
   await new Promise(resolve => setTimeout(resolve, 3500));
 
   {
-    console.log(
-        "+ playing sample-44100.wav - decoded sample rate: %f",
-        buffer44100.sampleRate
-    );
+    console.log("+ playing sample-44100.wav - decoded sample rate: %f", buffer44100.sampleRate);
+
     const src = audioContext.createBufferSource();
     src.connect(audioContext.destination);
     src.buffer = buffer44100;
@@ -50,10 +43,8 @@ console.log(
   await new Promise(resolve => setTimeout(resolve, 3500));
 
   {
-    console.log(
-        "+ playing sample-48000.wav - decoded sample rate: %f",
-        buffer48000.sampleRate
-    );
+    console.log("+ playing sample-48000.wav - decoded sample rate: %f", buffer48000.sampleRate);
+
     const src = audioContext.createBufferSource();
     src.connect(audioContext.destination);
     src.buffer = buffer48000;
@@ -91,10 +82,8 @@ console.log(
 
   {
     // audio context at default system sample rate
-    console.log(
-        "+ playing sample-38000.wav - decoded sample rate: %f",
-        buffer38000.sampleRate
-    );
+    console.log("+ playing sample-38000.wav - decoded sample rate: %f", buffer38000.sampleRate);
+
     const src = audioContext.createBufferSource();
     src.connect(audioContext.destination);
     src.buffer = buffer38000;
@@ -104,10 +93,8 @@ console.log(
   await new Promise(resolve => setTimeout(resolve, 3500));
 
   {
-    console.log(
-        "+ playing sample-44100.wav - decoded sample rate: %f",
-        buffer44100.sampleRate
-    );
+    console.log("+ playing sample-44100.wav - decoded sample rate: %f", buffer44100.sampleRate);
+
     const src = audioContext.createBufferSource();
     src.connect(audioContext.destination);
     src.buffer = buffer44100;
@@ -117,10 +104,8 @@ console.log(
   await new Promise(resolve => setTimeout(resolve, 3500));
 
   {
-    console.log(
-        "+ playing sample-48000.wav - decoded sample rate: %f",
-        buffer48000.sampleRate
-    );
+    console.log("+ playing sample-48000.wav - decoded sample rate: %f", buffer48000.sampleRate);
+
     const src = audioContext.createBufferSource();
     src.connect(audioContext.destination);
     src.buffer = buffer48000;

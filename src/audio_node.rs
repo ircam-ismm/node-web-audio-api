@@ -10,8 +10,8 @@ macro_rules! connect_method {
     ($napi_struct:ident) => {
         #[js_function(3)]
         fn connect(ctx: napi::CallContext) -> napi::Result<napi::JsObject> {
-            let this = ctx.this_unchecked::<napi::JsObject>();
-            let napi_src = ctx.env.unwrap::<$napi_struct>(&this)?;
+            let js_this = ctx.this_unchecked::<napi::JsObject>();
+            let napi_src = ctx.env.unwrap::<$napi_struct>(&js_this)?;
             let native_src = napi_src.unwrap();
 
             // get destination

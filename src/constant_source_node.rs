@@ -24,6 +24,18 @@ impl NapiConstantSourceNode {
                 // Methods
 
                 // AudioNode interface
+                Property::new("channelCount")?
+                    .with_getter(get_channel_count)
+                    .with_setter(set_channel_count)
+                    .with_property_attributes(PropertyAttributes::Enumerable),
+                Property::new("channelCountMode")?
+                    .with_getter(get_channel_count_mode)
+                    .with_setter(set_channel_count_mode)
+                    .with_property_attributes(PropertyAttributes::Enumerable),
+                Property::new("channelInterpretation")?
+                    .with_getter(get_channel_interpretation)
+                    .with_setter(set_channel_interpretation)
+                    .with_property_attributes(PropertyAttributes::Enumerable),
                 Property::new("connect")?
                     .with_method(connect)
                     .with_property_attributes(PropertyAttributes::Enumerable),
@@ -99,6 +111,97 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 // -------------------------------------------------
 // AudioNode Interface
 // -------------------------------------------------
+#[js_function]
+fn get_channel_count(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiConstantSourceNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let channel_count = node.channel_count() as f64;
+
+    ctx.env.create_double(channel_count)
+}
+
+#[js_function(1)]
+fn set_channel_count(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiConstantSourceNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let channel_count = ctx.get::<JsNumber>(0)?.get_double()? as usize;
+    node.set_channel_count(channel_count);
+
+    ctx.env.get_undefined()
+}
+
+#[js_function]
+fn get_channel_count_mode(ctx: CallContext) -> Result<JsString> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiConstantSourceNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let value = node.channel_count_mode();
+    let value_str = match value {
+        ChannelCountMode::Max => "max",
+        ChannelCountMode::ClampedMax => "clamped-max",
+        ChannelCountMode::Explicit => "explicit",
+    };
+
+    ctx.env.create_string(value_str)
+}
+
+#[js_function(1)]
+fn set_channel_count_mode(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiConstantSourceNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let js_str = ctx.get::<JsString>(0)?;
+    let uf8_str = js_str.into_utf8()?.into_owned()?;
+    let value = match uf8_str.as_str() {
+        "max" => ChannelCountMode::Max,
+        "clamped-max" => ChannelCountMode::ClampedMax,
+        "explicit" => ChannelCountMode::Explicit,
+        _ => panic!("undefined value for ChannelCountMode"),
+    };
+    node.set_channel_count_mode(value);
+
+    ctx.env.get_undefined()
+}
+
+#[js_function]
+fn get_channel_interpretation(ctx: CallContext) -> Result<JsString> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiConstantSourceNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let value = node.channel_interpretation();
+    let value_str = match value {
+        ChannelInterpretation::Speakers => "speakers",
+        ChannelInterpretation::Discrete => "discrete",
+    };
+
+    ctx.env.create_string(value_str)
+}
+
+#[js_function(1)]
+fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiConstantSourceNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let js_str = ctx.get::<JsString>(0)?;
+    let uf8_str = js_str.into_utf8()?.into_owned()?;
+    let value = match uf8_str.as_str() {
+        "speakers" => ChannelInterpretation::Speakers,
+        "discrete" => ChannelInterpretation::Discrete,
+        _ => panic!("undefined value for ChannelInterpretation"),
+    };
+    node.set_channel_interpretation(value);
+
+    ctx.env.get_undefined()
+}
+
 connect_method!(NapiConstantSourceNode);
 // disconnect_method!(NapiConstantSourceNode);
 
@@ -111,11 +214,13 @@ fn start(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiConstantSourceNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    if ctx.length == 0 {
-        node.start();
-    } else {
-        let when = ctx.get::<JsNumber>(0)?.try_into()?;
-        node.start_at(when);
+    match ctx.length {
+        0 => node.start(),
+        1 => {
+            let when = ctx.get::<JsNumber>(0)?.get_double()?;
+            node.start_at(when);
+        }
+        _ => (),
     }
 
     ctx.env.get_undefined()
@@ -127,11 +232,13 @@ fn stop(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiConstantSourceNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    if ctx.length == 0 {
-        node.stop();
-    } else {
-        let when = ctx.get::<JsNumber>(0)?.try_into()?;
-        node.stop_at(when);
+    match ctx.length {
+        0 => node.stop(),
+        1 => {
+            let when = ctx.get::<JsNumber>(0)?.try_into()?;
+            node.stop_at(when);
+        }
+        _ => (),
     };
 
     ctx.env.get_undefined()
