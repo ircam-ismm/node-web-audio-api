@@ -209,7 +209,7 @@ supportedNodes.sort().forEach((name, index) => {
 // write AudioNode macros
 
 // write AudioParam getters
-['audio_param', 'audio_node', 'lib', 'audio_context'].forEach(src => {
+['audio_param', 'audio_node', 'lib', 'audio_context', 'offline_audio_context'].forEach(src => {
   const pathname = path.join(output, `${src}.rs`);
   console.log('> generating file: ', path.relative(process.cwd(), pathname));
 
@@ -225,4 +225,3 @@ supportedNodes.sort().forEach((name, index) => {
 });
 
 // // setInterval(() => {}, 1000);
-

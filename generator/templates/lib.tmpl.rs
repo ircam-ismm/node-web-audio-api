@@ -12,6 +12,8 @@ use crate::audio_param::{NapiAudioParam, ParamGetter};
 // public
 mod audio_context;
 use crate::audio_context::NapiAudioContext;
+mod offline_audio_context;
+use crate::offline_audio_context::NapiOfflineAudioContext;
 mod audio_buffer;
 use crate::audio_buffer::NapiAudioBuffer;
 mod audio_destination_node;
