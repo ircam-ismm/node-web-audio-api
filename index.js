@@ -86,9 +86,14 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding for OS: ${platform}, architecture: ${arch}`);
 }
 
-const { patchAudioContext, load } = require('./monkey-patch.js');
+const {
+  patchAudioContext,
+  patchOfflineAudioContext,
+  load,
+} = require('./monkey-patch.js');
 
 nativeBinding.AudioContext = patchAudioContext(nativeBinding.AudioContext);
+nativeBinding.OfflineAudioContext = patchOfflineAudioContext(nativeBinding.OfflineAudioContext);
 nativeBinding.load = load;
 
 module.exports = nativeBinding;

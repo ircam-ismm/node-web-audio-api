@@ -54,8 +54,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
     // first argument is always AudioContext
     let js_audio_context = ctx.get::<JsObject>(0)?;
-    let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
-    let audio_context = napi_audio_context.unwrap();
 
     js_this.define_properties(&[
         Property::new("context")?
@@ -163,7 +161,27 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         Either::B(_) => Default::default(),
     };
 
-    let native_node = Rc::new(DynamicsCompressorNode::new(audio_context, options));
+    // create native node
+    let audio_context_name =
+        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
+    let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
+    let audio_context_str = &audio_context_utf8_name[..];
+
+    let native_node = match audio_context_str {
+        "AudioContext" => {
+            let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
+            let audio_context = napi_audio_context.unwrap();
+            Rc::new(DynamicsCompressorNode::new(audio_context, options))
+        }
+        "OfflineAudioContext" => {
+            let napi_audio_context = ctx
+                .env
+                .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
+            let audio_context = napi_audio_context.unwrap();
+            Rc::new(DynamicsCompressorNode::new(audio_context, options))
+        }
+        &_ => panic!("not supported"),
+    };
 
     // AudioParam: DynamicsCompressorNode::threshold
     let native_clone = native_node.clone();

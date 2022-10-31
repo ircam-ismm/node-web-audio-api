@@ -6,7 +6,7 @@ const isPlainObject = function(obj) {
   return Object.prototype.toString.call(obj) === '[object Object]';
 };
 
-function audioContextExtender(NativeAudioContext) {
+function patchAudioContext(NativeAudioContext) {
   class AudioContext extends NativeAudioContext {
     constructor(...args) {
       super(...args);
@@ -44,9 +44,9 @@ function audioContextExtender(NativeAudioContext) {
     }
 
     close() {
-       delete process[this.__processId];
-       clearTimeout(this.__keepAwakeId);
-       return Promise.resolve(super.close());
+      delete process[this.__processId];
+      clearTimeout(this.__keepAwakeId);
+      return Promise.resolve(super.close());
     }
 
     decodeAudioData(audioData) {
@@ -66,20 +66,41 @@ function audioContextExtender(NativeAudioContext) {
   return AudioContext;
 }
 
-function offlineAudioContextExtender(NativeAudioContext) {
-  class OfflineAudioContext extends audioContextExtender(NativeAudioContext) {
+function patchOfflineAudioContext(NativeOfflineAudioContext) {
+  class OfflineAudioContext extends NativeOfflineAudioContext {
     constructor(...args) {
       super(...args);
+      console.log(args);
+
+      // not sure this is usefull, to be tested
+      const keepAwakeId = setInterval(() => {}, 10000);
+      Object.defineProperty(this, '__keepAwakeId', {
+        value: keepAwakeId,
+        enumerable: false,
+        writable: true,
+        configurable: false,
+      });
     }
 
     // promisify sync APIs
     startRendering() {
-      // TODO: is this necessary for startRendering() ?
-      clearTimeout(this.__keepAwakeId);
-      this.__keepAwakeId = setInterval(() => {}, 2000);
-
       try {
         const audioBuffer = super.startRendering();
+
+        clearTimeout(this.__keepAwakeId);
+        return Promise.resolve(audioBuffer);
+      } catch (err) {
+        return Promise.reject(err);
+      }
+    }
+
+    decodeAudioData(audioData) {
+      if (!isPlainObject(audioData) || !('path' in audioData)) {
+        throw new Error(`Invalid argument, please consider using the load helper`);
+      }
+
+      try {
+        const audioBuffer = super.decodeAudioData(audioData);
         return Promise.resolve(audioBuffer);
       } catch (err) {
         return Promise.reject(err);
@@ -90,9 +111,8 @@ function offlineAudioContextExtender(NativeAudioContext) {
   return OfflineAudioContext;
 }
 
-module.exports.patchAudioContext = audioContextExtender(NativeAudioContext);
-
-module.exports.patchOfflineAudioContext = offlineAudioContextExtender(NativeAudioContext);
+module.exports.patchAudioContext = patchAudioContext;
+module.exports.patchOfflineAudioContext = patchOfflineAudioContext;
 
 // dumb method provided to mock an xhr call and mimick browser's API
 // see also `AudioContext.decodeAudioData`

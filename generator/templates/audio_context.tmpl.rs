@@ -13,9 +13,9 @@ impl NapiAudioContext {
             "AudioContext",
             constructor,
             &[
-                Property::new("Symbol.toStringTag")?
-                    .with_value(&env.create_string("AudioContext")?)
-                    .with_property_attributes(PropertyAttributes::Static),
+                // Property::new("Symbol.toStringTag")?
+                //     .with_value(&env.create_string("AudioContext")?)
+                //     .with_property_attributes(PropertyAttributes::Static),
 
                 Property::new("currentTime")?.with_getter(get_current_time),
                 Property::new("sampleRate")?.with_getter(get_sample_rate),
@@ -102,6 +102,14 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let audio_context = AudioContext::new(audio_context_options);
     let napi_audio_context = NapiAudioContext(audio_context);
     ctx.env.wrap(&mut js_this, napi_audio_context)?;
+
+    js_this.define_properties(&[
+        // this must be put on the instance and not in the prototype to be reachable
+        Property::new("Symbol.toStringTag")?
+            .with_value(&ctx.env.create_string("AudioContext")?)
+            .with_property_attributes(PropertyAttributes::Static),
+    ])?;
+
 
     // Audio Destination
     let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
@@ -208,7 +216,7 @@ fn decode_audio_data(ctx: CallContext) -> Result<JsObject> {
             let store: JsObject = ctx.env.get_reference_value(store_ref)?;
             let ctor: JsFunction = store.get_named_property("AudioBuffer")?;
             let mut options = ctx.env.create_object()?;
-            options.set("__decode_audio_data_caller__", ctx.env.get_null())?;
+            options.set("__internal_caller__", ctx.env.get_null())?;
 
             // populate with audio buffer
             let js_audio_buffer = ctor.new_instance(&[options])?;

@@ -21,10 +21,10 @@ mod audio_context;
 use crate::audio_context::NapiAudioContext;
 mod offline_audio_context;
 use crate::offline_audio_context::NapiOfflineAudioContext;
-mod audio_buffer;
-use crate::audio_buffer::NapiAudioBuffer;
 mod audio_destination_node;
 use crate::audio_destination_node::NapiAudioDestinationNode;
+mod audio_buffer;
+use crate::audio_buffer::NapiAudioBuffer;
 mod periodic_wave;
 use crate::periodic_wave::NapiPeriodicWave;
 
@@ -74,15 +74,19 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     let napi_class = NapiAudioContext::create_js_class(&env)?;
     exports.set_named_property("AudioContext", napi_class)?;
 
+    let napi_class = NapiOfflineAudioContext::create_js_class(&env)?;
+    exports.set_named_property("OfflineAudioContext", napi_class)?;
+
+    // @note - do not expose in exports until we know how to make the constructor private
+    // let napi_class = NapiAudioDestinationNode::create_js_class(&env)?;
+    // exports.set_named_property("AudioDestinationNode", napi_class)?;
+    let napi_class = NapiAudioDestinationNode::create_js_class(&env)?;
+    store.set_named_property("AudioDestinationNode", napi_class)?;
+
     let napi_class = NapiAudioBuffer::create_js_class(&env)?;
     exports.set_named_property("AudioBuffer", napi_class)?;
     let napi_class = NapiAudioBuffer::create_js_class(&env)?;
     store.set_named_property("AudioBuffer", napi_class)?;
-
-    let napi_class = NapiAudioDestinationNode::create_js_class(&env)?;
-    exports.set_named_property("AudioDestinationNode", napi_class)?;
-    let napi_class = NapiAudioDestinationNode::create_js_class(&env)?;
-    store.set_named_property("AudioDestinationNode", napi_class)?;
 
     let napi_class = NapiPeriodicWave::create_js_class(&env)?;
     exports.set_named_property("PeriodicWave", napi_class)?;
