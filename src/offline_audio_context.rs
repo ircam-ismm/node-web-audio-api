@@ -5,14 +5,16 @@
 // ---------------------------------------------------------- //
 // ---------------------------------------------------------- //
 
-use crate::*;
+use std::cell::RefCell;
+use std::fs::File;
+
 use napi::*;
 use napi_derive::js_function;
-use std::fs::File;
 use web_audio_api::context::*;
-// use web_audio_api::AudioBuffer;
 
-pub(crate) struct NapiOfflineAudioContext(OfflineAudioContext);
+use crate::*;
+
+pub(crate) struct NapiOfflineAudioContext(Option<OfflineAudioContext>);
 
 impl NapiOfflineAudioContext {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -25,7 +27,7 @@ impl NapiOfflineAudioContext {
                 //     .with_property_attributes(PropertyAttributes::Static),
                 Property::new("currentTime")?.with_getter(get_current_time),
                 Property::new("sampleRate")?.with_getter(get_sample_rate),
-                Property::new("state")?.with_getter(get_state),
+                // Property::new("state")?.with_getter(get_state),
                 // Property::new("baseLatency")?.with_getter(get_base_latency),
                 // Property::new("outputLatency")?.with_getter(get_output_latency),
 
@@ -58,11 +60,7 @@ impl NapiOfflineAudioContext {
     }
 
     pub fn unwrap(&self) -> &OfflineAudioContext {
-        &self.0
-    }
-
-    pub fn consume(self) -> OfflineAudioContext {
-        self.0
+        &self.0.as_ref().unwrap()
     }
 }
 
@@ -74,9 +72,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let length = ctx.get::<JsNumber>(1)?.get_double()? as usize;
     let sample_rate = ctx.get::<JsNumber>(2)?.get_double()? as f32;
 
-    let offline_audio_context = OfflineAudioContext::new(number_of_channels, length, sample_rate);
-    let napi_offline_audio_context = NapiOfflineAudioContext(offline_audio_context);
-    ctx.env.wrap(&mut js_this, napi_offline_audio_context)?;
+    let audio_context = OfflineAudioContext::new(number_of_channels, length, sample_rate);
+    let napi_audio_context = NapiOfflineAudioContext(Some(audio_context));
+    ctx.env.wrap(&mut js_this, napi_audio_context)?;
 
     js_this.define_properties(&[
         // this must be put on the instance and not in the prototype to be reachable
@@ -115,89 +113,35 @@ fn get_sample_rate(ctx: CallContext) -> Result<JsNumber> {
     ctx.env.create_double(sample_rate)
 }
 
-#[js_function]
-fn get_state(ctx: CallContext) -> Result<JsString> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let obj = napi_obj.unwrap();
-
-    let state = obj.state();
-    let state_str = match state {
-        AudioContextState::Suspended => "suspended",
-        AudioContextState::Running => "running",
-        AudioContextState::Closed => "closed",
-    };
-
-    ctx.env.create_string(state_str)
-}
-
-// ----------------------------------------------------
-// METHODS
-// ----------------------------------------------------
-//
-// // @todo - async version
-// #[js_function]
-// fn resume(ctx: CallContext) -> Result<JsUndefined> {
-//     let js_this = ctx.this_unchecked::<JsObject>();
-//     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-//     let obj = napi_obj.unwrap();
-//
-//     obj.resume_sync();
-//
-//     ctx.env.get_undefined()
-// }
-//
-// // @todo - async version
-// #[js_function]
-// fn suspend(ctx: CallContext) -> Result<JsUndefined> {
-//     let js_this = ctx.this_unchecked::<JsObject>();
-//     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-//     let obj = napi_obj.unwrap();
-//
-//     obj.suspend_sync();
-//
-//     ctx.env.get_undefined()
-// }
-//
-// // @todo - async version
-// #[js_function]
-// fn close(ctx: CallContext) -> Result<JsUndefined> {
-//     let js_this = ctx.this_unchecked::<JsObject>();
-//     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-//     let obj = napi_obj.unwrap();
-//
-//     obj.close_sync();
-//
-//     ctx.env.get_undefined()
-// }
-//
-
+// @todo - async version
 #[js_function]
 fn start_rendering(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let owned_napi_obj = unsafe { Box::from_raw(napi_obj) };
-    let audio_context = owned_napi_obj.consume();
+    let some_audio_context = napi_obj.0.take();
 
-    // start rendering
-    let audio_buffer = audio_context.start_rendering_sync();
+    match some_audio_context {
+        Some(audio_context) => {
+            let audio_buffer = audio_context.start_rendering_sync();
 
-    // create js audio buffer instance
-    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
-    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
-    let ctor: JsFunction = store.get_named_property("AudioBuffer")?;
-    let mut options = ctx.env.create_object()?;
-    options.set("__internal_caller__", ctx.env.get_null())?;
+            // create js audio buffer instance
+            let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+            let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+            let ctor: JsFunction = store.get_named_property("AudioBuffer")?;
+            let mut options = ctx.env.create_object()?;
+            options.set("__internal_caller__", ctx.env.get_null())?;
 
-    // populate with audio buffer
-    let js_audio_buffer = ctor.new_instance(&[options])?;
-    let napi_audio_buffer = ctx.env.unwrap::<NapiAudioBuffer>(&js_audio_buffer)?;
-    napi_audio_buffer.populate(audio_buffer);
+            // populate with audio buffer
+            let js_audio_buffer = ctor.new_instance(&[options])?;
+            let napi_audio_buffer = ctx.env.unwrap::<NapiAudioBuffer>(&js_audio_buffer)?;
+            napi_audio_buffer.populate(audio_buffer);
 
-    // wrap back context into js_this
-    // ctx.env.wrap(&mut js_this, ctx.env.get_undefined())?;
-
-    Ok(js_audio_buffer)
+            Ok(js_audio_buffer)
+        }
+        None => Err(napi::Error::from_reason(
+            "startRendering already called".to_string(),
+        )),
+    }
 }
 
 // @todo - async version
