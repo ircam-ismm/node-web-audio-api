@@ -1,5 +1,6 @@
 use napi::{
-    CallContext, Env, JsFunction, JsObject, JsUndefined, Property, PropertyAttributes, Result,
+    CallContext, Env, JsFunction, JsObject, JsString, JsUndefined, Property, PropertyAttributes,
+    Result,
 };
 use napi_derive::js_function;
 
@@ -7,6 +8,7 @@ use web_audio_api::context::BaseAudioContext;
 use web_audio_api::node::AudioDestinationNode;
 
 use crate::audio_context::NapiAudioContext;
+use crate::offline_audio_context::NapiOfflineAudioContext;
 
 pub struct NapiAudioDestinationNode(AudioDestinationNode);
 
@@ -25,8 +27,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
     let js_audio_context = ctx.get::<JsObject>(0)?;
-    let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
-    let audio_context = napi_audio_context.unwrap();
 
     js_this.define_properties(&[
         Property::new("context")?
@@ -38,7 +38,27 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_property_attributes(PropertyAttributes::Static),
     ])?;
 
-    let native_node = audio_context.destination();
+    let audio_context_name =
+        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
+    let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
+    let audio_context_str = &audio_context_utf8_name[..];
+
+    let native_node = match audio_context_str {
+        "AudioContext" => {
+            let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
+            let audio_context = napi_audio_context.unwrap();
+            audio_context.destination()
+        }
+        "OfflineAudioContext" => {
+            let napi_audio_context = ctx
+                .env
+                .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
+            let audio_context = napi_audio_context.unwrap();
+            audio_context.destination()
+        }
+        &_ => panic!("not supported"),
+    };
+
     let napi_node = NapiAudioDestinationNode(native_node);
     ctx.env.wrap(&mut js_this, napi_node)?;
 

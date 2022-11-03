@@ -61,7 +61,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
     let options = ctx.get::<JsObject>(0)?;
 
-    if options.has_own_property("__decode_audio_data_caller__")? {
+    if options.has_own_property("__internal_caller__")? {
         let napi_node = NapiAudioBuffer(None);
         ctx.env.wrap(&mut js_this, napi_node)?;
     } else {
