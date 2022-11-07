@@ -1,13 +1,13 @@
 import webaudioapi from '../index.js';
 const { AudioContext } = webaudioapi;
 
-let context = new AudioContext();
+const context = new AudioContext();
 
-let osc = context.createOscillator();
+const osc = context.createOscillator();
 osc.connect(context.destination);
 osc.start();
 
-let intervalTime = 2.;
+const intervalTime = 2.;
 
 console.log('Sine');
 
