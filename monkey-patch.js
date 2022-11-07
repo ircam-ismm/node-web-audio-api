@@ -1,15 +1,34 @@
 const fs = require('fs');
 
-let contextId = 0;
-
 const isPlainObject = function(obj) {
   return Object.prototype.toString.call(obj) === '[object Object]';
 };
 
+const { platform, arch } = process;
+let contextId = 0;
+
 function patchAudioContext(NativeAudioContext) {
   class AudioContext extends NativeAudioContext {
-    constructor(...args) {
-      super(...args);
+    constructor(options = {}) {
+
+      // special handling of options on linux, these are not spec compliant but are
+      // ment to be more user-friendly than what we have now (is subject to change)
+      if (platform === 'linux') {
+        // throw meaningfull error if several contexts are created on linux,
+        // because of alsa backend we currently use
+        if (contextId === 1) {
+          throw new Error(`[node-web-audio-api] node-web-audio-api currently uses alsa as backend, therefore only one context can be safely created`);
+        }
+
+        // fallback latencyHint to "playback" on RPi if not explicitely defined
+        if (arch === 'arm') {
+          if (!('latencyHint' in options)) {
+            options.latencyHint = 'playback';
+          }
+        }
+      }
+
+      super(options);
       // prevent garbage collection
       const processId = `__AudioContext_${contextId}`;
       process[processId] = this;

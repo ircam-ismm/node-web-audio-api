@@ -225,3 +225,15 @@ supportedNodes.sort().forEach((name, index) => {
 });
 
 // // setInterval(() => {}, 1000);
+
+// create the mjs export file
+console.log('> generating esm export file (./index.mjs)');
+const esmIndexCodeTempl = fs.readFileSync(path.join(templates, `_create-mjs-export.tmpl.js`), 'utf8');
+const esmIndexTmpl = compile(esmIndexCodeTempl);
+const esmIndexCode = esmIndexTmpl({
+  supportedNodes,
+});
+
+fs.writeFileSync(path.join(process.cwd(), 'index.mjs'), generated(esmIndexCode));
+
+

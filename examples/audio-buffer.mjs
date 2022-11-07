@@ -1,6 +1,5 @@
 import assert from 'node:assert';
-import webaudioapi from '../index.js';
-const { AudioContext } = webaudioapi;
+import { AudioContext } from '../index.mjs';
 
 const context = new AudioContext();
 

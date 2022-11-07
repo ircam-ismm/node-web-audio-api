@@ -1,10 +1,8 @@
-import webaudioapi from '../index.js';
-const { AudioContext, StereoPannerNode } = webaudioapi;
+import { AudioContext, StereoPannerNode } from '../index.mjs';
 
 const context = new AudioContext();
 
 const pan = new StereoPannerNode(context, { channelCount: 1 });
-console.log(pan);
 
 // pipe 2 oscillator into two panner, one on each side of the stereo image
 // inverse the direction of the panning every 4 second

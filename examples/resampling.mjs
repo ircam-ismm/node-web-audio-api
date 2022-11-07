@@ -1,6 +1,5 @@
 import path from 'node:path';
-import webaudioapi from '../index.js';
-const { AudioContext, load } = webaudioapi;
+import { AudioContext, load } from '../index.mjs';
 
 const audioContext = new AudioContext();
 console.log("> AudioContext sampleRate: %f", audioContext.sampleRate);

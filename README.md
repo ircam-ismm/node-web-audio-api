@@ -11,7 +11,7 @@ npm install [--save] node-web-audio-api
 ## Example
 
 ```js
-const { AudioContext, OscillatorNode, GainNode } = require('node-web-audio-api');
+import { AudioContext, OscillatorNode, GainNode } from 'node-web-audio-api';
 
 const audioContext = new AudioContext();
 
@@ -30,14 +30,13 @@ setInterval(() => {
   osc.connect(env);
   osc.start(now);
   osc.stop(now + 1);
-}, 50);
+}, 80);
 ```
 
-or using with EcmaScript module syntax
+or using with old fashionned commonjs syntax
 
 ```js
-import wabaudioapi from 'node-web-audio-api';
-const { AudioContext, OscillatorNode, GainNode } = webaudioapi;
+const { AudioContext, OscillatorNode, GainNode } = require('node-web-audio-api');
 
 const audioContext = new AudioContext();
 //...
@@ -46,13 +45,17 @@ const audioContext = new AudioContext();
 ## Caveats
 
 - Currently the library does not provide any way of chosing the output interface, system default interface will be used. As the spec and web-audio-api evolve evolve, thus should change in the future see [https://github.com/orottier/web-audio-api-rs/issues/216](https://github.com/orottier/web-audio-api-rs/issues/216)
-- On Linux systems, the audio backend is Alsa, this is subject to change in the future.
+- On Linux systems, the audio backend is Alsa, which limits the number of online
+AudioContext to 1. This is subject to change in the future.
 
 ### Raspberry Pi
 
 On Raspberry Pi, the default render quantum size (128) is too small and underruns 
-occurs frequently. To prevent that you should provide a latency hint when building
-an audio context:
+occurs frequently. To prevent that, if you do not explicitely provide a latency hint
+in the AudioContext options, the value is automatically set to 'playback' which uses
+a buffer of 1024 samples. While this is not per se spec compliant, it allow usage
+of the library in a more user friendly manner. In the future, this might change according
+to the support of other audio backend, which is now alsa.
 
 ```js
 const audioContext = new AudioContext({ latencyHint: 'playback' });

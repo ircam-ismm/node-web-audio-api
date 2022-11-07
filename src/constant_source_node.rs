@@ -36,8 +36,9 @@ impl NapiConstantSourceNode {
                 Property::new("connect")?
                     .with_method(connect)
                     .with_property_attributes(PropertyAttributes::Enumerable),
-                // Property::new("disconnect")?.with_method(disconnect),
-
+                Property::new("disconnect")?
+                    .with_method(disconnect)
+                    .with_property_attributes(PropertyAttributes::Enumerable),
                 // AudioScheduledSourceNode interface
                 Property::new("start")?
                     .with_method(start)
@@ -218,6 +219,7 @@ fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
 }
 
 connect_method!(NapiConstantSourceNode);
+disconnect_method!(NapiConstantSourceNode);
 // disconnect_method!(NapiConstantSourceNode);
 
 // -------------------------------------------------

@@ -41,7 +41,9 @@ impl NapiBiquadFilterNode {
                 Property::new("connect")?
                     .with_method(connect)
                     .with_property_attributes(PropertyAttributes::Enumerable),
-                // Property::new("disconnect")?.with_method(disconnect),
+                Property::new("disconnect")?
+                    .with_method(disconnect)
+                    .with_property_attributes(PropertyAttributes::Enumerable),
             ],
         )
     }
@@ -141,7 +143,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                     _ => panic!("undefined value for ChannelCountMode"),
                 }
             } else {
-                channel_config_defaults.mode
+                channel_config_defaults.count_mode
             };
 
             let some_channel_interpretation_js =
@@ -168,7 +170,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                 gain,
                 channel_config: ChannelConfigOptions {
                     count: channel_count,
-                    mode: channel_count_mode,
+                    count_mode: channel_count_mode,
                     interpretation: channel_interpretation,
                 },
             }
@@ -332,6 +334,7 @@ fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
 }
 
 connect_method!(NapiBiquadFilterNode);
+disconnect_method!(NapiBiquadFilterNode);
 // disconnect_method!(NapiBiquadFilterNode);
 
 // -------------------------------------------------

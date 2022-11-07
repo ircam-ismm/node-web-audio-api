@@ -1,7 +1,6 @@
 import path from 'node:path';
 import { Scheduler } from 'waves-masters';
-import webaudioapi from '../index.js';
-const { AudioContext, load } = webaudioapi;
+import { AudioContext, load } from '../index.mjs';
 
 const audioContext = new AudioContext();
 const scheduler = new Scheduler(() => audioContext.currentTime);

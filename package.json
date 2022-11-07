@@ -1,9 +1,12 @@
 {
   "name": "node-web-audio-api",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "author": "Benjamin Matuszewski",
   "description": "Node.js bindings for web-audio-api-rs using napi-rs",
-  "main": "index.js",
+  "exports": {
+    "import": "./index.mjs",
+    "require": "./index.cjs"
+  },
   "repository": "https://github.com/ircam-ismm/node-web-audio-api",
   "license": "BSD-3-Clause",
   "keywords": [

@@ -1,6 +1,5 @@
 import path from 'node:path';
-import webaudioapi from '../index.js';
-const { AudioContext, load } = webaudioapi;
+import { AudioContext, load } from '../index.mjs';
 
 // use part of cosine, between [π, 2π] as shaping cureve
 function makeDistortionCurve(size) {
