@@ -127,6 +127,20 @@ fn set_value_at_time(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 
+#[js_function(3)]
+fn set_value_curve_at_time(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_this)?;
+    let obj = napi_obj.unwrap();
+
+    let values = ctx.get::<JsTypedArray>(0)?;
+    let start_time = ctx.get::<JsNumber>(1)?.get_double()? as f64;
+    let duration = ctx.get::<JsNumber>(2)?.get_double()? as f64;
+    obj.set_value_curve_at_time(values, start_time, duration);
+
+    ctx.env.get_undefined()
+}
+
 #[js_function(2)]
 fn linear_ramp_to_value_at_time(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
