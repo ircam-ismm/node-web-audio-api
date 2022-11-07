@@ -1,7 +1,6 @@
-import webaudio from './index.js';
+import { AudioContext } from './index.mjs';
 
-const audioContext = new webaudio.AudioContext();
-// process.audioContext = audioContext;
+const audioContext = new AudioContext();
 
 setInterval(() => {
   const now = audioContext.currentTime;

@@ -1,5 +1,4 @@
-import webaudioapi from '../index.js';
-const { AudioContext, OfflineAudioContext } = webaudioapi;
+import { AudioContext, OfflineAudioContext } from '../index.mjs';
 
 const offline = new OfflineAudioContext(1, 44100, 44100);
 

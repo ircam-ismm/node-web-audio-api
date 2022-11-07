@@ -11,7 +11,7 @@ npm install [--save] node-web-audio-api
 ## Example
 
 ```js
-const { AudioContext, OscillatorNode, GainNode } = require('node-web-audio-api');
+import { AudioContext, OscillatorNode, GainNode } from 'node-web-audio-api';
 
 const audioContext = new AudioContext();
 
@@ -30,14 +30,13 @@ setInterval(() => {
   osc.connect(env);
   osc.start(now);
   osc.stop(now + 1);
-}, 50);
+}, 80);
 ```
 
-or using with EcmaScript module syntax
+or using with old fashionned commonjs syntax
 
 ```js
-import wabaudioapi from 'node-web-audio-api';
-const { AudioContext, OscillatorNode, GainNode } = webaudioapi;
+const { AudioContext, OscillatorNode, GainNode } = require('node-web-audio-api');
 
 const audioContext = new AudioContext();
 //...

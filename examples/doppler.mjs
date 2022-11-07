@@ -1,6 +1,5 @@
 import path from 'node:path';
-import webaudioapi from '../index.js';
-const { AudioContext, load } = webaudioapi;
+import { AudioContext } from '../index.mjs';
 
 console.log('@todo - Panner issue');
 
