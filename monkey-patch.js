@@ -69,8 +69,16 @@ function patchAudioContext(NativeAudioContext) {
 function patchOfflineAudioContext(NativeOfflineAudioContext) {
   class OfflineAudioContext extends NativeOfflineAudioContext {
     constructor(...args) {
-      super(...args);
-      console.log(args);
+      // handle initialisation with either an options object or a sequence of parameters
+      // https://developer.mozilla.org/en-US/docs/Web/API/OfflineAudioContext/OfflineAudioContext#parameters
+      if( typeof args[0] === 'object'
+          && 'numberOfChannels' in args[0] && 'length' in args[0] && 'sampleRate' in args[0]
+      ) {
+        const { numberOfChannels, length, sampleRate } = args[0];
+        super( numberOfChannels, length, sampleRate );
+      } else {
+        super(...args);
+      }
 
       // not sure this is usefull, to be tested
       const keepAwakeId = setInterval(() => {}, 10000);
