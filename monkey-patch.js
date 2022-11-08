@@ -4,6 +4,14 @@ const isPlainObject = function(obj) {
   return Object.prototype.toString.call(obj) === '[object Object]';
 };
 
+const isPositiveInt = function(n) {
+  return Number.isSafeInteger(n) && 0 < n;
+}
+
+const isPositiveNumber = function(n) {
+  return Number(n) === n && 0 < n;
+}
+
 const { platform, arch } = process;
 let contextId = 0;
 
@@ -88,8 +96,18 @@ function patchAudioContext(NativeAudioContext) {
 function patchOfflineAudioContext(NativeOfflineAudioContext) {
   class OfflineAudioContext extends NativeOfflineAudioContext {
     constructor(...args) {
+      // handle initialisation with either an options object or a sequence of parameters
+      // https://webaudio.github.io/web-audio-api/#dom-offlineaudiocontext-constructor-contextoptions-contextoptions
+      if( typeof args[0] === 'object'
+          && 'numberOfChannels' in args[0] && 'length' in args[0] && 'sampleRate' in args[0]
+      ) {
+        const { numberOfChannels, length, sampleRate } = args[0];
+        args = [numberOfChannels, length, sampleRate];
+      }
+      if (!isPositiveInt(args[0])) throw new NotSupportedError(`Unsupported value for numberOfChannels: ${args[0]}`);
+      if (!isPositiveInt(args[1])) throw new NotSupportedError(`Unsupported value for length: ${args[1]}`);
+      if (!isPositiveNumber(args[2])) throw new NotSupportedError(`Unsupported value for sampleRate: ${args[2]}`);
       super(...args);
-      console.log(args);
 
       // not sure this is usefull, to be tested
       const keepAwakeId = setInterval(() => {}, 10000);
@@ -124,6 +142,13 @@ function patchOfflineAudioContext(NativeOfflineAudioContext) {
       } catch (err) {
         return Promise.reject(err);
       }
+    }
+  }
+
+  class NotSupportedError extends Error {
+    constructor(message) {
+      super(message);
+      this.name = "NotSupportedError";
     }
   }
 
