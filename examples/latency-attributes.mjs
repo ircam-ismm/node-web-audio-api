@@ -1,6 +1,6 @@
 import { AudioContext } from '../index.mjs';
 
-console.log("AudioContextLatencyCategory::Interactive");
+console.log('AudioContextLatencyCategory::Interactive');
 
 const context = new AudioContext();
 // const context = new AudioConntext({ latencyHint: 'playback' });
@@ -10,12 +10,12 @@ sine.frequency.value = 200.;
 sine.connect(context.destination);
 sine.start();
 
-console.log("- BaseLatency: {:?}", context.baseLatency);
+console.log('- BaseLatency: {:?}', context.baseLatency);
 
 (function loop() {
-  console.log("-------------------------------------------------");
-  console.log("+ currentTime {:?}", context.currentTime);
-  console.log("+ OutputLatency: {:?}", context.outputLatency);
+  console.log('-------------------------------------------------');
+  console.log('+ currentTime {:?}', context.currentTime);
+  console.log('+ OutputLatency: {:?}', context.outputLatency);
 
   setTimeout(loop, 1000);
 }());

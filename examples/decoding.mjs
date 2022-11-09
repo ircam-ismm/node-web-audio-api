@@ -2,16 +2,16 @@ import path from 'node:path';
 import { AudioContext, load } from '../index.mjs';
 
 const files = [
-    'samples/sample-faulty.wav',
-    'samples/sample.wav',
-    'samples/sample.flac',
-    'samples/sample.ogg',
-    'samples/sample.mp3',
-    // cannot decode, format not supported or file corrupted
-    'samples/empty_2c.wav',
-    'samples/corrupt.wav',
-    'samples/sample.aiff',
-    'samples/sample.webm', // 48kHz,
+  'samples/sample-faulty.wav',
+  'samples/sample.wav',
+  'samples/sample.flac',
+  'samples/sample.ogg',
+  'samples/sample.mp3',
+  // cannot decode, format not supported or file corrupted
+  'samples/empty_2c.wav',
+  'samples/corrupt.wav',
+  'samples/sample.aiff',
+  'samples/sample.webm', // 48kHz,
 ];
 
 const audioContext = new AudioContext();

@@ -44,7 +44,7 @@ const engine = {
     position += incr;
 
     return currentTime + period;
-  }
-}
+  },
+};
 
 scheduler.add(engine);

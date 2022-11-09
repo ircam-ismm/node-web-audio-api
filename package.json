@@ -31,14 +31,17 @@
     "build:debug": "npm run generate && napi build --platform",
     "check": "cargo fmt && cargo clippy",
     "generate": "node generator/index.mjs && cargo fmt",
+    "lint": "eslint monkey-patch.js index.cjs index.mjs && eslint examples/*.mjs",
     "preversion": "yarn install && npm run generate",
     "postversion": "cargo bump $npm_package_version && git commit -am \"v$npm_package_version\""
   },
   "devDependencies": {
+    "@ircam/eslint-config": "^1.2.0",
     "@sindresorhus/slugify": "^2.1.0",
-    "chalk": "^5.0.1",
     "camelcase": "^6.3.0",
+    "chalk": "^5.0.1",
     "dotenv": "^16.0.2",
+    "eslint": "^8.27.0",
     "node-ssh": "^13.0.0",
     "octokit": "^2.0.7",
     "ping": "^0.4.2",

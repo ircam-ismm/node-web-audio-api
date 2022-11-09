@@ -1,7 +1,6 @@
-import path from 'node:path';
-import { AudioContext } from '../index.mjs';
-
 console.log('@todo - Panner issue');
+// import path from 'node:path';
+// import { AudioContext } from '../index.mjs';
 
 /*
  * This example feature a 'true physics' Doppler effect.
