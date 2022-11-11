@@ -79,6 +79,7 @@ impl NapiAudioParam {
             Property::new("linearRampToValueAtTime")?.with_method(linear_ramp_to_value_at_time),
             Property::new("exponentialRampToValueAtTime")?
                 .with_method(exponential_ramp_to_value_at_time),
+            Property::new("setValueCurveAtTime")?.with_method(set_value_curve_at_time),
             Property::new("setTargetAtTime")?.with_method(set_target_at_time),
             Property::new("CancelScheduledValues")?.with_method(cancel_scheduled_values),
             Property::new("CancelAndOldAtTime")?.with_method(cancel_and_hold_at_time),
@@ -153,11 +154,21 @@ fn exponential_ramp_to_value_at_time(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 
-// #[js_function(3)]
-// fn set_value_curve_at_time(ctx: CallContext) -> Result<JsUndefined> {
-//   println!("@todo");
-//   ctx.env.get_undefined()
-// }
+#[js_function(3)]
+fn set_value_curve_at_time(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_this)?;
+    let obj = napi_obj.unwrap();
+
+    let mut typed_array_values = ctx.get::<JsTypedArray>(0)?.into_value()?;
+    let values: &mut [f32] = typed_array_values.as_mut();
+
+    let start_time = ctx.get::<JsNumber>(1)?.get_double()? as f64;
+    let duration = ctx.get::<JsNumber>(2)?.get_double()? as f64;
+    obj.set_value_curve_at_time(values, start_time, duration);
+
+    ctx.env.get_undefined()
+}
 
 #[js_function(3)]
 fn set_target_at_time(ctx: CallContext) -> Result<JsUndefined> {
