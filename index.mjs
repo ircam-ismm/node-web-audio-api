@@ -31,7 +31,7 @@ export const {
   StereoPannerNode,
   WaveShaperNode,
   // helper methods
-  load
+  load,
 } = nativeModule;
 
 export default nativeModule;

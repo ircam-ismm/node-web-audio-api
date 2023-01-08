@@ -13,7 +13,7 @@ export const {
   // generated supported nodes
 ${d.supportedNodes.map(n => `  ${n},`).join('\n')}
   // helper methods
-  load
+  load,
 } = nativeModule;
 
 export default nativeModule;

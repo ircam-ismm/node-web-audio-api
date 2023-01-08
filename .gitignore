@@ -132,4 +132,4 @@ Cargo.lock
 *.env
 
 src-manual
-dummy.js
+dummy.mjs

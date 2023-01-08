@@ -4,7 +4,7 @@ import { AudioContext } from '../index.mjs';
 const context = new AudioContext();
 
 // create a 1 second buffer filled with a sine at 200Hz
-console.log("> Play sine at 200Hz created manually in an AudioBuffer");
+console.log('> Play sine at 200Hz created manually in an AudioBuffer');
 
 const numberOfChannels = 1;
 const length = context.sampleRate;
@@ -36,7 +36,7 @@ src.stop(context.currentTime + 3.);
 await new Promise(resolve => setTimeout(resolve, 3.5 * 1000));
 
 // play a sine at 200Hz
-console.log("> Play sine at 200Hz from an OscillatorNode");
+console.log('> Play sine at 200Hz from an OscillatorNode');
 
 let osc = context.createOscillator();
 osc.frequency.value = 200.;
@@ -46,4 +46,4 @@ osc.stop(context.currentTime + 3.);
 
 await new Promise(resolve => setTimeout(resolve, 3.5 * 1000));
 
-audioContext.close();
+context.close();

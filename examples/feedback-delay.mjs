@@ -47,9 +47,9 @@ input.connect(preGain);
 input.connect(audioContext.destination); // direct sound
 
 (function loop() {
-    triggerSine(audioContext, input);
+  triggerSine(audioContext, input);
 
-    const period = Math.floor(Math.random() * 930) + 170;
-    setTimeout(loop, period);
-}())
+  const period = Math.floor(Math.random() * 930) + 170;
+  setTimeout(loop, period);
+}());
 
