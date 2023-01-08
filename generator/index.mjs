@@ -14,6 +14,7 @@ let supportedNodes = [
   `ChannelMergerNode`,
   `ChannelSplitterNode`,
   `ConstantSourceNode`,
+  `ConvolverNode`,
   `DelayNode`,
   'DynamicsCompressorNode',
   `GainNode`,
