@@ -91,11 +91,18 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                 None
             };
 
+        let sink_id_js = options.get::<&str, JsString>("sinkId")?;
+        let sink_id = if let Some(sink_id_js) = sink_id_js {
+            let sink_id_utf8 = sink_id_js.into_utf8()?.into_owned()?;
+            sink_id_utf8.as_str().to_string()
+        } else {
+            String::new()
+        };
+
         AudioContextOptions {
             latency_hint,
             sample_rate,
-            // @todo - implement
-            sink_id: None,
+            sink_id,
         }
     } else {
         AudioContextOptions::default()
