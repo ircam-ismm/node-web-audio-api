@@ -21,10 +21,18 @@ use crate::audio_buffer::NapiAudioBuffer;
 mod periodic_wave;
 use crate::periodic_wave::NapiPeriodicWave;
 
+// manually written nodes
+mod media_stream_audio_source_node;
+use crate::media_stream_audio_source_node::NapiMediaStreamAudioSourceNode;
+
 // import audio nodes (generated)
 ${d.nodes.map(n => { return `
 mod ${d.slug(n)};
 use crate::${d.slug(n)}::${d.napiName(n)};`}).join('')}
+
+// proto media devices API (monkey patched on the JS side)
+mod media_devices;
+use crate::media_devices::NapiMicrophone;
 
 #[cfg(all(
     any(windows, unix),
@@ -64,6 +72,12 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     let napi_class = NapiPeriodicWave::create_js_class(&env)?;
     store.set_named_property("PeriodicWave", napi_class)?;
 
+    // manually written nodes
+    let napi_class = NapiMediaStreamAudioSourceNode::create_js_class(&env)?;
+    exports.set_named_property("MediaStreamAudioSourceNode", napi_class)?;
+    let napi_class = NapiMediaStreamAudioSourceNode::create_js_class(&env)?;
+    store.set_named_property("MediaStreamAudioSourceNode", napi_class)?;
+
     // export audio nodes (generated)
     ${d.nodes.map(n => { return `
     let napi_class = ${d.napiName(n)}::create_js_class(&env)?;
@@ -71,6 +85,11 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     let napi_class = ${d.napiName(n)}::create_js_class(&env)?;
     store.set_named_property("${d.name(n)}", napi_class)?;
     `}).join('')}
+
+
+    // proto media devices API (monkey patched on the JS side)
+    let napi_class = NapiMicrophone::create_js_class(&env)?;
+    exports.set_named_property("Microphone", napi_class)?;
 
     // store the store into instance so that it can be globally accessed
     let store_ref = env.create_reference(store)?;

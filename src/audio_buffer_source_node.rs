@@ -284,13 +284,16 @@ fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 
+// -------------------------------------------------
+// connect / disconnect macros
+// -------------------------------------------------
 connect_method!(NapiAudioBufferSourceNode);
 disconnect_method!(NapiAudioBufferSourceNode);
-// disconnect_method!(NapiAudioBufferSourceNode);
 
 // -------------------------------------------------
 // AudioScheduledSourceNode Interface
 // -------------------------------------------------
+
 #[js_function(3)]
 fn start(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();

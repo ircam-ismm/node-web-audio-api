@@ -10,10 +10,14 @@ export const {
   OfflineAudioContext,
   AudioBuffer,
   PeriodicWave,
+  // manually written nodes
+  MediaStreamAudioSourceNode,
   // generated supported nodes
 ${d.supportedNodes.map(n => `  ${n},`).join('\n')}
+
   // helper methods
   load,
+  mediaDevices,
 } = nativeModule;
 
 export default nativeModule;

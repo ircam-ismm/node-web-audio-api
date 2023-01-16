@@ -158,8 +158,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                         `;
                         break;
 
-                    default: '';
-
+                    default:
+                        // Handle Float32Arrays and Float64Arrays
+                        // ---------------------------------------------------
                         if (m.idlType.type === 'dictionary-type' && m.idlType.generic === 'sequence') {
                             return `
             let ${simple_slug} = if let Some(${simple_slug}_js) = options_js.get::<&str, JsTypedArray>("${m.name}")? {
@@ -175,7 +176,16 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                             `;
                         }
 
-                        // type is defined in idl
+                        // Handle MediaStream
+                        // ---------------------------------------------------
+                        // console.log('constructor', JSON.stringify(m, null, 2))
+                        // if (m.idlType.type === 'dictionary-type' && m.idlType.idlType === 'MediaStream') {
+                        //     console.log('> ok MediaStream');
+                        //     return ``;
+                        // }
+
+                        // Handle type defined in IDL
+                        // ---------------------------------------------------
                         const idl = d.findInTree(d.memberType(m));
                         const idlType = d.type(idl);
 
@@ -413,15 +423,18 @@ fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 
+// -------------------------------------------------
+// connect / disconnect macros
+// -------------------------------------------------
 connect_method!(${d.napiName(d.node)});
 disconnect_method!(${d.napiName(d.node)});
-// disconnect_method!(${d.napiName(d.node)});
-${d.parent(d.node) === 'AudioScheduledSourceNode' ?
-`
+
 // -------------------------------------------------
 // AudioScheduledSourceNode Interface
 // -------------------------------------------------
-${d.name(d.node) !== 'AudioBufferSourceNode' ?
+${d.parent(d.node) === 'AudioScheduledSourceNode' ?
+`
+    ${d.name(d.node) !== 'AudioBufferSourceNode' ?
 `#[js_function(1)]` :
 `#[js_function(3)]`
 }
@@ -429,6 +442,7 @@ fn start(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
     let node = napi_node.unwrap();
+
 ${d.name(d.node) !== 'AudioBufferSourceNode' ?
 `
     match ctx.length {
@@ -488,7 +502,8 @@ fn stop(ctx: CallContext) -> Result<JsUndefined> {
 // GETTERS
 // -------------------------------------------------
 ${d.attributes(d.node).map(attr => {
-    let attrType = d.memberType(attr);
+    const attrType = d.memberType(attr);
+
     switch (attrType) {
         case 'boolean':
             return `
@@ -533,6 +548,14 @@ fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsUnknown> {
             break;
         // IDL types
         default: {
+            // handle MediaStream
+            // console.log('getter', JSON.stringify(attr, null, 2));
+            // if (attr.idlType.type === 'attribute-type' && attr.idlType.idlType === 'MediaStream') {
+            //     console.log('> ok MediaStream');
+            //     return ``;
+            // }
+
+            // handle IDL types
             let idl = d.findInTree(attrType);
             let idlType = d.type(idl);
 

@@ -17,6 +17,8 @@ export const {
   OfflineAudioContext,
   AudioBuffer,
   PeriodicWave,
+  // manually written nodes
+  MediaStreamAudioSourceNode,
   // generated supported nodes
   AudioBufferSourceNode,
   BiquadFilterNode,
@@ -31,8 +33,10 @@ export const {
   OscillatorNode,
   StereoPannerNode,
   WaveShaperNode,
+
   // helper methods
   load,
+  mediaDevices,
 } = nativeModule;
 
 export default nativeModule;

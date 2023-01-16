@@ -252,9 +252,15 @@ fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 
+// -------------------------------------------------
+// connect / disconnect macros
+// -------------------------------------------------
 connect_method!(NapiChannelSplitterNode);
 disconnect_method!(NapiChannelSplitterNode);
-// disconnect_method!(NapiChannelSplitterNode);
+
+// -------------------------------------------------
+// AudioScheduledSourceNode Interface
+// -------------------------------------------------
 
 // -------------------------------------------------
 // GETTERS

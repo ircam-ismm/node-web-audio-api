@@ -23,6 +23,9 @@ let supportedNodes = [
   // `PannerNode`, // review rs wise, lots of inconsistencies
   `StereoPannerNode`,
   `WaveShaperNode`,
+
+  // Online context only (written manually for now)
+  // 'MediaStreamAudioSourceNode',
 ];
 
 
@@ -131,7 +134,7 @@ const utils = {
 
   factoryName(idl) {
     let factory = this.name(idl);
-    factory = factory.replace(/^Audio/, '').replace(/Node$/, '');
+    factory = factory.replace(/Audio/, '').replace(/Node$/, '');
     factory = `create${factory}`;
     return factory;
   },
@@ -191,6 +194,7 @@ function findInTree(name) {
 let nodesCodeTmpl = fs.readFileSync(path.join(templates, `audio_nodes.tmpl.rs`), 'utf8');
 let nodesTmpl = compile(nodesCodeTmpl);
 
+// process audio nodes
 supportedNodes.sort().forEach((name, index) => {
   const nodeIdl = findInTree(name);
   const pathname = path.join(output, `${utils.slug(nodeIdl)}.rs`);
@@ -207,9 +211,7 @@ supportedNodes.sort().forEach((name, index) => {
   audioNodes.push(nodeIdl);
 });
 
-// write AudioNode macros
-
-// write AudioParam getters
+// process other nodes and objects
 ['audio_param', 'audio_node', 'lib', 'audio_context', 'offline_audio_context'].forEach(src => {
   const pathname = path.join(output, `${src}.rs`);
   console.log('> generating file: ', path.relative(process.cwd(), pathname));

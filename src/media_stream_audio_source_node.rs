@@ -1,26 +1,21 @@
-// ---------------------------------------------------------- //
-// ---------------------------------------------------------- //
-//    - WARNING - DO NOT EDIT                               - //
-//    - This file has been generated                        - //
-// ---------------------------------------------------------- //
-// ---------------------------------------------------------- //
-
 use crate::*;
 use napi::*;
 use napi_derive::js_function;
 use std::rc::Rc;
 use web_audio_api::node::*;
 
-pub(crate) struct NapiConstantSourceNode(Rc<ConstantSourceNode>);
+pub(crate) struct NapiMediaStreamAudioSourceNode(Rc<MediaStreamAudioSourceNode>);
 
-impl NapiConstantSourceNode {
+impl NapiMediaStreamAudioSourceNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
         env.define_class(
-            "ConstantSourceNode",
+            "MediaStreamAudioSourceNode",
             constructor,
             &[
                 // Attributes
-
+                // Property::new("mediaStream")?
+                //     .with_getter(get_media_stream)
+                //     .with_property_attributes(PropertyAttributes::Enumerable),
                 // Methods
 
                 // AudioNode interface
@@ -39,18 +34,11 @@ impl NapiConstantSourceNode {
                 Property::new("disconnect")?
                     .with_method(disconnect)
                     .with_property_attributes(PropertyAttributes::Enumerable),
-                // AudioScheduledSourceNode interface
-                Property::new("start")?
-                    .with_method(start)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                Property::new("stop")?
-                    .with_method(stop)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
             ],
         )
     }
 
-    pub fn unwrap(&self) -> &ConstantSourceNode {
+    pub fn unwrap(&self) -> &MediaStreamAudioSourceNode {
         &self.0
     }
 }
@@ -68,23 +56,34 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_property_attributes(PropertyAttributes::Enumerable),
         // this must be put on the instance and not in the prototype to be reachable
         Property::new("Symbol.toStringTag")?
-            .with_value(&ctx.env.create_string("ConstantSourceNode")?)
+            .with_value(&ctx.env.create_string("MediaStreamAudioSourceNode")?)
             .with_property_attributes(PropertyAttributes::Static),
     ])?;
 
     // parse options
     let options = match ctx.try_get::<JsObject>(1)? {
         Either::A(options_js) => {
-            let some_offset_js = options_js.get::<&str, JsNumber>("offset")?;
-            let offset = if let Some(offset_js) = some_offset_js {
-                offset_js.get_double()? as f32
+            // WARNING: only handle Microphone for now
+            let some_microphone_js = options_js.get::<&str, JsObject>("mediaStream")?;
+
+            let media_stream = if let Some(microphone_js) = some_microphone_js {
+                let microphone_napi = ctx.env.unwrap::<NapiMicrophone>(&microphone_js)?;
+                let microphone = microphone_napi.unwrap();
+                microphone.stream()
             } else {
-                1.
+                return Err(napi::Error::from_reason(
+                    "mediaStream option is mandatory for node MediaStreamAudioSourceNode"
+                        .to_string(),
+                ));
             };
 
-            ConstantSourceOptions { offset }
+            MediaStreamAudioSourceOptions { media_stream }
         }
-        Either::B(_) => Default::default(),
+        Either::B(_) => {
+            return Err(napi::Error::from_reason(
+                "Options are mandatory for node MediaStreamAudioSourceNode".to_string(),
+            ));
+        }
     };
 
     // create native node
@@ -97,28 +96,21 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            Rc::new(ConstantSourceNode::new(audio_context, options))
+            Rc::new(MediaStreamAudioSourceNode::new(audio_context, options))
         }
-        "OfflineAudioContext" => {
-            let napi_audio_context = ctx
-                .env
-                .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
-            let audio_context = napi_audio_context.unwrap();
-            Rc::new(ConstantSourceNode::new(audio_context, options))
-        }
+        // NOTE: Online context only
+        // "OfflineAudioContext" => {
+        //     let napi_audio_context = ctx
+        //         .env
+        //         .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
+        //     let audio_context = napi_audio_context.unwrap();
+        //     Rc::new(MediaStreamAudioSourceNode::new(audio_context, options))
+        // }
         &_ => panic!("not supported"),
     };
 
-    // AudioParam: ConstantSourceNode::offset
-    let native_clone = native_node.clone();
-    let param_getter = ParamGetter::ConstantSourceNodeOffset(native_clone);
-    let napi_param = NapiAudioParam::new(param_getter);
-    let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
-    ctx.env.wrap(&mut js_obj, napi_param)?;
-    js_this.set_named_property("offset", &js_obj)?;
-
     // finalize instance creation
-    let napi_node = NapiConstantSourceNode(native_node);
+    let napi_node = NapiMediaStreamAudioSourceNode(native_node);
     ctx.env.wrap(&mut js_this, napi_node)?;
 
     ctx.env.get_undefined()
@@ -130,7 +122,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 #[js_function]
 fn get_channel_count(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiConstantSourceNode>(&js_this)?;
+    let napi_node = ctx.env.unwrap::<NapiMediaStreamAudioSourceNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     let channel_count = node.channel_count() as f64;
@@ -141,7 +133,7 @@ fn get_channel_count(ctx: CallContext) -> Result<JsNumber> {
 #[js_function(1)]
 fn set_channel_count(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiConstantSourceNode>(&js_this)?;
+    let napi_node = ctx.env.unwrap::<NapiMediaStreamAudioSourceNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     let channel_count = ctx.get::<JsNumber>(0)?.get_double()? as usize;
@@ -153,7 +145,7 @@ fn set_channel_count(ctx: CallContext) -> Result<JsUndefined> {
 #[js_function]
 fn get_channel_count_mode(ctx: CallContext) -> Result<JsString> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiConstantSourceNode>(&js_this)?;
+    let napi_node = ctx.env.unwrap::<NapiMediaStreamAudioSourceNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     let value = node.channel_count_mode();
@@ -169,7 +161,7 @@ fn get_channel_count_mode(ctx: CallContext) -> Result<JsString> {
 #[js_function(1)]
 fn set_channel_count_mode(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiConstantSourceNode>(&js_this)?;
+    let napi_node = ctx.env.unwrap::<NapiMediaStreamAudioSourceNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     let js_str = ctx.get::<JsString>(0)?;
@@ -188,7 +180,7 @@ fn set_channel_count_mode(ctx: CallContext) -> Result<JsUndefined> {
 #[js_function]
 fn get_channel_interpretation(ctx: CallContext) -> Result<JsString> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiConstantSourceNode>(&js_this)?;
+    let napi_node = ctx.env.unwrap::<NapiMediaStreamAudioSourceNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     let value = node.channel_interpretation();
@@ -203,7 +195,7 @@ fn get_channel_interpretation(ctx: CallContext) -> Result<JsString> {
 #[js_function(1)]
 fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiConstantSourceNode>(&js_this)?;
+    let napi_node = ctx.env.unwrap::<NapiMediaStreamAudioSourceNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     let js_str = ctx.get::<JsString>(0)?;
@@ -221,48 +213,12 @@ fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
 // -------------------------------------------------
 // connect / disconnect macros
 // -------------------------------------------------
-connect_method!(NapiConstantSourceNode);
-disconnect_method!(NapiConstantSourceNode);
+connect_method!(NapiMediaStreamAudioSourceNode);
+disconnect_method!(NapiMediaStreamAudioSourceNode);
 
 // -------------------------------------------------
 // AudioScheduledSourceNode Interface
 // -------------------------------------------------
-
-#[js_function(1)]
-fn start(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiConstantSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    match ctx.length {
-        0 => node.start(),
-        1 => {
-            let when = ctx.get::<JsNumber>(0)?.get_double()?;
-            node.start_at(when);
-        }
-        _ => (),
-    }
-
-    ctx.env.get_undefined()
-}
-
-#[js_function(1)]
-fn stop(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiConstantSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    match ctx.length {
-        0 => node.stop(),
-        1 => {
-            let when = ctx.get::<JsNumber>(0)?.try_into()?;
-            node.stop_at(when);
-        }
-        _ => (),
-    };
-
-    ctx.env.get_undefined()
-}
 
 // -------------------------------------------------
 // GETTERS

@@ -14,25 +14,14 @@ impl NapiOfflineAudioContext {
             "OfflineAudioContext",
             constructor,
             &[
-                // Property::new("Symbol.toStringTag")?
-                //     .with_value(&env.create_string("OfflineAudioContext")?)
-                //     .with_property_attributes(PropertyAttributes::Static),
-
                 Property::new("currentTime")?.with_getter(get_current_time),
                 Property::new("sampleRate")?.with_getter(get_sample_rate),
+                // this should be implemented for offline as well
+                // see https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-state
                 // Property::new("state")?.with_getter(get_state),
-                // Property::new("baseLatency")?.with_getter(get_base_latency),
-                // Property::new("outputLatency")?.with_getter(get_output_latency),
 
-                // for now async methods are sync, from a JS perpspective the
-                // API will nonetheless be the same... (see monkey-patch.js)
-                Property::new("startRendering")?.with_method(start_rendering),
-                // Property::new("resume")?.with_method(resume),
-                // Property::new("suspend")?.with_method(suspend),
-                // Property::new("close")?.with_method(close),
-                // Property::new("decodeAudioData")?.with_method(decode_audio_data),
+                Property::new("decodeAudioData")?.with_method(decode_audio_data),
                 Property::new("createPeriodicWave")?.with_method(create_periodic_wave),
-
                 Property::new("createBuffer")?.with_method(create_buffer),
 
                 // ----------------------------------------------------
@@ -43,6 +32,11 @@ impl NapiOfflineAudioContext {
                     return `
                 Property::new("${factory}")?.with_method(${d.slug(factory)}),`
                 }).join('')}
+
+                // ----------------------------------------------------
+                // Methods and attributes specifc to OfflineAudioContext
+                // ----------------------------------------------------
+                Property::new("startRendering")?.with_method(start_rendering),
             ],
         )
     }
@@ -99,37 +93,6 @@ fn get_sample_rate(ctx: CallContext) -> Result<JsNumber> {
 
     let sample_rate = obj.sample_rate() as f64;
     ctx.env.create_double(sample_rate)
-}
-
-// @todo - async version
-#[js_function]
-fn start_rendering(ctx: CallContext) -> Result<JsObject> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let some_audio_context = napi_obj.0.take();
-
-    match some_audio_context {
-        Some(audio_context) => {
-            let audio_buffer = audio_context.start_rendering_sync();
-
-            // create js audio buffer instance
-            let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
-            let store: JsObject = ctx.env.get_reference_value(store_ref)?;
-            let ctor: JsFunction = store.get_named_property("AudioBuffer")?;
-            let mut options = ctx.env.create_object()?;
-            options.set("__internal_caller__", ctx.env.get_null())?;
-
-            // populate with audio buffer
-            let js_audio_buffer = ctor.new_instance(&[options])?;
-            let napi_audio_buffer = ctx.env.unwrap::<NapiAudioBuffer>(&js_audio_buffer)?;
-            napi_audio_buffer.populate(audio_buffer);
-
-            Ok(js_audio_buffer)
-        }
-        None => {
-            Err(napi::Error::from_reason("startRendering already called".to_string()))
-        },
-    }
 }
 
 // @todo - async version
@@ -267,3 +230,39 @@ fn ${d.slug(factoryName)}(ctx: CallContext) -> Result<JsObject> {
 }
     `;
 }).join('')}
+
+
+// ----------------------------------------------------
+// Methods specific to OfflineAudioContext
+// ----------------------------------------------------
+
+// @todo - async version
+#[js_function]
+fn start_rendering(ctx: CallContext) -> Result<JsObject> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
+    let some_audio_context = napi_obj.0.take();
+
+    match some_audio_context {
+        Some(audio_context) => {
+            let audio_buffer = audio_context.start_rendering_sync();
+
+            // create js audio buffer instance
+            let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+            let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+            let ctor: JsFunction = store.get_named_property("AudioBuffer")?;
+            let mut options = ctx.env.create_object()?;
+            options.set("__internal_caller__", ctx.env.get_null())?;
+
+            // populate with audio buffer
+            let js_audio_buffer = ctor.new_instance(&[options])?;
+            let napi_audio_buffer = ctx.env.unwrap::<NapiAudioBuffer>(&js_audio_buffer)?;
+            napi_audio_buffer.populate(audio_buffer);
+
+            Ok(js_audio_buffer)
+        }
+        None => {
+            Err(napi::Error::from_reason("startRendering already called".to_string()))
+        },
+    }
+}
