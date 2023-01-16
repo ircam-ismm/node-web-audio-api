@@ -47,6 +47,7 @@ impl NapiOfflineAudioContext {
                 Property::new("createChannelMerger")?.with_method(create_channel_merger),
                 Property::new("createChannelSplitter")?.with_method(create_channel_splitter),
                 Property::new("createConstantSource")?.with_method(create_constant_source),
+                Property::new("createConvolver")?.with_method(create_convolver),
                 Property::new("createDelay")?.with_method(create_delay),
                 Property::new("createDynamicsCompressor")?.with_method(create_dynamics_compressor),
                 Property::new("createGain")?.with_method(create_gain),
@@ -297,6 +298,17 @@ fn create_constant_source(ctx: CallContext) -> Result<JsObject> {
     let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
     let store: JsObject = ctx.env.get_reference_value(store_ref)?;
     let ctor: JsFunction = store.get_named_property("ConstantSourceNode")?;
+
+    ctor.new_instance(&[js_this])
+}
+
+#[js_function(0)]
+fn create_convolver(ctx: CallContext) -> Result<JsObject> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+
+    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+    let ctor: JsFunction = store.get_named_property("ConvolverNode")?;
 
     ctor.new_instance(&[js_this])
 }

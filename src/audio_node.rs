@@ -105,6 +105,15 @@ macro_rules! connect_method {
 
                     Ok(js_dest)
                 }
+                "ConvolverNode" => {
+                    let napi_dest = ctx
+                        .env
+                        .unwrap::<$crate::convolver_node::NapiConvolverNode>(&js_dest)?;
+                    let native_dest = napi_dest.unwrap();
+                    let _res = native_src.connect_at(native_dest, output as usize, input as usize);
+
+                    Ok(js_dest)
+                }
                 "DelayNode" => {
                     let napi_dest = ctx
                         .env
@@ -244,6 +253,13 @@ macro_rules! disconnect_method {
                             let napi_dest = ctx
                                 .env
                                 .unwrap::<$crate::constant_source_node::NapiConstantSourceNode>(&js_dest)?;
+                            let native_dest = napi_dest.unwrap();
+                            native_src.disconnect_from(native_dest);
+                        }
+                        "ConvolverNode" => {
+                            let napi_dest = ctx
+                                .env
+                                .unwrap::<$crate::convolver_node::NapiConvolverNode>(&js_dest)?;
                             let native_dest = napi_dest.unwrap();
                             native_src.disconnect_from(native_dest);
                         }

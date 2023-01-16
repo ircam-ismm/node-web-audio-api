@@ -23,6 +23,7 @@ export const {
   ChannelMergerNode,
   ChannelSplitterNode,
   ConstantSourceNode,
+  ConvolverNode,
   DelayNode,
   DynamicsCompressorNode,
   GainNode,

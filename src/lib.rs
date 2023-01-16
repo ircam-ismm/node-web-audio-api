@@ -40,6 +40,8 @@ mod channel_splitter_node;
 use crate::channel_splitter_node::NapiChannelSplitterNode;
 mod constant_source_node;
 use crate::constant_source_node::NapiConstantSourceNode;
+mod convolver_node;
+use crate::convolver_node::NapiConvolverNode;
 mod delay_node;
 use crate::delay_node::NapiDelayNode;
 mod dynamics_compressor_node;
@@ -119,6 +121,11 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     exports.set_named_property("ConstantSourceNode", napi_class)?;
     let napi_class = NapiConstantSourceNode::create_js_class(&env)?;
     store.set_named_property("ConstantSourceNode", napi_class)?;
+
+    let napi_class = NapiConvolverNode::create_js_class(&env)?;
+    exports.set_named_property("ConvolverNode", napi_class)?;
+    let napi_class = NapiConvolverNode::create_js_class(&env)?;
+    store.set_named_property("ConvolverNode", napi_class)?;
 
     let napi_class = NapiDelayNode::create_js_class(&env)?;
     exports.set_named_property("DelayNode", napi_class)?;

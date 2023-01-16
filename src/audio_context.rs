@@ -43,6 +43,7 @@ impl NapiAudioContext {
                 Property::new("createChannelMerger")?.with_method(create_channel_merger),
                 Property::new("createChannelSplitter")?.with_method(create_channel_splitter),
                 Property::new("createConstantSource")?.with_method(create_constant_source),
+                Property::new("createConvolver")?.with_method(create_convolver),
                 Property::new("createDelay")?.with_method(create_delay),
                 Property::new("createDynamicsCompressor")?.with_method(create_dynamics_compressor),
                 Property::new("createGain")?.with_method(create_gain),
@@ -100,11 +101,18 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                 None
             };
 
+        let sink_id_js = options.get::<&str, JsString>("sinkId")?;
+        let sink_id = if let Some(sink_id_js) = sink_id_js {
+            let sink_id_utf8 = sink_id_js.into_utf8()?.into_owned()?;
+            sink_id_utf8.as_str().to_string()
+        } else {
+            String::new()
+        };
+
         AudioContextOptions {
             latency_hint,
             sample_rate,
-            // @todo - implement
-            sink_id: None,
+            sink_id,
         }
     } else {
         AudioContextOptions::default()
@@ -381,6 +389,17 @@ fn create_constant_source(ctx: CallContext) -> Result<JsObject> {
     let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
     let store: JsObject = ctx.env.get_reference_value(store_ref)?;
     let ctor: JsFunction = store.get_named_property("ConstantSourceNode")?;
+
+    ctor.new_instance(&[js_this])
+}
+
+#[js_function(0)]
+fn create_convolver(ctx: CallContext) -> Result<JsObject> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+
+    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+    let ctor: JsFunction = store.get_named_property("ConvolverNode")?;
 
     ctor.new_instance(&[js_this])
 }
