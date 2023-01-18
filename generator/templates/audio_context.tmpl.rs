@@ -106,6 +106,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             latency_hint,
             sample_rate,
             sink_id,
+            ..Default::default()
         }
     } else {
         AudioContextOptions::default()

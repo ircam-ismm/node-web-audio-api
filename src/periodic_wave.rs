@@ -13,6 +13,8 @@ impl NapiPeriodicWave {
         env.define_class("PeriodicWave", constructor, &[])
     }
 
+    // is this false clippy positive?
+    #[allow(dead_code)]
     pub fn unwrap(&self) -> &PeriodicWave {
         &self.0
     }

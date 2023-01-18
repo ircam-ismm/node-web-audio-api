@@ -38,6 +38,7 @@ impl NapiAudioContext {
                 Property::new("createGain")?.with_method(create_gain),
                 Property::new("createIIRFilter")?.with_method(create_iir_filter),
                 Property::new("createOscillator")?.with_method(create_oscillator),
+                Property::new("createPanner")?.with_method(create_panner),
                 Property::new("createStereoPanner")?.with_method(create_stereo_panner),
                 Property::new("createWaveShaper")?.with_method(create_wave_shaper),
                 // ----------------------------------------------------
@@ -114,6 +115,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             latency_hint,
             sample_rate,
             sink_id,
+            ..Default::default()
         }
     } else {
         AudioContextOptions::default()
@@ -403,6 +405,17 @@ fn create_oscillator(ctx: CallContext) -> Result<JsObject> {
     let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
     let store: JsObject = ctx.env.get_reference_value(store_ref)?;
     let ctor: JsFunction = store.get_named_property("OscillatorNode")?;
+
+    ctor.new_instance(&[js_this])
+}
+
+#[js_function(0)]
+fn create_panner(ctx: CallContext) -> Result<JsObject> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+
+    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+    let ctor: JsFunction = store.get_named_property("PannerNode")?;
 
     ctor.new_instance(&[js_this])
 }

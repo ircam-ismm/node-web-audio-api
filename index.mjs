@@ -31,6 +31,7 @@ export const {
   GainNode,
   IIRFilterNode,
   OscillatorNode,
+  PannerNode,
   StereoPannerNode,
   WaveShaperNode,
 

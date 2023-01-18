@@ -20,7 +20,7 @@ let supportedNodes = [
   `GainNode`,
   `IIRFilterNode`,
   `OscillatorNode`,
-  // `PannerNode`, // review rs wise, lots of inconsistencies
+  `PannerNode`, // review rs wise, lots of inconsistencies
   `StereoPannerNode`,
   `WaveShaperNode`,
 
@@ -167,8 +167,14 @@ const utils = {
   camelcase(idl) {
     if (typeof idl === 'string') {
       let str = idl;
+
       if (str.match(/[0-9]/)) { // oversampling
         str = str.split('').reverse().join('');
+      }
+
+      // edge case for panning model type
+      if (str === 'equalpower') {
+        str = 'EqualPower';
       }
 
       return camelcase(str, { pascalCase: true, preserveConsecutiveUppercase: true });

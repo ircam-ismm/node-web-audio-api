@@ -28,6 +28,12 @@ pub(crate) enum ParamGetter {
     GainNodeGain(Rc<GainNode>),
     OscillatorNodeFrequency(Rc<OscillatorNode>),
     OscillatorNodeDetune(Rc<OscillatorNode>),
+    PannerNodePositionX(Rc<PannerNode>),
+    PannerNodePositionY(Rc<PannerNode>),
+    PannerNodePositionZ(Rc<PannerNode>),
+    PannerNodeOrientationX(Rc<PannerNode>),
+    PannerNodeOrientationY(Rc<PannerNode>),
+    PannerNodeOrientationZ(Rc<PannerNode>),
     StereoPannerNodePan(Rc<StereoPannerNode>),
 }
 
@@ -50,6 +56,12 @@ impl ParamGetter {
             ParamGetter::GainNodeGain(ref node) => node.gain(),
             ParamGetter::OscillatorNodeFrequency(ref node) => node.frequency(),
             ParamGetter::OscillatorNodeDetune(ref node) => node.detune(),
+            ParamGetter::PannerNodePositionX(ref node) => node.position_x(),
+            ParamGetter::PannerNodePositionY(ref node) => node.position_y(),
+            ParamGetter::PannerNodePositionZ(ref node) => node.position_z(),
+            ParamGetter::PannerNodeOrientationX(ref node) => node.orientation_x(),
+            ParamGetter::PannerNodeOrientationY(ref node) => node.orientation_y(),
+            ParamGetter::PannerNodeOrientationZ(ref node) => node.orientation_z(),
             ParamGetter::StereoPannerNodePan(ref node) => node.pan(),
         }
     }

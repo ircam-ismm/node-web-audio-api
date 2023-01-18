@@ -21,11 +21,20 @@ impl ${d.napiName(d.node)} {
                 `
                 ).join('')}
                 // Methods
-                ${d.methods(d.node).map(method => `Property::new("${method.name}")?
+                ${d.methods(d.node).map(method => {
+                    // ignore deprecated methods
+                    // see: https://webaudio.github.io/web-audio-api/#PannerNode-methods
+                    if (d.name(d.node) === 'PannerNode') {
+                        if (d.name(method) === 'setOrientation' || d.name(method) === 'setPosition') {
+                            return '';
+                        }
+                    }
+
+                    return `Property::new("${method.name}")?
                     .with_method(${d.slug(method)})
                     .with_property_attributes(PropertyAttributes::Enumerable),
                 `
-                ).join('')}
+                }).join('')}
                 // AudioNode interface
                 Property::new("channelCount")?
                     .with_getter(get_channel_count)
@@ -740,6 +749,14 @@ if (method.idlType.idlType !== 'undefined') {
     return '';
 }
 
+// deprecated methods
+// see: https://webaudio.github.io/web-audio-api/#PannerNode-methods
+if (d.name(d.node) === 'PannerNode') {
+    if (d.name(method) === 'setOrientation' || d.name(method) === 'setPosition') {
+        return '';
+    }
+}
+
 let doWriteMethodCall = true;
 
 return `
@@ -756,7 +773,13 @@ fn ${d.slug(method)}(ctx: CallContext) -> Result<JsUndefined> {
             case 'float':
                 return `
     let mut ${d.slug(arg.name)}_js = ctx.get::<JsNumber>(${index})?;
-    let ${d.slug(arg.name)} = ${d.slug(arg.name)}_js.get_double() as f32;
+    let ${d.slug(arg.name)} = ${d.slug(arg.name)}_js.get_double()? as f32;
+                `;
+                break;
+            case 'double':
+                return `
+    let mut ${d.slug(arg.name)}_js = ctx.get::<JsNumber>(${index})?;
+    let ${d.slug(arg.name)} = ${d.slug(arg.name)}_js.get_double()? as f64;
                 `;
                 break;
             case 'Float32Array':
