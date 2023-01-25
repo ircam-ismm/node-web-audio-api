@@ -196,7 +196,15 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                         // Handle type defined in IDL
                         // ---------------------------------------------------
                         const idl = d.findInTree(d.memberType(m));
-                        const idlType = d.type(idl);
+                        let idlType;
+
+                        try {
+                            idlType = d.type(idl);
+                        } catch(err) {
+                            console.log('issue with member');
+                            console.log(JSON.stringify(m, null, 2));
+                            return '';
+                        }
 
                         switch (idlType) {
 
@@ -529,6 +537,7 @@ fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsBoolean> {
             break;
         case 'float':
         case 'double':
+        case 'unsigned long':
             return `
 #[js_function(0)]
 fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsNumber> {
@@ -566,7 +575,15 @@ fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsUnknown> {
 
             // handle IDL types
             let idl = d.findInTree(attrType);
-            let idlType = d.type(idl);
+            let idlType;
+
+            try {
+                idlType = d.type(idl);
+            } catch(err) {
+                console.log('issue in getter');
+                console.log(JSON.stringify(attr, null, 2));
+                return '';
+            }
 
             switch (idlType) {
                 case 'enum':
@@ -663,6 +680,21 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
 }
             `;
             break;
+        case 'unsigned long':
+            return `
+#[js_function(1)]
+fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let value = ctx.get::<JsNumber>(0)?.get_double()? as usize;
+    node.set_${d.slug(attr)}(value);
+
+    ctx.env.get_undefined()
+}
+            `;
+            break;
         case 'Float32Array':
             return `
 #[js_function(1)]
@@ -688,7 +720,16 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
         // IDL types
         default: {
             let idl = d.findInTree(attrType);
-            let idlType = d.type(idl);
+            let idlType;
+
+            try {
+                idlType = d.type(idl);
+            } catch(err) {
+                console.log('issue in getter');
+                console.log(JSON.stringify(attr, null, 2));
+                return '';
+            }
+
 
             switch (idlType) {
                 case 'enum':
@@ -787,6 +828,13 @@ fn ${d.slug(method)}(ctx: CallContext) -> Result<JsUndefined> {
     #[allow(clippy::unnecessary_mut_passed)]
     let mut ${d.slug(arg.name)}_js = ctx.get::<JsTypedArray>(${index})?.into_value()?;
     let ${d.slug(arg.name)}: &mut [f32] = ${d.slug(arg.name)}_js.as_mut();
+                `;
+                break;
+            case 'Uint8Array':
+                return `
+    #[allow(clippy::unnecessary_mut_passed)]
+    let mut ${d.slug(arg.name)}_js = ctx.get::<JsTypedArray>(${index})?.into_value()?;
+    let ${d.slug(arg.name)}: &mut [u8] = ${d.slug(arg.name)}_js.as_mut();
                 `;
                 break;
             default:

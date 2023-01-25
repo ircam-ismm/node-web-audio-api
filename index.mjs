@@ -20,6 +20,7 @@ export const {
   // manually written nodes
   MediaStreamAudioSourceNode,
   // generated supported nodes
+  AnalyserNode,
   AudioBufferSourceNode,
   BiquadFilterNode,
   ChannelMergerNode,

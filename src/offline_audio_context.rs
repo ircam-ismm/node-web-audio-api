@@ -32,6 +32,7 @@ impl NapiOfflineAudioContext {
                 // ----------------------------------------------------
                 // Factory methods
                 // ----------------------------------------------------
+                Property::new("createAnalyser")?.with_method(create_analyser),
                 Property::new("createBufferSource")?.with_method(create_buffer_source),
                 Property::new("createBiquadFilter")?.with_method(create_biquad_filter),
                 Property::new("createChannelMerger")?.with_method(create_channel_merger),
@@ -196,6 +197,17 @@ fn create_periodic_wave(ctx: CallContext) -> Result<JsObject> {
 // ----------------------------------------------------
 // Factory methods
 // ----------------------------------------------------
+
+#[js_function(0)]
+fn create_analyser(ctx: CallContext) -> Result<JsObject> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+
+    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+    let ctor: JsFunction = store.get_named_property("AnalyserNode")?;
+
+    ctor.new_instance(&[js_this])
+}
 
 #[js_function(0)]
 fn create_buffer_source(ctx: CallContext) -> Result<JsObject> {

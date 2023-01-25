@@ -34,6 +34,8 @@ use crate::media_stream_audio_source_node::NapiMediaStreamAudioSourceNode;
 
 // import audio nodes (generated)
 
+mod analyser_node;
+use crate::analyser_node::NapiAnalyserNode;
 mod audio_buffer_source_node;
 use crate::audio_buffer_source_node::NapiAudioBufferSourceNode;
 mod biquad_filter_node;
@@ -112,6 +114,11 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     store.set_named_property("MediaStreamAudioSourceNode", napi_class)?;
 
     // export audio nodes (generated)
+
+    let napi_class = NapiAnalyserNode::create_js_class(&env)?;
+    exports.set_named_property("AnalyserNode", napi_class)?;
+    let napi_class = NapiAnalyserNode::create_js_class(&env)?;
+    store.set_named_property("AnalyserNode", napi_class)?;
 
     let napi_class = NapiAudioBufferSourceNode::create_js_class(&env)?;
     exports.set_named_property("AudioBufferSourceNode", napi_class)?;

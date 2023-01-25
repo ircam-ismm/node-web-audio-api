@@ -56,6 +56,15 @@ macro_rules! connect_method {
 
                     Ok(js_dest)
                 }
+                "AnalyserNode" => {
+                    let napi_dest = ctx
+                        .env
+                        .unwrap::<$crate::analyser_node::NapiAnalyserNode>(&js_dest)?;
+                    let native_dest = napi_dest.unwrap();
+                    let _res = native_src.connect_at(native_dest, output as usize, input as usize);
+
+                    Ok(js_dest)
+                }
                 "AudioBufferSourceNode" => {
                     let napi_dest = ctx
                         .env
@@ -227,6 +236,13 @@ macro_rules! disconnect_method {
                                 .unwrap::<$crate::audio_destination_node::NapiAudioDestinationNode>(
                                 &js_dest,
                             )?;
+                            let native_dest = napi_dest.unwrap();
+                            native_src.disconnect_from(native_dest);
+                        }
+                        "AnalyserNode" => {
+                            let napi_dest = ctx
+                                .env
+                                .unwrap::<$crate::analyser_node::NapiAnalyserNode>(&js_dest)?;
                             let native_dest = napi_dest.unwrap();
                             native_src.disconnect_from(native_dest);
                         }

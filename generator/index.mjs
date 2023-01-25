@@ -9,7 +9,7 @@ import compile from 'template-literal';
 
 let supportedNodes = [
   `AudioBufferSourceNode`,
-  // `AnalyserNode`,
+  `AnalyserNode`,
   `BiquadFilterNode`,
   `ChannelMergerNode`,
   `ChannelSplitterNode`,
@@ -23,11 +23,12 @@ let supportedNodes = [
   `PannerNode`, // review rs wise, lots of inconsistencies
   `StereoPannerNode`,
   `WaveShaperNode`,
-
-  // Online context only (written manually for now)
-  // 'MediaStreamAudioSourceNode',
 ];
 
+
+// DO NOT OVERRIDE FROM SCRIPT
+// Online context only (written manually for now)
+// 'MediaStreamAudioSourceNode',
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
