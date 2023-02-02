@@ -45,6 +45,18 @@ static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 #[module_exports]
 fn init(mut exports: JsObject, env: Env) -> Result<()> {
+    // catch all panics
+    std::panic::set_hook(Box::new(|panic_info| {
+        println!("{:?}", panic_info.payload());
+
+        if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+            println!("panic occurred: {s:?}");
+        } else {
+            println!("panic occurred");
+        }
+    }));
+
+
     // store constructor for factory methods
     // @note - we create the js class twice so that export and store have both
     // their owned constructor. Maybe this could be cleaned...
