@@ -6,7 +6,7 @@
 build.rs
 Cargo.*
 NOTES.md
-dummy.js
+dummy.mjs
 
 deploy
 examples

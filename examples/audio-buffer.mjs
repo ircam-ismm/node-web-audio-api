@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import { AudioContext } from '../index.mjs';
+import { AudioContext, AudioBuffer } from '../index.mjs';
 
 const context = new AudioContext();
 

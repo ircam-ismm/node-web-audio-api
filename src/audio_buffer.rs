@@ -1,6 +1,6 @@
 use napi::{
-    CallContext, Env, JsFunction, JsNumber, JsObject, JsTypedArray, JsUndefined, Property, Result,
-    TypedArrayType,
+    CallContext, Either, Env, JsFunction, JsNumber, JsObject, JsTypedArray, JsUndefined, Property,
+    Result, TypedArrayType,
 };
 use napi_derive::js_function;
 use web_audio_api::{AudioBuffer, AudioBufferOptions};
@@ -59,35 +59,57 @@ impl NapiAudioBuffer {
 #[js_function(1)]
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
-    let options = ctx.get::<JsObject>(0)?;
 
-    if options.has_own_property("__internal_caller__")? {
-        let napi_node = NapiAudioBuffer(None);
-        ctx.env.wrap(&mut js_this, napi_node)?;
-    } else {
-        let number_of_channels = match options.get::<&str, JsNumber>("numberOfChannels") {
-            Ok(some_number_of_channels) => some_number_of_channels.unwrap().get_double()? as usize,
-            Err(_) => 1,
-        };
+    match ctx.try_get::<JsObject>(0)? {
+        Either::A(options_js) => {
+            // created by decodeAudioData
+            if options_js.has_own_property("__internal_caller__")? {
+                let napi_node = NapiAudioBuffer(None);
+                ctx.env.wrap(&mut js_this, napi_node)?;
+            } else {
+                let some_number_of_channels_js =
+                    options_js.get::<&str, JsNumber>("numberOfChannels")?;
+                let number_of_channels =
+                    if let Some(number_of_channels_js) = some_number_of_channels_js {
+                        number_of_channels_js.get_double()? as usize
+                    } else {
+                        1
+                    };
 
-        let length = match options.get::<&str, JsNumber>("length") {
-            Ok(some_length) => some_length.unwrap().get_double()? as usize,
-            Err(_) => panic!("length is required"),
-        };
+                let some_length_js = options_js.get::<&str, JsNumber>("length")?;
+                if some_length_js.is_none() {
+                    return Err(napi::Error::new(
+                        napi::Status::InvalidArg,
+                        "AudioBuffer: Invalid options, length is required".to_string(),
+                    ));
+                }
+                let length = some_length_js.unwrap().get_double()? as usize;
 
-        let sample_rate = match options.get::<&str, JsNumber>("sampleRate") {
-            Ok(some_length) => some_length.unwrap().get_double()? as f32,
-            Err(_) => panic!("sampleRate is required"),
-        };
+                let some_sample_rate_js = options_js.get::<&str, JsNumber>("sampleRate")?;
+                if some_sample_rate_js.is_none() {
+                    return Err(napi::Error::new(
+                        napi::Status::InvalidArg, // error code
+                        "AudioBuffer: Invalid options, sampleRate is required".to_string(),
+                    ));
+                }
+                let sample_rate = some_sample_rate_js.unwrap().get_double()? as f32;
 
-        let audio_buffer = AudioBuffer::new(AudioBufferOptions {
-            number_of_channels,
-            length,
-            sample_rate,
-        });
+                let audio_buffer = AudioBuffer::new(AudioBufferOptions {
+                    number_of_channels,
+                    length,
+                    sample_rate,
+                });
 
-        let napi_node = NapiAudioBuffer(Some(audio_buffer));
-        ctx.env.wrap(&mut js_this, napi_node)?;
+                let napi_node = NapiAudioBuffer(Some(audio_buffer));
+                ctx.env.wrap(&mut js_this, napi_node)?;
+            }
+        }
+        Either::B(_) => {
+            return Err(napi::Error::new(
+                napi::Status::InvalidArg,
+                "AudioBuffer: Invalid options, options are required".to_string(),
+            ));
+        }
     }
 
     ctx.env.get_undefined()
