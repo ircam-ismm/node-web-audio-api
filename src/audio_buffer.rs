@@ -78,34 +78,34 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
                 let some_length_js = options_js.get::<&str, JsNumber>("length")?;
                 if some_length_js.is_none() {
-                    // return Err(napi::Error::new(
-                    //     napi::Status::InvalidArg,
-                    //     "AudioBuffer: Invalid options, length is required".to_string(),
-                    // ));
-                    unsafe {
-                        JsTypeError::from(napi::Error::new(
-                            napi::Status::InvalidArg,
-                            "AudioBuffer: Invalid options, length is required".to_string(),
-                        ))
-                        .throw_into(ctx.env.raw())
-                    }
+                    return Err(napi::Error::new(
+                        napi::Status::InvalidArg,
+                        "AudioBuffer: Invalid options, length is required".to_string(),
+                    ));
+                    // unsafe {
+                    //     JsTypeError::from(napi::Error::new(
+                    //         napi::Status::InvalidArg,
+                    //         "AudioBuffer: Invalid options, length is required".to_string(),
+                    //     ))
+                    //     .throw_into(ctx.env.raw())
+                    // }
                     return ctx.env.get_undefined();
                 }
                 let length = some_length_js.unwrap().get_double()? as usize;
 
                 let some_sample_rate_js = options_js.get::<&str, JsNumber>("sampleRate")?;
                 if some_sample_rate_js.is_none() {
-                    // return Err(napi::Error::new(
-                    //     napi::Status::InvalidArg, // error code
-                    //     "AudioBuffer: Invalid options, sampleRate is required".to_string(),
-                    // ));
-                    unsafe {
-                        JsTypeError::from(napi::Error::new(
-                            napi::Status::InvalidArg,
-                            "AudioBuffer: Invalid options, length is required".to_string(),
-                        ))
-                        .throw_into(ctx.env.raw())
-                    }
+                    return Err(napi::Error::new(
+                        napi::Status::InvalidArg, // error code
+                        "AudioBuffer: Invalid options, sampleRate is required".to_string(),
+                    ));
+                    // unsafe {
+                    //     JsTypeError::from(napi::Error::new(
+                    //         napi::Status::InvalidArg,
+                    //         "AudioBuffer: Invalid options, length is required".to_string(),
+                    //     ))
+                    //     .throw_into(ctx.env.raw())
+                    // }
                     return ctx.env.get_undefined();
                 }
                 let sample_rate = some_sample_rate_js.unwrap().get_double()? as f32;
@@ -121,17 +121,18 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             }
         }
         Either::B(_) => {
-            // return Err(napi::Error::new(
-            //     napi::Status::InvalidArg,
-            //     "AudioBuffer: Invalid options, options are required".to_string(),
-            // ));
-            unsafe {
-                JsTypeError::from(napi::Error::new(
-                    napi::Status::InvalidArg,
-                    "AudioBuffer: Invalid options, length is required".to_string(),
-                ))
-                .throw_into(ctx.env.raw())
-            }
+            return Err(napi::Error::new(
+                napi::Status::InvalidArg,
+                "AudioBuffer: Invalid options, options are required".to_string(),
+            ));
+            // unsafe {
+            //     JsTypeError::from(napi::Error::new(
+            //         napi::Status::InvalidArg,
+            //         "AudioBuffer: Invalid options, length is required".to_string(),
+            //     ))
+            //     .throw_into(ctx.env.raw())
+            // }
+
             return ctx.env.get_undefined();
         }
     }
