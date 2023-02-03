@@ -5,8 +5,6 @@ import Table from 'cli-table';
 
 // benchmarks adapted from https://github.com/padenot/webaudio-benchmark
 
-console.clear();
-
 async function loadBuffer(sources, pathname, sampleRate) {
   const context = new OfflineAudioContext(1, 1, sampleRate);
 
@@ -23,8 +21,9 @@ function getBuffer(sources, sampleRate, numberOfChannels) {
 }
 
 async function benchmark(name, context, results) {
-  console.clear();
-  console.log(`> Running benchmark: ${name}`)
+  readline.clearLine(process.stdout);
+  readline.cursorTo(process.stdout, 0);
+  process.stdout.write(`> Running benchmark: ${name}`);
 
   const start = getTime();
   const buffer = await context.startRendering();
@@ -53,19 +52,15 @@ await loadBuffer(sources, "samples/think-stereo-38000.wav", 38000.);
 await loadBuffer(sources, "samples/think-stereo-44100.wav", 44100.);
 await loadBuffer(sources, "samples/think-stereo-48000.wav", 48000.);
 
-console.log(sources);
-
-// let stdout = stdout().into_raw_mode().unwrap();
-
-// // -------------------------------------------------------
-// // benchamarks
-// // -------------------------------------------------------
+// -------------------------------------------------------
+// benchmarks
+// -------------------------------------------------------
 console.log('');
 
 {
   const name = "Baseline (silence)";
 
-  const context = new OfflineAudioContext(2, DURATION * sampleRate, sampleRate);
+  const context = new OfflineAudioContext(1, DURATION * sampleRate, sampleRate);
 
   await benchmark(name, context, results);
 }
@@ -209,7 +204,7 @@ console.log('');
 
   const adjusted_duration = DURATION / 4;
   const context =
-      new OfflineAudioContext(1, adjusted_duration * sampleRate, sampleRate);
+      new OfflineAudioContext(2, adjusted_duration * sampleRate, sampleRate);
 
   for (let i = 0; i < 100; i++) {
     const source = context.createBufferSource();
@@ -227,7 +222,7 @@ console.log('');
   const name = "Simple mixing (100 different buffers) - be careful w/ volume here!";
 
   const adjusted_duration = DURATION / 4;
-  const context = new OfflineAudioContext(1, adjusted_duration * sampleRate, sampleRate);
+  const context = new OfflineAudioContext(2, adjusted_duration * sampleRate, sampleRate);
   const reference = getBuffer(sources, 38000., 1);
   const channelData = reference.getChannelData(0);
 
@@ -248,7 +243,7 @@ console.log('');
 {
   const name = "Simple mixing with gains";
 
-  const context = new OfflineAudioContext(1, DURATION * sampleRate, sampleRate);
+  const context = new OfflineAudioContext(2, DURATION * sampleRate, sampleRate);
 
   const gain = context.createGain();
   gain.connect(context.destination);
@@ -283,40 +278,42 @@ console.log('');
 }
 
 {
-    const name = "Convolution reverb";
+  const name = "Convolution reverb";
 
-    const adjusted_duration = DURATION / 8.;
-    const length = (adjusted_duration * sampleRate);
-    const context = new OfflineAudioContext(1, length, sampleRate);
-    const buf = getBuffer(sources, sampleRate, 1);
+  const adjusted_duration = DURATION / 8.;
+  const length = (adjusted_duration * sampleRate);
+  const context = new OfflineAudioContext(1, length, sampleRate);
+  const buf = getBuffer(sources, sampleRate, 1);
 
-    const decay = 10.;
-    const duration = 4.;
-    const len = duration * sampleRate;
-    const buffer = context.createBuffer(2, len, sampleRate);
+  const decay = 10.;
+  const duration = 4.;
+  const len = duration * sampleRate;
+  const buffer = context.createBuffer(2, len, sampleRate);
 
-    const iL = new Float32Array(len);
-    const iR = new Float32Array(len);
+  // we use this intermediary buffers compared to original bench that use
+  // `getChannelData`, this is currently not possible here for some reason...
+  const iL = new Float32Array(len);
+  const iR = new Float32Array(len);
 
-    for (let i = 0; i < len; i++) {
-      iL[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
-      iR[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
-    }
+  for (let i = 0; i < len; i++) {
+    iL[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+    iR[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+  }
 
-    buffer.copyToChannel(iL, 0);
-    buffer.copyToChannel(iR, 1);
+  buffer.copyToChannel(iL, 0);
+  buffer.copyToChannel(iR, 1);
 
-    const convolver = context.createConvolver();
-    convolver.buffer = buffer;
-    convolver.connect(context.destination);
+  const convolver = context.createConvolver();
+  convolver.buffer = buffer;
+  convolver.connect(context.destination);
 
-    const source = context.createBufferSource();
-    source.buffer = buf;
-    source.loop = true;
-    source.start();
-    source.connect(convolver);
+  const source = context.createBufferSource();
+  source.buffer = buf;
+  source.loop = true;
+  source.start();
+  source.connect(convolver);
 
-    await benchmark(name, context, results);
+  await benchmark(name, context, results);
 }
 
 {
@@ -514,7 +511,7 @@ console.log('');
 {
   const name = "Sawtooth with automation";
 
-  const context = new OfflineAudioContext(1, DURATION * sampleRate, sampleRate);
+  const context = new OfflineAudioContext(2, DURATION * sampleRate, sampleRate);
 
   const osc = context.createOscillator();
   osc.connect(context.destination);
@@ -589,7 +586,8 @@ console.log('');
   await benchmark(name, context, results);
 }
 
-console.clear();
+readline.clearLine(process.stdout);
+readline.cursorTo(process.stdout, 0);
 console.log('All done!');
 console.log('');
 
@@ -601,10 +599,12 @@ console.log('');
 const table = new Table({
     head: ['+ id', 'name', 'duration (ms)', 'Speedup vs. realtime', 'buffer.duration (s)'],
     colWidths: [10, 70, 15, 22, 22],
-    chars: { 'top': '' , 'top-mid': '' , 'top-left': '' , 'top-right': ''
-         , 'bottom': '' , 'bottom-mid': '' , 'bottom-left': '' , 'bottom-right': ''
-         , 'left': '' , 'left-mid': '' , 'mid': '' , 'mid-mid': ''
-         , 'right': '' , 'right-mid': '' , 'middle': '|' }
+    chars: {
+      'top': '', 'top-mid': '', 'top-left': '', 'top-right': '',
+      'bottom': '', 'bottom-mid': '', 'bottom-left': '', 'bottom-right': '',
+      'left': '', 'left-mid': '', 'mid': '', 'mid-mid': '',
+      'right': '', 'right-mid': '', 'middle': '|'
+    }
 });
 
 results.forEach((result, index) => {
@@ -668,4 +668,3 @@ stdin.on('data', key => {
     }
   }
 });
-
