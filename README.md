@@ -1,11 +1,13 @@
 # Node Web Audio API
 
+[![npm version](https://badge.fury.io/js/node-web-audio-api.svg)](https://badge.fury.io/js/node-web-audio-api)
+
 Node.js bindings for the Rust implementation of the Web Audio API Specification
 
-- see [`orottier/web-audio-api-rs`](https://github.com/orottier/web-audio-api-rs/) 
-- use [`napi-rs`](https://github.com/napi-rs/napi-rs/) for the bindigs
+- see [`orottier/web-audio-api-rs`](https://github.com/orottier/web-audio-api-rs/) for the "real" audio guts
+- use [`napi-rs`](https://github.com/napi-rs/napi-rs/) for the Node.js bindigs
 
-The goal of this library is to provide a implementation that _exactly_ matches the browser implementation to be able to share code in an isomorphic way between browsers and Node.js applications.
+The goal of this library is to provide an implementation that is both efficient and _exactly_ matches the browser implementation, so as to be able to share code in an isomorphic way between browsers and Node.js applications.
 
 ## Install
 
@@ -49,9 +51,7 @@ const audioContext = new AudioContext();
 
 ## Caveats
 
-- Currently the library does not provide any way of chosing the output interface, system default interface will be used. As the spec and web-audio-api evolve evolve, thus should change in the future see [https://github.com/orottier/web-audio-api-rs/issues/216](https://github.com/orottier/web-audio-api-rs/issues/216)
-- On Linux systems, the audio backend is Alsa, which limits the number of online
-AudioContext to 1. This is subject to change in the future.
+- On Linux systems, the audio backend is currently Alsa, which limits the number of online `AudioContext` to 1. This is subject to change in the future.
 
 ### Raspberry Pi
 
@@ -116,6 +116,8 @@ the `package.json` and the `Cargo.toml` files. Therefore, you will need to insta
 ```
 cargo install cargo-bump
 ```
+
+## Similar projects
 
 ## License
 
