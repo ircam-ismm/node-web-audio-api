@@ -591,6 +591,7 @@ console.log('');
 
 console.clear();
 console.log('All done!');
+console.log('');
 
 // -------------------------------------------------------
 // display results
@@ -598,13 +599,17 @@ console.log('All done!');
 
 // instantiate
 const table = new Table({
-    head: ['id', 'name', 'duration (ms)', 'Speedup vs. realtime', 'buffer.duration (s)'],
-    colWidths: [10, 40, 15, 15, 15],
+    head: ['+ id', 'name', 'duration (ms)', 'Speedup vs. realtime', 'buffer.duration (s)'],
+    colWidths: [10, 70, 15, 22, 22],
+    chars: { 'top': '' , 'top-mid': '' , 'top-left': '' , 'top-right': ''
+         , 'bottom': '' , 'bottom-mid': '' , 'bottom-left': '' , 'bottom-right': ''
+         , 'left': '' , 'left-mid': '' , 'mid': '' , 'mid-mid': ''
+         , 'right': '' , 'right-mid': '' , 'middle': '|' }
 });
 
 results.forEach((result, index) => {
   table.push([
-    index + 1,
+    `- ${index + 1}`,
     result.name,
     (result.duration * 1000).toFixed(3),
     (result.buffer.duration / result.duration).toFixed(1),
