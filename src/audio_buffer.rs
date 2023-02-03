@@ -1,6 +1,6 @@
 use napi::{
-    CallContext, Either, Env, JsFunction, JsNumber, JsObject, JsTypeError, JsTypedArray,
-    JsUndefined, Property, Result, TypedArrayType,
+    CallContext, Either, Env, JsFunction, JsNumber, JsObject, JsTypedArray, JsUndefined, Property,
+    Result, TypedArrayType,
 };
 use napi_derive::js_function;
 use web_audio_api::{AudioBuffer, AudioBufferOptions};
@@ -89,7 +89,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                     //     ))
                     //     .throw_into(ctx.env.raw())
                     // }
-                    return ctx.env.get_undefined();
+                    // return ctx.env.get_undefined();
                 }
                 let length = some_length_js.unwrap().get_double()? as usize;
 
@@ -106,7 +106,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                     //     ))
                     //     .throw_into(ctx.env.raw())
                     // }
-                    return ctx.env.get_undefined();
+                    // return ctx.env.get_undefined();
                 }
                 let sample_rate = some_sample_rate_js.unwrap().get_double()? as f32;
 
@@ -133,7 +133,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             //     .throw_into(ctx.env.raw())
             // }
 
-            return ctx.env.get_undefined();
+            // return ctx.env.get_undefined();
         }
     }
 
@@ -180,15 +180,17 @@ fn number_of_channels(ctx: CallContext) -> Result<JsNumber> {
     ctx.env.create_double(number_of_channels as f64)
 }
 
+// this does not work as expected...
+// the returned Float32Array is not mutable
 #[js_function(1)]
 fn get_channel_data(ctx: CallContext) -> Result<JsTypedArray> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiAudioBuffer>(&js_this)?;
-    let obj = napi_obj.unwrap();
+    let obj = napi_obj.unwrap_mut();
 
     let channel_number = ctx.get::<JsNumber>(0)?.get_double()? as usize;
-    let channel_data = obj.get_channel_data(channel_number);
     let length = obj.length();
+    let channel_data = obj.get_channel_data_mut(channel_number);
     // convert channel [f32] to [u8]
     let data = to_byte_slice(channel_data);
     // create array buffer and cast it into Float32Array

@@ -10,6 +10,13 @@ const numberOfChannels = 1;
 const length = context.sampleRate;
 const sampleRate = context.sampleRate;
 const buffer = context.createBuffer(numberOfChannels, length, sampleRate);
+
+// this does not work as expected
+// const channel = buffer.getChannelData(0);
+// channel[1] = 1;
+// console.log(channel);
+// console.log(buffer.getChannelData(0));
+
 const sine = new Float32Array(length);
 
 for (let i = 0; i < length; i++) {

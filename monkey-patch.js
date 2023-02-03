@@ -121,15 +121,6 @@ function patchOfflineAudioContext(NativeOfflineAudioContext) {
       }
 
       super(...args);
-
-      // not sure this is usefull, to be tested
-      const keepAwakeId = setInterval(() => {}, 10000);
-      Object.defineProperty(this, '__keepAwakeId', {
-        value: keepAwakeId,
-        enumerable: false,
-        writable: true,
-        configurable: false,
-      });
     }
 
     // promisify sync APIs

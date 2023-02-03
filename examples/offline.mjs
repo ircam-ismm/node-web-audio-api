@@ -20,7 +20,4 @@ src.start();
 
 await new Promise(resolve => setTimeout(resolve, 1000));
 
-// weird seg fault on close, probably due to fact that we take ownership over
-// the offline_audio_context in startRendering.
-// see with orottier if we can something at the `web-audio-api-rs` level
 await online.close();
