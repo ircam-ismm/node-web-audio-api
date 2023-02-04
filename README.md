@@ -15,10 +15,12 @@ The goal of the library is to provide an implementation that is both efficient a
 npm install [--save] node-web-audio-api
 ```
 
-## Example
+## Example Use
 
 ```js
 import { AudioContext, OscillatorNode, GainNode } from 'node-web-audio-api';
+// or using old fashionned commonjs syntax:
+// const { AudioContext, OscillatorNode, GainNode } = require('node-web-audio-api');
 
 const audioContext = new AudioContext();
 
@@ -40,18 +42,31 @@ setInterval(() => {
 }, 80);
 ```
 
-or using old fashionned commonjs syntax
+### Running the Examples
 
-```js
-const { AudioContext, OscillatorNode, GainNode } = require('node-web-audio-api');
+To run all examples locally on your machine you will need to:
 
-const audioContext = new AudioContext();
-//...
+1. Install Rust toolchain
+```sh
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+2. Clone the repo and build the binary on your machine
+```sh
+git clone https://github.com/ircam-ismm/node-web-audio-api.git
+cd node-web-audio-api
+npm install
+npm run build
+```
+
+3. Run the examples from the project's root directory
+```sh
+node examples/granular-scrub.mjs
 ```
 
 ## Caveats
 
-- The async methods are not trully async for now and are just patched on the JS side, this will evolve once the trully async version of the methods are implemented in the upstream library.
+- The async methods are not trully async for now and are just patched on the JS side. This will evolve once the "trully" async version of the methods are implemented in the upstream library.
 - On Linux systems, the audio backend is currently Alsa, which limits the number of online `AudioContext` to 1. This is subject to change in the future.
 - On Raspberry Pi, the default render quantum size (128) is too small and underruns occurs frequently. To prevent that, if you do not explicitely provide a latency hint in the AudioContext options, the value is automatically set to 'playback' which uses a buffer of 1024 samples (~21ms at 48000Hz). While this is not per se spec compliant, it allows usage of the library in a more user friendly manner. In the future, this might change according to the support of other audio backend.
 - On Raspberry Pi, the `Linux arm gnueabihf` binary provided only works on 32bit OS. We will provide a version for the 64 bit OS in the future.
