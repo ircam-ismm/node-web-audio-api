@@ -111,8 +111,6 @@ The npm `postversion` script rely on [`cargo-bump`](https://crates.io/crates/car
 cargo install cargo-bump
 ```
 
-## Similar projects
-
 ## License
 
-This project is licensed under the [BSD-3-Clause license](./LICENSE).
+[BSD-3-Clause](./LICENSE).
