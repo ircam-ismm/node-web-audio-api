@@ -113,4 +113,4 @@ cargo install cargo-bump
 
 ## License
 
-[BSD-3-Clause](./LICENSE).
+[BSD-3-Clause](./LICENSE)
