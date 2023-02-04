@@ -7,7 +7,7 @@ Node.js bindings for the Rust implementation of the Web Audio API Specification
 - see [`orottier/web-audio-api-rs`](https://github.com/orottier/web-audio-api-rs/) for the "real" audio guts
 - use [`napi-rs`](https://github.com/napi-rs/napi-rs/) for the Node.js bindigs
 
-The goal of the library is to provide an implementation that is both efficient and _exactly_ matches the browser implementation.
+The goal of the library is to provide an implementation that is both efficient and _exactly_ matches the browsers' API.
 
 ## Install
 
