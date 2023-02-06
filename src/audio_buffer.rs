@@ -1,8 +1,10 @@
+// use napi::bindgen_prelude::*;
 use napi::{
-    CallContext, Either, Env, JsFunction, JsNumber, JsObject, JsTypedArray, JsUndefined, Property,
-    Result, TypedArrayType,
+    noop_finalize, CallContext, ContextlessResult, Either, Env, JsFunction, JsNumber, JsObject,
+    JsTypedArray, JsUndefined, Property, Result, TypedArrayType,
 };
 use napi_derive::js_function;
+use std::mem::ManuallyDrop;
 use web_audio_api::{AudioBuffer, AudioBufferOptions};
 
 // helper convert [f32] to [u8]
@@ -182,6 +184,7 @@ fn number_of_channels(ctx: CallContext) -> Result<JsNumber> {
 
 // this does not work as expected...
 // the returned Float32Array is not mutable
+// #[napi]
 #[js_function(1)]
 fn get_channel_data(ctx: CallContext) -> Result<JsTypedArray> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -191,16 +194,39 @@ fn get_channel_data(ctx: CallContext) -> Result<JsTypedArray> {
     let channel_number = ctx.get::<JsNumber>(0)?.get_double()? as usize;
     let length = obj.length();
     let channel_data = obj.get_channel_data_mut(channel_number);
-    // convert channel [f32] to [u8]
+
     let data = to_byte_slice(channel_data);
+
+    // // safe version but returned array buffer IS NOT mutable from the javascript
     // create array buffer and cast it into Float32Array
-    ctx.env
-        .create_arraybuffer_with_data(data.to_vec())
-        .and_then(|array_buffer| {
-            array_buffer
-                .into_raw()
-                .into_typedarray(TypedArrayType::Float32, length, 0)
-        })
+    // ctx.env
+    //     .create_arraybuffer_with_data(data.to_vec())
+    //     .and_then(|array_buffer| {
+    //         array_buffer
+    //             .into_raw()
+    //             .into_typedarray(TypedArrayType::Float32, length, 0)
+    //     })
+
+    // // unsafe version but returned array buffer IS mutable from the javascript
+    let data_ptr = data.as_ptr();
+    let ptr_length = data.len();
+    let manually_drop = ManuallyDrop::new(data);
+
+    unsafe {
+        ctx.env
+            .create_arraybuffer_with_borrowed_data(
+                data_ptr,
+                ptr_length,
+                manually_drop,
+                noop_finalize,
+            )
+            .map(|array_buffer| {
+                array_buffer
+                    .into_raw()
+                    .into_typedarray(TypedArrayType::Float32, length, 0)
+            })
+            .unwrap()
+    }
 }
 
 #[js_function(3)]
