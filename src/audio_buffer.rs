@@ -1,6 +1,5 @@
-// use napi::bindgen_prelude::*;
 use napi::{
-    noop_finalize, CallContext, ContextlessResult, Either, Env, JsFunction, JsNumber, JsObject,
+    noop_finalize, CallContext, Either, Env, JsFunction, JsNumber, JsObject,
     JsTypedArray, JsUndefined, Property, Result, TypedArrayType,
 };
 use napi_derive::js_function;
