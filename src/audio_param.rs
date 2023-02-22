@@ -94,7 +94,7 @@ impl NapiAudioParam {
             Property::new("setValueCurveAtTime")?.with_method(set_value_curve_at_time),
             Property::new("setTargetAtTime")?.with_method(set_target_at_time),
             Property::new("cancelScheduledValues")?.with_method(cancel_scheduled_values),
-            Property::new("cancelAndOldAtTime")?.with_method(cancel_and_hold_at_time),
+            Property::new("cancelAndHoldAtTime")?.with_method(cancel_and_hold_at_time),
         ])?;
 
         Ok(obj)
