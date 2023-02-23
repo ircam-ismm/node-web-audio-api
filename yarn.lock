@@ -41,6 +41,11 @@
   resolved "https://registry.yarnpkg.com/@ircam/eslint-config/-/eslint-config-1.3.0.tgz#130af9b85e9306d4a0186255af7f483e967a1b10"
   integrity sha512-UTbO00tsyQUcgG50wVZ+qZQGd7AYdJJ+R+pdnPG2qnGCEb/hYc2yBN3C2uI7SFT7GcaC254xF77CrbiMHOphUw==
 
+"@ircam/sc-gettime@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@ircam/sc-gettime/-/sc-gettime-1.0.0.tgz#f07d51d360e9551101c910bd79e28178957e064d"
+  integrity sha512-b1Gznf71Lly8ix7+q/BzduRPu5h7ZvPSxk6UBnYn24ltSIRVInF6iXNJxmHvS592RdgwuDGIAjBjEEPZLeyfWQ==
+
 "@napi-rs/cli@^2.14.3":
   version "2.14.5"
   resolved "https://registry.yarnpkg.com/@napi-rs/cli/-/cli-2.14.5.tgz#49e0bde78d8aef3d8c2bcdd6b652adbe5d7b146a"
@@ -526,6 +531,13 @@ clean-stack@^2.0.0:
   resolved "https://registry.yarnpkg.com/clean-stack/-/clean-stack-2.2.0.tgz#ee8472dbb129e727b31e8a10a427dee9dfe4008b"
   integrity sha512-4diC9HaTE+KRAMWhDhrGOECgWZxoevMc5TlkObMqNSsVU62PYzXZ/SMTjzyGAFF1YusgxGcSWTEXBhp0CPwQ1A==
 
+cli-table@^0.3.11:
+  version "0.3.11"
+  resolved "https://registry.yarnpkg.com/cli-table/-/cli-table-0.3.11.tgz#ac69cdecbe81dccdba4889b9a18b7da312a9d3ee"
+  integrity sha512-IqLQi4lO0nIB4tcdTpN4LCB9FI3uqrJZK7RC515EnhZ6qBaglkIgICb1wjeAqpdoOabm1+SuQtkXIPdYC93jhQ==
+  dependencies:
+    colors "1.0.3"
+
 color-convert@^2.0.1:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/color-convert/-/color-convert-2.0.1.tgz#72d3a68d598c9bdb3af2ad1e84f21d896abd4de3"
@@ -537,6 +549,11 @@ color-name@~1.1.4:
   version "1.1.4"
   resolved "https://registry.yarnpkg.com/color-name/-/color-name-1.1.4.tgz#c2a09a87acbde69543de6f63fa3995c826c536a2"
   integrity sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==
+
+colors@1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/colors/-/colors-1.0.3.tgz#0433f44d809680fdeb60ed260f1b0c262e82a40b"
+  integrity sha512-pFGrxThWcWQ2MsAz6RtgeWe4NK2kUE1WfsrvvlctdII745EW9I0yflqhe7++M5LEc7bV2c/9/5zc8sFcpL0Drw==
 
 concat-map@0.0.1:
   version "0.0.1"
