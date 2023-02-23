@@ -1,4 +1,4 @@
-const { AudioContext } = require('./index.js');
+const { AudioContext } = require('./index.cjs');
 
 const audioContext = new AudioContext();
 process.audioContext = audioContext;

@@ -1,6 +1,6 @@
 use napi::{
-    noop_finalize, CallContext, Either, Env, JsFunction, JsNumber, JsObject,
-    JsTypedArray, JsUndefined, Property, Result, TypedArrayType,
+    noop_finalize, CallContext, Either, Env, JsFunction, JsNumber, JsObject, JsTypedArray,
+    JsUndefined, Property, Result, TypedArrayType,
 };
 use napi_derive::js_function;
 use std::mem::ManuallyDrop;
