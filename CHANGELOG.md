@@ -1,3 +1,9 @@
+## v0.7.0
+
+- Improve readme & doc
+- Fix AudioParam method names
+- 
+
 ## v0.6.0 - Feb 2023
 
 - Basic support for mediaDevices & MediaStreamAudioSourceNode
