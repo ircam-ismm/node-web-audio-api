@@ -12,6 +12,10 @@
   "keywords": [
     "audio",
     "web audio api",
+    "webaudio",
+    "sound",
+    "music",
+    "dsp",
     "rust",
     "n-api"
   ],
