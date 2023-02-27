@@ -2,7 +2,6 @@
 
 - Improve readme & doc
 - Fix AudioParam method names
-- 
 
 ## v0.6.0 - Feb 2023
 
