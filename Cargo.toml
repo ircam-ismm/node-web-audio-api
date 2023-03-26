@@ -10,8 +10,8 @@ version = "0.7.0"
 crate-type = ["cdylib"]
 
 [dependencies]
-napi = {version="2", features=["napi6"]}
-napi-derive = "2"
+napi = {version="2.11", features=["napi6"]}
+napi-derive = "2.11"
 web-audio-api = "0.28"
 # web-audio-api = { path = "../web-audio-api-rs" }
 
