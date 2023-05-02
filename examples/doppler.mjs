@@ -1,6 +1,6 @@
-console.log('@todo - Panner issue');
-// import path from 'node:path';
-// import { AudioContext } from '../index.mjs';
+import path from 'node:path';
+import fs from 'node:fs';
+import { load, AudioContext, PannerNode } from '../index.mjs';
 
 /*
  * This example feature a 'true physics' Doppler effect.
@@ -14,48 +14,51 @@ console.log('@todo - Panner issue');
  * node moves closer to the listener, we decrease the delay time linearly. This gives the Doppler
  * effect.
  */
-// const context = AudioContext::default();
-// const file = File::open("samples/siren.mp3").unwrap();
-// const buffer = context.decode_audio_data_sync(file).unwrap();
+const context = new AudioContext();
+const file = await load(path.join(process.cwd(), 'samples', 'sample.wav'));
+// console.log(file);
+// console.log(fs.existsSync(file.path));
+// process.exit();
+const buffer = await context.decodeAudioData(file);
 
-// const src = context.create_buffer_source();
-// src.set_buffer(buffer);
-// src.set_loop(true);
+const pannerOptions = {
+  panningModel: 'equalpower',
+  distanceModel: 'inverse',
+  positionX: 0.,
+  positionY: 100., // siren starts 100 meters away
+  positionZ: 1.,   // we stand 1 meter away from the road
+  orientationX: 1.,
+  orientationY: 0.,
+  orientationZ: 0.,
+  refDistance: 1.,
+  maxDistance: 10000.,
+  rolloffFactor: 1.,
+  // no cone effect:
+  coneInnerAngle: 360.,
+  coneOuterAngle: 0.,
+  coneOuterGain: 0.,
+};
 
-// const pannerOptions = {
-//   panning_model: PanningModelType::EqualPower,
-//   distance_model: DistanceModelType::Inverse,
-//   position_x: 0.,
-//   position_y: 100., // siren starts 100 meters away
-//   position_z: 1.,   // we stand 1 meter away from the road
-//   orientation_x: 1.,
-//   orientation_y: 0.,
-//   orientation_z: 0.,
-//   ref_distance: 1.,
-//   max_distance: 10000.,
-//   rolloff_factor: 1.,
-//   // no cone effect:
-//   cone_inner_angle: 360.,
-//   cone_outer_angle: 0.,
-//   cone_outer_gain: 0.,
-// };
+const now = context.currentTime;
 
-// const panner = new PannerNode(&context, opts);
+const panner = new PannerNode(context, pannerOptions);
+panner.connect(context.destination);
 // // move the siren in 10 seconds from y = 100 to y = -100
-// panner.position_y().linear_ramp_to_value_at_time(-100., 10.);
+panner.positionY.linearRampToValueAtTime(-100., now + 10.);
 
 // // The delay starts with value 0.3, reaches 0 when the siren crosses us, then goes back to 0.3
-// const delay = context.create_delay(1.);
-// const doppler_max = 100. / 343.;
-// delay.delay_time().set_value_at_time(doppler_max, 0.);
-// delay.delay_time().linear_ramp_to_value_at_time(0., 5.);
-// delay
-//     .delay_time()
-//     .linear_ramp_to_value_at_time(doppler_max, 10.);
+const delay = context.createDelay(1.);
+delay.connect(panner);
+const dopplerMax = 100. / 343.;
+delay.delayTime.setValueAtTime(dopplerMax, now);
+delay.delayTime.linearRampToValueAtTime(0., now + 5.);
+delay.delayTime.linearRampToValueAtTime(dopplerMax, now + 10.);
 
-// src.connect(&delay);
-// delay.connect(&panner);
-// panner.connect(&context.destination());
-// src.start();
 
-// std::thread::sleep(std::time::Duration::from_millis(10_000));
+const src = context.createBufferSource();
+src.connect(delay);
+src.buffer = buffer;
+src.loop = true;
+src.start(now);
+
+await new Promise(resolve => setTimeout(resolve, 10 * 1000));

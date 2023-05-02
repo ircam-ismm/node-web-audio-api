@@ -21,9 +21,10 @@ class NotSupportedError extends Error {
 
 const { platform, arch } = process;
 let contextId = 0;
+let enumerateDevicesSync = null;
 
-function patchAudioContext(NativeAudioContext) {
-  class AudioContext extends NativeAudioContext {
+function patchAudioContext(nativeBinding) {
+  class AudioContext extends nativeBinding.AudioContext {
     constructor(options = {}) {
 
       // special handling of options on linux, these are not spec compliant but are
@@ -100,8 +101,8 @@ function patchAudioContext(NativeAudioContext) {
   return AudioContext;
 }
 
-function patchOfflineAudioContext(NativeOfflineAudioContext) {
-  class OfflineAudioContext extends NativeOfflineAudioContext {
+function patchOfflineAudioContext(nativeBinding) {
+  class OfflineAudioContext extends nativeBinding.OfflineAudioContext {
     constructor(...args) {
       // handle initialisation with either an options object or a sequence of parameters
       // https://webaudio.github.io/web-audio-api/#dom-offlineaudiocontext-constructor-contextoptions-contextoptions
@@ -152,15 +153,53 @@ function patchOfflineAudioContext(NativeOfflineAudioContext) {
   return OfflineAudioContext;
 }
 
-module.exports.patchAudioContext = patchAudioContext;
-module.exports.patchOfflineAudioContext = patchOfflineAudioContext;
-
 // dumb method provided to mock an xhr call and mimick browser's API
 // see also `AudioContext.decodeAudioData`
-module.exports.load = function(path) {
+function load(path) {
   if (!fs.existsSync(path)) {
     throw new Error(`File not found: "${path}"`);
   }
 
   return { path };
 };
+
+module.exports = function monkeyPatch(nativeBinding) {
+  //
+  nativeBinding.AudioContext = patchAudioContext(nativeBinding);
+  nativeBinding.OfflineAudioContext = patchOfflineAudioContext(nativeBinding);
+  nativeBinding.load = load;
+
+  // media devices shim
+  nativeBinding.mediaDevices = {}
+
+  class MediaStream extends nativeBinding.Microphone {};
+  nativeBinding.Microphone = undefined;
+
+  nativeBinding.mediaDevices.getUserMedia = function getUserMedia(options) {
+      if (options && options.audio === true) {
+          const mic = new MediaStream();
+          return Promise.resolve(mic);
+      } else {
+          throw new NotSupportedError(`Only { audio: true } is currently supported`);
+      }
+  }
+
+  enumerateDevicesSync = nativeBinding.enumerateDevices;
+  nativeBinding.enumerateDevices = undefined;
+
+  class MediaDeviceInfo {
+    constructor(obj) {
+      this.deviceId = obj.deviceId;
+      this.groupId = obj.groupId;
+      this.kind = obj.kind;
+      this.label = obj.label;
+    }
+  }
+
+  nativeBinding.mediaDevices.enumerateDevices = function enumerateDevices() {
+    const list = enumerateDevicesSync().map(d => new MediaDeviceInfo(d));
+    return Promise.resolve(list);
+  }
+
+  return nativeBinding;
+}

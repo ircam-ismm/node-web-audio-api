@@ -83,33 +83,8 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding for OS: ${platform}, architecture: ${arch}`);
 }
 
-const {
-  patchAudioContext,
-  patchOfflineAudioContext,
-  load,
-} = require('./monkey-patch.js');
-
-nativeBinding.AudioContext = patchAudioContext(nativeBinding.AudioContext);
-nativeBinding.OfflineAudioContext = patchOfflineAudioContext(nativeBinding.OfflineAudioContext);
-nativeBinding.load = load;
-
-// ------------------------------------------------------------------
-// monkey patch proto media devices API
-// @todo - review
-// ------------------------------------------------------------------
-class MediaStream extends nativeBinding.Microphone {};
-// const Microphone = nativeBinding.Microphone;
-nativeBinding.Microphone = null;
-
-nativeBinding.mediaDevices = {}
-nativeBinding.mediaDevices.getUserMedia = function getUserMedia(options) {
-    if (options && options.audio === true) {
-        const mic = new MediaStream();
-        return Promise.resolve(mic);
-    } else {
-        throw new NotSupportedError(`Only { audio: true } is currently supported`);
-    }
-}
+const monkeyPatch = require('./monkey-patch.js');
+nativeBinding = monkeyPatch(nativeBinding);
 
 module.exports = nativeBinding;
 

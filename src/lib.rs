@@ -67,6 +67,7 @@ use crate::wave_shaper_node::NapiWaveShaperNode;
 
 // proto media devices API (monkey patched on the JS side)
 mod media_devices;
+use crate::media_devices::napi_enumerate_devices;
 use crate::media_devices::NapiMicrophone;
 
 #[cfg(all(
@@ -204,6 +205,7 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     // proto media devices API (monkey patched on the JS side)
     let napi_class = NapiMicrophone::create_js_class(&env)?;
     exports.set_named_property("Microphone", napi_class)?;
+    exports.create_named_method("enumerateDevices", napi_enumerate_devices)?;
 
     // store the store into instance so that it can be globally accessed
     let store_ref = env.create_reference(store)?;
