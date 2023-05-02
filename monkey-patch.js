@@ -20,29 +20,57 @@ class NotSupportedError extends Error {
 }
 
 const { platform, arch } = process;
-let contextId = 0;
+let contextId = {
+  audioinput: 0,
+  audiooutput: 0,
+};
 let enumerateDevicesSync = null;
+
+function getDefaultOptions(options, kind) {
+  // special handling of options on linux, these are not spec compliant but are
+  // ment to be more user-friendly than what we have now (is subject to change)
+  // try to find some jack server and fallback on alsa if not found
+  if (platform === 'linux') {
+    // check if we have JACK server running
+    const devices = enumerateDevicesSync();
+    console.log(devices);
+    const jackDevice = devices.find(device => {
+      console.log(device.kind, kind);
+      console.log(device.label, 'jack');
+      return device.kind === kind && device.label === 'jack';
+    });
+
+    if (jackDevice && !('sinkId' in options)) {
+      console.log('> Using JACK server');
+      options.sinkId = jackDevice.deviceId;
+    } else {
+      console.log('> Using ALSA backend');
+      // throw meaningfull error if several contexts are created on linux,
+      // because of alsa backend only accept 1 client
+      if (contextId[kind] === 1) {
+        throw new Error(`[node-web-audio-api] node-web-audio-api currently uses alsa as backend, therefore only one context can be safely created`);
+      }
+
+      contextId[kind] += 1;
+
+      // fallback latencyHint to "playback" on RPi w/ alsa if not explicitely defined
+      if (arch === 'arm') {
+        if (!('latencyHint' in options)) {
+          options.latencyHint = 'playback';
+        }
+      }
+    }
+  }
+
+  return options;
+}
 
 function patchAudioContext(nativeBinding) {
   class AudioContext extends nativeBinding.AudioContext {
     constructor(options = {}) {
 
-      // special handling of options on linux, these are not spec compliant but are
-      // ment to be more user-friendly than what we have now (is subject to change)
-      if (platform === 'linux') {
-        // throw meaningfull error if several contexts are created on linux,
-        // because of alsa backend we currently use
-        if (contextId === 1) {
-          throw new Error(`[node-web-audio-api] node-web-audio-api currently uses alsa as backend, therefore only one context can be safely created`);
-        }
-
-        // fallback latencyHint to "playback" on RPi if not explicitely defined
-        if (arch === 'arm') {
-          if (!('latencyHint' in options)) {
-            options.latencyHint = 'playback';
-          }
-        }
-      }
+      options = getDefaultOptions(options, 'audiooutput');
+      console.log(options);
 
       super(options);
       // prevent garbage collection

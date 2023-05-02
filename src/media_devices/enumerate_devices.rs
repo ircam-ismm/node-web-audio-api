@@ -35,7 +35,7 @@ pub(crate) fn napi_enumerate_devices(ctx: CallContext) -> Result<JsObject> {
                 device.set_named_property("kind", ctx.env.create_string("audioinput")?)?;
             }
             MediaDeviceInfoKind::AudioOutput => {
-                device.set_named_property("kind", ctx.env.create_string("audioouput")?)?;
+                device.set_named_property("kind", ctx.env.create_string("audiooutput")?)?;
             }
         }
 
