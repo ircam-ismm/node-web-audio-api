@@ -542,6 +542,7 @@ fn create_media_stream_source(ctx: CallContext) -> Result<JsObject> {
 
     let media_stream = ctx.get::<JsObject>(0)?;
 
+    // create options object according to MediaStreamAudioSourceNode ctor API
     let mut options = ctx.env.create_object()?;
     options.set("mediaStream", media_stream)?;
 

@@ -1,6 +1,6 @@
 use napi::{CallContext, JsObject, Result};
 use napi_derive::js_function;
-use web_audio_api::{enumerate_devices, MediaDeviceInfoKind};
+use web_audio_api::media_devices::{enumerate_devices, MediaDeviceInfoKind};
 
 // #[napi]
 // fn to_js_obj(env: Env) -> napi::Result<JsObject> {

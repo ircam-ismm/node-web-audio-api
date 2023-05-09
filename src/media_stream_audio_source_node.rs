@@ -64,12 +64,11 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let options = match ctx.try_get::<JsObject>(1)? {
         Either::A(options_js) => {
             // WARNING: only handle Microphone for now
-            let some_microphone_js = options_js.get::<&str, JsObject>("mediaStream")?;
+            let some_js_media_stream = options_js.get::<&str, JsObject>("mediaStream")?;
 
-            let media_stream = if let Some(microphone_js) = some_microphone_js {
-                let microphone_napi = ctx.env.unwrap::<NapiMicrophone>(&microphone_js)?;
-                let microphone = microphone_napi.unwrap();
-                microphone.stream()
+            let media_stream = if let Some(js_media_stream) = some_js_media_stream {
+                let napi_media_stream = ctx.env.unwrap::<NapiMediaStream>(&js_media_stream)?;
+                napi_media_stream.unwrap()
             } else {
                 return Err(napi::Error::from_reason(
                     "mediaStream option is mandatory for node MediaStreamAudioSourceNode"

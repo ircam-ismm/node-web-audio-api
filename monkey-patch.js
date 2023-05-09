@@ -169,37 +169,37 @@ module.exports = function monkeyPatch(nativeBinding) {
   nativeBinding.OfflineAudioContext = patchOfflineAudioContext(nativeBinding);
   nativeBinding.load = load;
 
-  // media devices shim
-  nativeBinding.mediaDevices = {}
+  // // media devices shim
+  // nativeBinding.mediaDevices = {}
 
-  class MediaStream extends nativeBinding.Microphone {};
-  nativeBinding.Microphone = undefined;
+  // class MediaStream extends nativeBinding.Microphone {};
+  // nativeBinding.Microphone = undefined;
 
-  nativeBinding.mediaDevices.getUserMedia = function getUserMedia(options) {
-      if (options && options.audio === true) {
-          const mic = new MediaStream();
-          return Promise.resolve(mic);
-      } else {
-          throw new NotSupportedError(`Only { audio: true } is currently supported`);
-      }
-  }
+  // nativeBinding.mediaDevices.getUserMedia = function getUserMedia(options) {
+  //     if (options && options.audio === true) {
+  //         const mic = new MediaStream();
+  //         return Promise.resolve(mic);
+  //     } else {
+  //         throw new NotSupportedError(`Only { audio: true } is currently supported`);
+  //     }
+  // }
 
-  enumerateDevicesSync = nativeBinding.enumerateDevices;
-  nativeBinding.enumerateDevices = undefined;
+  // enumerateDevicesSync = nativeBinding.enumerateDevices;
+  // nativeBinding.enumerateDevices = undefined;
 
-  class MediaDeviceInfo {
-    constructor(obj) {
-      this.deviceId = obj.deviceId;
-      this.groupId = obj.groupId;
-      this.kind = obj.kind;
-      this.label = obj.label;
-    }
-  }
+  // class MediaDeviceInfo {
+  //   constructor(obj) {
+  //     this.deviceId = obj.deviceId;
+  //     this.groupId = obj.groupId;
+  //     this.kind = obj.kind;
+  //     this.label = obj.label;
+  //   }
+  // }
 
-  nativeBinding.mediaDevices.enumerateDevices = function enumerateDevices() {
-    const list = enumerateDevicesSync().map(d => new MediaDeviceInfo(d));
-    return Promise.resolve(list);
-  }
+  // nativeBinding.mediaDevices.enumerateDevices = function enumerateDevices() {
+  //   const list = enumerateDevicesSync().map(d => new MediaDeviceInfo(d));
+  //   return Promise.resolve(list);
+  // }
 
   return nativeBinding;
 }

@@ -30,10 +30,13 @@ ${d.nodes.map(n => { return `
 mod ${d.slug(n)};
 use crate::${d.slug(n)}::${d.napiName(n)};`}).join('')}
 
-// proto media devices API (monkey patched on the JS side)
+mod media_streams;
+use crate::media_streams::NapiMediaStream;
+
+// Media devices API
 mod media_devices;
-use crate::media_devices::NapiMicrophone;
 use crate::media_devices::napi_enumerate_devices;
+use crate::media_devices::napi_get_user_media;
 
 #[cfg(all(
     any(windows, unix),
@@ -70,11 +73,16 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     exports.set_named_property("OfflineAudioContext", napi_class)?;
 
     // @note - do not expose in exports until we know how to make the constructor private
+    // @todo - expose AudioParam as well
+
     // let napi_class = NapiAudioDestinationNode::create_js_class(&env)?;
     // exports.set_named_property("AudioDestinationNode", napi_class)?;
     let napi_class = NapiAudioDestinationNode::create_js_class(&env)?;
     store.set_named_property("AudioDestinationNode", napi_class)?;
 
+    // ----------------------------------------------------------------
+    // special non node classes
+    // ----------------------------------------------------------------
     let napi_class = NapiAudioBuffer::create_js_class(&env)?;
     exports.set_named_property("AudioBuffer", napi_class)?;
     let napi_class = NapiAudioBuffer::create_js_class(&env)?;
@@ -85,13 +93,17 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     let napi_class = NapiPeriodicWave::create_js_class(&env)?;
     store.set_named_property("PeriodicWave", napi_class)?;
 
+    // ----------------------------------------------------------------
     // manually written nodes
+    // ----------------------------------------------------------------
     let napi_class = NapiMediaStreamAudioSourceNode::create_js_class(&env)?;
     exports.set_named_property("MediaStreamAudioSourceNode", napi_class)?;
     let napi_class = NapiMediaStreamAudioSourceNode::create_js_class(&env)?;
     store.set_named_property("MediaStreamAudioSourceNode", napi_class)?;
 
-    // export audio nodes (generated)
+    // ----------------------------------------------------------------
+    // generated audio nodes
+    // ----------------------------------------------------------------
     ${d.nodes.map(n => { return `
     let napi_class = ${d.napiName(n)}::create_js_class(&env)?;
     exports.set_named_property("${d.name(n)}", napi_class)?;
@@ -100,10 +112,20 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     `}).join('')}
 
 
-    // proto media devices API (monkey patched on the JS side)
-    let napi_class = NapiMicrophone::create_js_class(&env)?;
-    exports.set_named_property("Microphone", napi_class)?;
-    exports.create_named_method("enumerateDevices", napi_enumerate_devices)?;
+    // ----------------------------------------------------------------
+    // MediaStream API & Media Devices API
+    // ----------------------------------------------------------------
+
+    // let napi_class = NapiMediaStream::create_js_class(&env)?;
+    // exports.set_named_property("MediaStream", napi_class)?;
+    let napi_class = NapiMediaStream::create_js_class(&env)?;
+    store.set_named_property("MediaStream", napi_class)?;
+
+    let mut media_devices = env.create_object()?;
+    media_devices.create_named_method("enumerateDevices", napi_enumerate_devices)?;
+    media_devices.create_named_method("getUserMedia", napi_get_user_media)?;
+    // expose media devices
+    exports.set_named_property("mediaDevices", media_devices)?;
 
     // store the store into instance so that it can be globally accessed
     let store_ref = env.create_reference(store)?;
