@@ -167,39 +167,16 @@ module.exports = function monkeyPatch(nativeBinding) {
   //
   nativeBinding.AudioContext = patchAudioContext(nativeBinding);
   nativeBinding.OfflineAudioContext = patchOfflineAudioContext(nativeBinding);
+
+  // utils
   nativeBinding.load = load;
 
-  // // media devices shim
-  // nativeBinding.mediaDevices = {}
-
-  // class MediaStream extends nativeBinding.Microphone {};
-  // nativeBinding.Microphone = undefined;
-
-  // nativeBinding.mediaDevices.getUserMedia = function getUserMedia(options) {
-  //     if (options && options.audio === true) {
-  //         const mic = new MediaStream();
-  //         return Promise.resolve(mic);
-  //     } else {
-  //         throw new NotSupportedError(`Only { audio: true } is currently supported`);
-  //     }
-  // }
-
-  // enumerateDevicesSync = nativeBinding.enumerateDevices;
-  // nativeBinding.enumerateDevices = undefined;
-
-  // class MediaDeviceInfo {
-  //   constructor(obj) {
-  //     this.deviceId = obj.deviceId;
-  //     this.groupId = obj.groupId;
-  //     this.kind = obj.kind;
-  //     this.label = obj.label;
-  //   }
-  // }
-
-  // nativeBinding.mediaDevices.enumerateDevices = function enumerateDevices() {
-  //   const list = enumerateDevicesSync().map(d => new MediaDeviceInfo(d));
-  //   return Promise.resolve(list);
-  // }
+  // getUserMedia Promise
+  const getUserMedia = nativeBinding.mediaDevices.getUserMedia;
+  nativeBinding.mediaDevices.getUserMedia = async function getUserMedia(options) {
+    const stream = getUserMedia(options);
+    return Promise.resolve(stream);
+  }
 
   return nativeBinding;
 }
