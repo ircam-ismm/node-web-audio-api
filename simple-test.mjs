@@ -2,11 +2,17 @@ import { AudioContext, mediaDevices } from './index.mjs';
 
 console.log(mediaDevices);
 
-// const list = mediaDevices.enumerateDevices();
-// console.log(list);
+const list = mediaDevices.enumerateDevices();
+console.log(list);
 
-const stream = await mediaDevices.getUserMedia();
-console.log(stream);
+const stream = await mediaDevices.getUserMedia({ audio: {
+  deviceId: '2',
+  // deviceId: 'coucou',
+  // sampleRate: 44100,
+  // latency: 200,
+}});
+// const stream = await mediaDevices.getUserMedia({ audio: true });
+// console.log(stream);
 
 const context = new AudioContext();
 const mediaStreamSource = context.createMediaStreamSource(stream);

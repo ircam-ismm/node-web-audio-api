@@ -174,6 +174,10 @@ module.exports = function monkeyPatch(nativeBinding) {
   // getUserMedia Promise
   const getUserMediaSync = nativeBinding.mediaDevices.getUserMedia;
   nativeBinding.mediaDevices.getUserMedia = async function getUserMedia(options) {
+    if (options === undefined) {
+      throw new TypeError("Failed to execute 'getUserMedia' on 'MediaDevices': audio must be requested")
+    }
+
     const stream = getUserMediaSync(options);
     return Promise.resolve(stream);
   }
