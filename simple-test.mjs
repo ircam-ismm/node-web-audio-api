@@ -1,13 +1,9 @@
 import { AudioContext, mediaDevices } from './index.mjs';
 
-// console.log(mediaDevices);
-
 const list = await mediaDevices.enumerateDevices();
 console.log(list);
 
 const stream = await mediaDevices.getUserMedia({ audio: true });
-// const stream = await mediaDevices.getUserMedia({ audio: true });
-// console.log(stream);
 
 const context = new AudioContext();
 const mediaStreamSource = context.createMediaStreamSource(stream);

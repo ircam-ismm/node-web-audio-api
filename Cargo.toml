@@ -23,3 +23,6 @@ napi-build = "1"
 
 [profile.release]
 lto = true
+
+[features]
+jack = ["web-audio-api/cpal-jack"]

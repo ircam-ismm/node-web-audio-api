@@ -20,6 +20,7 @@ class NotSupportedError extends Error {
 }
 
 const { platform, arch } = process;
+
 let contextIds = {
   audioinput: 0,
   audiooutput: 0,
@@ -59,7 +60,6 @@ function handleDefaultOptions(options, kind) {
 
   return options;
 }
-
 
 function patchAudioContext(nativeBinding) {
   class AudioContext extends nativeBinding.AudioContext {

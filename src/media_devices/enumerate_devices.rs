@@ -2,14 +2,6 @@ use napi::{CallContext, JsObject, Result};
 use napi_derive::js_function;
 use web_audio_api::media_devices::{enumerate_devices, MediaDeviceInfoKind};
 
-// #[napi]
-// fn to_js_obj(env: Env) -> napi::Result<JsObject> {
-//   let mut arr = env.create_array(0)?;
-//   arr.insert("a string")?;
-//   arr.insert(42)?;
-//   arr.coerce_to_object()
-// }
-
 #[js_function(0)]
 pub(crate) fn napi_enumerate_devices(ctx: CallContext) -> Result<JsObject> {
     let list = enumerate_devices();
@@ -35,7 +27,7 @@ pub(crate) fn napi_enumerate_devices(ctx: CallContext) -> Result<JsObject> {
                 device.set_named_property("kind", ctx.env.create_string("audioinput")?)?;
             }
             MediaDeviceInfoKind::AudioOutput => {
-                device.set_named_property("kind", ctx.env.create_string("audioouput")?)?;
+                device.set_named_property("kind", ctx.env.create_string("audiooutput")?)?;
             }
         }
 
