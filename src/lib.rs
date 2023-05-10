@@ -84,7 +84,10 @@ static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 #[module_exports]
 fn init(mut exports: JsObject, env: Env) -> Result<()> {
-    // catch all panics
+    // @todo - catch all panics and throw clean JS Error
+    // do not uncomment until it is clean as it swallow the error message and
+    // makes things event more complicated...
+    //
     // std::panic::set_hook(Box::new(|panic_info| {
     //     println!("{:?}", panic_info.payload());
 

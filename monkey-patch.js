@@ -20,33 +20,56 @@ class NotSupportedError extends Error {
 }
 
 const { platform, arch } = process;
-let contextId = 0;
+let contextIds = {
+  audioinput: 0,
+  audiooutput: 0,
+};
 let enumerateDevicesSync = null;
+
+function handleDefaultOptions(options, kind) {
+  if (platform === 'linux') {
+    const list = enumerateDevicesSync();
+    const jackDevice = list.find(device => device.kind === kind && device.label === 'jack');
+
+    if (jackDevice === undefined) {
+      // throw meaningfull error if several contexts are created on linux,
+      // because of alsa backend we currently use
+      if (contextIds[kind] === 1) {
+        throw new Error(`[node-web-audio-api] node-web-audio-api uses alsa as backend, therefore only one context or audio input stream can be safely created`);
+      }
+
+      // force latencyHint to "playback" on RPi if not explicitely defined
+      if (arch === 'arm') {
+        if (kind === 'audiooutput' && !('latencyHint' in options)) {
+          options.latencyHint = 'playback';
+        }
+      }
+    } else {
+      // default to jack if jack source or sink is found
+      const deviceKey = type === 'audioinput' ? 'deviceId' : 'sinkId';
+
+      if (!(deviceKey in options)) {
+        options[deviceKey] = jackDevice.id;
+      }
+    }
+  }
+
+  // increment contextIds as they are used to keep the process awake
+  contextIds[kind] += 1;
+
+  return options;
+}
+
 
 function patchAudioContext(nativeBinding) {
   class AudioContext extends nativeBinding.AudioContext {
     constructor(options = {}) {
-
       // special handling of options on linux, these are not spec compliant but are
       // ment to be more user-friendly than what we have now (is subject to change)
-      if (platform === 'linux') {
-        // throw meaningfull error if several contexts are created on linux,
-        // because of alsa backend we currently use
-        if (contextId === 1) {
-          throw new Error(`[node-web-audio-api] node-web-audio-api currently uses alsa as backend, therefore only one context can be safely created`);
-        }
-
-        // fallback latencyHint to "playback" on RPi if not explicitely defined
-        if (arch === 'arm') {
-          if (!('latencyHint' in options)) {
-            options.latencyHint = 'playback';
-          }
-        }
-      }
-
+      options = handleDefaultOptions(options, 'audiooutput');
       super(options);
       // prevent garbage collection
-      const processId = `__AudioContext_${contextId}`;
+      const processId = `__AudioContext_${contextIds['audiooutput']}`;
       process[processId] = this;
 
       Object.defineProperty(this, '__processId', {
@@ -56,7 +79,6 @@ function patchAudioContext(nativeBinding) {
         configurable: false,
       });
 
-      contextId += 1;
       // keep process awake
       const keepAwakeId = setInterval(() => {}, 10000);
       Object.defineProperty(this, '__keepAwakeId', {
@@ -172,12 +194,19 @@ module.exports = function monkeyPatch(nativeBinding) {
   nativeBinding.load = load;
 
   // getUserMedia Promise
+  enumerateDevicesSync = nativeBinding.mediaDevices.enumerateDevices;
+  nativeBinding.mediaDevices.enumerateDevices = async function enumerateDevices(options) {
+    const list = enumerateDevicesSync();
+    return Promise.resolve(list);
+  }
+
   const getUserMediaSync = nativeBinding.mediaDevices.getUserMedia;
   nativeBinding.mediaDevices.getUserMedia = async function getUserMedia(options) {
     if (options === undefined) {
       throw new TypeError("Failed to execute 'getUserMedia' on 'MediaDevices': audio must be requested")
     }
 
+    options = handleDefaultOptions(options, 'audioinput');
     const stream = getUserMediaSync(options);
     return Promise.resolve(stream);
   }

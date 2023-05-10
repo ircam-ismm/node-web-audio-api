@@ -5,11 +5,13 @@
 // ---------------------------------------------------------- //
 // ---------------------------------------------------------- //
 
-use crate::*;
+use std::fs::File;
+
 use napi::*;
 use napi_derive::js_function;
-use std::fs::File;
 use web_audio_api::context::*;
+
+use crate::*;
 
 pub(crate) struct NapiAudioContext(AudioContext);
 

@@ -4,10 +4,10 @@
 
 Node.js bindings for the Rust implementation of the Web Audio API Specification
 
-- see [`orottier/web-audio-api-rs`](https://github.com/orottier/web-audio-api-rs/) for the "real" audio guts
-- use [`napi-rs`](https://github.com/napi-rs/napi-rs/) for the Node.js bindigs
+The goal of this library is to provide an implementation that is both efficient and _exactly_ matches the browsers' API.
 
-The goal of the library is to provide an implementation that is both efficient and _exactly_ matches the browsers' API.
+- see [`orottier/web-audio-api-rs`](https://github.com/orottier/web-audio-api-rs/) for the "real" audio guts
+- use [`napi-rs`](https://github.com/napi-rs/napi-rs/) for the Node.js bindings
 
 ## Install
 
@@ -96,8 +96,9 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 2. Install and build from github
 
 ```sh
-npm install --save git+https://github.com/b-ma/node-web-audio-api.git
+npm install --save git+https://github.com/ircam-ismm/node-web-audio-api.git
 cd node_modules/node-web-audio-api
+npm install
 npm run build
 ```
 

@@ -29,38 +29,25 @@ pub(crate) fn napi_get_user_media(ctx: CallContext) -> Result<JsObject> {
             }
 
             if let Some(js_constraints) = options_js.get::<&str, JsObject>("audio")? {
-                println!("options has own property audio");
-
                 let mut constraints = MediaTrackConstraints::default();
 
                 if let Ok(Some(js_device_id)) = js_constraints.get::<&str, JsString>("deviceId") {
                     let device_id = js_device_id.into_utf8()?.into_owned()?;
-                    // let device_id = &device_id_utf8[..];
-                    println!("deviceId {:?}", device_id);
                     constraints.device_id = Some(device_id);
                 }
 
                 if let Ok(Some(js_sample_rate)) = js_constraints.get::<&str, JsNumber>("sampleRate")
                 {
                     let sample_rate = js_sample_rate.get_double()? as f32;
-                    println!("sampleRate {:?}", sample_rate);
                     constraints.sample_rate = Some(sample_rate);
                 }
 
                 if let Ok(Some(js_latency)) = js_constraints.get::<&str, JsNumber>("latency") {
                     let latency = js_latency.get_double()? as f64;
-                    println!("latency {:?}", latency);
                     constraints.latency = Some(latency);
                 }
 
                 MediaStreamConstraints::AudioWithConstraints(constraints)
-                // if let Ok(res) = js_constraints.coerce_to_object() {
-                //     println!("is object: {:?}");
-                //     MediaStreamConstraints::Audio
-                // } else {
-                //     println!("is truthy");
-                //     MediaStreamConstraints::Audio
-                // }
             } else {
                 return Err(napi::Error::from_reason(
                     "TypeError -  Failed to execute 'getUserMedia' on 'MediaDevices': audio must be requested".to_string(),
@@ -73,8 +60,6 @@ pub(crate) fn napi_get_user_media(ctx: CallContext) -> Result<JsObject> {
             ));
         }
     };
-
-    // println!("options {:?}", options);
 
     // create rust stream
     let stream = get_user_media_sync(options);

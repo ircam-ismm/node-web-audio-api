@@ -1,16 +1,11 @@
 import { AudioContext, mediaDevices } from './index.mjs';
 
-console.log(mediaDevices);
+// console.log(mediaDevices);
 
-const list = mediaDevices.enumerateDevices();
+const list = await mediaDevices.enumerateDevices();
 console.log(list);
 
-const stream = await mediaDevices.getUserMedia({ audio: {
-  deviceId: '2',
-  // deviceId: 'coucou',
-  // sampleRate: 44100,
-  // latency: 200,
-}});
+const stream = await mediaDevices.getUserMedia({ audio: true });
 // const stream = await mediaDevices.getUserMedia({ audio: true });
 // console.log(stream);
 
@@ -18,7 +13,7 @@ const context = new AudioContext();
 const mediaStreamSource = context.createMediaStreamSource(stream);
 mediaStreamSource.connect(context.destination);
 
-const audioContext = new AudioContext();
+// const audioContext = new AudioContext();
 
 // setInterval(() => {
 //   const now = audioContext.currentTime;
