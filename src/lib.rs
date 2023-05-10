@@ -217,13 +217,13 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     // ----------------------------------------------------------------
     // MediaStream API & Media Devices API
     // ----------------------------------------------------------------
+    let mut media_devices = env.create_object()?;
 
-    // let napi_class = NapiMediaStream::create_js_class(&env)?;
-    // exports.set_named_property("MediaStream", napi_class)?;
+    let napi_class = NapiMediaStream::create_js_class(&env)?;
+    media_devices.set_named_property("MediaStream", napi_class)?;
     let napi_class = NapiMediaStream::create_js_class(&env)?;
     store.set_named_property("MediaStream", napi_class)?;
 
-    let mut media_devices = env.create_object()?;
     media_devices.create_named_method("enumerateDevices", napi_enumerate_devices)?;
     media_devices.create_named_method("getUserMedia", napi_get_user_media)?;
     // expose media devices

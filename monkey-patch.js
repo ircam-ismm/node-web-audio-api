@@ -172,9 +172,9 @@ module.exports = function monkeyPatch(nativeBinding) {
   nativeBinding.load = load;
 
   // getUserMedia Promise
-  const getUserMedia = nativeBinding.mediaDevices.getUserMedia;
+  const getUserMediaSync = nativeBinding.mediaDevices.getUserMedia;
   nativeBinding.mediaDevices.getUserMedia = async function getUserMedia(options) {
-    const stream = getUserMedia(options);
+    const stream = getUserMediaSync(options);
     return Promise.resolve(stream);
   }
 

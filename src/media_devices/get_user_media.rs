@@ -10,9 +10,8 @@ use web_audio_api::media_devices::{get_user_media_sync, MediaStreamConstraints};
 
 #[js_function(1)]
 pub(crate) fn napi_get_user_media(ctx: CallContext) -> Result<JsObject> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-
     // @todo - handle options
+    println!("ctx.length: {:?}", ctx.length);
 
     // create rust stream
     let stream = get_user_media_sync(MediaStreamConstraints::Audio);
@@ -22,6 +21,8 @@ pub(crate) fn napi_get_user_media(ctx: CallContext) -> Result<JsObject> {
     let store: JsObject = ctx.env.get_reference_value(store_ref)?;
     let ctor: JsFunction = store.get_named_property("MediaStream")?;
 
+    // @note - this argument is pure bullshit
+    let js_this = ctx.this_unchecked::<JsObject>();
     let mut js_stream = ctor.new_instance(&[js_this])?;
     // wrap JS instance and rust napi stream
     ctx.env.wrap(&mut js_stream, napi_stream)?;
