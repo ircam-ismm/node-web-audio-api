@@ -44,6 +44,8 @@ impl NapiAudioContext {
                 Property::new("suspend")?.with_method(suspend),
                 Property::new("close")?.with_method(close),
 
+                Property::new("setSinkId")?.with_method(set_sink_id),
+
                 Property::new("createMediaStreamSource")?.with_method(create_media_stream_source),
             ],
         )
@@ -353,6 +355,25 @@ fn ${method}(ctx: CallContext) -> Result<JsUndefined> {
 }
 `).join('')}
 
+#[js_function(1)]
+fn set_sink_id(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
+    let obj = napi_obj.unwrap();
+
+    let sink_id_js = ctx.get::<JsString>(0)?;
+    let sink_id = sink_id_js.into_utf8()?.into_owned()?;
+
+    let res = obj.set_sink_id_sync(sink_id);
+
+    if res.is_err() {
+        return Err(napi::Error::from_reason(
+            res.unwrap_err().to_string(),
+        ));
+    }
+
+    ctx.env.get_undefined()
+}
 
 #[js_function(1)]
 fn create_media_stream_source(ctx: CallContext) -> Result<JsObject> {

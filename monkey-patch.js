@@ -106,6 +106,15 @@ function patchAudioContext(nativeBinding) {
       return Promise.resolve(super.close());
     }
 
+    setSinkId(sinkId) {
+      try {
+        super.setSinkId(sinkId);
+        Promise.resolve(undefined);
+      } catch (err) {
+        Promise.reject(err);
+      }
+    }
+
     decodeAudioData(audioData) {
       if (!isPlainObject(audioData) || !('path' in audioData)) {
         throw new Error(`Invalid argument, please consider using the load helper`);
