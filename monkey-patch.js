@@ -197,15 +197,10 @@ function load(path) {
 };
 
 module.exports = function monkeyPatch(nativeBinding) {
-  console.log(nativeBinding)
-  //
   nativeBinding.AudioContext = patchAudioContext(nativeBinding);
   nativeBinding.OfflineAudioContext = patchOfflineAudioContext(nativeBinding);
 
-  // utils
-  nativeBinding.load = load;
-
-  // getUserMedia Promise
+  // Promisify MediaDevices API
   enumerateDevicesSync = nativeBinding.mediaDevices.enumerateDevices;
   nativeBinding.mediaDevices.enumerateDevices = async function enumerateDevices(options) {
     const list = enumerateDevicesSync();
@@ -222,6 +217,9 @@ module.exports = function monkeyPatch(nativeBinding) {
     const stream = getUserMediaSync(options);
     return Promise.resolve(stream);
   }
+
+  // utils
+  nativeBinding.load = load;
 
   return nativeBinding;
 }
