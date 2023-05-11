@@ -25,6 +25,7 @@ let contextIds = {
   audioinput: 0,
   audiooutput: 0,
 };
+
 let enumerateDevicesSync = null;
 
 function handleDefaultOptions(options, kind) {
@@ -47,10 +48,11 @@ function handleDefaultOptions(options, kind) {
       }
     } else {
       // default to jack if jack source or sink is found
-      const deviceKey = type === 'audioinput' ? 'deviceId' : 'sinkId';
+      const deviceKey = kind === 'audioinput' ? 'deviceId' : 'sinkId';
 
       if (!(deviceKey in options)) {
-        options[deviceKey] = jackDevice.id;
+        console.log(`> JACK ${kind} device found, use as default`);
+        options[deviceKey] = jackDevice.deviceId;
       }
     }
   }
@@ -195,6 +197,7 @@ function load(path) {
 };
 
 module.exports = function monkeyPatch(nativeBinding) {
+  console.log(nativeBinding)
   //
   nativeBinding.AudioContext = patchAudioContext(nativeBinding);
   nativeBinding.OfflineAudioContext = patchOfflineAudioContext(nativeBinding);
