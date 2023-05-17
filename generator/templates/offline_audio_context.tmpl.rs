@@ -36,6 +36,7 @@ impl NapiOfflineAudioContext {
                 // ----------------------------------------------------
                 // Methods and attributes specifc to OfflineAudioContext
                 // ----------------------------------------------------
+                Property::new("length")?.with_getter(get_length),
                 Property::new("startRendering")?.with_method(start_rendering),
             ],
         )
@@ -235,6 +236,16 @@ fn ${d.slug(factoryName)}(ctx: CallContext) -> Result<JsObject> {
 // ----------------------------------------------------
 // Methods specific to OfflineAudioContext
 // ----------------------------------------------------
+
+#[js_function]
+fn get_length(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
+    let obj = napi_obj.unwrap();
+
+    let length = obj.length() as f64;
+    ctx.env.create_double(length)
+}
 
 // @todo - async version
 #[js_function]
