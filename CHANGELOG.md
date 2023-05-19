@@ -1,3 +1,8 @@
+## v0.8.0
+
+- Implement MediaDevices enumerateDeviaces and getUserMedia
+- Use jack as default output if exists on linux
+
 ## v0.7.0
 
 - Improve readme & doc
