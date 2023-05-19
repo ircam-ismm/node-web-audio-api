@@ -80,7 +80,7 @@ res = await conn.execCommand(`cargo update`, { cwd: rpiCwd });
 logResult(res);
 
 console.log('> build binary');
-res = await conn.execCommand(`npm run build`, { cwd: rpiCwd });
+res = await conn.execCommand(`npm run build:jack`, { cwd: rpiCwd });
 logResult(res);
 
 console.log('> list files');
