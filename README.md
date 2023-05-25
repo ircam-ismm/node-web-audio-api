@@ -96,7 +96,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 2. Install and build from github
 
 ```sh
-npm install --save git+https://github.com/ircam-ismm/node-web-audio-api.git
+git clone https://github.com/ircam-ismm/node-web-audio-api.git node_modules/node-web-audio-api
 cd node_modules/node-web-audio-api
 npm install
 npm run build
