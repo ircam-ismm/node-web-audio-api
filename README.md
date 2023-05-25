@@ -102,7 +102,9 @@ npm install
 npm run build
 ```
 
-The package will be built on your machine, which might take some time
+The package will be built on your machine, which might take some time.
+
+Be aware that the package won't be listed on your `package.json` file, and that it won't be re-installed if running `npm install` again. A possible workaround would be to include the above in a postinstall script.
 
 ## Development notes
 
