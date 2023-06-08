@@ -1,10 +1,10 @@
 use napi::{CallContext, JsObject, Result};
 use napi_derive::js_function;
-use web_audio_api::media_devices::{enumerate_devices, MediaDeviceInfoKind};
+use web_audio_api::media_devices::{enumerate_devices_sync, MediaDeviceInfoKind};
 
 #[js_function(0)]
 pub(crate) fn napi_enumerate_devices(ctx: CallContext) -> Result<JsObject> {
-    let list = enumerate_devices();
+    let list = enumerate_devices_sync();
 
     let mut napi_list = ctx.env.create_array(0)?;
 
