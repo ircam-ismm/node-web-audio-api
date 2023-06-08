@@ -1,3 +1,7 @@
+## v0.9.0
+
+- Update upstream crate to v0.30
+
 ## v0.8.0
 
 - Implement MediaDevices enumerateDeviaces and getUserMedia
