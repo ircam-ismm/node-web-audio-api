@@ -69,8 +69,6 @@ If
 ## Caveats
 
 - The async methods are not trully async for now and are just patched on the JS side. This will evolve once the "trully" async version of the methods are implemented in the upstream library.
-- On Linux systems, the audio backend is currently Alsa, which limits the number of online `AudioContext` to 1. This is subject to change in the future.
-- On Raspberry Pi, the default render quantum size (128) is too small and underruns occurs frequently. To prevent that, if you do not explicitely provide a latency hint in the AudioContext options, the value is automatically set to 'playback' which uses a buffer of 1024 samples (~21ms at 48000Hz). While this is not per se spec compliant, it allows usage of the library in a more user friendly manner. In the future, this might change according to the support of other audio backend.
 - On Raspberry Pi, the `Linux arm gnueabihf` binary provided only works on 32bit OS. We will provide a version for the 64 bit OS in the future.
 
 ## Supported Platforms
@@ -84,6 +82,22 @@ If
 | Linux x64 gnu                | ✓        |        |
 | Linux arm gnueabihf (RPi)    | ✓        | ✓      |
 
+
+## Notes for Linux users
+
+Using the library on Linux with the ALSA backend might lead to unexpected cranky sound with the default render size (i.e. 128 frames). In such cases, a simple workaround is to pass the `playback` latency hint when creating the audio context, which will increase the render size to 1024 frames:
+
+```js
+const audioContext = new AudioContext({ latencyHint: 'playback' });
+```
+
+You can pass the `WEB_AUDIO_LATENCY=playback` env variable to all examples to create the audio context with the playback latency hint, e.g.:
+
+```sh
+WEB_AUDIO_LATENCY=playback node examples/amplitude-modulation.mjs
+```
+
+For real-time and interactive applications where low latency is crucial, you should instead rely on the JACK backend provided by `cpal`. By default the audio context will use that backend if a running JACK server is found.
 
 ### Manual Build
 
