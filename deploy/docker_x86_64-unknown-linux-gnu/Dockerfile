@@ -1,4 +1,4 @@
-FROM node:14
+FROM node:18
 
 ENV RUSTUP_HOME=/usr/local/rustup \
     CARGO_HOME=/usr/local/cargo \
@@ -15,6 +15,8 @@ RUN dpkg --add-architecture amd64 && \
         pkg-config \
         libasound2-dev \
         libasound2-dev:amd64 \
+        libjack-jackd2-dev \
+        libjack-jackd2-dev:amd64 \
         gcc \
         g++ \
         ca-certificates \

@@ -10,7 +10,7 @@ execSync(`docker run --rm \
   -w /sources \
   bbmmaa/build-x86_64 \
   bash -c "
-    yarn build --target x86_64-unknown-linux-gnu && \
+    yarn build:jack --target x86_64-unknown-linux-gnu && \
     x86_64-linux-gnu-strip *.linux-x64-gnu.node && \
     ls -al /sources"
 `, { stdio: 'inherit' });
