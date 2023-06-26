@@ -32,7 +32,7 @@
   "scripts": {
     "artifacts": "napi artifacts",
     "build": "npm run generate && napi build --platform --release",
-    "build:jack": "npm run generate && napi build --platform --features 'web-audio-api/cpal-jack' --release",
+    "build:jack": "npm run generate && napi build --platform --features jack --release",
     "build:debug": "npm run generate && napi build --platform",
     "check": "cargo fmt && cargo clippy",
     "generate": "node generator/index.mjs && cargo fmt",

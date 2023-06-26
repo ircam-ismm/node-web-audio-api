@@ -37,7 +37,7 @@ function handleDefaultOptions(options, kind) {
       // throw meaningfull error if several contexts are created on linux,
       // because of alsa backend we currently use
       if (contextIds[kind] === 1) {
-        throw new Error(`[node-web-audio-api] node-web-audio-api uses alsa as backend, therefore only one context or audio input stream can be safely created`);
+        throw new Error(`[node-web-audio-api] node-web-audio-api uses alsa as backend, therefore only one audio context and one audio input stream can be safely created`);
       }
 
       // force latencyHint to "playback" on RPi if not explicitely defined
@@ -139,22 +139,24 @@ function patchOfflineAudioContext(nativeBinding) {
     constructor(...args) {
       // handle initialisation with either an options object or a sequence of parameters
       // https://webaudio.github.io/web-audio-api/#dom-offlineaudiocontext-constructor-contextoptions-contextoptions
-      if (typeof args[0] === 'object'
+      if (isPlainObject(args[0])
           && 'numberOfChannels' in args[0] && 'length' in args[0] && 'sampleRate' in args[0]
       ) {
         const { numberOfChannels, length, sampleRate } = args[0];
         args = [numberOfChannels, length, sampleRate];
       }
 
-      if (!isPositiveInt(args[0])) {
-        throw new NotSupportedError(`Unsupported value for numberOfChannels: ${args[0]}`);
-      } else if (!isPositiveInt(args[1])) {
-        throw new NotSupportedError(`Unsupported value for length: ${args[1]}`);
-      } else if (!isPositiveNumber(args[2])) {
-        throw new NotSupportedError(`Unsupported value for sampleRate: ${args[2]}`);
+      const [numberOfChannels, length, sampleRate] = args;
+
+      if (!isPositiveInt(numberOfChannels)) {
+        throw new NotSupportedError(`Unsupported value for numberOfChannels: ${numberOfChannels}`);
+      } else if (!isPositiveInt(length)) {
+        throw new NotSupportedError(`Unsupported value for length: ${length}`);
+      } else if (!isPositiveNumber(sampleRate)) {
+        throw new NotSupportedError(`Unsupported value for sampleRate: ${sampleRate}`);
       }
 
-      super(...args);
+      super(numberOfChannels, length, sampleRate);
     }
 
     // promisify sync APIs
