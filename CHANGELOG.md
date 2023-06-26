@@ -1,3 +1,7 @@
+## v0.10.0
+
+- Update upstream crate to v0.31
+
 ## v0.9.0
 
 - Update upstream crate to v0.30
