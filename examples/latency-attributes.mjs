@@ -2,20 +2,20 @@ import { AudioContext } from '../index.mjs';
 
 console.log('AudioContextLatencyCategory::Interactive');
 
-const context = new AudioContext();
-// const context = new AudioConntext({ latencyHint: 'playback' });
+const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
+const audioContext = new AudioContext({ latencyHint });
 
-const sine = context.createOscillator();
+const sine = audioContext.createOscillator();
 sine.frequency.value = 200.;
-sine.connect(context.destination);
+sine.connect(audioContext.destination);
 sine.start();
 
-console.log('- BaseLatency: {:?}', context.baseLatency);
+console.log('- BaseLatency:', audioContext.baseLatency);
 
 (function loop() {
   console.log('-------------------------------------------------');
-  console.log('+ currentTime {:?}', context.currentTime);
-  console.log('+ OutputLatency: {:?}', context.outputLatency);
+  console.log('+ currentTime:', audioContext.currentTime);
+  console.log('+ OutputLatency:', audioContext.outputLatency);
 
   setTimeout(loop, 1000);
 }());

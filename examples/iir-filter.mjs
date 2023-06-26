@@ -1,10 +1,11 @@
 import path from 'node:path';
 import { AudioContext, load } from '../index.mjs';
 
-const context = new AudioContext();
+const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
+const audioContext = new AudioContext({ latencyHint });
 
 const file = load(path.join(process.cwd(), 'samples', 'think-stereo-48000.wav'));
-const buffer = await context.decodeAudioData(file);
+const buffer = await audioContext.decodeAudioData(file);
 
 // these values correspond to a lowpass filter at 200Hz (calculated from biquad)
 const feedforward = new Float64Array([0.0002029799640409502, 0.0004059599280819004, 0.0002029799640409502]);
@@ -14,11 +15,11 @@ const feedback = new Float64Array([1.0126964557853775, -1.9991880801438362, 0.98
 // const feedback = [1.0126964557853775, -1.9991880801438362, 0.9873035442146225];
 
 // Create an IIR filter node
-const iir = context.createIIRFilter(feedforward, feedback);
-iir.connect(context.destination);
+const iir = audioContext.createIIRFilter(feedforward, feedback);
+iir.connect(audioContext.destination);
 
 // Play buffer and pipe to filter
-const src = context.createBufferSource();
+const src = audioContext.createBufferSource();
 src.connect(iir);
 src.buffer = buffer;
 src.loop = true;

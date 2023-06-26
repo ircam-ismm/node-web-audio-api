@@ -2,7 +2,9 @@ import path from 'node:path';
 import { Scheduler } from 'waves-masters';
 import { AudioContext, load } from '../index.mjs';
 
-const audioContext = new AudioContext();
+const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
+const audioContext = new AudioContext({ latencyHint });
+
 const scheduler = new Scheduler(() => audioContext.currentTime);
 
 const file = load(path.join(process.cwd(), 'samples', 'sample.wav'));

@@ -3,14 +3,16 @@ import fs from 'node:fs';
 import readline from 'readline';
 import { AudioContext, load, mediaDevices } from '../index.mjs';
 
-const context = new AudioContext();
-const file = await load(path.join(process.cwd(), 'samples', 'sample.wav'));
-const buffer = await context.decodeAudioData(file);
+const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
+const audioContext = new AudioContext({ latencyHint });
 
-const src = context.createBufferSource();
+const file = await load(path.join(process.cwd(), 'samples', 'sample.wav'));
+const buffer = await audioContext.decodeAudioData(file);
+
+const src = audioContext.createBufferSource();
 src.buffer = buffer;
 src.loop = true;
-src.connect(context.destination);
+src.connect(audioContext.destination);
 src.start();
 
 const deviceList = await mediaDevices.enumerateDevices();
@@ -28,7 +30,7 @@ const prompt = readline.createInterface({
 (function selectSinkId() {
   prompt.question(`+ select output deviceId:
 > `, deviceId => {
-    context.setSinkId(deviceId);
+    audioContext.setSinkId(deviceId);
     selectSinkId();
   });
 }());

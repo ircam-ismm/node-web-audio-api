@@ -1,11 +1,12 @@
 import { AudioContext } from '../index.mjs';
 
-const context = new AudioContext();
+const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
+const audioContext = new AudioContext({ latencyHint });
 
-const analyser = context.createAnalyser();
-analyser.connect(context.destination);
+const analyser = audioContext.createAnalyser();
+analyser.connect(audioContext.destination);
 
-const osc = context.createOscillator();
+const osc = audioContext.createOscillator();
 osc.frequency.value = 200.;
 osc.connect(analyser);
 osc.start();

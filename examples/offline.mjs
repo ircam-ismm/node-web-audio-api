@@ -9,10 +9,10 @@ osc.start(0);
 osc.stop(1);
 
 const buffer = await offline.startRendering();
-console.log(buffer);
-// console.log(buffer.getChannelData(0));
 
-const online = new AudioContext();
+const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
+const online = new AudioContext({ latencyHint });
+
 const src = online.createBufferSource();
 src.buffer = buffer;
 src.connect(online.destination);

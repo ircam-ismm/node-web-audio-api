@@ -1,7 +1,9 @@
 import path from 'node:path';
 import { AudioContext, load } from '../index.mjs';
 
-const audioContext = new AudioContext();
+const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
+const audioContext = new AudioContext({ latencyHint });
+
 console.log('> AudioContext sampleRate: %f', audioContext.sampleRate);
 
 {

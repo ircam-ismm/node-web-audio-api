@@ -1,23 +1,24 @@
 import path from 'node:path';
 import { AudioContext, load } from '../index.mjs';
 
-const context = new AudioContext();
+const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
+const audioContext = new AudioContext({ latencyHint });
 
 // setup background music:
 // read from local file
 const file = load(path.join(process.cwd(), 'samples', 'think-stereo-48000.wav'));
-const buffer = await context.decodeAudioData(file);
-let now = context.currentTime;
+const buffer = await audioContext.decodeAudioData(file);
+let now = audioContext.currentTime;
 
 console.log('> smoothly open low-pass filter for 10 sec');
 // create a lowpass filter (default)
-const biquad = context.createBiquadFilter();
-biquad.connect(context.destination);
+const biquad = audioContext.createBiquadFilter();
+biquad.connect(audioContext.destination);
 biquad.frequency.value = 10.;
 biquad.frequency.exponentialRampToValueAtTime(10000., now + 10.);
 
 // pipe the audio buffer source into the lowpass filter
-const src = context.createBufferSource();
+const src = audioContext.createBufferSource();
 src.connect(biquad);
 src.buffer = buffer;
 src.loop = true;
@@ -82,7 +83,7 @@ frequencyHz.forEach((freq, index) => {
 });
 console.log('---------------------------------');
 
-now = context.currentTime;
+now = audioContext.currentTime;
 biquad.frequency.exponentialRampToValueAtTime(10., now + 10.);
 
 await new Promise(resolve => setTimeout(resolve, 5 * 1000));

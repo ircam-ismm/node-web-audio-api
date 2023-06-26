@@ -14,7 +14,8 @@ const files = [
   'samples/sample.webm', // 48kHz,
 ];
 
-const audioContext = new AudioContext();
+const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
+const audioContext = new AudioContext({ latencyHint });
 
 for (let filepath of files) {
   console.log('> --------------------------------');

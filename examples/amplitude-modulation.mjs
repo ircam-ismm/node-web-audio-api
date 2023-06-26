@@ -1,6 +1,7 @@
 import { AudioContext } from '../index.mjs';
 
-const audioContext = new AudioContext();
+const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
+const audioContext = new AudioContext({ latencyHint });
 
 const modulated = audioContext.createGain(); // the gain that will be modulated [0, 1]
 modulated.connect(audioContext.destination);

@@ -625,7 +625,9 @@ console.log(`
 + Type the id of the result you want to listen and press "spacebar" to start/stop playback
 `);
 
-const audioContext = new AudioContext();
+const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
+const audioContext = new AudioContext({ latencyHint });
+
 const stdin = process.stdin;
 // without this, we would only get streams once enter is pressed
 stdin.setRawMode(true);

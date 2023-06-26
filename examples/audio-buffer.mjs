@@ -1,15 +1,16 @@
 import assert from 'node:assert';
 import { AudioContext, AudioBuffer } from '../index.mjs';
 
-const context = new AudioContext();
+const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
+const audioContext = new AudioContext({ latencyHint });
 
 // create a 1 second buffer filled with a sine at 200Hz
 console.log('> Play sine at 200Hz created manually in an AudioBuffer');
 
 const numberOfChannels = 1;
-const length = context.sampleRate;
-const sampleRate = context.sampleRate;
-const buffer = context.createBuffer(numberOfChannels, length, sampleRate);
+const length = audioContext.sampleRate;
+const sampleRate = audioContext.sampleRate;
+const buffer = audioContext.createBuffer(numberOfChannels, length, sampleRate);
 
 // // this works as expected but should be tested carefully (how?), rely on unsafe code
 // const channel = buffer.getChannelData(0);
@@ -36,24 +37,24 @@ buffer.copyToChannel(sine, 0);
 }
 
 // play the buffer in a loop
-const src = context.createBufferSource();
+const src = audioContext.createBufferSource();
 src.buffer = buffer;
 src.loop = true;
-src.connect(context.destination);
-src.start(context.currentTime);
-src.stop(context.currentTime + 3.);
+src.connect(audioContext.destination);
+src.start(audioContext.currentTime);
+src.stop(audioContext.currentTime + 3.);
 
 await new Promise(resolve => setTimeout(resolve, 3.5 * 1000));
 
 // play a sine at 200Hz
 console.log('> Play sine at 200Hz from an OscillatorNode');
 
-let osc = context.createOscillator();
+let osc = audioContext.createOscillator();
 osc.frequency.value = 200.;
-osc.connect(context.destination);
-osc.start(context.currentTime);
-osc.stop(context.currentTime + 3.);
+osc.connect(audioContext.destination);
+osc.start(audioContext.currentTime);
+osc.stop(audioContext.currentTime + 3.);
 
 await new Promise(resolve => setTimeout(resolve, 3.5 * 1000));
 
-context.close();
+audioContext.close();

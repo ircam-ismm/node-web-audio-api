@@ -29,34 +29,6 @@ let contextIds = {
 let enumerateDevicesSync = null;
 
 function handleDefaultOptions(options, kind) {
-  if (platform === 'linux') {
-    const list = enumerateDevicesSync();
-    const jackDevice = list.find(device => device.kind === kind && device.label === 'jack');
-
-    if (jackDevice === undefined) {
-      // throw meaningfull error if several contexts are created on linux,
-      // because of alsa backend we currently use
-      if (contextIds[kind] === 1) {
-        throw new Error(`[node-web-audio-api] node-web-audio-api uses alsa as backend, therefore only one audio context and one audio input stream can be safely created`);
-      }
-
-      // force latencyHint to "playback" on RPi if not explicitely defined
-      if (arch === 'arm') {
-        if (kind === 'audiooutput' && !('latencyHint' in options)) {
-          options.latencyHint = 'playback';
-        }
-      }
-    } else {
-      // default to jack if jack source or sink is found
-      const deviceKey = kind === 'audioinput' ? 'deviceId' : 'sinkId';
-
-      if (!(deviceKey in options)) {
-        console.log(`> JACK ${kind} device found, use as default`);
-        options[deviceKey] = jackDevice.deviceId;
-      }
-    }
-  }
-
   // increment contextIds as they are used to keep the process awake
   contextIds[kind] += 1;
 

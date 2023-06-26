@@ -1,6 +1,7 @@
 import { AudioContext } from '../index.mjs';
 
-const audioContext = new AudioContext();
+const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
+const audioContext = new AudioContext({ latencyHint });
 
 // use merger to pipe oscillators to right and left channels
 const merger = audioContext.createChannelMerger(2);

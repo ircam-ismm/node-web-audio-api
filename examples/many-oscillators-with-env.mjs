@@ -1,6 +1,7 @@
 import { AudioContext, OscillatorNode, GainNode } from 'node-web-audio-api';
 
-const audioContext = new AudioContext();
+const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
+const audioContext = new AudioContext({ latencyHint });
 
 setInterval(() => {
   const now = audioContext.currentTime;
@@ -9,7 +10,7 @@ setInterval(() => {
   env.connect(audioContext.destination);
   env.gain.value = 0;
   env.gain.setValueAtTime(0, now);
-  env.gain.linearRampToValueAtTime(1, now + 0.02);
+  env.gain.linearRampToValueAtTime(0.2, now + 0.02);
   env.gain.exponentialRampToValueAtTime(0.0001, now + 1);
 
   const osc = new OscillatorNode(audioContext);

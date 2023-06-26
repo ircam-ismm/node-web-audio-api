@@ -19,7 +19,8 @@ function triggerSine(audioContext, delayInput) {
 }
 
 
-const audioContext = new AudioContext();
+const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
+const audioContext = new AudioContext({ latencyHint });
 
 // create feedback delay graph layout
 //                           |<- feedback <-|
