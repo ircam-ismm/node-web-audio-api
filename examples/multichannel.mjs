@@ -1,4 +1,4 @@
-import { AudioContext } from 'node-web-audio-api';
+import { AudioContext } from '../index.mjs';
 
 // check that multichannel is prerly handled
 //
