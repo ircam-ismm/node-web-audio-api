@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 829.0, 147.0, 1188.0, 539.0 ],
+		"rect" : [ 309.0, 671.0, 1188.0, 539.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -146,7 +146,7 @@
 					"numoutlets" : 8,
 					"outlettype" : [ "signal", "signal", "signal", "signal", "signal", "signal", "signal", "signal" ],
 					"patching_rect" : [ 430.0, 124.0, 115.0, 22.0 ],
-					"text" : "adc~ 0 1 2 3 4 5 6 7"
+					"text" : "adc~ 1 2 3 4 5 6 7 8"
 				}
 
 			}
