@@ -1,4 +1,4 @@
-FROM node:18
+FROM node:14
 
 ENV RUSTUP_HOME=/usr/local/rustup \
     CARGO_HOME=/usr/local/cargo \
