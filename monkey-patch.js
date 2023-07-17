@@ -90,10 +90,6 @@ function patchAudioContext(nativeBinding) {
     }
 
     decodeAudioData(audioData) {
-      if (!isPlainObject(audioData) || !('path' in audioData)) {
-        throw new Error(`Invalid argument, please consider using the load helper`);
-      }
-
       try {
         const audioBuffer = super.decodeAudioData(audioData);
         return Promise.resolve(audioBuffer);
@@ -144,10 +140,6 @@ function patchOfflineAudioContext(nativeBinding) {
     }
 
     decodeAudioData(audioData) {
-      if (!isPlainObject(audioData) || !('path' in audioData)) {
-        throw new Error(`Invalid argument, please consider using the load helper`);
-      }
-
       try {
         const audioBuffer = super.decodeAudioData(audioData);
         return Promise.resolve(audioBuffer);
