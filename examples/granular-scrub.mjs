@@ -1,14 +1,15 @@
 import path from 'node:path';
+import fs from 'node:fs';
 import { Scheduler } from 'waves-masters';
-import { AudioContext, load } from '../index.mjs';
+import { AudioContext } from '../index.mjs';
 
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });
 
 const scheduler = new Scheduler(() => audioContext.currentTime);
 
-const file = load(path.join(process.cwd(), 'samples', 'sample.wav'));
-const buffer = await audioContext.decodeAudioData(file);
+const arrayBuffer = fs.readFileSync(path.join(process.cwd(), 'samples', 'sample.wav')).buffer;
+const buffer = await audioContext.decodeAudioData(arrayBuffer);
 
 const period = 0.05;
 const grainDuration = 0.2;
