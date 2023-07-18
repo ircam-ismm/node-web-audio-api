@@ -90,10 +90,9 @@ function patchAudioContext(nativeBinding) {
     }
 
     decodeAudioData(audioData) {
-      if (!isPlainObject(audioData) || !('path' in audioData)) {
-        throw new Error(`Invalid argument, please consider using the load helper`);
+      if (!audioData instanceof ArrayBuffer) {
+        throw new Error('Invalid argument, please provide an ArrayBuffer');
       }
-
       try {
         const audioBuffer = super.decodeAudioData(audioData);
         return Promise.resolve(audioBuffer);
@@ -144,10 +143,9 @@ function patchOfflineAudioContext(nativeBinding) {
     }
 
     decodeAudioData(audioData) {
-      if (!isPlainObject(audioData) || !('path' in audioData)) {
-        throw new Error(`Invalid argument, please consider using the load helper`);
+      if (!audioData instanceof ArrayBuffer) {
+        throw new Error('Invalid argument, please provide an ArrayBuffer');
       }
-
       try {
         const audioBuffer = super.decodeAudioData(audioData);
         return Promise.resolve(audioBuffer);
@@ -159,16 +157,6 @@ function patchOfflineAudioContext(nativeBinding) {
 
   return OfflineAudioContext;
 }
-
-// dumb method provided to mock an xhr call and mimick browser's API
-// see also `AudioContext.decodeAudioData`
-function load(path) {
-  if (!fs.existsSync(path)) {
-    throw new Error(`File not found: "${path}"`);
-  }
-
-  return { path };
-};
 
 module.exports = function monkeyPatch(nativeBinding) {
   nativeBinding.AudioContext = patchAudioContext(nativeBinding);
@@ -191,9 +179,6 @@ module.exports = function monkeyPatch(nativeBinding) {
     const stream = getUserMediaSync(options);
     return Promise.resolve(stream);
   }
-
-  // utils
-  nativeBinding.load = load;
 
   return nativeBinding;
 }

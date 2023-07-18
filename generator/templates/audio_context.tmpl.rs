@@ -1,4 +1,4 @@
-use std::fs::File;
+use std::io::Cursor;
 
 use napi::*;
 use napi_derive::js_function;
@@ -168,13 +168,9 @@ fn decode_audio_data(ctx: CallContext) -> Result<JsObject> {
     let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
     let context = napi_obj.unwrap();
 
-    let js_obj = ctx.get::<JsObject>(0)?;
-    let js_path = js_obj.get_named_property::<JsString>("path")?;
-    let uf8_path = js_path.into_utf8()?.into_owned()?;
-    let str_path = &uf8_path[..];
-
-    let file = File::open(str_path).unwrap();
-    let audio_buffer = context.decode_audio_data_sync(file);
+    let js_buffer = ctx.get::<JsArrayBuffer>(0)?.into_value()?;
+    let cursor = Cursor::new(js_buffer.to_vec());
+    let audio_buffer = context.decode_audio_data_sync(cursor);
 
     match audio_buffer {
         Ok(audio_buffer) => {
