@@ -13,8 +13,6 @@ const audioContext = new AudioContext();
 const numChannels = 8;
 
 audioContext.destination.channelCount = numChannels;
-// this throws but should not (cf. https://github.com/orottier/web-audio-api-rs/pull/319)
-// audioContext.destination.channelCountMode = 'explicit';
 audioContext.destination.channelInterpretation = 'discrete';
 
 println!("> Max channel count: {:?}", audioContext.destination.maxChannelCount);
@@ -22,8 +20,6 @@ println!("> Max channel count: {:?}", audioContext.destination.maxChannelCount);
 await audioContext.resume();
 
 const merger = audioContext.createChannelMerger(numChannels);
-// this throws but it's in the spec (neither Chrome nor Firefox seems to follow the spec here)
-// merger.channelCountMode = 'explicit';
 merger.channelInterpretation = 'discrete';
 merger.connect(audioContext.destination);
 

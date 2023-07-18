@@ -1,5 +1,6 @@
+import fs from 'node:fs';
 import path from 'node:path';
-import { AudioContext, ConvolverNode, load } from '../index.mjs';
+import { AudioContext, ConvolverNode } from '../index.mjs';
 
 // create an `AudioContext` and load a sound file
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
@@ -11,17 +12,17 @@ const audioContext = new AudioContext({ latencyHint });
 //     update_interval: 1.,
 // });
 
-const file = load(path.join(process.cwd(), 'samples', 'vocals-dry.wav'));
-const audio_buffer = await audioContext.decodeAudioData(file);
+const arrayBuffer = fs.readFileSync(path.join('samples', 'vocals-dry.wav')).buffer;
+const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
-const impulse_file1 = load(path.join(process.cwd(), 'samples', 'small-room-response.wav'));
-const impulse_buffer1 = await audioContext.decodeAudioData(impulse_file1);
+const impulseFile1 = fs.readFileSync(path.join('samples', 'small-room-response.wav')).buffer;
+const impulseBuffer1 = await audioContext.decodeAudioData(impulseFile1);
 
-const impulse_file2 = load(path.join(process.cwd(), 'samples', 'parking-garage-response.wav'));
-const impulse_buffer2 = await audioContext.decodeAudioData(impulse_file2);
+const impulseFile2 = fs.readFileSync(path.join('samples', 'parking-garage-response.wav')).buffer;
+const impulseBuffer2 = await audioContext.decodeAudioData(impulseFile2);
 
 const src = audioContext.createBufferSource();
-src.buffer = audio_buffer;
+src.buffer = audioBuffer;
 
 const convolve = new ConvolverNode(audioContext);
 
@@ -34,16 +35,16 @@ console.log('Dry');
 await new Promise(resolve => setTimeout(resolve, 4000));
 
 console.log('Small room');
-convolve.buffer = impulse_buffer1;
+convolve.buffer = impulseBuffer1;
 await new Promise(resolve => setTimeout(resolve, 4000));
 
 console.log('Parking garage');
-convolve.buffer = impulse_buffer2;
+convolve.buffer = impulseBuffer2;
 await new Promise(resolve => setTimeout(resolve, 5000));
 
 console.log('Stop input - flush out remaining impulse response');
 src.stop();
 await new Promise(resolve => setTimeout(resolve, 2000));
 
-audioContext.close();
+await audioContext.close();
 

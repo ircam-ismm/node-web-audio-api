@@ -1,13 +1,16 @@
+import fs from 'node:fs';
 import path from 'node:path';
-import { AudioContext, load } from '../index.mjs';
+import { AudioContext } from '../index.mjs';
 
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });
 
 // setup background music:
 // read from local file
-const file = load(path.join(process.cwd(), 'samples', 'think-stereo-48000.wav'));
-const buffer = await audioContext.decodeAudioData(file);
+const pathname = path.join(process.cwd(), 'samples', 'think-stereo-48000.wav');
+const arrayBuffer = fs.readFileSync(pathname).buffer;
+const buffer = await audioContext.decodeAudioData(arrayBuffer);
+
 let now = audioContext.currentTime;
 
 console.log('> smoothly open low-pass filter for 10 sec');
@@ -124,4 +127,4 @@ frequencyHz.forEach((freq, index) => {
 });
 console.log('---------------------------------');
 
-process.exit(0);
+await audioContext.close();

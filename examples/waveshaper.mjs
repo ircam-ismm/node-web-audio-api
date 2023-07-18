@@ -1,5 +1,6 @@
+import fs from 'node:fs';
 import path from 'node:path';
-import { AudioContext, load } from '../index.mjs';
+import { AudioContext } from '../index.mjs';
 
 // use part of cosine, between [π, 2π] as shaping cureve
 function makeDistortionCurve(size) {
@@ -21,7 +22,7 @@ console.log('> gradually increase the amount of distortion applied on the sample
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });
 
-let file = load(path.join(process.cwd(), 'samples', 'sample.wav'));
+let file = fs.readFileSync(path.join('samples', 'sample.wav')).buffer;
 let buffer = await audioContext.decodeAudioData(file);
 let curve = makeDistortionCurve(2048);
 
@@ -40,7 +41,7 @@ let preGain = audioContext.createGain();
 preGain.connect(shaper);
 preGain.gain.value = 0.;
 
-for (let i = 1; i < 10; i++) {
+for (let i = 1; i < 7; i++) {
   const gain = i * 2.;
   console.log('+ pre gain:', gain);
 
@@ -55,3 +56,4 @@ for (let i = 1; i < 10; i++) {
   await new Promise(resolve => setTimeout(resolve, 4000));
 }
 
+await audioContext.close();

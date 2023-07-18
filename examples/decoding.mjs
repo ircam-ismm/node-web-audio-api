@@ -1,5 +1,6 @@
+import fs from 'node:fs';
 import path from 'node:path';
-import { AudioContext, load } from '../index.mjs';
+import { AudioContext } from '../index.mjs';
 
 const files = [
   'samples/sample-faulty.wav',
@@ -21,9 +22,8 @@ for (let filepath of files) {
   console.log('> --------------------------------');
 
   try {
-    const file = load(path.join(process.cwd(), filepath));
-    const buffer = await audioContext.decodeAudioData(file);
-    console.log(buffer);
+    const arrayBuffer = fs.readFileSync(filepath).buffer;
+    const buffer = await audioContext.decodeAudioData(arrayBuffer);
 
     console.log('> playing file: %s', filepath);
     console.log('> duration: %s', buffer.duration);
@@ -47,4 +47,4 @@ for (let filepath of files) {
   }
 }
 
-audioContext.close();
+await audioContext.close();

@@ -46,5 +46,5 @@ osc.frequency.linearRampToValueAtTime(880., audioContext.currentTime + intervalT
 
 await new Promise(resolve => setTimeout(resolve, intervalTime * 1000));
 
-audioContext.close();
+await audioContext.close();
 

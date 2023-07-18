@@ -1,11 +1,13 @@
+import fs from 'node:fs';
 import path from 'node:path';
-import { AudioContext, load } from '../index.mjs';
+import { AudioContext } from '../index.mjs';
 
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });
 
-const file = load(path.join(process.cwd(), 'samples', 'think-stereo-48000.wav'));
-const buffer = await audioContext.decodeAudioData(file);
+const pathname = path.join(process.cwd(), 'samples', 'think-stereo-48000.wav');
+const arrayBuffer = fs.readFileSync(pathname).buffer;
+const buffer = await audioContext.decodeAudioData(arrayBuffer);
 
 console.log('> no compression');
 const src = audioContext.createBufferSource();

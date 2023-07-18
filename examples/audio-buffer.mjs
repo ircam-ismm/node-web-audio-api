@@ -12,7 +12,7 @@ const length = audioContext.sampleRate;
 const sampleRate = audioContext.sampleRate;
 const buffer = audioContext.createBuffer(numberOfChannels, length, sampleRate);
 
-// // this works as expected but should be tested carefully (how?), rely on unsafe code
+// // this works as expected but should be tested carefully, relies on unsafe code
 // const channel = buffer.getChannelData(0);
 // for (let i = 0; i < channel.length; i++) {
 //   channel[i] = i;
@@ -57,4 +57,4 @@ osc.stop(audioContext.currentTime + 3.);
 
 await new Promise(resolve => setTimeout(resolve, 3.5 * 1000));
 
-audioContext.close();
+await audioContext.close();

@@ -1,9 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import { load, AudioContext, PannerNode } from '../index.mjs';
-
-// this example is broken, the mp3 is not decoded properly, for some unknown reason
-// this is not the case in the upstream library...
+import { AudioContext, PannerNode } from '../index.mjs';
 
 /*
  * This example feature a 'true physics' Doppler effect.
@@ -20,12 +17,8 @@ import { load, AudioContext, PannerNode } from '../index.mjs';
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });
 
-// this soundfile is broken while it is not in
-const file = await load(path.join(process.cwd(), 'samples', 'siren.mp3'));
-// console.log(file);
-// console.log(fs.existsSync(file.path));
-// process.exit();
-const buffer = await audioContext.decodeAudioData(file);
+const arrayBuffer = await fs.readFileSync(path.join('samples', 'siren.mp3')).buffer;
+const buffer = await audioContext.decodeAudioData(arrayBuffer);
 
 const pannerOptions = {
   panningModel: 'equalpower',
@@ -49,10 +42,10 @@ const now = audioContext.currentTime;
 
 const panner = new PannerNode(audioContext, pannerOptions);
 panner.connect(audioContext.destination);
-// // move the siren in 10 seconds from y = 100 to y = -100
+// move the siren in 10 seconds from y = 100 to y = -100
 panner.positionY.linearRampToValueAtTime(-100., now + 10.);
 
-// // The delay starts with value 0.3, reaches 0 when the siren crosses us, then goes back to 0.3
+// The delay starts with value 0.3, reaches 0 when the siren crosses us, then goes back to 0.3
 const delay = audioContext.createDelay(1.);
 delay.connect(panner);
 const dopplerMax = 100. / 343.;
@@ -68,3 +61,5 @@ src.loop = true;
 src.start(now);
 
 await new Promise(resolve => setTimeout(resolve, 10 * 1000));
+
+await audioContext.close();
