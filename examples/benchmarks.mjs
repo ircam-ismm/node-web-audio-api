@@ -1,5 +1,6 @@
 import readline from 'node:readline';
-import { OfflineAudioContext, AudioContext, load } from '../index.mjs';
+import fs from 'node:fs';
+import { OfflineAudioContext, AudioContext } from '../index.mjs';
 import { getTime } from '@ircam/sc-gettime';
 import Table from 'cli-table';
 
@@ -8,8 +9,8 @@ import Table from 'cli-table';
 async function loadBuffer(sources, pathname, sampleRate) {
   const context = new OfflineAudioContext(1, 1, sampleRate);
 
-  const file = load(pathname);
-  const audioBuffer = await context.decodeAudioData(file);
+  const arrayBuffer = fs.readFileSync(pathname).buffer;
+  const audioBuffer = await context.decodeAudioData(arrayBuffer);
 
   sources.push(audioBuffer);
 }
