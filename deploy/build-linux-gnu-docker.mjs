@@ -3,6 +3,9 @@ import { execSync } from 'node:child_process';
 const cwd = process.cwd();
 console.log(`> executing docker command in dir ${cwd}`);
 
+// the source code directory is shared with the docker image,
+// so every thing is always up to date
+
 execSync(`docker run --rm \
   -v ~/.cargo/git:/root/.cargo/git \
   -v ~/.cargo/registry:/root/.cargo/registry \
