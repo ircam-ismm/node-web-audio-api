@@ -15,6 +15,8 @@ impl NapiAudioDestinationNode {
             "AudioDestination",
             constructor,
             &[
+                Property::new("maxChannelCount")?.with_getter(get_max_channel_count),
+                // AudioNode interfacess
                 Property::new("channelCount")?
                     .with_getter(get_channel_count)
                     .with_setter(set_channel_count),
@@ -76,6 +78,20 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.wrap(&mut js_this, napi_node)?;
 
     ctx.env.get_undefined()
+}
+
+#[js_function]
+fn get_max_channel_count(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiAudioDestinationNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    // max_channels_count is a bug in the upstream crate
+    // see: https://github.com/orottier/web-audio-api-rs/pull/346
+    // update when released
+    let max_channel_count = node.max_channels_count() as f64;
+
+    ctx.env.create_double(max_channel_count)
 }
 
 // -------------------------------------------------

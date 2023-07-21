@@ -10,12 +10,13 @@ import { AudioContext } from '../index.mjs';
 // (see `multichannel.maxpat` if you have Max installed, @todo make a Pd version)
 
 const audioContext = new AudioContext();
-const numChannels = 8;
+
+console.log('> Max channel count:', audioContext.destination.maxChannelCount);
+
+const numChannels = audioContext.destination.maxChannelCount;
 
 audioContext.destination.channelCount = numChannels;
 audioContext.destination.channelInterpretation = 'discrete';
-
-println!("> Max channel count: {:?}", audioContext.destination.maxChannelCount);
 
 await audioContext.resume();
 
