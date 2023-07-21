@@ -75,6 +75,10 @@ logResult(res);
 res = await conn.execCommand(`npm install`, { cwd: rpiCwd });
 logResult(res);
 
+console.log('> rustup upgrade');
+res = await conn.execCommand(`rustup upgrade`, { cwd: rpiCwd });
+logResult(res);
+
 console.log('> cargo update');
 res = await conn.execCommand(`cargo update`, { cwd: rpiCwd });
 logResult(res);
