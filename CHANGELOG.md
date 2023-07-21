@@ -1,6 +1,8 @@
 ## v0.11.0
 
 - Update upstream crate to v0.32
+- Implement AudioDestination API
+- Make decodeAudioData(arrayBuffer) API compliant (drop `load` helper)
 
 ## v0.10.0
 
