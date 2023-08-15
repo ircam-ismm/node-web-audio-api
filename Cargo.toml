@@ -12,7 +12,7 @@ crate-type = ["cdylib"]
 [dependencies]
 napi = {version="2.11", features=["napi6"]}
 napi-derive = "2.11"
-web-audio-api = "0.32"
+web-audio-api = "0.33"
 # web-audio-api = { path = "../web-audio-api-rs" }
 
 [target.'cfg(all(any(windows, unix), target_arch = "x86_64", not(target_env = "musl")))'.dependencies]

@@ -86,10 +86,7 @@ fn get_max_channel_count(ctx: CallContext) -> Result<JsNumber> {
     let napi_node = ctx.env.unwrap::<NapiAudioDestinationNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    // max_channels_count is a bug in the upstream crate
-    // see: https://github.com/orottier/web-audio-api-rs/pull/346
-    // update when released
-    let max_channel_count = node.max_channels_count() as f64;
+    let max_channel_count = node.max_channel_count() as f64;
 
     ctx.env.create_double(max_channel_count)
 }
