@@ -1,3 +1,7 @@
+## v0.12.0
+
+- Update upstream crate to v0.33 (fix device number of channels > 32)
+
 ## v0.11.0
 
 - Update upstream crate to v0.32
