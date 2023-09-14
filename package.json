@@ -25,7 +25,7 @@
   "napi": {
     "name": "node-web-audio-api"
   },
-    "types": "./index.d.ts",
+  "types": "./index.d.ts",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
     "access": "public"
