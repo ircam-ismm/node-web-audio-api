@@ -16,7 +16,6 @@ export const {
 ${d.supportedNodes.map(n => `  ${n},`).join('\n')}
 
   // helper methods
-  load,
   mediaDevices,
 } = nativeModule;
 
