@@ -20,24 +20,9 @@ export const {
   // manually written nodes
   MediaStreamAudioSourceNode,
   // generated supported nodes
-  AnalyserNode,
   AudioBufferSourceNode,
-  BiquadFilterNode,
-  ChannelMergerNode,
-  ChannelSplitterNode,
-  ConstantSourceNode,
-  ConvolverNode,
-  DelayNode,
-  DynamicsCompressorNode,
-  GainNode,
-  IIRFilterNode,
-  OscillatorNode,
-  PannerNode,
-  StereoPannerNode,
-  WaveShaperNode,
 
   // helper methods
-  load,
   mediaDevices,
 } = nativeModule;
 

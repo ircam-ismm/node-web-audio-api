@@ -1,17 +1,29 @@
 use std::rc::Rc;
+use std::cell::RefCell;
 use napi::*;
 use napi_derive::js_function;
 use web_audio_api::node::*;
 use web_audio_api::AudioParam;
 
-pub(crate) enum ParamGetter {${d.nodes.map(n => { return d.audioParams(n).map(p => { return `
-    ${d.name(n)}${d.camelcase(p)}(Rc<${d.name(n)}>),`}).join('') }).join('')}
+pub(crate) enum ParamGetter {
+    ${d.nodes.map(n => {
+        return d.audioParams(n).map(p => {
+            return `
+    ${d.name(n)}${d.camelcase(p)}(Rc<RefCell<${d.name(n)}>>),\
+            `}).join('')
+        }).join('')
+    }
 }
 
 impl ParamGetter {
     fn downcast(&self) -> &AudioParam {
-        match *self {${d.nodes.map(n => { return d.audioParams(n).map(p => { return `
-            ParamGetter::${d.name(n)}${d.camelcase(p)}(ref node) => node.${d.slug(p)}(),`}).join('') }).join('')}
+        match *self {
+            ${d.nodes.map(n => {
+                return d.audioParams(n).map(p => {
+                    return `
+            ParamGetter::${d.name(n)}${d.camelcase(p)}(ref node) => node.borrow().${d.slug(p)}(),\
+                `}).join('')
+            }).join('')}
         }
     }
 }

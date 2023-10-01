@@ -8,21 +8,21 @@ import camelcase from 'camelcase';
 import compile from 'template-literal';
 
 let supportedNodes = [
+  // `AnalyserNode`,
   `AudioBufferSourceNode`,
-  `AnalyserNode`,
-  `BiquadFilterNode`,
-  `ChannelMergerNode`,
-  `ChannelSplitterNode`,
-  `ConstantSourceNode`,
-  `ConvolverNode`,
-  `DelayNode`,
-  'DynamicsCompressorNode',
-  `GainNode`,
-  `IIRFilterNode`,
-  `OscillatorNode`,
-  `PannerNode`, // review rs wise, lots of inconsistencies
-  `StereoPannerNode`,
-  `WaveShaperNode`,
+  // `BiquadFilterNode`,
+  // `ChannelMergerNode`,
+  // `ChannelSplitterNode`,
+  // `ConstantSourceNode`,
+  // `ConvolverNode`,
+  // `DelayNode`,
+  // 'DynamicsCompressorNode',
+  // `GainNode`,
+  // `IIRFilterNode`,
+  // `OscillatorNode`,
+  // `PannerNode`, // review rs wise, lots of inconsistencies
+  // `StereoPannerNode`,
+  // `WaveShaperNode`,
 ];
 
 

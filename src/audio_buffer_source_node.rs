@@ -8,10 +8,11 @@
 use crate::*;
 use napi::*;
 use napi_derive::js_function;
+use std::cell::RefCell;
 use std::rc::Rc;
 use web_audio_api::node::*;
 
-pub(crate) struct NapiAudioBufferSourceNode(Rc<AudioBufferSourceNode>);
+pub(crate) struct NapiAudioBufferSourceNode(Rc<RefCell<AudioBufferSourceNode>>);
 
 impl NapiAudioBufferSourceNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -65,8 +66,16 @@ impl NapiAudioBufferSourceNode {
         )
     }
 
+    // pub fn unwrap(&self) -> &AudioBufferSourceNode {
     pub fn unwrap(&self) -> &AudioBufferSourceNode {
-        &self.0
+        let inner = &self.0;
+        &inner.borrow()
+    }
+
+    // // some AudioNodes do not need this, e.g. GainNode
+    #[allow(dead_code)]
+    pub fn unwrap_mut(&mut self) -> &mut AudioBufferSourceNode {
+        &mut self.0.borrow_mut()
     }
 }
 
@@ -155,17 +164,19 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            Rc::new(AudioBufferSourceNode::new(audio_context, options))
+            AudioBufferSourceNode::new(audio_context, options)
         }
         "OfflineAudioContext" => {
             let napi_audio_context = ctx
                 .env
                 .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            Rc::new(AudioBufferSourceNode::new(audio_context, options))
+            AudioBufferSourceNode::new(audio_context, options)
         }
         &_ => panic!("not supported"),
     };
+
+    let native_node = Rc::new(RefCell::new(native_node));
 
     // AudioParam: AudioBufferSourceNode::playbackRate
     let native_clone = native_node.clone();
@@ -298,7 +309,7 @@ disconnect_method!(NapiAudioBufferSourceNode);
 fn start(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
+    let node = napi_node.unwrap_mut();
 
     match ctx.length {
         0 => node.start(),
@@ -327,7 +338,7 @@ fn start(ctx: CallContext) -> Result<JsUndefined> {
 fn stop(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
+    let node = napi_node.unwrap_mut();
 
     match ctx.length {
         0 => node.stop(),
@@ -396,7 +407,7 @@ fn get_loop_end(ctx: CallContext) -> Result<JsNumber> {
 fn set_buffer(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
+    let node = napi_node.unwrap_mut();
 
     let js_obj = ctx.get::<JsObject>(0)?;
     let napi_obj = ctx.env.unwrap::<NapiAudioBuffer>(&js_obj)?;
@@ -412,7 +423,7 @@ fn set_buffer(ctx: CallContext) -> Result<JsUndefined> {
 fn set_loop(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
+    let node = napi_node.unwrap_mut();
 
     let value = ctx.get::<JsBoolean>(0)?.try_into()?;
     node.set_loop(value);
@@ -424,7 +435,7 @@ fn set_loop(ctx: CallContext) -> Result<JsUndefined> {
 fn set_loop_start(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
+    let node = napi_node.unwrap_mut();
 
     let value = ctx.get::<JsNumber>(0)?.get_double()? as f64;
     node.set_loop_start(value);
@@ -436,7 +447,7 @@ fn set_loop_start(ctx: CallContext) -> Result<JsUndefined> {
 fn set_loop_end(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
+    let node = napi_node.unwrap_mut();
 
     let value = ctx.get::<JsNumber>(0)?.get_double()? as f64;
     node.set_loop_end(value);
