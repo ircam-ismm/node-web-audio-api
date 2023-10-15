@@ -10,33 +10,23 @@ use napi::*;
 use napi_derive::js_function;
 use web_audio_api::node::*;
 
-pub(crate) struct NapiAudioBufferSourceNode(AudioBufferSourceNode);
+pub(crate) struct NapiOscillatorNode(OscillatorNode);
 
-impl NapiAudioBufferSourceNode {
+impl NapiOscillatorNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
         env.define_class(
-            "AudioBufferSourceNode",
+            "OscillatorNode",
             constructor,
             &[
                 // Attributes
-                Property::new("buffer")?
-                    .with_getter(get_buffer)
-                    .with_setter(set_buffer)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                Property::new("loop")?
-                    .with_getter(get_loop)
-                    .with_setter(set_loop)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                Property::new("loopStart")?
-                    .with_getter(get_loop_start)
-                    .with_setter(set_loop_start)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                Property::new("loopEnd")?
-                    .with_getter(get_loop_end)
-                    .with_setter(set_loop_end)
+                Property::new("type")?
+                    .with_getter(get_type)
+                    .with_setter(set_type)
                     .with_property_attributes(PropertyAttributes::Enumerable),
                 // Methods
-
+                Property::new("setPeriodicWave")?
+                    .with_method(set_periodic_wave)
+                    .with_property_attributes(PropertyAttributes::Enumerable),
                 // AudioNode interface
                 Property::new("channelCount")?
                     .with_getter(get_channel_count)
@@ -65,7 +55,7 @@ impl NapiAudioBufferSourceNode {
     }
 
     // this is used in audio_node.tmpl.rs for the connect / disconnect macros
-    pub fn unwrap(&mut self) -> &mut AudioBufferSourceNode {
+    pub fn unwrap(&mut self) -> &mut OscillatorNode {
         &mut self.0
     }
 }
@@ -83,19 +73,34 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_property_attributes(PropertyAttributes::Enumerable),
         // this must be put on the instance and not in the prototype to be reachable
         Property::new("Symbol.toStringTag")?
-            .with_value(&ctx.env.create_string("AudioBufferSourceNode")?)
+            .with_value(&ctx.env.create_string("OscillatorNode")?)
             .with_property_attributes(PropertyAttributes::Static),
     ])?;
 
     // parse options
     let options = match ctx.try_get::<JsObject>(1)? {
         Either::A(options_js) => {
-            let some_buffer_js = options_js.get::<&str, JsObject>("buffer")?;
-            let buffer = if let Some(buffer_js) = some_buffer_js {
-                let buffer_napi = ctx.env.unwrap::<NapiAudioBuffer>(&buffer_js)?;
-                Some(buffer_napi.unwrap().clone())
+            let some_type_js = options_js.get::<&str, JsString>("type")?;
+            let type_ = if let Some(type_js) = some_type_js {
+                let type_str = type_js.into_utf8()?.into_owned()?;
+
+                match type_str.as_str() {
+                    "sine" => OscillatorType::Sine,
+                    "square" => OscillatorType::Square,
+                    "sawtooth" => OscillatorType::Sawtooth,
+                    "triangle" => OscillatorType::Triangle,
+                    "custom" => OscillatorType::Custom,
+                    _ => panic!("undefined value for OscillatorType"),
+                }
             } else {
-                None
+                OscillatorType::default()
+            };
+
+            let some_frequency_js = options_js.get::<&str, JsNumber>("frequency")?;
+            let frequency = if let Some(frequency_js) = some_frequency_js {
+                frequency_js.get_double()? as f32
+            } else {
+                440.
             };
 
             let some_detune_js = options_js.get::<&str, JsNumber>("detune")?;
@@ -105,41 +110,66 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                 0.
             };
 
-            let some_loop_js = options_js.get::<&str, JsBoolean>("loop")?;
-            let loop_ = if let Some(loop_js) = some_loop_js {
-                loop_js.try_into()?
+            let some_periodic_wave_js = options_js.get::<&str, JsObject>("periodicWave")?;
+            let periodic_wave = if let Some(periodic_wave_js) = some_periodic_wave_js {
+                let periodic_wave_napi = ctx.env.unwrap::<NapiPeriodicWave>(&periodic_wave_js)?;
+                Some(periodic_wave_napi.unwrap().clone())
             } else {
-                false
+                None
             };
 
-            let some_loop_end_js = options_js.get::<&str, JsNumber>("loopEnd")?;
-            let loop_end = if let Some(loop_end_js) = some_loop_end_js {
-                loop_end_js.get_double()? as f64
+            let node_defaults = OscillatorOptions::default();
+            let channel_config_defaults = node_defaults.channel_config;
+
+            let some_channel_count_js = options_js.get::<&str, JsNumber>("channelCount")?;
+            let channel_count = if let Some(channel_count_js) = some_channel_count_js {
+                channel_count_js.get_double()? as usize
             } else {
-                0.
+                channel_config_defaults.count
             };
 
-            let some_loop_start_js = options_js.get::<&str, JsNumber>("loopStart")?;
-            let loop_start = if let Some(loop_start_js) = some_loop_start_js {
-                loop_start_js.get_double()? as f64
+            let some_channel_count_mode_js =
+                options_js.get::<&str, JsString>("channelCountMode")?;
+            let channel_count_mode = if let Some(channel_count_mode_js) = some_channel_count_mode_js
+            {
+                let channel_count_mode_str = channel_count_mode_js.into_utf8()?.into_owned()?;
+
+                match channel_count_mode_str.as_str() {
+                    "max" => ChannelCountMode::Max,
+                    "clamped-max" => ChannelCountMode::ClampedMax,
+                    "explicit" => ChannelCountMode::Explicit,
+                    _ => panic!("undefined value for ChannelCountMode"),
+                }
             } else {
-                0.
+                channel_config_defaults.count_mode
             };
 
-            let some_playback_rate_js = options_js.get::<&str, JsNumber>("playbackRate")?;
-            let playback_rate = if let Some(playback_rate_js) = some_playback_rate_js {
-                playback_rate_js.get_double()? as f32
-            } else {
-                1.
-            };
+            let some_channel_interpretation_js =
+                options_js.get::<&str, JsString>("channelInterpretation")?;
+            let channel_interpretation =
+                if let Some(channel_interpretation_js) = some_channel_interpretation_js {
+                    let channel_interpretation_str =
+                        channel_interpretation_js.into_utf8()?.into_owned()?;
 
-            AudioBufferSourceOptions {
-                buffer,
+                    match channel_interpretation_str.as_str() {
+                        "speakers" => ChannelInterpretation::Speakers,
+                        "discrete" => ChannelInterpretation::Discrete,
+                        _ => panic!("undefined value for ChannelInterpretation"),
+                    }
+                } else {
+                    channel_config_defaults.interpretation
+                };
+
+            OscillatorOptions {
+                type_,
+                frequency,
                 detune,
-                loop_,
-                loop_end,
-                loop_start,
-                playback_rate,
+                periodic_wave,
+                channel_config: ChannelConfigOptions {
+                    count: channel_count,
+                    count_mode: channel_count_mode,
+                    interpretation: channel_interpretation,
+                },
             }
         }
         Either::B(_) => Default::default(),
@@ -155,28 +185,28 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            AudioBufferSourceNode::new(audio_context, options)
+            OscillatorNode::new(audio_context, options)
         }
         "OfflineAudioContext" => {
             let napi_audio_context = ctx
                 .env
                 .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            AudioBufferSourceNode::new(audio_context, options)
+            OscillatorNode::new(audio_context, options)
         }
         &_ => panic!("not supported"),
     };
 
     // let native_node = Rc::new(RefCell::new(native_node));
 
-    // AudioParam: AudioBufferSourceNode::playbackRate
-    let native_param = native_node.playback_rate().clone();
+    // AudioParam: OscillatorNode::frequency
+    let native_param = native_node.frequency().clone();
     let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
-    js_this.set_named_property("playbackRate", &js_obj)?;
+    js_this.set_named_property("frequency", &js_obj)?;
 
-    // AudioParam: AudioBufferSourceNode::detune
+    // AudioParam: OscillatorNode::detune
     let native_param = native_node.detune().clone();
     let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
@@ -184,7 +214,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     js_this.set_named_property("detune", &js_obj)?;
 
     // finalize instance creation
-    let napi_node = NapiAudioBufferSourceNode(native_node);
+    let napi_node = NapiOscillatorNode(native_node);
     ctx.env.wrap(&mut js_this, napi_node)?;
 
     ctx.env.get_undefined()
@@ -196,7 +226,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 #[js_function]
 fn get_channel_count(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     let channel_count = node.channel_count() as f64;
@@ -207,7 +237,7 @@ fn get_channel_count(ctx: CallContext) -> Result<JsNumber> {
 #[js_function(1)]
 fn set_channel_count(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     let channel_count = ctx.get::<JsNumber>(0)?.get_double()? as usize;
@@ -219,7 +249,7 @@ fn set_channel_count(ctx: CallContext) -> Result<JsUndefined> {
 #[js_function]
 fn get_channel_count_mode(ctx: CallContext) -> Result<JsString> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     let value = node.channel_count_mode();
@@ -235,7 +265,7 @@ fn get_channel_count_mode(ctx: CallContext) -> Result<JsString> {
 #[js_function(1)]
 fn set_channel_count_mode(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     let js_str = ctx.get::<JsString>(0)?;
@@ -254,7 +284,7 @@ fn set_channel_count_mode(ctx: CallContext) -> Result<JsUndefined> {
 #[js_function]
 fn get_channel_interpretation(ctx: CallContext) -> Result<JsString> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     let value = node.channel_interpretation();
@@ -269,7 +299,7 @@ fn get_channel_interpretation(ctx: CallContext) -> Result<JsString> {
 #[js_function(1)]
 fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     let js_str = ctx.get::<JsString>(0)?;
@@ -287,17 +317,17 @@ fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
 // -------------------------------------------------
 // connect / disconnect macros
 // -------------------------------------------------
-connect_method!(NapiAudioBufferSourceNode);
-disconnect_method!(NapiAudioBufferSourceNode);
+connect_method!(NapiOscillatorNode);
+disconnect_method!(NapiOscillatorNode);
 
 // -------------------------------------------------
 // AudioScheduledSourceNode Interface
 // -------------------------------------------------
 
-#[js_function(3)]
+#[js_function(1)]
 fn start(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     match ctx.length {
@@ -305,17 +335,6 @@ fn start(ctx: CallContext) -> Result<JsUndefined> {
         1 => {
             let when = ctx.get::<JsNumber>(0)?.get_double()?;
             node.start_at(when);
-        }
-        2 => {
-            let when = ctx.get::<JsNumber>(0)?.get_double()?;
-            let offset = ctx.get::<JsNumber>(1)?.get_double()?;
-            node.start_at_with_offset(when, offset);
-        }
-        3 => {
-            let when = ctx.get::<JsNumber>(0)?.get_double()?;
-            let offset = ctx.get::<JsNumber>(1)?.get_double()?;
-            let duration = ctx.get::<JsNumber>(2)?.get_double()?;
-            node.start_at_with_offset_and_duration(when, offset, duration);
         }
         _ => (),
     }
@@ -326,7 +345,7 @@ fn start(ctx: CallContext) -> Result<JsUndefined> {
 #[js_function(1)]
 fn stop(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     match ctx.length {
@@ -346,46 +365,21 @@ fn stop(ctx: CallContext) -> Result<JsUndefined> {
 // -------------------------------------------------
 
 #[js_function(0)]
-fn get_buffer(ctx: CallContext) -> Result<JsUnknown> {
+fn get_type(ctx: CallContext) -> Result<JsString> {
     let js_this = ctx.this_unchecked::<JsObject>();
-
-    if js_this.has_named_property("__buffer__")? {
-        Ok(js_this
-            .get_named_property::<JsObject>("__buffer__")?
-            .into_unknown())
-    } else {
-        Ok(ctx.env.get_null()?.into_unknown())
-    }
-}
-
-#[js_function(0)]
-fn get_loop(ctx: CallContext) -> Result<JsBoolean> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = node.loop_();
-    ctx.env.get_boolean(value)
-}
+    let value = node.type_();
+    let js_value = match value {
+        OscillatorType::Sine => "sine",
+        OscillatorType::Square => "square",
+        OscillatorType::Sawtooth => "sawtooth",
+        OscillatorType::Triangle => "triangle",
+        OscillatorType::Custom => "custom",
+    };
 
-#[js_function(0)]
-fn get_loop_start(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = node.loop_start();
-    ctx.env.create_double(value as f64)
-}
-
-#[js_function(0)]
-fn get_loop_end(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = node.loop_end();
-    ctx.env.create_double(value as f64)
+    ctx.env.create_string(js_value)
 }
 
 // -------------------------------------------------
@@ -393,53 +387,23 @@ fn get_loop_end(ctx: CallContext) -> Result<JsNumber> {
 // -------------------------------------------------
 
 #[js_function(1)]
-fn set_buffer(ctx: CallContext) -> Result<JsUndefined> {
-    let mut js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let js_obj = ctx.get::<JsObject>(0)?;
-    let napi_obj = ctx.env.unwrap::<NapiAudioBuffer>(&js_obj)?;
-    let obj = napi_obj.unwrap();
-    node.set_buffer(obj.clone());
-    // store in "private" field for getter (not very clean, to review)
-    js_this.set_named_property("__buffer__", js_obj)?;
-
-    ctx.env.get_undefined()
-}
-
-#[js_function(1)]
-fn set_loop(ctx: CallContext) -> Result<JsUndefined> {
+fn set_type(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsBoolean>(0)?.try_into()?;
-    node.set_loop(value);
+    let js_str = ctx.get::<JsString>(0)?;
+    let uf8_str = js_str.into_utf8()?.into_owned()?;
+    let value = match uf8_str.as_str() {
+        "sine" => OscillatorType::Sine,
+        "square" => OscillatorType::Square,
+        "sawtooth" => OscillatorType::Sawtooth,
+        "triangle" => OscillatorType::Triangle,
+        "custom" => OscillatorType::Custom,
+        _ => panic!("undefined value for OscillatorType"),
+    };
 
-    ctx.env.get_undefined()
-}
-
-#[js_function(1)]
-fn set_loop_start(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = ctx.get::<JsNumber>(0)?.get_double()? as f64;
-    node.set_loop_start(value);
-
-    ctx.env.get_undefined()
-}
-
-#[js_function(1)]
-fn set_loop_end(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = ctx.get::<JsNumber>(0)?.get_double()? as f64;
-    node.set_loop_end(value);
+    node.set_type(value);
 
     ctx.env.get_undefined()
 }
@@ -447,3 +411,20 @@ fn set_loop_end(ctx: CallContext) -> Result<JsUndefined> {
 // -------------------------------------------------
 // METHODS
 // -------------------------------------------------
+
+#[js_function(1)]
+fn set_periodic_wave(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
+    // avoid warnings while we don't support all methods
+    #[allow(unused_variables)]
+    let node = napi_node.unwrap();
+
+    let periodic_wave_js = ctx.get::<JsObject>(0)?;
+    let periodic_wave_napi = ctx.env.unwrap::<NapiPeriodicWave>(&periodic_wave_js)?;
+    let periodic_wave = periodic_wave_napi.unwrap().clone();
+
+    node.set_periodic_wave(periodic_wave);
+
+    ctx.env.get_undefined()
+}

@@ -7,35 +7,13 @@
 
 use napi::*;
 use napi_derive::js_function;
-use std::cell::RefCell;
-use std::rc::Rc;
-use web_audio_api::node::*;
 use web_audio_api::AudioParam;
 
-pub(crate) enum ParamGetter {
-    AudioBufferSourceNodePlaybackRate(Rc<RefCell<AudioBufferSourceNode>>),
-    AudioBufferSourceNodeDetune(Rc<RefCell<AudioBufferSourceNode>>),
-}
-
-impl ParamGetter {
-    fn downcast(&self) -> &AudioParam {
-        match *self {
-            ParamGetter::AudioBufferSourceNodePlaybackRate(ref node) => {
-                node.borrow().playback_rate()
-            }
-            ParamGetter::AudioBufferSourceNodeDetune(ref node) => node.borrow().detune(),
-        }
-    }
-}
-
-// @note - we can't really create a js class here because ParamGetter must be
-// created by the AudioNode that owns the AudioParam
-// ... but probably we don't care as AudioParam can't be instanciated from JS
-pub(crate) struct NapiAudioParam(ParamGetter);
+pub(crate) struct NapiAudioParam(AudioParam);
 
 impl NapiAudioParam {
-    pub fn new(param_getter: ParamGetter) -> Self {
-        Self(param_getter)
+    pub fn new(audio_param: AudioParam) -> Self {
+        Self(audio_param)
     }
 
     pub fn create_js_object(env: &Env) -> Result<JsObject> {
@@ -62,7 +40,7 @@ impl NapiAudioParam {
     }
 
     pub fn unwrap(&self) -> &AudioParam {
-        self.0.downcast()
+        &self.0
     }
 }
 

@@ -10,12 +10,12 @@ use napi::*;
 use napi_derive::js_function;
 use web_audio_api::node::*;
 
-pub(crate) struct NapiAudioBufferSourceNode(AudioBufferSourceNode);
+pub(crate) struct NapiConvolverNode(ConvolverNode);
 
-impl NapiAudioBufferSourceNode {
+impl NapiConvolverNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
         env.define_class(
-            "AudioBufferSourceNode",
+            "ConvolverNode",
             constructor,
             &[
                 // Attributes
@@ -23,17 +23,9 @@ impl NapiAudioBufferSourceNode {
                     .with_getter(get_buffer)
                     .with_setter(set_buffer)
                     .with_property_attributes(PropertyAttributes::Enumerable),
-                Property::new("loop")?
-                    .with_getter(get_loop)
-                    .with_setter(set_loop)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                Property::new("loopStart")?
-                    .with_getter(get_loop_start)
-                    .with_setter(set_loop_start)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                Property::new("loopEnd")?
-                    .with_getter(get_loop_end)
-                    .with_setter(set_loop_end)
+                Property::new("normalize")?
+                    .with_getter(get_normalize)
+                    .with_setter(set_normalize)
                     .with_property_attributes(PropertyAttributes::Enumerable),
                 // Methods
 
@@ -53,19 +45,12 @@ impl NapiAudioBufferSourceNode {
                 Property::new("disconnect")?
                     .with_method(disconnect)
                     .with_property_attributes(PropertyAttributes::Enumerable),
-                // AudioScheduledSourceNode interface
-                Property::new("start")?
-                    .with_method(start)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                Property::new("stop")?
-                    .with_method(stop)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
             ],
         )
     }
 
     // this is used in audio_node.tmpl.rs for the connect / disconnect macros
-    pub fn unwrap(&mut self) -> &mut AudioBufferSourceNode {
+    pub fn unwrap(&mut self) -> &mut ConvolverNode {
         &mut self.0
     }
 }
@@ -83,7 +68,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_property_attributes(PropertyAttributes::Enumerable),
         // this must be put on the instance and not in the prototype to be reachable
         Property::new("Symbol.toStringTag")?
-            .with_value(&ctx.env.create_string("AudioBufferSourceNode")?)
+            .with_value(&ctx.env.create_string("ConvolverNode")?)
             .with_property_attributes(PropertyAttributes::Static),
     ])?;
 
@@ -98,48 +83,65 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                 None
             };
 
-            let some_detune_js = options_js.get::<&str, JsNumber>("detune")?;
-            let detune = if let Some(detune_js) = some_detune_js {
-                detune_js.get_double()? as f32
+            let some_disable_normalization_js =
+                options_js.get::<&str, JsBoolean>("disableNormalization")?;
+            let disable_normalization =
+                if let Some(disable_normalization_js) = some_disable_normalization_js {
+                    disable_normalization_js.try_into()?
+                } else {
+                    false
+                };
+
+            let node_defaults = ConvolverOptions::default();
+            let channel_config_defaults = node_defaults.channel_config;
+
+            let some_channel_count_js = options_js.get::<&str, JsNumber>("channelCount")?;
+            let channel_count = if let Some(channel_count_js) = some_channel_count_js {
+                channel_count_js.get_double()? as usize
             } else {
-                0.
+                channel_config_defaults.count
             };
 
-            let some_loop_js = options_js.get::<&str, JsBoolean>("loop")?;
-            let loop_ = if let Some(loop_js) = some_loop_js {
-                loop_js.try_into()?
+            let some_channel_count_mode_js =
+                options_js.get::<&str, JsString>("channelCountMode")?;
+            let channel_count_mode = if let Some(channel_count_mode_js) = some_channel_count_mode_js
+            {
+                let channel_count_mode_str = channel_count_mode_js.into_utf8()?.into_owned()?;
+
+                match channel_count_mode_str.as_str() {
+                    "max" => ChannelCountMode::Max,
+                    "clamped-max" => ChannelCountMode::ClampedMax,
+                    "explicit" => ChannelCountMode::Explicit,
+                    _ => panic!("undefined value for ChannelCountMode"),
+                }
             } else {
-                false
+                channel_config_defaults.count_mode
             };
 
-            let some_loop_end_js = options_js.get::<&str, JsNumber>("loopEnd")?;
-            let loop_end = if let Some(loop_end_js) = some_loop_end_js {
-                loop_end_js.get_double()? as f64
-            } else {
-                0.
-            };
+            let some_channel_interpretation_js =
+                options_js.get::<&str, JsString>("channelInterpretation")?;
+            let channel_interpretation =
+                if let Some(channel_interpretation_js) = some_channel_interpretation_js {
+                    let channel_interpretation_str =
+                        channel_interpretation_js.into_utf8()?.into_owned()?;
 
-            let some_loop_start_js = options_js.get::<&str, JsNumber>("loopStart")?;
-            let loop_start = if let Some(loop_start_js) = some_loop_start_js {
-                loop_start_js.get_double()? as f64
-            } else {
-                0.
-            };
+                    match channel_interpretation_str.as_str() {
+                        "speakers" => ChannelInterpretation::Speakers,
+                        "discrete" => ChannelInterpretation::Discrete,
+                        _ => panic!("undefined value for ChannelInterpretation"),
+                    }
+                } else {
+                    channel_config_defaults.interpretation
+                };
 
-            let some_playback_rate_js = options_js.get::<&str, JsNumber>("playbackRate")?;
-            let playback_rate = if let Some(playback_rate_js) = some_playback_rate_js {
-                playback_rate_js.get_double()? as f32
-            } else {
-                1.
-            };
-
-            AudioBufferSourceOptions {
+            ConvolverOptions {
                 buffer,
-                detune,
-                loop_,
-                loop_end,
-                loop_start,
-                playback_rate,
+                disable_normalization,
+                channel_config: ChannelConfigOptions {
+                    count: channel_count,
+                    count_mode: channel_count_mode,
+                    interpretation: channel_interpretation,
+                },
             }
         }
         Either::B(_) => Default::default(),
@@ -155,36 +157,22 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            AudioBufferSourceNode::new(audio_context, options)
+            ConvolverNode::new(audio_context, options)
         }
         "OfflineAudioContext" => {
             let napi_audio_context = ctx
                 .env
                 .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            AudioBufferSourceNode::new(audio_context, options)
+            ConvolverNode::new(audio_context, options)
         }
         &_ => panic!("not supported"),
     };
 
     // let native_node = Rc::new(RefCell::new(native_node));
 
-    // AudioParam: AudioBufferSourceNode::playbackRate
-    let native_param = native_node.playback_rate().clone();
-    let napi_param = NapiAudioParam::new(native_param);
-    let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
-    ctx.env.wrap(&mut js_obj, napi_param)?;
-    js_this.set_named_property("playbackRate", &js_obj)?;
-
-    // AudioParam: AudioBufferSourceNode::detune
-    let native_param = native_node.detune().clone();
-    let napi_param = NapiAudioParam::new(native_param);
-    let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
-    ctx.env.wrap(&mut js_obj, napi_param)?;
-    js_this.set_named_property("detune", &js_obj)?;
-
     // finalize instance creation
-    let napi_node = NapiAudioBufferSourceNode(native_node);
+    let napi_node = NapiConvolverNode(native_node);
     ctx.env.wrap(&mut js_this, napi_node)?;
 
     ctx.env.get_undefined()
@@ -196,7 +184,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 #[js_function]
 fn get_channel_count(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let napi_node = ctx.env.unwrap::<NapiConvolverNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     let channel_count = node.channel_count() as f64;
@@ -207,7 +195,7 @@ fn get_channel_count(ctx: CallContext) -> Result<JsNumber> {
 #[js_function(1)]
 fn set_channel_count(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let napi_node = ctx.env.unwrap::<NapiConvolverNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     let channel_count = ctx.get::<JsNumber>(0)?.get_double()? as usize;
@@ -219,7 +207,7 @@ fn set_channel_count(ctx: CallContext) -> Result<JsUndefined> {
 #[js_function]
 fn get_channel_count_mode(ctx: CallContext) -> Result<JsString> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let napi_node = ctx.env.unwrap::<NapiConvolverNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     let value = node.channel_count_mode();
@@ -235,7 +223,7 @@ fn get_channel_count_mode(ctx: CallContext) -> Result<JsString> {
 #[js_function(1)]
 fn set_channel_count_mode(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let napi_node = ctx.env.unwrap::<NapiConvolverNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     let js_str = ctx.get::<JsString>(0)?;
@@ -254,7 +242,7 @@ fn set_channel_count_mode(ctx: CallContext) -> Result<JsUndefined> {
 #[js_function]
 fn get_channel_interpretation(ctx: CallContext) -> Result<JsString> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let napi_node = ctx.env.unwrap::<NapiConvolverNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     let value = node.channel_interpretation();
@@ -269,7 +257,7 @@ fn get_channel_interpretation(ctx: CallContext) -> Result<JsString> {
 #[js_function(1)]
 fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let napi_node = ctx.env.unwrap::<NapiConvolverNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     let js_str = ctx.get::<JsString>(0)?;
@@ -287,59 +275,12 @@ fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
 // -------------------------------------------------
 // connect / disconnect macros
 // -------------------------------------------------
-connect_method!(NapiAudioBufferSourceNode);
-disconnect_method!(NapiAudioBufferSourceNode);
+connect_method!(NapiConvolverNode);
+disconnect_method!(NapiConvolverNode);
 
 // -------------------------------------------------
 // AudioScheduledSourceNode Interface
 // -------------------------------------------------
-
-#[js_function(3)]
-fn start(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    match ctx.length {
-        0 => node.start(),
-        1 => {
-            let when = ctx.get::<JsNumber>(0)?.get_double()?;
-            node.start_at(when);
-        }
-        2 => {
-            let when = ctx.get::<JsNumber>(0)?.get_double()?;
-            let offset = ctx.get::<JsNumber>(1)?.get_double()?;
-            node.start_at_with_offset(when, offset);
-        }
-        3 => {
-            let when = ctx.get::<JsNumber>(0)?.get_double()?;
-            let offset = ctx.get::<JsNumber>(1)?.get_double()?;
-            let duration = ctx.get::<JsNumber>(2)?.get_double()?;
-            node.start_at_with_offset_and_duration(when, offset, duration);
-        }
-        _ => (),
-    }
-
-    ctx.env.get_undefined()
-}
-
-#[js_function(1)]
-fn stop(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    match ctx.length {
-        0 => node.stop(),
-        1 => {
-            let when = ctx.get::<JsNumber>(0)?.try_into()?;
-            node.stop_at(when);
-        }
-        _ => (),
-    };
-
-    ctx.env.get_undefined()
-}
 
 // -------------------------------------------------
 // GETTERS
@@ -359,33 +300,13 @@ fn get_buffer(ctx: CallContext) -> Result<JsUnknown> {
 }
 
 #[js_function(0)]
-fn get_loop(ctx: CallContext) -> Result<JsBoolean> {
+fn get_normalize(ctx: CallContext) -> Result<JsBoolean> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let napi_node = ctx.env.unwrap::<NapiConvolverNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = node.loop_();
+    let value = node.normalize();
     ctx.env.get_boolean(value)
-}
-
-#[js_function(0)]
-fn get_loop_start(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = node.loop_start();
-    ctx.env.create_double(value as f64)
-}
-
-#[js_function(0)]
-fn get_loop_end(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = node.loop_end();
-    ctx.env.create_double(value as f64)
 }
 
 // -------------------------------------------------
@@ -395,7 +316,7 @@ fn get_loop_end(ctx: CallContext) -> Result<JsNumber> {
 #[js_function(1)]
 fn set_buffer(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let napi_node = ctx.env.unwrap::<NapiConvolverNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     let js_obj = ctx.get::<JsObject>(0)?;
@@ -409,37 +330,13 @@ fn set_buffer(ctx: CallContext) -> Result<JsUndefined> {
 }
 
 #[js_function(1)]
-fn set_loop(ctx: CallContext) -> Result<JsUndefined> {
+fn set_normalize(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let napi_node = ctx.env.unwrap::<NapiConvolverNode>(&js_this)?;
     let node = napi_node.unwrap();
 
     let value = ctx.get::<JsBoolean>(0)?.try_into()?;
-    node.set_loop(value);
-
-    ctx.env.get_undefined()
-}
-
-#[js_function(1)]
-fn set_loop_start(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = ctx.get::<JsNumber>(0)?.get_double()? as f64;
-    node.set_loop_start(value);
-
-    ctx.env.get_undefined()
-}
-
-#[js_function(1)]
-fn set_loop_end(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = ctx.get::<JsNumber>(0)?.get_double()? as f64;
-    node.set_loop_end(value);
+    node.set_normalize(value);
 
     ctx.env.get_undefined()
 }

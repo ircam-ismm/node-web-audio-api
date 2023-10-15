@@ -1,11 +1,9 @@
-use std::rc::Rc;
-use std::cell::RefCell;
 use napi::*;
 use napi_derive::js_function;
 use web_audio_api::node::*;
 use crate::*;
 
-pub(crate) struct ${d.napiName(d.node)}(Rc<RefCell<${d.name(d.node)}>>);
+pub(crate) struct ${d.napiName(d.node)}(${d.name(d.node)});
 
 impl ${d.napiName(d.node)} {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -23,14 +21,6 @@ impl ${d.napiName(d.node)} {
                 ).join('')}
                 // Methods
                 ${d.methods(d.node).map(method => {
-                    // ignore deprecated methods
-                    // see: https://webaudio.github.io/web-audio-api/#PannerNode-methods
-                    if (d.name(d.node) === 'PannerNode') {
-                        if (d.name(method) === 'setOrientation' || d.name(method) === 'setPosition') {
-                            return '';
-                        }
-                    }
-
                     return `Property::new("${method.name}")?
                     .with_method(${d.slug(method)})
                     .with_property_attributes(PropertyAttributes::Enumerable),
@@ -67,16 +57,9 @@ impl ${d.napiName(d.node)} {
         )
     }
 
-    // this is used also by the connect / disconnect macros
-    pub fn unwrap(&self) -> &${d.name(d.node)} {
-        let inner = &self.0;
-        &inner.borrow()
-    }
-
-    // Some nodes, e.g. GainNode, do not need this
-    #[allow(dead_code)]
-    pub fn unwrap_mut(&mut self) -> &mut ${d.name(d.node)} {
-        &mut self.0.borrow_mut()
+    // this is used in audio_node.tmpl.rs for the connect / disconnect macros
+    pub fn unwrap(&mut self) -> &mut ${d.name(d.node)} {
+        &mut self.0
     }
 }
 
@@ -338,14 +321,13 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     };
 
 
-    let native_node = Rc::new(RefCell::new(native_node));
+    // let native_node = Rc::new(RefCell::new(native_node));
 
     ${d.audioParams(d.node).map((param) => {
         return `
     // AudioParam: ${d.name(d.node)}::${param.name}
-    let native_clone = native_node.clone();
-    let param_getter = ParamGetter::${d.name(d.node)}${d.camelcase(param)}(native_clone);
-    let napi_param = NapiAudioParam::new(param_getter);
+    let native_param = native_node.${d.slug(param.name)}().clone();
+    let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("${param.name}", &js_obj)?;
@@ -471,7 +453,7 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ?
 fn start(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let node = napi_node.unwrap_mut();
+    let node = napi_node.unwrap();
 
 ${d.name(d.node) !== 'AudioBufferSourceNode' ?
 `
@@ -511,7 +493,7 @@ ${d.name(d.node) !== 'AudioBufferSourceNode' ?
 fn stop(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let node = napi_node.unwrap_mut();
+    let node = napi_node.unwrap();
 
     match ctx.length {
         0 => node.stop(),
@@ -654,7 +636,7 @@ ${d.attributes(d.node).map(attr => {
 fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let node = napi_node.unwrap_mut();
+    let node = napi_node.unwrap();
 
     let value = ctx.get::<JsBoolean>(0)?.try_into()?;
     node.set_${d.slug(attr)}(value);
@@ -669,7 +651,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
 fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let node = napi_node.unwrap_mut();
+    let node = napi_node.unwrap();
 
     let value = ctx.get::<JsNumber>(0)?.get_double()? as f32;
     node.set_${d.slug(attr)}(value);
@@ -684,7 +666,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
 fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let node = napi_node.unwrap_mut();
+    let node = napi_node.unwrap();
 
     let value = ctx.get::<JsNumber>(0)?.get_double()? as f64;
     node.set_${d.slug(attr)}(value);
@@ -699,7 +681,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
 fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let node = napi_node.unwrap_mut();
+    let node = napi_node.unwrap();
 
     let value = ctx.get::<JsNumber>(0)?.get_double()? as usize;
     node.set_${d.slug(attr)}(value);
@@ -714,7 +696,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
 fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let node = napi_node.unwrap_mut();
+    let node = napi_node.unwrap();
 
     let js_obj = ctx.get::<JsTypedArray>(0)?;
     let buffer = js_obj.into_value()?;
@@ -752,7 +734,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
 fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let node = napi_node.unwrap_mut();
+    let node = napi_node.unwrap();
 
     let js_str = ctx.get::<JsString>(0)?;
     let uf8_str = js_str.into_utf8()?.into_owned()?;
@@ -773,7 +755,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
 fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let node = napi_node.unwrap_mut();
+    let node = napi_node.unwrap();
 
     let js_obj = ctx.get::<JsObject>(0)?;
     let napi_obj = ctx.env.unwrap::<${d.napiName(idl)}>(&js_obj)?;
@@ -804,14 +786,6 @@ if (method.idlType.idlType !== 'undefined') {
     return '';
 }
 
-// deprecated methods
-// see: https://webaudio.github.io/web-audio-api/#PannerNode-methods
-if (d.name(d.node) === 'PannerNode') {
-    if (d.name(method) === 'setOrientation' || d.name(method) === 'setPosition') {
-        return '';
-    }
-}
-
 let doWriteMethodCall = true;
 
 return `
@@ -827,26 +801,24 @@ fn ${d.slug(method)}(ctx: CallContext) -> Result<JsUndefined> {
         switch (d.memberType(arg)) {
             case 'float':
                 return `
-    let mut ${d.slug(arg.name)}_js = ctx.get::<JsNumber>(${index})?;
+    let ${d.slug(arg.name)}_js = ctx.get::<JsNumber>(${index})?;
     let ${d.slug(arg.name)} = ${d.slug(arg.name)}_js.get_double()? as f32;
                 `;
                 break;
             case 'double':
                 return `
-    let mut ${d.slug(arg.name)}_js = ctx.get::<JsNumber>(${index})?;
+    let ${d.slug(arg.name)}_js = ctx.get::<JsNumber>(${index})?;
     let ${d.slug(arg.name)} = ${d.slug(arg.name)}_js.get_double()? as f64;
                 `;
                 break;
             case 'Float32Array':
                 return `
-    #[allow(clippy::unnecessary_mut_passed)]
     let mut ${d.slug(arg.name)}_js = ctx.get::<JsTypedArray>(${index})?.into_value()?;
     let ${d.slug(arg.name)}: &mut [f32] = ${d.slug(arg.name)}_js.as_mut();
                 `;
                 break;
             case 'Uint8Array':
                 return `
-    #[allow(clippy::unnecessary_mut_passed)]
     let mut ${d.slug(arg.name)}_js = ctx.get::<JsTypedArray>(${index})?.into_value()?;
     let ${d.slug(arg.name)}: &mut [u8] = ${d.slug(arg.name)}_js.as_mut();
                 `;
