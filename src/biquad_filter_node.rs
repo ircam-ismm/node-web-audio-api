@@ -59,7 +59,7 @@ impl NapiBiquadFilterNode {
         )
     }
 
-    // this is used in audio_node.tmpl.rs for the connect / disconnect macros
+    // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
     pub fn unwrap(&mut self) -> &mut BiquadFilterNode {
         &mut self.0
     }
@@ -211,8 +211,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         }
         &_ => panic!("not supported"),
     };
-
-    // let native_node = Rc::new(RefCell::new(native_node));
 
     // AudioParam: BiquadFilterNode::frequency
     let native_param = native_node.frequency().clone();

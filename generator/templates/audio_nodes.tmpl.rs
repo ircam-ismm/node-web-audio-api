@@ -57,7 +57,7 @@ impl ${d.napiName(d.node)} {
         )
     }
 
-    // this is used in audio_node.tmpl.rs for the connect / disconnect macros
+    // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
     pub fn unwrap(&mut self) -> &mut ${d.name(d.node)} {
         &mut self.0
     }
@@ -96,8 +96,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         const arg = d.constructor(d.node).arguments[1];
         const argIdlType = d.memberType(arg);
         const argumentIdl = d.findInTree(argIdlType);
-        // console.log(d.name(d.node))
-        // argumentIdl.members.map((m) => console.log(d.name(m), JSON.stringify(d.memberType(m), null, 2)))
 
         return `
     // parse options
@@ -176,14 +174,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             };
                             `;
                         }
-
-                        // Handle MediaStream
-                        // ---------------------------------------------------
-                        // console.log('constructor', JSON.stringify(m, null, 2))
-                        // if (m.idlType.type === 'dictionary-type' && m.idlType.idlType === 'MediaStream') {
-                        //     console.log('> ok MediaStream');
-                        //     return ``;
-                        // }
 
                         // Handle type defined in IDL
                         // ---------------------------------------------------
@@ -319,9 +309,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         }
         &_ => panic!("not supported"),
     };
-
-
-    // let native_node = Rc::new(RefCell::new(native_node));
 
     ${d.audioParams(d.node).map((param) => {
         return `

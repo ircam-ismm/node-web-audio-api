@@ -61,7 +61,7 @@ impl NapiConvolverNode {
         )
     }
 
-    // this is used in audio_node.tmpl.rs for the connect / disconnect macros
+    // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
     pub fn unwrap(&mut self) -> &mut ConvolverNode {
         &mut self.0
     }
@@ -180,8 +180,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         }
         &_ => panic!("not supported"),
     };
-
-    // let native_node = Rc::new(RefCell::new(native_node));
 
     // finalize instance creation
     let napi_node = NapiConvolverNode(native_node);
