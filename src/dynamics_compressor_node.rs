@@ -1,17 +1,28 @@
-// ---------------------------------------------------------- //
-// ---------------------------------------------------------- //
-//    - WARNING - DO NOT EDIT                               - //
-//    - This file has been generated                        - //
-// ---------------------------------------------------------- //
-// ---------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
+//                                                                            //
+//                                                                            //
+//                                                                            //
+//    ██╗    ██╗ █████╗ ██████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗               //
+//    ██║    ██║██╔══██╗██╔══██╗████╗  ██║██║████╗  ██║██╔════╝               //
+//    ██║ █╗ ██║███████║██████╔╝██╔██╗ ██║██║██╔██╗ ██║██║  ███╗              //
+//    ██║███╗██║██╔══██║██╔══██╗██║╚██╗██║██║██║╚██╗██║██║   ██║              //
+//    ╚███╔███╔╝██║  ██║██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝              //
+//     ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝               //
+//                                                                            //
+//                                                                            //
+//    - This file has been generated ---------------------------              //
+//                                                                            //
+//                                                                            //
+// -------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
 
 use crate::*;
 use napi::*;
 use napi_derive::js_function;
-use std::rc::Rc;
 use web_audio_api::node::*;
 
-pub(crate) struct NapiDynamicsCompressorNode(Rc<DynamicsCompressorNode>);
+pub(crate) struct NapiDynamicsCompressorNode(DynamicsCompressorNode);
 
 impl NapiDynamicsCompressorNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -45,8 +56,9 @@ impl NapiDynamicsCompressorNode {
         )
     }
 
-    pub fn unwrap(&self) -> &DynamicsCompressorNode {
-        &self.0
+    // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
+    pub fn unwrap(&mut self) -> &mut DynamicsCompressorNode {
+        &mut self.0
     }
 }
 
@@ -173,54 +185,49 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            Rc::new(DynamicsCompressorNode::new(audio_context, options))
+            DynamicsCompressorNode::new(audio_context, options)
         }
         "OfflineAudioContext" => {
             let napi_audio_context = ctx
                 .env
                 .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            Rc::new(DynamicsCompressorNode::new(audio_context, options))
+            DynamicsCompressorNode::new(audio_context, options)
         }
         &_ => panic!("not supported"),
     };
 
     // AudioParam: DynamicsCompressorNode::threshold
-    let native_clone = native_node.clone();
-    let param_getter = ParamGetter::DynamicsCompressorNodeThreshold(native_clone);
-    let napi_param = NapiAudioParam::new(param_getter);
+    let native_param = native_node.threshold().clone();
+    let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("threshold", &js_obj)?;
 
     // AudioParam: DynamicsCompressorNode::knee
-    let native_clone = native_node.clone();
-    let param_getter = ParamGetter::DynamicsCompressorNodeKnee(native_clone);
-    let napi_param = NapiAudioParam::new(param_getter);
+    let native_param = native_node.knee().clone();
+    let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("knee", &js_obj)?;
 
     // AudioParam: DynamicsCompressorNode::ratio
-    let native_clone = native_node.clone();
-    let param_getter = ParamGetter::DynamicsCompressorNodeRatio(native_clone);
-    let napi_param = NapiAudioParam::new(param_getter);
+    let native_param = native_node.ratio().clone();
+    let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("ratio", &js_obj)?;
 
     // AudioParam: DynamicsCompressorNode::attack
-    let native_clone = native_node.clone();
-    let param_getter = ParamGetter::DynamicsCompressorNodeAttack(native_clone);
-    let napi_param = NapiAudioParam::new(param_getter);
+    let native_param = native_node.attack().clone();
+    let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("attack", &js_obj)?;
 
     // AudioParam: DynamicsCompressorNode::release
-    let native_clone = native_node.clone();
-    let param_getter = ParamGetter::DynamicsCompressorNodeRelease(native_clone);
-    let napi_param = NapiAudioParam::new(param_getter);
+    let native_param = native_node.release().clone();
+    let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("release", &js_obj)?;

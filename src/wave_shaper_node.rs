@@ -1,17 +1,28 @@
-// ---------------------------------------------------------- //
-// ---------------------------------------------------------- //
-//    - WARNING - DO NOT EDIT                               - //
-//    - This file has been generated                        - //
-// ---------------------------------------------------------- //
-// ---------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
+//                                                                            //
+//                                                                            //
+//                                                                            //
+//    ██╗    ██╗ █████╗ ██████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗               //
+//    ██║    ██║██╔══██╗██╔══██╗████╗  ██║██║████╗  ██║██╔════╝               //
+//    ██║ █╗ ██║███████║██████╔╝██╔██╗ ██║██║██╔██╗ ██║██║  ███╗              //
+//    ██║███╗██║██╔══██║██╔══██╗██║╚██╗██║██║██║╚██╗██║██║   ██║              //
+//    ╚███╔███╔╝██║  ██║██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝              //
+//     ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝               //
+//                                                                            //
+//                                                                            //
+//    - This file has been generated ---------------------------              //
+//                                                                            //
+//                                                                            //
+// -------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
 
 use crate::*;
 use napi::*;
 use napi_derive::js_function;
-use std::rc::Rc;
 use web_audio_api::node::*;
 
-pub(crate) struct NapiWaveShaperNode(Rc<WaveShaperNode>);
+pub(crate) struct NapiWaveShaperNode(WaveShaperNode);
 
 impl NapiWaveShaperNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -50,8 +61,9 @@ impl NapiWaveShaperNode {
         )
     }
 
-    pub fn unwrap(&self) -> &WaveShaperNode {
-        &self.0
+    // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
+    pub fn unwrap(&mut self) -> &mut WaveShaperNode {
+        &mut self.0
     }
 }
 
@@ -163,14 +175,14 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            Rc::new(WaveShaperNode::new(audio_context, options))
+            WaveShaperNode::new(audio_context, options)
         }
         "OfflineAudioContext" => {
             let napi_audio_context = ctx
                 .env
                 .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            Rc::new(WaveShaperNode::new(audio_context, options))
+            WaveShaperNode::new(audio_context, options)
         }
         &_ => panic!("not supported"),
     };
@@ -336,6 +348,7 @@ fn set_curve(ctx: CallContext) -> Result<JsUndefined> {
     node.set_curve(buffer_ref.to_vec());
     // weird but seems we can have twice the same owned value...
     let js_obj = ctx.get::<JsTypedArray>(0)?;
+    // store in "private" field for getter (not very clean, to review)
     js_this.set_named_property("__curve__", js_obj)?;
 
     ctx.env.get_undefined()

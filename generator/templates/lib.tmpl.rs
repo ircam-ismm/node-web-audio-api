@@ -8,7 +8,7 @@ use napi_derive::module_exports;
 mod audio_node;
 
 mod audio_param;
-use crate::audio_param::{NapiAudioParam, ParamGetter};
+use crate::audio_param::{NapiAudioParam};
 // public
 mod audio_context;
 use crate::audio_context::NapiAudioContext;

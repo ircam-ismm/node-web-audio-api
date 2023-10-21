@@ -1,17 +1,28 @@
-// ---------------------------------------------------------- //
-// ---------------------------------------------------------- //
-//    - WARNING - DO NOT EDIT                               - //
-//    - This file has been generated                        - //
-// ---------------------------------------------------------- //
-// ---------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
+//                                                                            //
+//                                                                            //
+//                                                                            //
+//    ██╗    ██╗ █████╗ ██████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗               //
+//    ██║    ██║██╔══██╗██╔══██╗████╗  ██║██║████╗  ██║██╔════╝               //
+//    ██║ █╗ ██║███████║██████╔╝██╔██╗ ██║██║██╔██╗ ██║██║  ███╗              //
+//    ██║███╗██║██╔══██║██╔══██╗██║╚██╗██║██║██║╚██╗██║██║   ██║              //
+//    ╚███╔███╔╝██║  ██║██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝              //
+//     ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝               //
+//                                                                            //
+//                                                                            //
+//    - This file has been generated ---------------------------              //
+//                                                                            //
+//                                                                            //
+// -------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
 
 use crate::*;
 use napi::*;
 use napi_derive::js_function;
-use std::rc::Rc;
 use web_audio_api::node::*;
 
-pub(crate) struct NapiStereoPannerNode(Rc<StereoPannerNode>);
+pub(crate) struct NapiStereoPannerNode(StereoPannerNode);
 
 impl NapiStereoPannerNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -43,8 +54,9 @@ impl NapiStereoPannerNode {
         )
     }
 
-    pub fn unwrap(&self) -> &StereoPannerNode {
-        &self.0
+    // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
+    pub fn unwrap(&mut self) -> &mut StereoPannerNode {
+        &mut self.0
     }
 }
 
@@ -139,22 +151,21 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            Rc::new(StereoPannerNode::new(audio_context, options))
+            StereoPannerNode::new(audio_context, options)
         }
         "OfflineAudioContext" => {
             let napi_audio_context = ctx
                 .env
                 .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            Rc::new(StereoPannerNode::new(audio_context, options))
+            StereoPannerNode::new(audio_context, options)
         }
         &_ => panic!("not supported"),
     };
 
     // AudioParam: StereoPannerNode::pan
-    let native_clone = native_node.clone();
-    let param_getter = ParamGetter::StereoPannerNodePan(native_clone);
-    let napi_param = NapiAudioParam::new(param_getter);
+    let native_param = native_node.pan().clone();
+    let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("pan", &js_obj)?;

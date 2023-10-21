@@ -1,17 +1,28 @@
-// ---------------------------------------------------------- //
-// ---------------------------------------------------------- //
-//    - WARNING - DO NOT EDIT                               - //
-//    - This file has been generated                        - //
-// ---------------------------------------------------------- //
-// ---------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
+//                                                                            //
+//                                                                            //
+//                                                                            //
+//    ██╗    ██╗ █████╗ ██████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗               //
+//    ██║    ██║██╔══██╗██╔══██╗████╗  ██║██║████╗  ██║██╔════╝               //
+//    ██║ █╗ ██║███████║██████╔╝██╔██╗ ██║██║██╔██╗ ██║██║  ███╗              //
+//    ██║███╗██║██╔══██║██╔══██╗██║╚██╗██║██║██║╚██╗██║██║   ██║              //
+//    ╚███╔███╔╝██║  ██║██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝              //
+//     ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝               //
+//                                                                            //
+//                                                                            //
+//    - This file has been generated ---------------------------              //
+//                                                                            //
+//                                                                            //
+// -------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
 
 use crate::*;
 use napi::*;
 use napi_derive::js_function;
-use std::rc::Rc;
 use web_audio_api::node::*;
 
-pub(crate) struct NapiBiquadFilterNode(Rc<BiquadFilterNode>);
+pub(crate) struct NapiBiquadFilterNode(BiquadFilterNode);
 
 impl NapiBiquadFilterNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -48,8 +59,9 @@ impl NapiBiquadFilterNode {
         )
     }
 
-    pub fn unwrap(&self) -> &BiquadFilterNode {
-        &self.0
+    // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
+    pub fn unwrap(&mut self) -> &mut BiquadFilterNode {
+        &mut self.0
     }
 }
 
@@ -188,46 +200,42 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            Rc::new(BiquadFilterNode::new(audio_context, options))
+            BiquadFilterNode::new(audio_context, options)
         }
         "OfflineAudioContext" => {
             let napi_audio_context = ctx
                 .env
                 .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            Rc::new(BiquadFilterNode::new(audio_context, options))
+            BiquadFilterNode::new(audio_context, options)
         }
         &_ => panic!("not supported"),
     };
 
     // AudioParam: BiquadFilterNode::frequency
-    let native_clone = native_node.clone();
-    let param_getter = ParamGetter::BiquadFilterNodeFrequency(native_clone);
-    let napi_param = NapiAudioParam::new(param_getter);
+    let native_param = native_node.frequency().clone();
+    let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("frequency", &js_obj)?;
 
     // AudioParam: BiquadFilterNode::detune
-    let native_clone = native_node.clone();
-    let param_getter = ParamGetter::BiquadFilterNodeDetune(native_clone);
-    let napi_param = NapiAudioParam::new(param_getter);
+    let native_param = native_node.detune().clone();
+    let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("detune", &js_obj)?;
 
     // AudioParam: BiquadFilterNode::Q
-    let native_clone = native_node.clone();
-    let param_getter = ParamGetter::BiquadFilterNodeQ(native_clone);
-    let napi_param = NapiAudioParam::new(param_getter);
+    let native_param = native_node.q().clone();
+    let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("Q", &js_obj)?;
 
     // AudioParam: BiquadFilterNode::gain
-    let native_clone = native_node.clone();
-    let param_getter = ParamGetter::BiquadFilterNodeGain(native_clone);
-    let napi_param = NapiAudioParam::new(param_getter);
+    let native_param = native_node.gain().clone();
+    let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("gain", &js_obj)?;
@@ -409,15 +417,12 @@ fn get_frequency_response(ctx: CallContext) -> Result<JsUndefined> {
     #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
-    #[allow(clippy::unnecessary_mut_passed)]
     let mut frequency_hz_js = ctx.get::<JsTypedArray>(0)?.into_value()?;
     let frequency_hz: &mut [f32] = frequency_hz_js.as_mut();
 
-    #[allow(clippy::unnecessary_mut_passed)]
     let mut mag_response_js = ctx.get::<JsTypedArray>(1)?.into_value()?;
     let mag_response: &mut [f32] = mag_response_js.as_mut();
 
-    #[allow(clippy::unnecessary_mut_passed)]
     let mut phase_response_js = ctx.get::<JsTypedArray>(2)?.into_value()?;
     let phase_response: &mut [f32] = phase_response_js.as_mut();
 

@@ -1,17 +1,28 @@
-// ---------------------------------------------------------- //
-// ---------------------------------------------------------- //
-//    - WARNING - DO NOT EDIT                               - //
-//    - This file has been generated                        - //
-// ---------------------------------------------------------- //
-// ---------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
+//                                                                            //
+//                                                                            //
+//                                                                            //
+//    ██╗    ██╗ █████╗ ██████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗               //
+//    ██║    ██║██╔══██╗██╔══██╗████╗  ██║██║████╗  ██║██╔════╝               //
+//    ██║ █╗ ██║███████║██████╔╝██╔██╗ ██║██║██╔██╗ ██║██║  ███╗              //
+//    ██║███╗██║██╔══██║██╔══██╗██║╚██╗██║██║██║╚██╗██║██║   ██║              //
+//    ╚███╔███╔╝██║  ██║██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝              //
+//     ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝               //
+//                                                                            //
+//                                                                            //
+//    - This file has been generated ---------------------------              //
+//                                                                            //
+//                                                                            //
+// -------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
 
 use crate::*;
 use napi::*;
 use napi_derive::js_function;
-use std::rc::Rc;
 use web_audio_api::node::*;
 
-pub(crate) struct NapiChannelMergerNode(Rc<ChannelMergerNode>);
+pub(crate) struct NapiChannelMergerNode(ChannelMergerNode);
 
 impl NapiChannelMergerNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -43,8 +54,9 @@ impl NapiChannelMergerNode {
         )
     }
 
-    pub fn unwrap(&self) -> &ChannelMergerNode {
-        &self.0
+    // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
+    pub fn unwrap(&mut self) -> &mut ChannelMergerNode {
+        &mut self.0
     }
 }
 
@@ -139,14 +151,14 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            Rc::new(ChannelMergerNode::new(audio_context, options))
+            ChannelMergerNode::new(audio_context, options)
         }
         "OfflineAudioContext" => {
             let napi_audio_context = ctx
                 .env
                 .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            Rc::new(ChannelMergerNode::new(audio_context, options))
+            ChannelMergerNode::new(audio_context, options)
         }
         &_ => panic!("not supported"),
     };

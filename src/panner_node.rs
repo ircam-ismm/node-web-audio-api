@@ -1,17 +1,28 @@
-// ---------------------------------------------------------- //
-// ---------------------------------------------------------- //
-//    - WARNING - DO NOT EDIT                               - //
-//    - This file has been generated                        - //
-// ---------------------------------------------------------- //
-// ---------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
+//                                                                            //
+//                                                                            //
+//                                                                            //
+//    ██╗    ██╗ █████╗ ██████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗               //
+//    ██║    ██║██╔══██╗██╔══██╗████╗  ██║██║████╗  ██║██╔════╝               //
+//    ██║ █╗ ██║███████║██████╔╝██╔██╗ ██║██║██╔██╗ ██║██║  ███╗              //
+//    ██║███╗██║██╔══██║██╔══██╗██║╚██╗██║██║██║╚██╗██║██║   ██║              //
+//    ╚███╔███╔╝██║  ██║██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝              //
+//     ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝               //
+//                                                                            //
+//                                                                            //
+//    - This file has been generated ---------------------------              //
+//                                                                            //
+//                                                                            //
+// -------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
 
 use crate::*;
 use napi::*;
 use napi_derive::js_function;
-use std::rc::Rc;
 use web_audio_api::node::*;
 
-pub(crate) struct NapiPannerNode(Rc<PannerNode>);
+pub(crate) struct NapiPannerNode(PannerNode);
 
 impl NapiPannerNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -53,7 +64,12 @@ impl NapiPannerNode {
                     .with_setter(set_cone_outer_gain)
                     .with_property_attributes(PropertyAttributes::Enumerable),
                 // Methods
-
+                Property::new("setPosition")?
+                    .with_method(set_position)
+                    .with_property_attributes(PropertyAttributes::Enumerable),
+                Property::new("setOrientation")?
+                    .with_method(set_orientation)
+                    .with_property_attributes(PropertyAttributes::Enumerable),
                 // AudioNode interface
                 Property::new("channelCount")?
                     .with_getter(get_channel_count)
@@ -74,8 +90,9 @@ impl NapiPannerNode {
         )
     }
 
-    pub fn unwrap(&self) -> &PannerNode {
-        &self.0
+    // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
+    pub fn unwrap(&mut self) -> &mut PannerNode {
+        &mut self.0
     }
 }
 
@@ -287,62 +304,56 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            Rc::new(PannerNode::new(audio_context, options))
+            PannerNode::new(audio_context, options)
         }
         "OfflineAudioContext" => {
             let napi_audio_context = ctx
                 .env
                 .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            Rc::new(PannerNode::new(audio_context, options))
+            PannerNode::new(audio_context, options)
         }
         &_ => panic!("not supported"),
     };
 
     // AudioParam: PannerNode::positionX
-    let native_clone = native_node.clone();
-    let param_getter = ParamGetter::PannerNodePositionX(native_clone);
-    let napi_param = NapiAudioParam::new(param_getter);
+    let native_param = native_node.position_x().clone();
+    let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("positionX", &js_obj)?;
 
     // AudioParam: PannerNode::positionY
-    let native_clone = native_node.clone();
-    let param_getter = ParamGetter::PannerNodePositionY(native_clone);
-    let napi_param = NapiAudioParam::new(param_getter);
+    let native_param = native_node.position_y().clone();
+    let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("positionY", &js_obj)?;
 
     // AudioParam: PannerNode::positionZ
-    let native_clone = native_node.clone();
-    let param_getter = ParamGetter::PannerNodePositionZ(native_clone);
-    let napi_param = NapiAudioParam::new(param_getter);
+    let native_param = native_node.position_z().clone();
+    let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("positionZ", &js_obj)?;
 
     // AudioParam: PannerNode::orientationX
-    let native_clone = native_node.clone();
-    let param_getter = ParamGetter::PannerNodeOrientationX(native_clone);
-    let napi_param = NapiAudioParam::new(param_getter);
+    let native_param = native_node.orientation_x().clone();
+    let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("orientationX", &js_obj)?;
 
     // AudioParam: PannerNode::orientationY
-    let native_clone = native_node.clone();
-    let param_getter = ParamGetter::PannerNodeOrientationY(native_clone);
-    let napi_param = NapiAudioParam::new(param_getter);
+    let native_param = native_node.orientation_y().clone();
+    let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("orientationY", &js_obj)?;
 
     // AudioParam: PannerNode::orientationZ
-    let native_clone = native_node.clone();
-    let param_getter = ParamGetter::PannerNodeOrientationZ(native_clone);
-    let napi_param = NapiAudioParam::new(param_getter);
+    let native_param = native_node.orientation_z().clone();
+    let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("orientationZ", &js_obj)?;
@@ -671,3 +682,47 @@ fn set_cone_outer_gain(ctx: CallContext) -> Result<JsUndefined> {
 // -------------------------------------------------
 // METHODS
 // -------------------------------------------------
+
+#[js_function(3)]
+fn set_position(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
+    // avoid warnings while we don't support all methods
+    #[allow(unused_variables)]
+    let node = napi_node.unwrap();
+
+    let x_js = ctx.get::<JsNumber>(0)?;
+    let x = x_js.get_double()? as f32;
+
+    let y_js = ctx.get::<JsNumber>(1)?;
+    let y = y_js.get_double()? as f32;
+
+    let z_js = ctx.get::<JsNumber>(2)?;
+    let z = z_js.get_double()? as f32;
+
+    node.set_position(x, y, z);
+
+    ctx.env.get_undefined()
+}
+
+#[js_function(3)]
+fn set_orientation(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
+    // avoid warnings while we don't support all methods
+    #[allow(unused_variables)]
+    let node = napi_node.unwrap();
+
+    let x_js = ctx.get::<JsNumber>(0)?;
+    let x = x_js.get_double()? as f32;
+
+    let y_js = ctx.get::<JsNumber>(1)?;
+    let y = y_js.get_double()? as f32;
+
+    let z_js = ctx.get::<JsNumber>(2)?;
+    let z = z_js.get_double()? as f32;
+
+    node.set_orientation(x, y, z);
+
+    ctx.env.get_undefined()
+}

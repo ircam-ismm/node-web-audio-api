@@ -35,6 +35,7 @@
     "build": "npm run generate && napi build --platform --release",
     "build:jack": "npm run generate && napi build --platform --features jack --release",
     "build:debug": "npm run generate && napi build --platform",
+    "build:only": "napi build --platform --release",
     "check": "cargo fmt && cargo clippy",
     "generate": "node generator/index.mjs && cargo fmt",
     "lint": "eslint monkey-patch.js index.cjs index.mjs && eslint examples/*.mjs",

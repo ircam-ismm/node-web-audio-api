@@ -1,17 +1,28 @@
-// ---------------------------------------------------------- //
-// ---------------------------------------------------------- //
-//    - WARNING - DO NOT EDIT                               - //
-//    - This file has been generated                        - //
-// ---------------------------------------------------------- //
-// ---------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
+//                                                                            //
+//                                                                            //
+//                                                                            //
+//    ██╗    ██╗ █████╗ ██████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗               //
+//    ██║    ██║██╔══██╗██╔══██╗████╗  ██║██║████╗  ██║██╔════╝               //
+//    ██║ █╗ ██║███████║██████╔╝██╔██╗ ██║██║██╔██╗ ██║██║  ███╗              //
+//    ██║███╗██║██╔══██║██╔══██╗██║╚██╗██║██║██║╚██╗██║██║   ██║              //
+//    ╚███╔███╔╝██║  ██║██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝              //
+//     ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝               //
+//                                                                            //
+//                                                                            //
+//    - This file has been generated ---------------------------              //
+//                                                                            //
+//                                                                            //
+// -------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
 
 use crate::*;
 use napi::*;
 use napi_derive::js_function;
-use std::rc::Rc;
 use web_audio_api::node::*;
 
-pub(crate) struct NapiIIRFilterNode(Rc<IIRFilterNode>);
+pub(crate) struct NapiIIRFilterNode(IIRFilterNode);
 
 impl NapiIIRFilterNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -45,8 +56,9 @@ impl NapiIIRFilterNode {
         )
     }
 
-    pub fn unwrap(&self) -> &IIRFilterNode {
-        &self.0
+    // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
+    pub fn unwrap(&mut self) -> &mut IIRFilterNode {
+        &mut self.0
     }
 }
 
@@ -164,14 +176,14 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            Rc::new(IIRFilterNode::new(audio_context, options))
+            IIRFilterNode::new(audio_context, options)
         }
         "OfflineAudioContext" => {
             let napi_audio_context = ctx
                 .env
                 .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            Rc::new(IIRFilterNode::new(audio_context, options))
+            IIRFilterNode::new(audio_context, options)
         }
         &_ => panic!("not supported"),
     };
@@ -307,15 +319,12 @@ fn get_frequency_response(ctx: CallContext) -> Result<JsUndefined> {
     #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
-    #[allow(clippy::unnecessary_mut_passed)]
     let mut frequency_hz_js = ctx.get::<JsTypedArray>(0)?.into_value()?;
     let frequency_hz: &mut [f32] = frequency_hz_js.as_mut();
 
-    #[allow(clippy::unnecessary_mut_passed)]
     let mut mag_response_js = ctx.get::<JsTypedArray>(1)?.into_value()?;
     let mag_response: &mut [f32] = mag_response_js.as_mut();
 
-    #[allow(clippy::unnecessary_mut_passed)]
     let mut phase_response_js = ctx.get::<JsTypedArray>(2)?.into_value()?;
     let phase_response: &mut [f32] = phase_response_js.as_mut();
 

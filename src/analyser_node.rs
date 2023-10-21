@@ -1,17 +1,28 @@
-// ---------------------------------------------------------- //
-// ---------------------------------------------------------- //
-//    - WARNING - DO NOT EDIT                               - //
-//    - This file has been generated                        - //
-// ---------------------------------------------------------- //
-// ---------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
+//                                                                            //
+//                                                                            //
+//                                                                            //
+//    ██╗    ██╗ █████╗ ██████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗               //
+//    ██║    ██║██╔══██╗██╔══██╗████╗  ██║██║████╗  ██║██╔════╝               //
+//    ██║ █╗ ██║███████║██████╔╝██╔██╗ ██║██║██╔██╗ ██║██║  ███╗              //
+//    ██║███╗██║██╔══██║██╔══██╗██║╚██╗██║██║██║╚██╗██║██║   ██║              //
+//    ╚███╔███╔╝██║  ██║██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝              //
+//     ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝               //
+//                                                                            //
+//                                                                            //
+//    - This file has been generated ---------------------------              //
+//                                                                            //
+//                                                                            //
+// -------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
 
 use crate::*;
 use napi::*;
 use napi_derive::js_function;
-use std::rc::Rc;
 use web_audio_api::node::*;
 
-pub(crate) struct NapiAnalyserNode(Rc<AnalyserNode>);
+pub(crate) struct NapiAnalyserNode(AnalyserNode);
 
 impl NapiAnalyserNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -72,8 +83,9 @@ impl NapiAnalyserNode {
         )
     }
 
-    pub fn unwrap(&self) -> &AnalyserNode {
-        &self.0
+    // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
+    pub fn unwrap(&mut self) -> &mut AnalyserNode {
+        &mut self.0
     }
 }
 
@@ -194,14 +206,14 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            Rc::new(AnalyserNode::new(audio_context, options))
+            AnalyserNode::new(audio_context, options)
         }
         "OfflineAudioContext" => {
             let napi_audio_context = ctx
                 .env
                 .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            Rc::new(AnalyserNode::new(audio_context, options))
+            AnalyserNode::new(audio_context, options)
         }
         &_ => panic!("not supported"),
     };
@@ -435,7 +447,6 @@ fn get_float_frequency_data(ctx: CallContext) -> Result<JsUndefined> {
     #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
-    #[allow(clippy::unnecessary_mut_passed)]
     let mut array_js = ctx.get::<JsTypedArray>(0)?.into_value()?;
     let array: &mut [f32] = array_js.as_mut();
 
@@ -452,7 +463,6 @@ fn get_byte_frequency_data(ctx: CallContext) -> Result<JsUndefined> {
     #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
-    #[allow(clippy::unnecessary_mut_passed)]
     let mut array_js = ctx.get::<JsTypedArray>(0)?.into_value()?;
     let array: &mut [u8] = array_js.as_mut();
 
@@ -469,7 +479,6 @@ fn get_float_time_domain_data(ctx: CallContext) -> Result<JsUndefined> {
     #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
-    #[allow(clippy::unnecessary_mut_passed)]
     let mut array_js = ctx.get::<JsTypedArray>(0)?.into_value()?;
     let array: &mut [f32] = array_js.as_mut();
 
@@ -486,7 +495,6 @@ fn get_byte_time_domain_data(ctx: CallContext) -> Result<JsUndefined> {
     #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
-    #[allow(clippy::unnecessary_mut_passed)]
     let mut array_js = ctx.get::<JsTypedArray>(0)?.into_value()?;
     let array: &mut [u8] = array_js.as_mut();
 

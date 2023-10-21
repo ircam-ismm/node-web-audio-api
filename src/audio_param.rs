@@ -1,80 +1,31 @@
-// ---------------------------------------------------------- //
-// ---------------------------------------------------------- //
-//    - WARNING - DO NOT EDIT                               - //
-//    - This file has been generated                        - //
-// ---------------------------------------------------------- //
-// ---------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
+//                                                                            //
+//                                                                            //
+//                                                                            //
+//    ██╗    ██╗ █████╗ ██████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗               //
+//    ██║    ██║██╔══██╗██╔══██╗████╗  ██║██║████╗  ██║██╔════╝               //
+//    ██║ █╗ ██║███████║██████╔╝██╔██╗ ██║██║██╔██╗ ██║██║  ███╗              //
+//    ██║███╗██║██╔══██║██╔══██╗██║╚██╗██║██║██║╚██╗██║██║   ██║              //
+//    ╚███╔███╔╝██║  ██║██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝              //
+//     ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝               //
+//                                                                            //
+//                                                                            //
+//    - This file has been generated ---------------------------              //
+//                                                                            //
+//                                                                            //
+// -------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
 
 use napi::*;
 use napi_derive::js_function;
-use std::rc::Rc;
-use web_audio_api::node::*;
 use web_audio_api::AudioParam;
 
-pub(crate) enum ParamGetter {
-    AudioBufferSourceNodePlaybackRate(Rc<AudioBufferSourceNode>),
-    AudioBufferSourceNodeDetune(Rc<AudioBufferSourceNode>),
-    BiquadFilterNodeFrequency(Rc<BiquadFilterNode>),
-    BiquadFilterNodeDetune(Rc<BiquadFilterNode>),
-    BiquadFilterNodeQ(Rc<BiquadFilterNode>),
-    BiquadFilterNodeGain(Rc<BiquadFilterNode>),
-    ConstantSourceNodeOffset(Rc<ConstantSourceNode>),
-    DelayNodeDelayTime(Rc<DelayNode>),
-    DynamicsCompressorNodeThreshold(Rc<DynamicsCompressorNode>),
-    DynamicsCompressorNodeKnee(Rc<DynamicsCompressorNode>),
-    DynamicsCompressorNodeRatio(Rc<DynamicsCompressorNode>),
-    DynamicsCompressorNodeAttack(Rc<DynamicsCompressorNode>),
-    DynamicsCompressorNodeRelease(Rc<DynamicsCompressorNode>),
-    GainNodeGain(Rc<GainNode>),
-    OscillatorNodeFrequency(Rc<OscillatorNode>),
-    OscillatorNodeDetune(Rc<OscillatorNode>),
-    PannerNodePositionX(Rc<PannerNode>),
-    PannerNodePositionY(Rc<PannerNode>),
-    PannerNodePositionZ(Rc<PannerNode>),
-    PannerNodeOrientationX(Rc<PannerNode>),
-    PannerNodeOrientationY(Rc<PannerNode>),
-    PannerNodeOrientationZ(Rc<PannerNode>),
-    StereoPannerNodePan(Rc<StereoPannerNode>),
-}
-
-impl ParamGetter {
-    fn downcast(&self) -> &AudioParam {
-        match *self {
-            ParamGetter::AudioBufferSourceNodePlaybackRate(ref node) => node.playback_rate(),
-            ParamGetter::AudioBufferSourceNodeDetune(ref node) => node.detune(),
-            ParamGetter::BiquadFilterNodeFrequency(ref node) => node.frequency(),
-            ParamGetter::BiquadFilterNodeDetune(ref node) => node.detune(),
-            ParamGetter::BiquadFilterNodeQ(ref node) => node.q(),
-            ParamGetter::BiquadFilterNodeGain(ref node) => node.gain(),
-            ParamGetter::ConstantSourceNodeOffset(ref node) => node.offset(),
-            ParamGetter::DelayNodeDelayTime(ref node) => node.delay_time(),
-            ParamGetter::DynamicsCompressorNodeThreshold(ref node) => node.threshold(),
-            ParamGetter::DynamicsCompressorNodeKnee(ref node) => node.knee(),
-            ParamGetter::DynamicsCompressorNodeRatio(ref node) => node.ratio(),
-            ParamGetter::DynamicsCompressorNodeAttack(ref node) => node.attack(),
-            ParamGetter::DynamicsCompressorNodeRelease(ref node) => node.release(),
-            ParamGetter::GainNodeGain(ref node) => node.gain(),
-            ParamGetter::OscillatorNodeFrequency(ref node) => node.frequency(),
-            ParamGetter::OscillatorNodeDetune(ref node) => node.detune(),
-            ParamGetter::PannerNodePositionX(ref node) => node.position_x(),
-            ParamGetter::PannerNodePositionY(ref node) => node.position_y(),
-            ParamGetter::PannerNodePositionZ(ref node) => node.position_z(),
-            ParamGetter::PannerNodeOrientationX(ref node) => node.orientation_x(),
-            ParamGetter::PannerNodeOrientationY(ref node) => node.orientation_y(),
-            ParamGetter::PannerNodeOrientationZ(ref node) => node.orientation_z(),
-            ParamGetter::StereoPannerNodePan(ref node) => node.pan(),
-        }
-    }
-}
-
-// @note - we can't really create a js class here because ParamGetter must be
-// created by the AudioNode that owns the AudioParam
-// ... but probably we don't care as AudioParam can't be instanciated from JS
-pub(crate) struct NapiAudioParam(ParamGetter);
+pub(crate) struct NapiAudioParam(AudioParam);
 
 impl NapiAudioParam {
-    pub fn new(param_getter: ParamGetter) -> Self {
-        Self(param_getter)
+    pub fn new(audio_param: AudioParam) -> Self {
+        Self(audio_param)
     }
 
     pub fn create_js_object(env: &Env) -> Result<JsObject> {
@@ -101,7 +52,7 @@ impl NapiAudioParam {
     }
 
     pub fn unwrap(&self) -> &AudioParam {
-        self.0.downcast()
+        &self.0
     }
 }
 

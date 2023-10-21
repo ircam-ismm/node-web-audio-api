@@ -1,29 +1,12 @@
-use std::rc::Rc;
 use napi::*;
 use napi_derive::js_function;
-use web_audio_api::node::*;
 use web_audio_api::AudioParam;
 
-pub(crate) enum ParamGetter {${d.nodes.map(n => { return d.audioParams(n).map(p => { return `
-    ${d.name(n)}${d.camelcase(p)}(Rc<${d.name(n)}>),`}).join('') }).join('')}
-}
-
-impl ParamGetter {
-    fn downcast(&self) -> &AudioParam {
-        match *self {${d.nodes.map(n => { return d.audioParams(n).map(p => { return `
-            ParamGetter::${d.name(n)}${d.camelcase(p)}(ref node) => node.${d.slug(p)}(),`}).join('') }).join('')}
-        }
-    }
-}
-
-// @note - we can't really create a js class here because ParamGetter must be
-// created by the AudioNode that owns the AudioParam
-// ... but probably we don't care as AudioParam can't be instanciated from JS
-pub(crate) struct NapiAudioParam(ParamGetter);
+pub(crate) struct NapiAudioParam(AudioParam);
 
 impl NapiAudioParam {
-    pub fn new(param_getter: ParamGetter) -> Self {
-        Self(param_getter)
+    pub fn new(audio_param: AudioParam) -> Self {
+        Self(audio_param)
     }
 
     pub fn create_js_object(env: &Env) -> Result<JsObject> {
@@ -51,7 +34,7 @@ impl NapiAudioParam {
     }
 
     pub fn unwrap(&self) -> &AudioParam {
-        self.0.downcast()
+        &self.0
     }
 }
 

@@ -1,10 +1,9 @@
-use std::rc::Rc;
 use napi::*;
 use napi_derive::js_function;
 use web_audio_api::node::*;
 use crate::*;
 
-pub(crate) struct ${d.napiName(d.node)}(Rc<${d.name(d.node)}>);
+pub(crate) struct ${d.napiName(d.node)}(${d.name(d.node)});
 
 impl ${d.napiName(d.node)} {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -22,14 +21,6 @@ impl ${d.napiName(d.node)} {
                 ).join('')}
                 // Methods
                 ${d.methods(d.node).map(method => {
-                    // ignore deprecated methods
-                    // see: https://webaudio.github.io/web-audio-api/#PannerNode-methods
-                    if (d.name(d.node) === 'PannerNode') {
-                        if (d.name(method) === 'setOrientation' || d.name(method) === 'setPosition') {
-                            return '';
-                        }
-                    }
-
                     return `Property::new("${method.name}")?
                     .with_method(${d.slug(method)})
                     .with_property_attributes(PropertyAttributes::Enumerable),
@@ -66,8 +57,9 @@ impl ${d.napiName(d.node)} {
         )
     }
 
-    pub fn unwrap(&self) -> &${d.name(d.node)} {
-        &self.0
+    // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
+    pub fn unwrap(&mut self) -> &mut ${d.name(d.node)} {
+        &mut self.0
     }
 }
 
@@ -104,8 +96,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         const arg = d.constructor(d.node).arguments[1];
         const argIdlType = d.memberType(arg);
         const argumentIdl = d.findInTree(argIdlType);
-        // console.log(d.name(d.node))
-        // argumentIdl.members.map((m) => console.log(d.name(m), JSON.stringify(d.memberType(m), null, 2)))
 
         return `
     // parse options
@@ -184,14 +174,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             };
                             `;
                         }
-
-                        // Handle MediaStream
-                        // ---------------------------------------------------
-                        // console.log('constructor', JSON.stringify(m, null, 2))
-                        // if (m.idlType.type === 'dictionary-type' && m.idlType.idlType === 'MediaStream') {
-                        //     console.log('> ok MediaStream');
-                        //     return ``;
-                        // }
 
                         // Handle type defined in IDL
                         // ---------------------------------------------------
@@ -318,12 +300,12 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            Rc::new(${d.name(d.node)}::new(audio_context, options))
+            ${d.name(d.node)}::new(audio_context, options)
         }
         "OfflineAudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            Rc::new(${d.name(d.node)}::new(audio_context, options))
+            ${d.name(d.node)}::new(audio_context, options)
         }
         &_ => panic!("not supported"),
     };
@@ -331,14 +313,14 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     ${d.audioParams(d.node).map((param) => {
         return `
     // AudioParam: ${d.name(d.node)}::${param.name}
-    let native_clone = native_node.clone();
-    let param_getter = ParamGetter::${d.name(d.node)}${d.camelcase(param)}(native_clone);
-    let napi_param = NapiAudioParam::new(param_getter);
+    let native_param = native_node.${d.slug(param.name)}().clone();
+    let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("${param.name}", &js_obj)?;
         `;
     }).join('')}
+
     // finalize instance creation
     let napi_node = ${d.napiName(d.node)}(native_node);
     ctx.env.wrap(&mut js_this, napi_node)?;
@@ -710,6 +692,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
     node.set_${d.slug(attr)}(buffer_ref.to_vec());
     // weird but seems we can have twice the same owned value...
     let js_obj = ctx.get::<JsTypedArray>(0)?;
+    // store in "private" field for getter (not very clean, to review)
     js_this.set_named_property("__${d.slug(attr)}__", js_obj)?;
 
     ctx.env.get_undefined()
@@ -790,14 +773,6 @@ if (method.idlType.idlType !== 'undefined') {
     return '';
 }
 
-// deprecated methods
-// see: https://webaudio.github.io/web-audio-api/#PannerNode-methods
-if (d.name(d.node) === 'PannerNode') {
-    if (d.name(method) === 'setOrientation' || d.name(method) === 'setPosition') {
-        return '';
-    }
-}
-
 let doWriteMethodCall = true;
 
 return `
@@ -813,26 +788,24 @@ fn ${d.slug(method)}(ctx: CallContext) -> Result<JsUndefined> {
         switch (d.memberType(arg)) {
             case 'float':
                 return `
-    let mut ${d.slug(arg.name)}_js = ctx.get::<JsNumber>(${index})?;
+    let ${d.slug(arg.name)}_js = ctx.get::<JsNumber>(${index})?;
     let ${d.slug(arg.name)} = ${d.slug(arg.name)}_js.get_double()? as f32;
                 `;
                 break;
             case 'double':
                 return `
-    let mut ${d.slug(arg.name)}_js = ctx.get::<JsNumber>(${index})?;
+    let ${d.slug(arg.name)}_js = ctx.get::<JsNumber>(${index})?;
     let ${d.slug(arg.name)} = ${d.slug(arg.name)}_js.get_double()? as f64;
                 `;
                 break;
             case 'Float32Array':
                 return `
-    #[allow(clippy::unnecessary_mut_passed)]
     let mut ${d.slug(arg.name)}_js = ctx.get::<JsTypedArray>(${index})?.into_value()?;
     let ${d.slug(arg.name)}: &mut [f32] = ${d.slug(arg.name)}_js.as_mut();
                 `;
                 break;
             case 'Uint8Array':
                 return `
-    #[allow(clippy::unnecessary_mut_passed)]
     let mut ${d.slug(arg.name)}_js = ctx.get::<JsTypedArray>(${index})?.into_value()?;
     let ${d.slug(arg.name)}: &mut [u8] = ${d.slug(arg.name)}_js.as_mut();
                 `;

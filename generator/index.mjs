@@ -8,8 +8,8 @@ import camelcase from 'camelcase';
 import compile from 'template-literal';
 
 let supportedNodes = [
-  `AudioBufferSourceNode`,
   `AnalyserNode`,
+  `AudioBufferSourceNode`,
   `BiquadFilterNode`,
   `ChannelMergerNode`,
   `ChannelSplitterNode`,
@@ -41,12 +41,24 @@ const tree = parse(content);
 
 function generated(str) {
   return `\
-// ---------------------------------------------------------- //
-// ---------------------------------------------------------- //
-//    - WARNING - DO NOT EDIT                               - //
-//    - This file has been generated                        - //
-// ---------------------------------------------------------- //
-// ---------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
+//                                                                            //
+//                                                                            //
+//                                                                            //
+//    ██╗    ██╗ █████╗ ██████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗               //
+//    ██║    ██║██╔══██╗██╔══██╗████╗  ██║██║████╗  ██║██╔════╝               //
+//    ██║ █╗ ██║███████║██████╔╝██╔██╗ ██║██║██╔██╗ ██║██║  ███╗              //
+//    ██║███╗██║██╔══██║██╔══██╗██║╚██╗██║██║██║╚██╗██║██║   ██║              //
+//    ╚███╔███╔╝██║  ██║██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝              //
+//     ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝               //
+//                                                                            //
+//                                                                            //
+//    - This file has been generated ---------------------------              //
+//                                                                            //
+//                                                                            //
+// -------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
 
 ${str}
   `;
@@ -198,8 +210,8 @@ function findInTree(name) {
   return tree.find(l => l.name === name);
 }
 
-let nodesCodeTmpl = fs.readFileSync(path.join(templates, `audio_nodes.tmpl.rs`), 'utf8');
-let nodesTmpl = compile(nodesCodeTmpl);
+const nodesCodeTmpl = fs.readFileSync(path.join(templates, `audio_nodes.tmpl.rs`), 'utf8');
+const nodesTmpl = compile(nodesCodeTmpl);
 
 // process audio nodes
 supportedNodes.sort().forEach((name, index) => {
@@ -223,9 +235,10 @@ supportedNodes.sort().forEach((name, index) => {
   const pathname = path.join(output, `${src}.rs`);
   console.log('> generating file: ', path.relative(process.cwd(), pathname));
 
-  let codeTmpl = fs.readFileSync(path.join(templates, `${src}.tmpl.rs`), 'utf8');
-  let tmpl = compile(codeTmpl);
-  let code = tmpl({
+  const codeTmpl = fs.readFileSync(path.join(templates, `${src}.tmpl.rs`), 'utf8');
+  const tmpl = compile(codeTmpl);
+
+  const code = tmpl({
     nodes: audioNodes,
     tree,
     ...utils,
