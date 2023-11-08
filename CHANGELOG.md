@@ -1,3 +1,8 @@
+## v0.13.0 (08/11/2023)
+
+- Update upstream crate to [v0.36.1](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-0361-2023-11-08)
+- Ship build for linux arm64
+
 ## v0.12.0 (04/09/2023)
 
 - Update upstream crate to [v0.33](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-0330-2023-07-27)
