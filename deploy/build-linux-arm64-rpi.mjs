@@ -87,6 +87,10 @@ console.log('> build binary');
 res = await conn.execCommand(`npm run build:jack`, { cwd: rpiCwd });
 logResult(res);
 
+console.log('> strip symbols');
+res = await conn.execCommand(`aarch64-linux-gnu-strip ${binaryFilename}`, { cwd: rpiCwd });
+logResult(res);
+
 console.log('> list files');
 res = await conn.execCommand(`ls -al`, { cwd: rpiCwd });
 logResult(res);
