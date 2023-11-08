@@ -7,11 +7,11 @@ import { execSync } from 'child_process';
 
 dotenv.config({ debug: false });
 
-const rpiHostname = process.env.RPI_HOSTNAME;
-const rpiUser = process.env.RPI_USER;
-const rpiPrivKey = process.env.RPI_PRIVKEY;
-const rpiCwd = process.env.RPI_CWD;
-const binaryFilename = 'node-web-audio-api.linux-arm-gnueabihf.node';
+const rpiHostname = process.env.RPI_64_HOSTNAME;
+const rpiUser = process.env.RPI_64_USER;
+const rpiPrivKey = process.env.RPI_64_PRIVKEY;
+const rpiCwd = process.env.RPI_64_CWD;
+const binaryFilename = 'node-web-audio-api.linux-arm64-gnu.node';
 
 console.log(`Check ${rpiHostname} is alive`);
 const isAlive = await new Promise((resolve, reject) => {
@@ -99,23 +99,5 @@ console.log(res.toString());
 console.log('Done!');
 
 conn.dispose();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
