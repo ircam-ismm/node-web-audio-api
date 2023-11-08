@@ -79,6 +79,7 @@ node examples/granular-scrub.mjs
 | macOS aarch64                | ✓        |        |
 | Linux x64 gnu                | ✓        |        |
 | Linux arm gnueabihf (RPi)    | ✓        | ✓      |
+| Linux arm64 gnu (RPi)        | ✓        | ✓      |
 
 
 ## Notes for Linux users
