@@ -129,6 +129,10 @@ The npm `postversion` script rely on [`cargo-bump`](https://crates.io/crates/car
 cargo install cargo-bump
 ```
 
+## Running the web-platform-test suite
+
+Follow the steps for 'Manual Build' first. Then run `./run-harness.sh`.
+
 ## License
 
 [BSD-3-Clause](./LICENSE)
