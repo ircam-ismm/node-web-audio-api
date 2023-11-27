@@ -22,8 +22,8 @@ mimalloc = {version = "0.1"}
 napi-build = "1"
 
 [profile.release]
-#lto = true
-debug = true
+lto = "fat" # https://nnethercote.github.io/perf-book/build-configuration.html#link-time-optimization
+# debug = true
 
 [features]
 jack = ["web-audio-api/cpal-jack"]

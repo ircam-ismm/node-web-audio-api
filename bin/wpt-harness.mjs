@@ -46,7 +46,7 @@ const reporter = {
     console.log(chalk.bold.red(indent(`\u00D7 ${message}`, INDENT_SIZE)));
   },
   reportStack: stack => {
-    // console.log(colors.dim(indent(stack, INDENT_SIZE * 2)))
+    // console.log(chalk.dim(indent(stack, INDENT_SIZE * 2)))
   },
 };
 
