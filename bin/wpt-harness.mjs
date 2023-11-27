@@ -1,6 +1,7 @@
 import wptRunner from 'wpt-runner';
-import * as webAudioItems from './index.mjs';
 import chalk from 'chalk';
+
+import * as webAudioItems from '../index.mjs';
 
 
 // -------------------------------------------------------
