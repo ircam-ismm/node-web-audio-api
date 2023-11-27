@@ -131,7 +131,11 @@ cargo install cargo-bump
 
 ## Running the web-platform-test suite
 
-Follow the steps for 'Manual Build' first. Then run `./run-harness.sh`.
+Follow the steps for 'Manual Build' first. Then run:
+
+```
+npm run wpt
+```
 
 ## License
 
