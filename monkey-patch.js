@@ -142,6 +142,14 @@ function patchOfflineAudioContext(nativeBinding) {
       }
     }
 
+    suspend() {
+      return Promise.resolve(null);
+    }
+
+    resume() {
+      return Promise.resolve(null);
+    }
+
     decodeAudioData(audioData) {
       if (!audioData instanceof ArrayBuffer) {
         throw new Error('Invalid argument, please provide an ArrayBuffer');

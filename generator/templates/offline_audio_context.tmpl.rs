@@ -237,7 +237,10 @@ fn ${d.slug(factoryName)}(ctx: CallContext) -> Result<JsObject> {
 fn get_length(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let obj = napi_obj.unwrap();
+    let obj = match napi_obj.0.as_ref() {
+        Some(v) => v,
+        None => return ctx.env.create_double(0.),
+    };
 
     let length = obj.length() as f64;
     ctx.env.create_double(length)
