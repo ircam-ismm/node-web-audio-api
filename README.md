@@ -134,8 +134,13 @@ cargo install cargo-bump
 Follow the steps for 'Manual Build' first. Then run:
 
 ```
-npm run wpt
+npm run wpt                      # build in debug mode and run all wpt test
+npm run wpt:only                 # run all wpt test without build
+npm run wpt -- --list            # list all wpt test files
+npm run wpt -- --filter <string> # apply <string> filter on executed/listed wpt tests 
 ```
+
+Avai
 
 ## License
 

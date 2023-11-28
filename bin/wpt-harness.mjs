@@ -1,8 +1,17 @@
+import path from 'path';
 import wptRunner from 'wpt-runner';
 import chalk from 'chalk';
+import { program } from 'commander';
 
-import * as webAudioItems from '../index.mjs';
+import * as nodeWebAudioAPI from '../index.mjs';
 
+program
+  .option('--list', 'List the name of the test files')
+  .option('--filter <string>', 'Filter executed OR listed test files', '.*');
+
+program.parse(process.argv);
+
+const options = program.opts();
 
 // -------------------------------------------------------
 // Some helpers
@@ -22,11 +31,26 @@ const rootURL = 'webaudio';
 
 // monkey patch `window` with our web audio API
 const setup = window => {
-  Object.assign(window, webAudioItems);
+  Object.assign(window, nodeWebAudioAPI);
+
+  // seems required (weirdly...), cf. `the-audiobuffer-interface/audiobuffer.html`
+  window.Float32Array = Float32Array;
 }
 
-// run all tests for now, @todo - filter from npm command line
-const filter = () => true;
+const filterRe = new RegExp(`${options.filter}`);
+
+const filter = (name) => {
+  if (filterRe.test(name)) {
+    if (options.list) {
+      console.log(name);
+      return false;
+    } else {
+      return true;
+    }
+  } else {
+    return false;
+  }
+};
 
 // reporter, adapted from default console reporter
 // https://github.com/domenic/wpt-runner/blob/master/lib/console-reporter.js
@@ -36,7 +60,7 @@ let typeErrorFail = 0;
 
 const reporter = {
   startSuite: name => {
-    console.log(`\n  ${chalk.bold.underline(name)}\n`);
+    console.log(`\n  ${chalk.bold.underline(path.join(testsPath, name))}\n`);
   },
   pass: message => {
     numPass += 1;
