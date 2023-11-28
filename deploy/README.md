@@ -24,6 +24,3 @@ Profile (which tools and data to install)? (minimal/default/complete) [default]
 - install dev libs
   + `sudo apt-get install -y libjack-jackd2-dev`
   + `sudo apt-get install -y libasound2-dev`
-
-- [ ] try to remove 
-node-web-audio-api.linux-arm-gnueabihf.node: ELF 32-bit LSB shared object, ARM, EABI5 version 1 (SYSV), dynamically linked, BuildID[sha1]=5e4e7e318cc2f92e8d15364d5f8350187b250ae1, with debug_info, not stripped

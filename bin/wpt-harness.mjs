@@ -32,6 +32,7 @@ const filter = () => true;
 // https://github.com/domenic/wpt-runner/blob/master/lib/console-reporter.js
 let numPass = 0;
 let numFail = 0;
+let typeErrorFail = 0;
 
 const reporter = {
   startSuite: name => {
@@ -42,8 +43,13 @@ const reporter = {
     console.log(chalk.dim(indent(chalk.green("√ ") + message, INDENT_SIZE)));
   },
   fail: message => {
-    numFail += 1;
-    console.log(chalk.bold.red(indent(`\u00D7 ${message}`, INDENT_SIZE)));
+    if (/threw "Error" instead of/.test(message)) {
+      typeErrorFail += 1;
+      console.log(chalk.bold.yellow(indent(`| ${message}`, INDENT_SIZE)));
+    } else {
+      numFail += 1;
+      console.log(chalk.bold.red(indent(`\u00D7 ${message}`, INDENT_SIZE)));
+    }
   },
   reportStack: stack => {
     // console.log(chalk.dim(indent(stack, INDENT_SIZE * 2)))
@@ -59,6 +65,7 @@ try {
   console.log(`\n  ${chalk.bold.underline('RESULTS:')}`);
   console.log(chalk.bold(`  - # pass: ${numPass}`));
   console.log(chalk.bold(`  - # fail: ${numFail}`));
+  console.log(chalk.bold(`  - # type error issues: ${typeErrorFail}`));
 
   process.exit(failures);
 } catch (e) {
