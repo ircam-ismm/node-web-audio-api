@@ -71,6 +71,14 @@ impl NapiWaveShaperNode {
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
+    if ctx.length < 1 {
+        return Err(napi::Error::new(
+            napi::Status::InvalidArg, // error code
+            "Failed to construct 'WaveShaperNode': 1 argument required, but only 0 present."
+                .to_string(),
+        ));
+    }
+
     // first argument is always AudioContext
     let js_audio_context = ctx.get::<JsObject>(0)?;
 
