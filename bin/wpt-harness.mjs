@@ -7,6 +7,7 @@ import * as nodeWebAudioAPI from '../index.mjs';
 
 program
   .option('--list', 'List the name of the test files')
+  .option('--with_crashtests', 'Also run crashtests')
   .option('--filter <string>', 'Filter executed OR listed test files', '.*');
 
 program.parse(process.argv);
@@ -40,6 +41,12 @@ const setup = window => {
 const filterRe = new RegExp(`${options.filter}`);
 
 const filter = (name) => {
+  if (!options.with_crashtests && name.includes('/crashtests/')) {
+      return false;
+  }
+  if (name.includes('/resources/')) {
+      return false;
+  }
   if (filterRe.test(name)) {
     if (options.list) {
       console.log(name);
