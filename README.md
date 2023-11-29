@@ -131,7 +131,14 @@ cargo install cargo-bump
 
 ## Running the web-platform-test suite
 
-Follow the steps for 'Manual Build' first. Then run:
+Follow the steps for 'Manual Build' first. Then checkout the web-platform-tests submodule with:
+
+```
+git submodule init
+git submodule update
+```
+
+Then run:
 
 ```
 npm run wpt                      # build in debug mode and run all wpt test

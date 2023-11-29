@@ -26,7 +26,7 @@ function indent(string, times) {
 // -------------------------------------------------------
 // WPT Runner configuration options
 // -------------------------------------------------------
-const testsPath = 'webaudio';
+const testsPath = 'wpt/webaudio';
 const rootURL = 'webaudio';
 
 // monkey patch `window` with our web audio API
