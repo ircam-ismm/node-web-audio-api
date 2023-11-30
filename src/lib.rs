@@ -26,6 +26,9 @@ use napi_derive::module_exports;
 #[macro_use]
 mod audio_node;
 
+mod audio_listener;
+use audio_listener::NapiAudioListener;
+
 mod audio_param;
 use crate::audio_param::NapiAudioParam;
 // public

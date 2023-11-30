@@ -138,6 +138,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     };
 
     let audio_context = AudioContext::new(audio_context_options);
+    let native_listener = audio_context.listener();
     let napi_audio_context = NapiAudioContext(audio_context);
     ctx.env.wrap(&mut js_this, napi_audio_context)?;
 
@@ -154,6 +155,12 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let ctor: JsFunction = store.get_named_property("AudioDestinationNode")?;
     let js_obj = ctor.new_instance(&[&js_this])?;
     js_this.set_named_property("destination", &js_obj)?;
+
+    // Audio Listener
+    let napi_listener = NapiAudioListener::new(native_listener);
+    let mut js_obj = NapiAudioListener::create_js_object(ctx.env)?;
+    ctx.env.wrap(&mut js_obj, napi_listener)?;
+    js_this.set_named_property("listener", &js_obj)?;
 
     ctx.env.get_undefined()
 }
