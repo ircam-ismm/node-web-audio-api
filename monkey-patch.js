@@ -143,11 +143,11 @@ function patchOfflineAudioContext(nativeBinding) {
     }
 
     suspend() {
-      return Promise.resolve(null);
+      return new Promise((resolve, reject) => null);
     }
 
     resume() {
-      return Promise.resolve(null);
+      return new Promise((resolve, reject) => null);
     }
 
     decodeAudioData(audioData) {
