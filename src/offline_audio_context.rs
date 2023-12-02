@@ -25,9 +25,7 @@ use web_audio_api::context::*;
 
 use crate::*;
 
-// @todo - once Option has been removed, share template with AudioContext
-
-pub(crate) struct NapiOfflineAudioContext(Option<OfflineAudioContext>);
+pub(crate) struct NapiOfflineAudioContext(OfflineAudioContext);
 
 impl NapiOfflineAudioContext {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -71,7 +69,7 @@ impl NapiOfflineAudioContext {
     }
 
     pub fn unwrap(&self) -> &OfflineAudioContext {
-        &self.0.as_ref().unwrap()
+        &self.0
     }
 }
 
@@ -84,7 +82,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let sample_rate = ctx.get::<JsNumber>(2)?.get_double()? as f32;
 
     let audio_context = OfflineAudioContext::new(number_of_channels, length, sample_rate);
-    let napi_audio_context = NapiOfflineAudioContext(Some(audio_context));
+    let napi_audio_context = NapiOfflineAudioContext(audio_context);
     ctx.env.wrap(&mut js_this, napi_audio_context)?;
 
     js_this.define_properties(&[
@@ -108,10 +106,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 fn get_current_time(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let obj = match napi_obj.0.as_ref() {
-        Some(v) => v,
-        None => return ctx.env.create_double(0.),
-    };
+    let obj = napi_obj.unwrap();
 
     let current_time = obj.current_time() as f64;
     ctx.env.create_double(current_time)
@@ -121,10 +116,7 @@ fn get_current_time(ctx: CallContext) -> Result<JsNumber> {
 fn get_sample_rate(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let obj = match napi_obj.0.as_ref() {
-        Some(v) => v,
-        None => return ctx.env.create_double(0.),
-    };
+    let obj = napi_obj.unwrap();
 
     let sample_rate = obj.sample_rate() as f64;
     ctx.env.create_double(sample_rate)
@@ -446,10 +438,7 @@ fn create_wave_shaper(ctx: CallContext) -> Result<JsObject> {
 fn get_length(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let obj = match napi_obj.0.as_ref() {
-        Some(v) => v,
-        None => return ctx.env.create_double(0.),
-    };
+    let obj = napi_obj.unwrap();
 
     let length = obj.length() as f64;
     ctx.env.create_double(length)
@@ -460,28 +449,19 @@ fn get_length(ctx: CallContext) -> Result<JsNumber> {
 fn start_rendering(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let some_audio_context = napi_obj.0.take();
+    let audio_buffer = napi_obj.0.start_rendering_sync();
 
-    match some_audio_context {
-        Some(audio_context) => {
-            let audio_buffer = audio_context.start_rendering_sync();
+    // create js audio buffer instance
+    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+    let ctor: JsFunction = store.get_named_property("AudioBuffer")?;
+    let mut options = ctx.env.create_object()?;
+    options.set("__internal_caller__", ctx.env.get_null())?;
 
-            // create js audio buffer instance
-            let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
-            let store: JsObject = ctx.env.get_reference_value(store_ref)?;
-            let ctor: JsFunction = store.get_named_property("AudioBuffer")?;
-            let mut options = ctx.env.create_object()?;
-            options.set("__internal_caller__", ctx.env.get_null())?;
+    // populate with audio buffer
+    let js_audio_buffer = ctor.new_instance(&[options])?;
+    let napi_audio_buffer = ctx.env.unwrap::<NapiAudioBuffer>(&js_audio_buffer)?;
+    napi_audio_buffer.populate(audio_buffer);
 
-            // populate with audio buffer
-            let js_audio_buffer = ctor.new_instance(&[options])?;
-            let napi_audio_buffer = ctx.env.unwrap::<NapiAudioBuffer>(&js_audio_buffer)?;
-            napi_audio_buffer.populate(audio_buffer);
-
-            Ok(js_audio_buffer)
-        }
-        None => Err(napi::Error::from_reason(
-            "startRendering already called".to_string(),
-        )),
-    }
+    Ok(js_audio_buffer)
 }
