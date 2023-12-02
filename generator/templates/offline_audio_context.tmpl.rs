@@ -6,6 +6,8 @@ use web_audio_api::context::*;
 
 use crate::*;
 
+// @todo - once Option has been removed, share template with AudioContext
+
 pub(crate) struct NapiOfflineAudioContext(Option<OfflineAudioContext>);
 
 impl NapiOfflineAudioContext {
@@ -94,6 +96,31 @@ fn get_sample_rate(ctx: CallContext) -> Result<JsNumber> {
 
     let sample_rate = obj.sample_rate() as f64;
     ctx.env.create_double(sample_rate)
+}
+
+// use a getter so we can lazily create the listener on first call and retrieve it afterward
+#[js_function]
+fn get_listener(ctx: CallContext) -> Result<JsObject> {
+    let mut js_this = ctx.this_unchecked::<JsObject>();
+
+    // reproduce lazy instanciation strategy from rust crate
+    let ok_obj = if js_this.has_named_property("__listener__").ok().unwrap() == true {
+        // println!("ok");
+        js_this.get_named_property("__listener__")
+    } else {
+        // println!("> ONCE");
+        let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
+        let obj = napi_obj.unwrap();
+        let native_listener = obj.listener();
+        // Audio Listener
+        let napi_listener = NapiAudioListener::new(native_listener);
+        let mut js_obj = NapiAudioListener::create_js_object(ctx.env)?;
+        ctx.env.wrap(&mut js_obj, napi_listener)?;
+        js_this.set_named_property("__listener__", &js_obj)?;
+        Ok(js_obj)
+    };
+
+    ok_obj
 }
 
 // @todo - async version
