@@ -37,6 +37,7 @@ impl NapiOfflineAudioContext {
             &[
                 Property::new("currentTime")?.with_getter(get_current_time),
                 Property::new("sampleRate")?.with_getter(get_sample_rate),
+                Property::new("listener")?.with_getter(get_listener),
                 // this should be implemented for offline as well
                 // see https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-state
                 // Property::new("state")?.with_getter(get_state),
