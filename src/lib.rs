@@ -35,6 +35,8 @@ mod offline_audio_context;
 use crate::offline_audio_context::NapiOfflineAudioContext;
 mod audio_destination_node;
 use crate::audio_destination_node::NapiAudioDestinationNode;
+mod audio_listener;
+use crate::audio_listener::NapiAudioListener;
 mod audio_buffer;
 use crate::audio_buffer::NapiAudioBuffer;
 mod periodic_wave;
@@ -110,9 +112,10 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     //     }
     // }));
 
-    // store constructor for factory methods
-    // @note - we create the js class twice so that export and store have both
-    // their owned constructor. Maybe this could be cleaned...
+    // Store constructor for factory methods and internal instantiations
+    // Note that we need to create the js class twice so that export and store
+    // have both their owned constructor.
+    // This could maybe be simplified in the future
     let mut store = env.create_object()?;
 
     let napi_class = NapiAudioContext::create_js_class(&env)?;
@@ -121,16 +124,20 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     let napi_class = NapiOfflineAudioContext::create_js_class(&env)?;
     exports.set_named_property("OfflineAudioContext", napi_class)?;
 
-    // @note - do not expose in exports until we know how to make the constructor private
     // @todo - expose AudioParam as well
 
-    // let napi_class = NapiAudioDestinationNode::create_js_class(&env)?;
-    // exports.set_named_property("AudioDestinationNode", napi_class)?;
+    // ----------------------------------------------------------------
+    // special non node classes with private constructors
+    // i.e. not exposed in export
+    // ----------------------------------------------------------------
     let napi_class = NapiAudioDestinationNode::create_js_class(&env)?;
     store.set_named_property("AudioDestinationNode", napi_class)?;
 
+    let napi_class = NapiAudioListener::create_js_class(&env)?;
+    store.set_named_property("AudioListener", napi_class)?;
+
     // ----------------------------------------------------------------
-    // special non node classes
+    // special non node classes with public constructors
     // ----------------------------------------------------------------
     let napi_class = NapiAudioBuffer::create_js_class(&env)?;
     exports.set_named_property("AudioBuffer", napi_class)?;

@@ -8,6 +8,7 @@ import camelcase from 'camelcase';
 import compile from 'template-literal';
 
 let supportedNodes = [
+  // 'AudioDestinationNode', // crashes because has no ctor defined in IDL
   `AnalyserNode`,
   `AudioBufferSourceNode`,
   `BiquadFilterNode`,
