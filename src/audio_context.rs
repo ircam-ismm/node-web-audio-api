@@ -186,18 +186,14 @@ fn get_listener(ctx: CallContext) -> Result<JsObject> {
 
     // reproduce lazy instanciation strategy from rust crate
     let ok_obj = if js_this.has_named_property("__listener__").ok().unwrap() == true {
-        println!("ok");
         js_this.get_named_property("__listener__")
     } else {
-        println!("> ONCE");
-        let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
-        let obj = napi_obj.unwrap();
-        let native_listener = obj.listener();
-        // Audio Listener
-        let napi_listener = NapiAudioListener::new(native_listener);
-        let mut js_obj = NapiAudioListener::create_js_object(ctx.env)?;
-        ctx.env.wrap(&mut js_obj, napi_listener)?;
+        let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+        let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+        let ctor: JsFunction = store.get_named_property("AudioListener")?;
+        let js_obj = ctor.new_instance(&[&js_this])?;
         js_this.set_named_property("__listener__", &js_obj)?;
+
         Ok(js_obj)
     };
 

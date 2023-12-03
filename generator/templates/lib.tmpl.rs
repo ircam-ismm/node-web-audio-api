@@ -66,9 +66,10 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     // }));
 
 
-    // store constructor for factory methods
-    // @note - we create the js class twice so that export and store have both
-    // their owned constructor. Maybe this could be cleaned...
+    // Store constructor for factory methods and internal instantiations
+    // Note that we need to create the js class twice so that export and store
+    // have both their owned constructor.
+    // This could maybe be simplified in the future
     let mut store = env.create_object()?;
 
     let napi_class = NapiAudioContext::create_js_class(&env)?;
@@ -79,15 +80,19 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
 
     // @todo - expose AudioParam as well
 
+    // ----------------------------------------------------------------
+    // special non node classes with private constructors
+    // i.e. not exposed in export
+    // ----------------------------------------------------------------
     let napi_class = NapiAudioDestinationNode::create_js_class(&env)?;
     store.set_named_property("AudioDestinationNode", napi_class)?;
 
-    // ----------------------------------------------------------------
-    // special non node classes
-    // ----------------------------------------------------------------
-    // let napi_class = NapiAudioListener::create_js_class(&env)?;
-    // store.set_named_property("AudioListener", napi_class)?;
+    let napi_class = NapiAudioListener::create_js_class(&env)?;
+    store.set_named_property("AudioListener", napi_class)?;
 
+    // ----------------------------------------------------------------
+    // special non node classes with public constructors
+    // ----------------------------------------------------------------
     let napi_class = NapiAudioBuffer::create_js_class(&env)?;
     exports.set_named_property("AudioBuffer", napi_class)?;
     let napi_class = NapiAudioBuffer::create_js_class(&env)?;
