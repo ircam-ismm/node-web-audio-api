@@ -73,10 +73,6 @@ impl NapiOfflineAudioContext {
     pub fn unwrap(&self) -> &OfflineAudioContext {
         &self.0
     }
-
-    pub fn unwrap_mut(&mut self) -> &mut OfflineAudioContext {
-        &mut self.0
-    }
 }
 
 #[js_function(3)]
@@ -451,9 +447,8 @@ fn get_length(ctx: CallContext) -> Result<JsNumber> {
 fn start_rendering(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let audio_context = napi_obj.unwrap_mut();
 
-    let audio_buffer = audio_context.start_rendering_sync();
+    let audio_buffer = napi_obj.0.start_rendering_sync();
 
     // create js audio buffer instance
     let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
