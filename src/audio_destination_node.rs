@@ -1,14 +1,15 @@
-// @TODO
-// This should be generated as any other AudioNode
-
 use crate::*;
 use napi::*;
 use napi_derive::js_function;
 use web_audio_api::context::*;
 use web_audio_api::node::*;
 
-pub struct NapiAudioDestinationNode(AudioDestinationNode);
+pub(crate) struct NapiAudioDestinationNode(AudioDestinationNode);
 
+// https://webaudio.github.io/web-audio-api/#AudioListener
+//
+// @note: This should be generated as any other AudioNode, but has no constructor
+// defined in IDL, so the generation script crashes
 impl NapiAudioDestinationNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
         env.define_class(
@@ -51,29 +52,29 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_property_attributes(PropertyAttributes::Static),
     ])?;
 
+    // create native node
     let audio_context_name =
         js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
     let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
     let audio_context_str = &audio_context_utf8_name[..];
 
-    // @note
-    // this seems to be the only difference with other audio nodes
     let native_node = match audio_context_str {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            audio_context.destination()
+            audio_context.destination() // this is also different from other audio nodes
         }
         "OfflineAudioContext" => {
             let napi_audio_context = ctx
                 .env
                 .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            audio_context.destination()
+            audio_context.destination() // this is also different from other audio nodes
         }
         &_ => panic!("not supported"),
     };
 
+    // finalize instance creation
     let napi_node = NapiAudioDestinationNode(native_node);
     ctx.env.wrap(&mut js_this, napi_node)?;
 

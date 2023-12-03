@@ -27,7 +27,7 @@ use crate::*;
 
 // @todo - once Option has been removed, share template with AudioContext
 
-pub(crate) struct NapiOfflineAudioContext(Option<OfflineAudioContext>);
+pub(crate) struct NapiOfflineAudioContext(OfflineAudioContext);
 
 impl NapiOfflineAudioContext {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -71,7 +71,7 @@ impl NapiOfflineAudioContext {
     }
 
     pub fn unwrap(&self) -> &OfflineAudioContext {
-        &self.0.as_ref().unwrap()
+        &self.0
     }
 }
 
@@ -84,7 +84,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let sample_rate = ctx.get::<JsNumber>(2)?.get_double()? as f32;
 
     let audio_context = OfflineAudioContext::new(number_of_channels, length, sample_rate);
-    let napi_audio_context = NapiOfflineAudioContext(Some(audio_context));
+    let napi_audio_context = NapiOfflineAudioContext(audio_context);
     ctx.env.wrap(&mut js_this, napi_audio_context)?;
 
     js_this.define_properties(&[
@@ -137,18 +137,14 @@ fn get_listener(ctx: CallContext) -> Result<JsObject> {
 
     // reproduce lazy instanciation strategy from rust crate
     let ok_obj = if js_this.has_named_property("__listener__").ok().unwrap() == true {
-        // println!("ok");
         js_this.get_named_property("__listener__")
     } else {
-        // println!("> ONCE");
-        let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
-        let obj = napi_obj.unwrap();
-        let native_listener = obj.listener();
-        // Audio Listener
-        let napi_listener = NapiAudioListener::new(native_listener);
-        let mut js_obj = NapiAudioListener::create_js_object(ctx.env)?;
-        ctx.env.wrap(&mut js_obj, napi_listener)?;
+        let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+        let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+        let ctor: JsFunction = store.get_named_property("AudioListener")?;
+        let js_obj = ctor.new_instance(&[&js_this])?;
         js_this.set_named_property("__listener__", &js_obj)?;
+
         Ok(js_obj)
     };
 
@@ -460,28 +456,20 @@ fn get_length(ctx: CallContext) -> Result<JsNumber> {
 fn start_rendering(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let some_audio_context = napi_obj.0.take();
 
-    match some_audio_context {
-        Some(audio_context) => {
-            let audio_buffer = audio_context.start_rendering_sync();
+    let audio_buffer = napi_obj.0.start_rendering_sync();
 
-            // create js audio buffer instance
-            let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
-            let store: JsObject = ctx.env.get_reference_value(store_ref)?;
-            let ctor: JsFunction = store.get_named_property("AudioBuffer")?;
-            let mut options = ctx.env.create_object()?;
-            options.set("__internal_caller__", ctx.env.get_null())?;
+    // create js audio buffer instance
+    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+    let ctor: JsFunction = store.get_named_property("AudioBuffer")?;
+    let mut options = ctx.env.create_object()?;
+    options.set("__internal_caller__", ctx.env.get_null())?;
 
-            // populate with audio buffer
-            let js_audio_buffer = ctor.new_instance(&[options])?;
-            let napi_audio_buffer = ctx.env.unwrap::<NapiAudioBuffer>(&js_audio_buffer)?;
-            napi_audio_buffer.populate(audio_buffer);
+    // populate with audio buffer
+    let js_audio_buffer = ctor.new_instance(&[options])?;
+    let napi_audio_buffer = ctx.env.unwrap::<NapiAudioBuffer>(&js_audio_buffer)?;
+    napi_audio_buffer.populate(audio_buffer);
 
-            Ok(js_audio_buffer)
-        }
-        None => Err(napi::Error::from_reason(
-            "startRendering already called".to_string(),
-        )),
-    }
+    Ok(js_audio_buffer)
 }
