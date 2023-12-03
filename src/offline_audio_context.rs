@@ -108,10 +108,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 fn get_current_time(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let obj = match napi_obj.0.as_ref() {
-        Some(v) => v,
-        None => return ctx.env.create_double(0.),
-    };
+    let obj = napi_obj.unwrap();
 
     let current_time = obj.current_time() as f64;
     ctx.env.create_double(current_time)
@@ -121,10 +118,7 @@ fn get_current_time(ctx: CallContext) -> Result<JsNumber> {
 fn get_sample_rate(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let obj = match napi_obj.0.as_ref() {
-        Some(v) => v,
-        None => return ctx.env.create_double(0.),
-    };
+    let obj = napi_obj.unwrap();
 
     let sample_rate = obj.sample_rate() as f64;
     ctx.env.create_double(sample_rate)
@@ -442,10 +436,7 @@ fn create_wave_shaper(ctx: CallContext) -> Result<JsObject> {
 fn get_length(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let obj = match napi_obj.0.as_ref() {
-        Some(v) => v,
-        None => return ctx.env.create_double(0.),
-    };
+    let obj = napi_obj.unwrap();
 
     let length = obj.length() as f64;
     ctx.env.create_double(length)
