@@ -211,6 +211,7 @@ function findInTree(name) {
   return tree.find(l => l.name === name);
 }
 
+// parse AudioNodes
 const nodesCodeTmpl = fs.readFileSync(path.join(templates, `audio_nodes.tmpl.rs`), 'utf8');
 const nodesTmpl = compile(nodesCodeTmpl);
 
@@ -220,19 +221,38 @@ supportedNodes.sort().forEach((name, index) => {
   const pathname = path.join(output, `${utils.slug(nodeIdl)}.rs`);
   console.log('> generating file: ', path.relative(process.cwd(), pathname));
 
-  const nodeCode = nodesTmpl({
+  const code = nodesTmpl({
     node: nodeIdl,
     tree,
     ...utils
   });
 
-  fs.writeFileSync(pathname, generated(nodeCode));
+  fs.writeFileSync(pathname, generated(code));
 
   audioNodes.push(nodeIdl);
 });
 
+// parse AudioContext
+const audioContextCodeTmpl = fs.readFileSync(path.join(templates, 'audio_context.tmpl.rs'), 'utf8');
+const audioContextTmpl = compile(audioContextCodeTmpl);
+
+['AudioContext', 'OfflineAudioContext'].forEach((name, index) => {
+  const nodeIdl = findInTree(name);
+  const pathname = path.join(output, `${utils.slug(nodeIdl)}.rs`);
+  console.log('> generating file: ', path.relative(process.cwd(), pathname));
+
+  const code = audioContextTmpl({
+    node: nodeIdl,
+    nodes: audioNodes,
+    tree,
+    ...utils
+  });
+
+  fs.writeFileSync(pathname, generated(code));
+});
+
 // process other nodes and objects
-['audio_param', 'audio_node', 'lib', 'audio_context', 'offline_audio_context'].forEach(src => {
+['audio_param', 'audio_node', 'lib'].forEach(src => {
   const pathname = path.join(output, `${src}.rs`);
   console.log('> generating file: ', path.relative(process.cwd(), pathname));
 
@@ -247,8 +267,6 @@ supportedNodes.sort().forEach((name, index) => {
 
   fs.writeFileSync(pathname, generated(code));
 });
-
-// // setInterval(() => {}, 1000);
 
 // create the mjs export file
 console.log('> generating esm export file (./index.mjs)');
