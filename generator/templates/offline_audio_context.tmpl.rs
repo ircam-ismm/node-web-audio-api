@@ -6,7 +6,7 @@ use web_audio_api::context::*;
 
 use crate::*;
 
-// @todo - once Option has been removed, share template with AudioContext
+// @todo - share template with AudioContext
 
 pub(crate) struct NapiOfflineAudioContext(Option<OfflineAudioContext>);
 
@@ -20,13 +20,16 @@ impl NapiOfflineAudioContext {
                 Property::new("sampleRate")?.with_getter(get_sample_rate),
                 Property::new("listener")?.with_getter(get_listener),
 
-                // this should be implemented for offline as well
-                // see https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-state
-                // Property::new("state")?.with_getter(get_state),
-
                 Property::new("decodeAudioData")?.with_method(decode_audio_data),
                 Property::new("createPeriodicWave")?.with_method(create_periodic_wave),
                 Property::new("createBuffer")?.with_method(create_buffer),
+
+                // // this should be implemented for OfflineAudioContext as well
+                // // see https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-state
+                // Property::new("state")?.with_getter(get_state),
+                // Property::new("resume")?.with_method(resume),
+                // Property::new("suspend")?.with_method(suspend),
+                // Property::new("close")?.with_method(close),
 
                 // ----------------------------------------------------
                 // Factory methods
@@ -120,6 +123,10 @@ fn get_listener(ctx: CallContext) -> Result<JsObject> {
 
     ok_obj
 }
+
+// ----------------------------------------------------
+// METHODS
+// ----------------------------------------------------
 
 // @todo - async version
 #[js_function(1)]
@@ -223,7 +230,7 @@ fn ${d.slug(factoryName)}(ctx: CallContext) -> Result<JsObject> {
         `let mut options = ctx.env.create_object()?;
         ${args.map((arg, index) => {
             switch (arg.idlType.idlType) {
-                case 'unsigned long': // channel merger, channel spiller
+                case 'unsigned long': // channel merger, channel splitter
                 case 'double': // delay
                     return `
     match ctx.try_get::<JsNumber>(${index})? {

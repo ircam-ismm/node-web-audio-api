@@ -25,9 +25,7 @@ use web_audio_api::context::*;
 
 use crate::*;
 
-// @todo - once Option has been removed, share template with AudioContext
-
-pub(crate) struct NapiOfflineAudioContext(Option<OfflineAudioContext>);
+pub(crate) struct NapiOfflineAudioContext(OfflineAudioContext);
 
 impl NapiOfflineAudioContext {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -38,9 +36,6 @@ impl NapiOfflineAudioContext {
                 Property::new("currentTime")?.with_getter(get_current_time),
                 Property::new("sampleRate")?.with_getter(get_sample_rate),
                 Property::new("listener")?.with_getter(get_listener),
-                // this should be implemented for offline as well
-                // see https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-state
-                // Property::new("state")?.with_getter(get_state),
                 Property::new("decodeAudioData")?.with_method(decode_audio_data),
                 Property::new("createPeriodicWave")?.with_method(create_periodic_wave),
                 Property::new("createBuffer")?.with_method(create_buffer),
@@ -72,20 +67,26 @@ impl NapiOfflineAudioContext {
     }
 
     pub fn unwrap(&self) -> &OfflineAudioContext {
-        &self.0.as_ref().unwrap()
+        &self.0
     }
 }
 
-#[js_function(3)]
+#[js_function(1)]
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
+    // -------------------------------------------------
+    // Parse OfflineAudioContext options
+    // -------------------------------------------------
     let number_of_channels = ctx.get::<JsNumber>(0)?.get_double()? as usize;
     let length = ctx.get::<JsNumber>(1)?.get_double()? as usize;
     let sample_rate = ctx.get::<JsNumber>(2)?.get_double()? as f32;
 
-    let audio_context = OfflineAudioContext::new(number_of_channels, length, sample_rate);
-    let napi_audio_context = NapiOfflineAudioContext(Some(audio_context));
+    // -------------------------------------------------
+    // Create context
+    // -------------------------------------------------
+    let audio_context = OfflineAudioContext::new(audio_context_options);
+    let napi_audio_context = NapiOfflineAudioContext(audio_context);
     ctx.env.wrap(&mut js_this, napi_audio_context)?;
 
     js_this.define_properties(&[
@@ -95,7 +96,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_property_attributes(PropertyAttributes::Static),
     ])?;
 
-    // Audio Destination
+    // -------------------------------------------------
+    // Bind AudioDestination
+    // -------------------------------------------------
     let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
     let store: JsObject = ctx.env.get_reference_value(store_ref)?;
     let ctor: JsFunction = store.get_named_property("AudioDestinationNode")?;
@@ -145,6 +148,10 @@ fn get_listener(ctx: CallContext) -> Result<JsObject> {
 
     ok_obj
 }
+
+// ----------------------------------------------------
+// METHODS
+// ----------------------------------------------------
 
 // @todo - async version
 #[js_function(1)]
@@ -430,13 +437,13 @@ fn create_wave_shaper(ctx: CallContext) -> Result<JsObject> {
 }
 
 // ----------------------------------------------------
-// Methods specific to OfflineAudioContext
+// Methods and attributes specific to OfflineAudioContext
 // ----------------------------------------------------
 
 #[js_function]
 fn get_length(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
+    let napi_obj = ctx.env.unwrap::<OfflineAudioContext>(&js_this)?;
     let obj = napi_obj.unwrap();
 
     let length = obj.length() as f64;
@@ -447,7 +454,7 @@ fn get_length(ctx: CallContext) -> Result<JsNumber> {
 #[js_function]
 fn start_rendering(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
+    let napi_obj = ctx.env.unwrap::<OfflineAudioContext>(&js_this)?;
     let some_audio_context = napi_obj.0.take();
 
     match some_audio_context {

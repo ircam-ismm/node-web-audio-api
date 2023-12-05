@@ -22,6 +22,11 @@ impl NapiAudioContext {
                 Property::new("createPeriodicWave")?.with_method(create_periodic_wave),
                 Property::new("createBuffer")?.with_method(create_buffer),
 
+                Property::new("state")?.with_getter(get_state),
+                Property::new("resume")?.with_method(resume),
+                Property::new("suspend")?.with_method(suspend),
+                Property::new("close")?.with_method(close),
+
                 // ----------------------------------------------------
                 // Factory methods
                 // ----------------------------------------------------
@@ -32,19 +37,10 @@ impl NapiAudioContext {
                 }).join('')}
 
                 // ----------------------------------------------------
-                // Methods and attributes specific to Online audio context
+                // Methods and attributes specific to OnlineAudioContext
                 // ----------------------------------------------------
-                // this should be implemented for offline as well
-                // see https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-state
-                Property::new("state")?.with_getter(get_state),
-
                 Property::new("baseLatency")?.with_getter(get_base_latency),
                 Property::new("outputLatency")?.with_getter(get_output_latency),
-
-                Property::new("resume")?.with_method(resume),
-                Property::new("suspend")?.with_method(suspend),
-                Property::new("close")?.with_method(close),
-
                 Property::new("setSinkId")?.with_method(set_sink_id),
 
                 Property::new("createMediaStreamSource")?.with_method(create_media_stream_source),
@@ -264,6 +260,38 @@ fn create_periodic_wave(ctx: CallContext) -> Result<JsObject> {
     ctor.new_instance(&[js_this, options])
 }
 
+// this should be implemented for OfflineAudioContext as well
+// see https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-state
+#[js_function]
+fn get_state(ctx: CallContext) -> Result<JsString> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
+    let obj = napi_obj.unwrap();
+
+    let state = obj.state();
+    let state_str = match state {
+        AudioContextState::Suspended => "suspended",
+        AudioContextState::Running => "running",
+        AudioContextState::Closed => "closed",
+    };
+
+    ctx.env.create_string(state_str)
+}
+
+${['resume', 'suspend', 'close'].map(method => `
+// @todo - async version
+#[js_function]
+fn ${method}(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
+    let obj = napi_obj.unwrap();
+
+    obj.${method}_sync();
+
+    ctx.env.get_undefined()
+}
+`).join('')}
+
 // ----------------------------------------------------
 // Factory methods
 // ----------------------------------------------------
@@ -285,7 +313,7 @@ fn ${d.slug(factoryName)}(ctx: CallContext) -> Result<JsObject> {
         `let mut options = ctx.env.create_object()?;
         ${args.map((arg, index) => {
             switch (arg.idlType.idlType) {
-                case 'unsigned long': // channel merger, channel spiller
+                case 'unsigned long': // channel merger, channel splitter
                 case 'double': // delay
                     return `
     match ctx.try_get::<JsNumber>(${index})? {
@@ -320,24 +348,6 @@ fn ${d.slug(factoryName)}(ctx: CallContext) -> Result<JsObject> {
 // Methods and attributes specific to OnlineAudioContext
 // ----------------------------------------------------
 
-// this should be implemented for offline as well
-// see https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-state
-#[js_function]
-fn get_state(ctx: CallContext) -> Result<JsString> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
-    let obj = napi_obj.unwrap();
-
-    let state = obj.state();
-    let state_str = match state {
-        AudioContextState::Suspended => "suspended",
-        AudioContextState::Running => "running",
-        AudioContextState::Closed => "closed",
-    };
-
-    ctx.env.create_string(state_str)
-}
-
 #[js_function]
 fn get_base_latency(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -357,21 +367,6 @@ fn get_output_latency(ctx: CallContext) -> Result<JsNumber> {
     let output_latency = obj.output_latency() as f64;
     ctx.env.create_double(output_latency)
 }
-
-
-${['resume', 'suspend', 'close'].map(method => `
-// @todo - async version
-#[js_function]
-fn ${method}(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
-    let obj = napi_obj.unwrap();
-
-    obj.${method}_sync();
-
-    ctx.env.get_undefined()
-}
-`).join('')}
 
 #[js_function(1)]
 fn set_sink_id(ctx: CallContext) -> Result<JsUndefined> {
