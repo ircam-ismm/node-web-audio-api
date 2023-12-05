@@ -83,7 +83,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
     // -------------------------------------------------
-    // Parse AudioContext options
+    // Parse options and create AudioContext
     // -------------------------------------------------
     let options_js: Option<JsObject> = ctx.try_get::<JsObject>(0)?.into();
     let audio_context_options = if let Some(options) = options_js {
@@ -138,10 +138,11 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         AudioContextOptions::default()
     };
 
-    // -------------------------------------------------
-    // Create context
-    // -------------------------------------------------
     let audio_context = AudioContext::new(audio_context_options);
+
+    // -------------------------------------------------
+    // Wrap context
+    // -------------------------------------------------
     let napi_audio_context = NapiAudioContext(audio_context);
     ctx.env.wrap(&mut js_this, napi_audio_context)?;
 

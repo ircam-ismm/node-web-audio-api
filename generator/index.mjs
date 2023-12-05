@@ -233,7 +233,7 @@ supportedNodes.sort().forEach((name, index) => {
 });
 
 // parse AudioContext
-const audioContextCodeTmpl = fs.readFileSync(path.join(templates, 'refactor_audio_context.tmpl.rs'), 'utf-8');
+const audioContextCodeTmpl = fs.readFileSync(path.join(templates, 'audio_context.tmpl.rs'), 'utf8');
 const audioContextTmpl = compile(audioContextCodeTmpl);
 
 ['AudioContext', 'OfflineAudioContext'].forEach((name, index) => {
@@ -252,24 +252,21 @@ const audioContextTmpl = compile(audioContextCodeTmpl);
 });
 
 // process other nodes and objects
-// ['audio_param', 'audio_node', 'lib', 'audio_context', 'offline_audio_context'].forEach(src => {
-// ['audio_param', 'audio_node', 'lib'].forEach(src => {
-//   const pathname = path.join(output, `${src}.rs`);
-//   console.log('> generating file: ', path.relative(process.cwd(), pathname));
+['audio_param', 'audio_node', 'lib'].forEach(src => {
+  const pathname = path.join(output, `${src}.rs`);
+  console.log('> generating file: ', path.relative(process.cwd(), pathname));
 
-//   const codeTmpl = fs.readFileSync(path.join(templates, `${src}.tmpl.rs`), 'utf8');
-//   const tmpl = compile(codeTmpl);
+  const codeTmpl = fs.readFileSync(path.join(templates, `${src}.tmpl.rs`), 'utf8');
+  const tmpl = compile(codeTmpl);
 
-//   const code = tmpl({
-//     nodes: audioNodes,
-//     tree,
-//     ...utils,
-//   });
+  const code = tmpl({
+    nodes: audioNodes,
+    tree,
+    ...utils,
+  });
 
-//   fs.writeFileSync(pathname, generated(code));
-// });
-
-// // setInterval(() => {}, 1000);
+  fs.writeFileSync(pathname, generated(code));
+});
 
 // create the mjs export file
 console.log('> generating esm export file (./index.mjs)');
