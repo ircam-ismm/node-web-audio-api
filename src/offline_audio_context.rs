@@ -62,6 +62,7 @@ impl NapiOfflineAudioContext {
                 // ----------------------------------------------------
                 Property::new("length")?.with_getter(get_length),
                 Property::new("startRendering")?.with_method(start_rendering),
+                Property::new("suspend_and")?.with_method(suspend_and),
             ],
         )
     }
@@ -469,4 +470,42 @@ fn start_rendering(ctx: CallContext) -> Result<JsObject> {
     napi_audio_buffer.populate(audio_buffer);
 
     Ok(js_audio_buffer)
+}
+
+#[js_function(2)]
+fn suspend_and(ctx: CallContext) -> Result<JsUndefined> {
+    use napi::threadsafe_function::ThreadSafeCallContext;
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
+
+    let when = match ctx.try_get::<JsNumber>(0)? {
+        Either::A(value) => value.get_double()?,
+        Either::B(_) => 0.,
+    };
+
+    let js_func = match ctx.try_get::<JsFunction>(1)? {
+        Either::A(value) => value,
+        Either::B(_) => todo!(),
+    };
+
+    println!("suspend_and {}", when);
+    let js_func_ref = ctx.env.create_reference(js_func)?;
+    let js_func: JsFunction = ctx.env.get_reference_value(&js_func_ref).unwrap();
+
+    /*
+    let tsfn =
+        ctx
+        .env
+        .create_threadsafe_function(&js_func, 0, |ctx: ThreadSafeCallContext<()>| {
+            Ok(vec![()])
+        })?;
+        */
+
+    napi_obj.0.suspend_at(when, move |_| {
+        println!("callback runs now");
+        js_func.call_without_args(Some(&js_this)).unwrap();
+        //tsfn.call(Ok(()), napi::threadsafe_function::ThreadsafeFunctionCallMode::Blocking);
+    });
+
+    ctx.env.get_undefined()
 }
