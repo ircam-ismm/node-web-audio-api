@@ -57,17 +57,16 @@ impl NapiAudioContext {
                 Property::new("createPanner")?.with_method(create_panner),
                 Property::new("createStereoPanner")?.with_method(create_stereo_panner),
                 Property::new("createWaveShaper")?.with_method(create_wave_shaper),
-                // ----------------------------------------------------
-                // Methods and attributes specific to Online audio context
-                // ----------------------------------------------------
-                // this should be implemented for offline as well
-                // see https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-state
+                // @todo - expose in OfflineAudioContext as well
                 Property::new("state")?.with_getter(get_state),
-                Property::new("baseLatency")?.with_getter(get_base_latency),
-                Property::new("outputLatency")?.with_getter(get_output_latency),
                 Property::new("resume")?.with_method(resume),
                 Property::new("suspend")?.with_method(suspend),
                 Property::new("close")?.with_method(close),
+                // ----------------------------------------------------
+                // Methods and attributes specific to AudioContext
+                // ----------------------------------------------------
+                Property::new("baseLatency")?.with_getter(get_base_latency),
+                Property::new("outputLatency")?.with_getter(get_output_latency),
                 Property::new("setSinkId")?.with_method(set_sink_id),
                 Property::new("createMediaStreamSource")?.with_method(create_media_stream_source),
             ],
@@ -83,7 +82,9 @@ impl NapiAudioContext {
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
-    // parse AudioContext options
+    // -------------------------------------------------
+    // Parse options and create AudioContext
+    // -------------------------------------------------
     let options_js: Option<JsObject> = ctx.try_get::<JsObject>(0)?.into();
     let audio_context_options = if let Some(options) = options_js {
         // LatencyHint
@@ -111,7 +112,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             AudioContextLatencyCategory::Interactive
         };
 
-        // SampleRate
         let sample_rate =
             if let Some(sample_rate_js) = options.get::<&str, JsNumber>("sampleRate")? {
                 let sample_rate = sample_rate_js.get_double()? as f32;
@@ -139,6 +139,10 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     };
 
     let audio_context = AudioContext::new(audio_context_options);
+
+    // -------------------------------------------------
+    // Wrap context
+    // -------------------------------------------------
     let napi_audio_context = NapiAudioContext(audio_context);
     ctx.env.wrap(&mut js_this, napi_audio_context)?;
 
@@ -149,7 +153,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_property_attributes(PropertyAttributes::Static),
     ])?;
 
-    // Audio Destination
+    // -------------------------------------------------
+    // Bind AudioDestination
+    // -------------------------------------------------
     let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
     let store: JsObject = ctx.env.get_reference_value(store_ref)?;
     let ctor: JsFunction = store.get_named_property("AudioDestinationNode")?;
@@ -185,9 +191,11 @@ fn get_listener(ctx: CallContext) -> Result<JsObject> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
     // reproduce lazy instanciation strategy from rust crate
-    let ok_obj = if js_this.has_named_property("__listener__").ok().unwrap() == true {
+    if js_this.has_named_property("__listener__").ok().unwrap() {
+        println!("reuse");
         js_this.get_named_property("__listener__")
     } else {
+        println!("wrap");
         let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
         let store: JsObject = ctx.env.get_reference_value(store_ref)?;
         let ctor: JsFunction = store.get_named_property("AudioListener")?;
@@ -195,9 +203,7 @@ fn get_listener(ctx: CallContext) -> Result<JsObject> {
         js_this.set_named_property("__listener__", &js_obj)?;
 
         Ok(js_obj)
-    };
-
-    ok_obj
+    }
 }
 
 // ----------------------------------------------------
@@ -488,10 +494,10 @@ fn create_wave_shaper(ctx: CallContext) -> Result<JsObject> {
 }
 
 // ----------------------------------------------------
-// Methods and attributes specific to OnlineAudioContext
+// Methods and attributes specific to AudioContext
 // ----------------------------------------------------
 
-// this should be implemented for offline as well
+// @todo - expose in OfflineAudioContext
 // see https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-state
 #[js_function]
 fn get_state(ctx: CallContext) -> Result<JsString> {
@@ -507,26 +513,6 @@ fn get_state(ctx: CallContext) -> Result<JsString> {
     };
 
     ctx.env.create_string(state_str)
-}
-
-#[js_function]
-fn get_base_latency(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
-    let obj = napi_obj.unwrap();
-
-    let base_latency = obj.base_latency() as f64;
-    ctx.env.create_double(base_latency)
-}
-
-#[js_function]
-fn get_output_latency(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
-    let obj = napi_obj.unwrap();
-
-    let output_latency = obj.output_latency() as f64;
-    ctx.env.create_double(output_latency)
 }
 
 // @todo - async version
@@ -563,6 +549,26 @@ fn close(ctx: CallContext) -> Result<JsUndefined> {
     obj.close_sync();
 
     ctx.env.get_undefined()
+}
+
+#[js_function]
+fn get_base_latency(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
+    let obj = napi_obj.unwrap();
+
+    let base_latency = obj.base_latency() as f64;
+    ctx.env.create_double(base_latency)
+}
+
+#[js_function]
+fn get_output_latency(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
+    let obj = napi_obj.unwrap();
+
+    let output_latency = obj.output_latency() as f64;
+    ctx.env.create_double(output_latency)
 }
 
 #[js_function(1)]
