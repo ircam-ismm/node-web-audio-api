@@ -409,10 +409,8 @@ fn set_sink_id(ctx: CallContext) -> Result<JsUndefined> {
 
     let res = obj.set_sink_id_sync(sink_id);
 
-    if res.is_err() {
-        return Err(napi::Error::from_reason(
-            res.unwrap_err().to_string(),
-        ));
+    if let Err(msg) = res {
+        return Err(napi::Error::from_reason(msg.to_string()));
     }
 
     ctx.env.get_undefined()
