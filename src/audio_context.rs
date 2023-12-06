@@ -104,7 +104,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                     }
                 }
                 Either::B(js_number) => {
-                    let latency = js_number.get_double()? as f64;
+                    let latency = js_number.get_double()?;
                     AudioContextLatencyCategory::Custom(latency)
                 }
             }
@@ -171,7 +171,7 @@ fn get_current_time(ctx: CallContext) -> Result<JsNumber> {
     let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
     let obj = napi_obj.unwrap();
 
-    let current_time = obj.current_time() as f64;
+    let current_time = obj.current_time();
     ctx.env.create_double(current_time)
 }
 
@@ -192,10 +192,8 @@ fn get_listener(ctx: CallContext) -> Result<JsObject> {
 
     // reproduce lazy instanciation strategy from rust crate
     if js_this.has_named_property("__listener__").ok().unwrap() {
-        println!("reuse");
         js_this.get_named_property("__listener__")
     } else {
-        println!("wrap");
         let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
         let store: JsObject = ctx.env.get_reference_value(store_ref)?;
         let ctor: JsFunction = store.get_named_property("AudioListener")?;
@@ -557,7 +555,7 @@ fn get_base_latency(ctx: CallContext) -> Result<JsNumber> {
     let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
     let obj = napi_obj.unwrap();
 
-    let base_latency = obj.base_latency() as f64;
+    let base_latency = obj.base_latency();
     ctx.env.create_double(base_latency)
 }
 
@@ -567,7 +565,7 @@ fn get_output_latency(ctx: CallContext) -> Result<JsNumber> {
     let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
     let obj = napi_obj.unwrap();
 
-    let output_latency = obj.output_latency() as f64;
+    let output_latency = obj.output_latency();
     ctx.env.create_double(output_latency)
 }
 

@@ -115,7 +115,7 @@ fn get_current_time(ctx: CallContext) -> Result<JsNumber> {
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
     let obj = napi_obj.unwrap();
 
-    let current_time = obj.current_time() as f64;
+    let current_time = obj.current_time();
     ctx.env.create_double(current_time)
 }
 
@@ -136,10 +136,8 @@ fn get_listener(ctx: CallContext) -> Result<JsObject> {
 
     // reproduce lazy instanciation strategy from rust crate
     if js_this.has_named_property("__listener__").ok().unwrap() {
-        println!("reuse");
         js_this.get_named_property("__listener__")
     } else {
-        println!("wrap");
         let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
         let store: JsObject = ctx.env.get_reference_value(store_ref)?;
         let ctor: JsFunction = store.get_named_property("AudioListener")?;

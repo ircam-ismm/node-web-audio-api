@@ -92,7 +92,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                     }
                 }
                 Either::B(js_number) => {
-                    let latency = js_number.get_double()? as f64;
+                    let latency = js_number.get_double()?;
                     AudioContextLatencyCategory::Custom(latency)
                 }
             }
@@ -170,7 +170,7 @@ fn get_current_time(ctx: CallContext) -> Result<JsNumber> {
     let napi_obj = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
     let obj = napi_obj.unwrap();
 
-    let current_time = obj.current_time() as f64;
+    let current_time = obj.current_time();
     ctx.env.create_double(current_time)
 }
 
@@ -384,7 +384,7 @@ fn get_base_latency(ctx: CallContext) -> Result<JsNumber> {
     let napi_obj = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
     let obj = napi_obj.unwrap();
 
-    let base_latency = obj.base_latency() as f64;
+    let base_latency = obj.base_latency();
     ctx.env.create_double(base_latency)
 }
 
@@ -394,7 +394,7 @@ fn get_output_latency(ctx: CallContext) -> Result<JsNumber> {
     let napi_obj = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
     let obj = napi_obj.unwrap();
 
-    let output_latency = obj.output_latency() as f64;
+    let output_latency = obj.output_latency();
     ctx.env.create_double(output_latency)
 }
 
