@@ -489,22 +489,15 @@ fn suspend_and(ctx: CallContext) -> Result<JsUndefined> {
     };
 
     println!("suspend_and {}", when);
-    let js_func_ref = ctx.env.create_reference(js_func)?;
-    let js_func: JsFunction = ctx.env.get_reference_value(&js_func_ref).unwrap();
 
-    /*
-    let tsfn =
-        ctx
-        .env
-        .create_threadsafe_function(&js_func, 0, |ctx: ThreadSafeCallContext<()>| {
-            Ok(vec![()])
-        })?;
-        */
+    let tsfn = ctx.env.create_threadsafe_function(&js_func, 0, |ctx: ThreadSafeCallContext<()>| {
+        Ok(vec![()])
+    })?;
 
     napi_obj.0.suspend_at(when, move |_| {
         println!("callback runs now");
-        js_func.call_without_args(Some(&js_this)).unwrap();
-        //tsfn.call(Ok(()), napi::threadsafe_function::ThreadsafeFunctionCallMode::Blocking);
+        // js_func.call_without_args(Some(&js_this)).unwrap();
+        tsfn.call(Ok(()), napi::threadsafe_function::ThreadsafeFunctionCallMode::Blocking);
     });
 
     ctx.env.get_undefined()
