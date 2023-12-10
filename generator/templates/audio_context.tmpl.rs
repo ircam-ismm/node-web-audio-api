@@ -39,6 +39,8 @@ impl ${d.napiName(d.node)} {
                 Property::new("resume")?.with_method(resume),
                 Property::new("suspend")?.with_method(suspend),
                 Property::new("close")?.with_method(close),
+                // event
+                // Property::new("__onstatechange")?.with_setter(onstatechange),
 
                 // ----------------------------------------------------
                 // Methods and attributes specific to AudioContext
@@ -377,6 +379,17 @@ fn ${method}(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 `).join('')}
+
+// #[js_function]
+// fn onstatechange(ctx: CallContext) -> Result<JsUndefined> {
+//     let js_this = ctx.this_unchecked::<JsObject>();
+//     let napi_obj = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+//     let obj = napi_obj.unwrap();
+
+
+
+//     ctx.env.get_undefined();
+// }
 
 #[js_function]
 fn get_base_latency(ctx: CallContext) -> Result<JsNumber> {

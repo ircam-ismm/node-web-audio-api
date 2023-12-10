@@ -1,4 +1,5 @@
 const fs = require('fs');
+// const { isFunction } = require('@ircam/sc-utils');
 
 const isPlainObject = function(obj) {
   return Object.prototype.toString.call(obj) === '[object Object]';
@@ -18,6 +19,47 @@ class NotSupportedError extends Error {
     this.name = 'NotSupportedError';
   }
 }
+
+// const symbolListeners =  new Symbol('listeners');
+
+// function addEventListenerMixin(instance, eventName) {
+//   instance[`on${eventName}`] = null;
+
+//   if (!instance[symbolListeners]) {
+//     instance[symbolListeners] = new Map();
+//   }
+
+//   // use a Set, same function should not be executed twice
+//   instance[symbolListeners].set(eventName, new Set());
+
+//   if (!instance.addEventListener) {
+//     instance.addEventListener = (name, callback) => {
+//       // this is valid event name, otherwaise just ignore
+//       if (instance[symbolListeners].has(name)) {
+//         const callbacks = instance[symbolListeners].get(name);
+//         callbacks.add(callback);
+//       }
+//     }
+
+//     instance.removeEventListener = (name, callback) => {
+//       // this is valid event name, otherwaise just ignore
+//       if (instance[symbolListeners].has(name)) {
+//         const callbacks = instance[symbolListeners].get(name);
+//         callbacks.delete(callback);
+//       }
+//     }
+//   }
+
+//   // add a listener on native event
+//   instance[`__on${eventName}`] = function(...args) {
+//     if (isFunction(instance[`on${eventName}`])) {
+//       instance[`on${eventName}`](...args);
+//     }
+
+//     const callbacks = instance[symbolListeners].get(eventName);
+//     callbacks.forEach(callback => callback(...args));
+//   }
+// }
 
 const { platform, arch } = process;
 
@@ -90,9 +132,11 @@ function patchAudioContext(nativeBinding) {
     }
 
     decodeAudioData(audioData) {
-      if (!audioData instanceof ArrayBuffer) {
+      console.log(audioData, audioData instanceof ArrayBuffer)
+      if (!(audioData instanceof ArrayBuffer) {
         throw new Error('Invalid argument, please provide an ArrayBuffer');
       }
+
       try {
         const audioBuffer = super.decodeAudioData(audioData);
         return Promise.resolve(audioBuffer);
