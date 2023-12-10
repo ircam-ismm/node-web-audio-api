@@ -195,42 +195,42 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
             let some_ref_distance_js = options_js.get::<&str, JsNumber>("refDistance")?;
             let ref_distance = if let Some(ref_distance_js) = some_ref_distance_js {
-                ref_distance_js.get_double()? as f64
+                ref_distance_js.get_double()?
             } else {
                 1.
             };
 
             let some_max_distance_js = options_js.get::<&str, JsNumber>("maxDistance")?;
             let max_distance = if let Some(max_distance_js) = some_max_distance_js {
-                max_distance_js.get_double()? as f64
+                max_distance_js.get_double()?
             } else {
                 10000.
             };
 
             let some_rolloff_factor_js = options_js.get::<&str, JsNumber>("rolloffFactor")?;
             let rolloff_factor = if let Some(rolloff_factor_js) = some_rolloff_factor_js {
-                rolloff_factor_js.get_double()? as f64
+                rolloff_factor_js.get_double()?
             } else {
                 1.
             };
 
             let some_cone_inner_angle_js = options_js.get::<&str, JsNumber>("coneInnerAngle")?;
             let cone_inner_angle = if let Some(cone_inner_angle_js) = some_cone_inner_angle_js {
-                cone_inner_angle_js.get_double()? as f64
+                cone_inner_angle_js.get_double()?
             } else {
                 360.
             };
 
             let some_cone_outer_angle_js = options_js.get::<&str, JsNumber>("coneOuterAngle")?;
             let cone_outer_angle = if let Some(cone_outer_angle_js) = some_cone_outer_angle_js {
-                cone_outer_angle_js.get_double()? as f64
+                cone_outer_angle_js.get_double()?
             } else {
                 360.
             };
 
             let some_cone_outer_gain_js = options_js.get::<&str, JsNumber>("coneOuterGain")?;
             let cone_outer_gain = if let Some(cone_outer_gain_js) = some_cone_outer_gain_js {
-                cone_outer_gain_js.get_double()? as f64
+                cone_outer_gain_js.get_double()?
             } else {
                 0.
             };
@@ -519,7 +519,7 @@ fn get_ref_distance(ctx: CallContext) -> Result<JsNumber> {
     let node = napi_node.unwrap();
 
     let value = node.ref_distance();
-    ctx.env.create_double(value as f64)
+    ctx.env.create_double(value)
 }
 
 #[js_function(0)]
@@ -529,7 +529,7 @@ fn get_max_distance(ctx: CallContext) -> Result<JsNumber> {
     let node = napi_node.unwrap();
 
     let value = node.max_distance();
-    ctx.env.create_double(value as f64)
+    ctx.env.create_double(value)
 }
 
 #[js_function(0)]
@@ -539,7 +539,7 @@ fn get_rolloff_factor(ctx: CallContext) -> Result<JsNumber> {
     let node = napi_node.unwrap();
 
     let value = node.rolloff_factor();
-    ctx.env.create_double(value as f64)
+    ctx.env.create_double(value)
 }
 
 #[js_function(0)]
@@ -549,7 +549,7 @@ fn get_cone_inner_angle(ctx: CallContext) -> Result<JsNumber> {
     let node = napi_node.unwrap();
 
     let value = node.cone_inner_angle();
-    ctx.env.create_double(value as f64)
+    ctx.env.create_double(value)
 }
 
 #[js_function(0)]
@@ -559,7 +559,7 @@ fn get_cone_outer_angle(ctx: CallContext) -> Result<JsNumber> {
     let node = napi_node.unwrap();
 
     let value = node.cone_outer_angle();
-    ctx.env.create_double(value as f64)
+    ctx.env.create_double(value)
 }
 
 #[js_function(0)]
@@ -569,7 +569,7 @@ fn get_cone_outer_gain(ctx: CallContext) -> Result<JsNumber> {
     let node = napi_node.unwrap();
 
     let value = node.cone_outer_gain();
-    ctx.env.create_double(value as f64)
+    ctx.env.create_double(value)
 }
 
 // -------------------------------------------------
@@ -621,7 +621,7 @@ fn set_ref_distance(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()? as f64;
+    let value = ctx.get::<JsNumber>(0)?.get_double()?;
     node.set_ref_distance(value);
 
     ctx.env.get_undefined()
@@ -633,7 +633,7 @@ fn set_max_distance(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()? as f64;
+    let value = ctx.get::<JsNumber>(0)?.get_double()?;
     node.set_max_distance(value);
 
     ctx.env.get_undefined()
@@ -645,7 +645,7 @@ fn set_rolloff_factor(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()? as f64;
+    let value = ctx.get::<JsNumber>(0)?.get_double()?;
     node.set_rolloff_factor(value);
 
     ctx.env.get_undefined()
@@ -657,7 +657,7 @@ fn set_cone_inner_angle(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()? as f64;
+    let value = ctx.get::<JsNumber>(0)?.get_double()?;
     node.set_cone_inner_angle(value);
 
     ctx.env.get_undefined()
@@ -669,7 +669,7 @@ fn set_cone_outer_angle(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()? as f64;
+    let value = ctx.get::<JsNumber>(0)?.get_double()?;
     node.set_cone_outer_angle(value);
 
     ctx.env.get_undefined()
@@ -681,7 +681,7 @@ fn set_cone_outer_gain(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()? as f64;
+    let value = ctx.get::<JsNumber>(0)?.get_double()?;
     node.set_cone_outer_gain(value);
 
     ctx.env.get_undefined()

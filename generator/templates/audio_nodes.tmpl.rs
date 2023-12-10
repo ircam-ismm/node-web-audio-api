@@ -155,7 +155,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                         return `
             let some_${simple_slug}_js = options_js.get::<&str, JsNumber>("${m.name}")?;
             let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
-                ${simple_slug}_js.get_double()? as f64
+                ${simple_slug}_js.get_double()?
             } else {
                 ${m.required ? `return Err(napi::Error::from_reason(
                     "Parameter ${d.name(m)} is required".to_string(),
@@ -525,7 +525,31 @@ fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsBoolean> {
             `;
             break;
         case 'float':
+            return `
+#[js_function(0)]
+fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let value = node.${d.slug(attr, true)}();
+    ctx.env.create_double(value as f64)
+}
+            `;
+            break;
         case 'double':
+            return `
+#[js_function(0)]
+fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let value = node.${d.slug(attr, true)}();
+    ctx.env.create_double(value)
+}
+            `;
+            break;
         case 'unsigned long':
             return `
 #[js_function(0)]
@@ -662,7 +686,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()? as f64;
+    let value = ctx.get::<JsNumber>(0)?.get_double()?;
     node.set_${d.slug(attr)}(value);
 
     ctx.env.get_undefined()
