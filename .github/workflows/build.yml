@@ -17,6 +17,7 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
+          toolchain: stable
           components: clippy
 
       - name: Install ALSA and Jack dependencies
@@ -40,8 +41,9 @@ jobs:
       matrix:
         settings:
           # ---------------------------------------------------------
-          # MAC (ok)
+          # MAC
           # ---------------------------------------------------------
+
           # Intel
           - host: macos-latest
             target: x86_64-apple-darwin
@@ -49,10 +51,11 @@ jobs:
             build: |
               yarn build
               strip -x *.node
+
           # ARM
           - host: macos-latest
             architecture: x64
-            target: 'aarch64-apple-darwin'
+            target: aarch64-apple-darwin
             build: |
               sudo rm -Rf /Library/Developer/CommandLineTools/SDKs/*;
               export CC=$(xcrun -f clang);
@@ -63,25 +66,20 @@ jobs:
               strip -x *.node
 
           # ---------------------------------------------------------
-          # WINDOWS (ok)
+          # WINDOWS
           # ---------------------------------------------------------
+
           # Intel 64
           - host: windows-latest
             build: yarn build
             target: x86_64-pc-windows-msvc
             architecture: x64
+
           # ARM64
           - host: windows-latest
             architecture: x64
             target: aarch64-pc-windows-msvc
             build: yarn build --target aarch64-pc-windows-msvc
-          # Intel 32
-          # - host: windows-latest
-          #   build: |
-          #     yarn build --target i686-pc-windows-msvc
-          #     # yarn test
-          #   target: i686-pc-windows-msvc
-          #   architecture: x86
 
           # ---------------------------------------------------------
           # Linux requires libasound-dev which is a mess to do remotely
@@ -91,60 +89,67 @@ jobs:
     name: stable - ${{ matrix.settings.target }} - node@16
     runs-on: ${{ matrix.settings.host }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Setup node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: 16
           check-latest: true
           cache: yarn
           architecture: ${{ matrix.settings.architecture }}
-      - name: Install
-        uses: actions-rs/toolchain@v1
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          override: true
           toolchain: stable
-          target: ${{ matrix.settings.target }}
+          targets: ${{ matrix.settings.target }}
+
       - name: Generate Cargo.lock
-        uses: actions-rs/cargo@v1
-        with:
-          command: generate-lockfile
+        run: cargo generate-lockfile
+
       - name: Cache cargo registry
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.cargo/registry
           key: ${{ matrix.settings.target }}-node@16-cargo-registry-trimmed-${{ hashFiles('**/Cargo.lock') }}
+
       - name: Cache cargo index
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.cargo/git
           key: ${{ matrix.settings.target }}-node@16-cargo-index-trimmed-${{ hashFiles('**/Cargo.lock') }}
+
       - name: Cache NPM dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: node_modules
           key: npm-cache-${{ matrix.settings.target }}-node@16-${{ hashFiles('yarn.lock') }}
+
       - name: Pull latest image
         run: ${{ matrix.settings.docker }}
         env:
           DOCKER_REGISTRY_URL: ghcr.io
         if: ${{ matrix.settings.docker }}
+
       - name: Setup toolchain
         run: ${{ matrix.settings.setup }}
         if: ${{ matrix.settings.setup }}
         shell: bash
+
       - name: Install dependencies
         run: yarn install --ignore-scripts --registry https://registry.npmjs.org --network-timeout 300000
+
       - name: Build
         run: ${{ matrix.settings.build }}
         shell: bash
+
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: bindings-${{ matrix.settings.target }}
           path: ${{ env.APP_NAME }}.*.node
           if-no-files-found: error
+
   # publish:
   #   name: Publish
   #   runs-on: ubuntu-latest
@@ -166,7 +171,7 @@ jobs:
   #         check-latest: true
   #         cache: yarn
   #     - name: Cache NPM dependencies
-  #       uses: actions/cache@v2
+  #       uses: actions/cache@v3
   #       with:
   #         path: node_modules
   #         key: npm-cache-ubuntu-latest-${{ hashFiles('yarn.lock') }}
