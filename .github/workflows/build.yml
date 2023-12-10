@@ -82,7 +82,7 @@ jobs:
             build: yarn build --target aarch64-pc-windows-msvc
 
           # ---------------------------------------------------------
-          # Linux requires libasound-dev which is a mess to do remotely
+          # Linux requires libasound2-dev which is a mess to do remotely
           # in particular for RPi, do it locally and workaround...
           # ---------------------------------------------------------
 
