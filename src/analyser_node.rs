@@ -126,14 +126,14 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
             let some_max_decibels_js = options_js.get::<&str, JsNumber>("maxDecibels")?;
             let max_decibels = if let Some(max_decibels_js) = some_max_decibels_js {
-                max_decibels_js.get_double()? as f64
+                max_decibels_js.get_double()?
             } else {
                 -30.
             };
 
             let some_min_decibels_js = options_js.get::<&str, JsNumber>("minDecibels")?;
             let min_decibels = if let Some(min_decibels_js) = some_min_decibels_js {
-                min_decibels_js.get_double()? as f64
+                min_decibels_js.get_double()?
             } else {
                 -100.
             };
@@ -142,7 +142,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                 options_js.get::<&str, JsNumber>("smoothingTimeConstant")?;
             let smoothing_time_constant =
                 if let Some(smoothing_time_constant_js) = some_smoothing_time_constant_js {
-                    smoothing_time_constant_js.get_double()? as f64
+                    smoothing_time_constant_js.get_double()?
                 } else {
                     0.8
                 };
@@ -368,7 +368,7 @@ fn get_min_decibels(ctx: CallContext) -> Result<JsNumber> {
     let node = napi_node.unwrap();
 
     let value = node.min_decibels();
-    ctx.env.create_double(value as f64)
+    ctx.env.create_double(value)
 }
 
 #[js_function(0)]
@@ -378,7 +378,7 @@ fn get_max_decibels(ctx: CallContext) -> Result<JsNumber> {
     let node = napi_node.unwrap();
 
     let value = node.max_decibels();
-    ctx.env.create_double(value as f64)
+    ctx.env.create_double(value)
 }
 
 #[js_function(0)]
@@ -388,7 +388,7 @@ fn get_smoothing_time_constant(ctx: CallContext) -> Result<JsNumber> {
     let node = napi_node.unwrap();
 
     let value = node.smoothing_time_constant();
-    ctx.env.create_double(value as f64)
+    ctx.env.create_double(value)
 }
 
 // -------------------------------------------------
@@ -413,7 +413,7 @@ fn set_min_decibels(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()? as f64;
+    let value = ctx.get::<JsNumber>(0)?.get_double()?;
     node.set_min_decibels(value);
 
     ctx.env.get_undefined()
@@ -425,7 +425,7 @@ fn set_max_decibels(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()? as f64;
+    let value = ctx.get::<JsNumber>(0)?.get_double()?;
     node.set_max_decibels(value);
 
     ctx.env.get_undefined()
@@ -437,7 +437,7 @@ fn set_smoothing_time_constant(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()? as f64;
+    let value = ctx.get::<JsNumber>(0)?.get_double()?;
     node.set_smoothing_time_constant(value);
 
     ctx.env.get_undefined()

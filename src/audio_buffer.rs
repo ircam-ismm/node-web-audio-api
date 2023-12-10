@@ -8,7 +8,7 @@ use web_audio_api::{AudioBuffer, AudioBufferOptions};
 
 // helper convert [f32] to [u8]
 // https://users.rust-lang.org/t/vec-f32-to-u8/21522/7
-fn to_byte_slice<'a>(floats: &'a [f32]) -> &'a [u8] {
+fn to_byte_slice(floats: &[f32]) -> &[u8] {
     unsafe { std::slice::from_raw_parts(floats.as_ptr() as *const _, floats.len() * 4) }
 }
 
@@ -158,7 +158,7 @@ fn duration(ctx: CallContext) -> Result<JsNumber> {
     let obj = napi_obj.unwrap();
 
     let duration = obj.duration();
-    ctx.env.create_double(duration as f64)
+    ctx.env.create_double(duration)
 }
 
 #[js_function]

@@ -1,15 +1,19 @@
 const fs = require('fs');
-// const { isFunction } = require('@ircam/sc-utils');
 
-const isPlainObject = function(obj) {
+function isPlainObject(obj) {
   return Object.prototype.toString.call(obj) === '[object Object]';
 };
 
-const isPositiveInt = function(n) {
+function isFunction(val) {
+  return Object.prototype.toString.call(val) == '[object Function]' ||
+    Object.prototype.toString.call(val) == '[object AsyncFunction]';
+}
+
+function isPositiveInt(n) {
   return Number.isSafeInteger(n) && 0 < n;
 };
 
-const isPositiveNumber = function(n) {
+function isPositiveNumber(n) {
   return Number(n) === n && 0 < n;
 };
 
@@ -20,46 +24,46 @@ class NotSupportedError extends Error {
   }
 }
 
-// const symbolListeners =  new Symbol('listeners');
+const symbolListeners =  Symbol('listeners');
 
-// function addEventListenerMixin(instance, eventName) {
-//   instance[`on${eventName}`] = null;
+function addEventListenerMixin(instance, eventName) {
+  instance[`on${eventName}`] = null;
 
-//   if (!instance[symbolListeners]) {
-//     instance[symbolListeners] = new Map();
-//   }
+  if (!instance[symbolListeners]) {
+    instance[symbolListeners] = new Map();
+  }
 
-//   // use a Set, same function should not be executed twice
-//   instance[symbolListeners].set(eventName, new Set());
+  // use a Set, same function should not be executed twice
+  instance[symbolListeners].set(eventName, new Set());
 
-//   if (!instance.addEventListener) {
-//     instance.addEventListener = (name, callback) => {
-//       // this is valid event name, otherwaise just ignore
-//       if (instance[symbolListeners].has(name)) {
-//         const callbacks = instance[symbolListeners].get(name);
-//         callbacks.add(callback);
-//       }
-//     }
+  if (!instance.addEventListener) {
+    instance.addEventListener = (name, callback) => {
+      // this is valid event name, otherwaise just ignore
+      if (instance[symbolListeners].has(name)) {
+        const callbacks = instance[symbolListeners].get(name);
+        callbacks.add(callback);
+      }
+    }
 
-//     instance.removeEventListener = (name, callback) => {
-//       // this is valid event name, otherwaise just ignore
-//       if (instance[symbolListeners].has(name)) {
-//         const callbacks = instance[symbolListeners].get(name);
-//         callbacks.delete(callback);
-//       }
-//     }
-//   }
+    instance.removeEventListener = (name, callback) => {
+      // this is valid event name, otherwaise just ignore
+      if (instance[symbolListeners].has(name)) {
+        const callbacks = instance[symbolListeners].get(name);
+        callbacks.delete(callback);
+      }
+    }
+  }
 
-//   // add a listener on native event
-//   instance[`__on${eventName}`] = function(...args) {
-//     if (isFunction(instance[`on${eventName}`])) {
-//       instance[`on${eventName}`](...args);
-//     }
+  // add a listener on native event
+  instance[`__on${eventName}`] = function(...args) {
+    if (isFunction(instance[`on${eventName}`])) {
+      instance[`on${eventName}`](...args);
+    }
 
-//     const callbacks = instance[symbolListeners].get(eventName);
-//     callbacks.forEach(callback => callback(...args));
-//   }
-// }
+    const callbacks = instance[symbolListeners].get(eventName);
+    callbacks.forEach(callback => callback(...args));
+  }
+}
 
 const { platform, arch } = process;
 
@@ -132,9 +136,9 @@ function patchAudioContext(nativeBinding) {
     }
 
     decodeAudioData(audioData) {
-      console.log(audioData, audioData instanceof ArrayBuffer)
-      if (!(audioData instanceof ArrayBuffer) {
-        throw new Error('Invalid argument, please provide an ArrayBuffer');
+      if (!(audioData instanceof ArrayBuffer)) {
+        // should be TypeError
+        throw new Error(`Failed to execute 'decodeAudioData': parameter 1 is not of type 'ArrayBuffer'`);
       }
 
       try {
@@ -187,8 +191,9 @@ function patchOfflineAudioContext(nativeBinding) {
     }
 
     decodeAudioData(audioData) {
-      if (!audioData instanceof ArrayBuffer) {
-        throw new Error('Invalid argument, please provide an ArrayBuffer');
+      if (!(audioData instanceof ArrayBuffer)) {
+        // should be TypeError
+        throw new Error(`Failed to execute 'decodeAudioData': parameter 1 is not of type 'ArrayBuffer'`);
       }
       try {
         const audioBuffer = super.decodeAudioData(audioData);

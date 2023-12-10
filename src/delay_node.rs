@@ -89,14 +89,14 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         Either::A(options_js) => {
             let some_max_delay_time_js = options_js.get::<&str, JsNumber>("maxDelayTime")?;
             let max_delay_time = if let Some(max_delay_time_js) = some_max_delay_time_js {
-                max_delay_time_js.get_double()? as f64
+                max_delay_time_js.get_double()?
             } else {
                 1.
             };
 
             let some_delay_time_js = options_js.get::<&str, JsNumber>("delayTime")?;
             let delay_time = if let Some(delay_time_js) = some_delay_time_js {
-                delay_time_js.get_double()? as f64
+                delay_time_js.get_double()?
             } else {
                 0.
             };
