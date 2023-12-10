@@ -55,13 +55,29 @@ function addEventListenerMixin(instance, eventName) {
   }
 
   // add a listener on native event
+  // @todo - we should able to clean this listener on close, it prevents the
+  // program to exit
   instance[`__on${eventName}`] = function(...args) {
+    // parse args from rust, should end up with be something like:
+    // e = Event {
+    //   type: eventName,
+    //   target: instance,
+    //   currentTarget: instance,
+    //   srcElement: instance,
+    // };
+    // see if we have some Event class natively in node
+    const event = new Event(eventName);
+    // this doesn't work, the event seems to be frozen
+    event.target = instance;
+    event.currentTarget = instance;
+    event.srcElement = instance;
+
     if (isFunction(instance[`on${eventName}`])) {
-      instance[`on${eventName}`](...args);
+      instance[`on${eventName}`](event);
     }
 
     const callbacks = instance[symbolListeners].get(eventName);
-    callbacks.forEach(callback => callback(...args));
+    callbacks.forEach(callback => callback(event));
   }
 }
 
@@ -88,6 +104,10 @@ function patchAudioContext(nativeBinding) {
       // ment to be more user-friendly than what we have now (is subject to change)
       options = handleDefaultOptions(options, 'audiooutput');
       super(options);
+
+      // monkey patch events
+      addEventListenerMixin(this, 'statechange');
+
       // prevent garbage collection
       const processId = `__AudioContext_${contextIds['audiooutput']}`;
       process[processId] = this;

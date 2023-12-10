@@ -40,7 +40,7 @@ impl ${d.napiName(d.node)} {
                 Property::new("suspend")?.with_method(suspend),
                 Property::new("close")?.with_method(close),
                 // event
-                // Property::new("__onstatechange")?.with_setter(onstatechange),
+                Property::new("__onstatechange")?.with_setter(onstatechange),
 
                 // ----------------------------------------------------
                 // Methods and attributes specific to AudioContext
@@ -380,16 +380,30 @@ fn ${method}(ctx: CallContext) -> Result<JsUndefined> {
 }
 `).join('')}
 
-// #[js_function]
-// fn onstatechange(ctx: CallContext) -> Result<JsUndefined> {
-//     let js_this = ctx.this_unchecked::<JsObject>();
-//     let napi_obj = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-//     let obj = napi_obj.unwrap();
+#[js_function(1)]
+fn onstatechange(ctx: CallContext) -> Result<JsUndefined> {
+    use napi::threadsafe_function::ThreadSafeCallContext;
 
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+    let obj = napi_obj.unwrap();
 
+    // check is done on JS side
+    let js_func = match ctx.try_get::<JsFunction>(0)? {
+        Either::A(value) => value,
+        Either::B(_) => todo!(),
+    };
 
-//     ctx.env.get_undefined();
-// }
+    let tsfn = ctx.env.create_threadsafe_function(&js_func, 0, |_ctx: ThreadSafeCallContext<()>| {
+        Ok(vec![()])
+    })?;
+
+    obj.set_onstatechange(move |_| {
+        tsfn.call(Ok(()), napi::threadsafe_function::ThreadsafeFunctionCallMode::Blocking);
+    });
+
+    ctx.env.get_undefined()
+}
 
 #[js_function]
 fn get_base_latency(ctx: CallContext) -> Result<JsNumber> {
