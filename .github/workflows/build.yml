@@ -19,6 +19,10 @@ jobs:
         with:
           components: clippy
 
+      - name: Install ALSA and Jack dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y libasound2-dev libjack-jackd2-dev
+
       - name: Check out repository
         uses: actions/checkout@v3
 
@@ -26,7 +30,7 @@ jobs:
         run: cargo generate-lockfile
 
       - name: Clippy
-        run: cargo clippy -- -D warnings
+        run: cargo clippy --all-features -- -D warnings
 
   build:
     needs: clippy
