@@ -18,6 +18,7 @@
 // -------------------------------------------------------------------------- //
 
 use std::io::Cursor;
+use std::sync::Arc;
 
 use napi::*;
 use napi_derive::js_function;
@@ -25,7 +26,7 @@ use web_audio_api::context::*;
 
 use crate::*;
 
-pub(crate) struct NapiAudioContext(AudioContext);
+pub(crate) struct NapiAudioContext(Arc<AudioContext>);
 
 impl NapiAudioContext {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -143,7 +144,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // -------------------------------------------------
     // Wrap context
     // -------------------------------------------------
-    let napi_audio_context = NapiAudioContext(audio_context);
+    let napi_audio_context = NapiAudioContext(Arc::new(audio_context));
     ctx.env.wrap(&mut js_this, napi_audio_context)?;
 
     js_this.define_properties(&[

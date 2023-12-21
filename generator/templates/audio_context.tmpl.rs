@@ -1,4 +1,5 @@
 use std::io::Cursor;
+use std::sync::Arc;
 
 use napi::*;
 use napi_derive::js_function;
@@ -6,7 +7,7 @@ use web_audio_api::context::*;
 
 use crate::*;
 
-pub(crate) struct ${d.napiName(d.node)}(${d.name(d.node)});
+pub(crate) struct ${d.napiName(d.node)}(Arc<${d.name(d.node)}>);
 
 impl ${d.napiName(d.node)} {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -53,7 +54,8 @@ impl ${d.napiName(d.node)} {
                 // ----------------------------------------------------
                 Property::new("length")?.with_getter(get_length),
                 Property::new("startRendering")?.with_method(start_rendering),
-                Property::new("suspend_and")?.with_method(suspend_and),
+                Property::new("suspend")?.with_method(suspend_offline),
+                Property::new("resume")?.with_method(resume_offline),
                     `
                 }
             ],
@@ -142,7 +144,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // -------------------------------------------------
     // Wrap context
     // -------------------------------------------------
-    let napi_audio_context = ${d.napiName(d.node)}(audio_context);
+    let napi_audio_context = ${d.napiName(d.node)}(Arc::new(audio_context));
     ctx.env.wrap(&mut js_this, napi_audio_context)?;
 
     js_this.define_properties(&[
@@ -455,52 +457,69 @@ fn start_rendering(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
 
-    let audio_buffer = napi_obj.0.start_rendering_sync();
+    let clone = napi_obj.0.clone();
 
-    // create js audio buffer instance
-    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
-    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
-    let ctor: JsFunction = store.get_named_property("AudioBuffer")?;
-    let mut options = ctx.env.create_object()?;
-    options.set("__internal_caller__", ctx.env.get_null())?;
+    ctx.env.execute_tokio_future(
+        async move {
+            let audio_buffer = clone.start_rendering().await;
+            Ok(audio_buffer)
+        },
+        |&mut env, audio_buffer| {
+            // create js audio buffer instance
+            let store_ref: &mut napi::Ref<()> = env.get_instance_data()?.unwrap();
+            let store: JsObject = env.get_reference_value(store_ref)?;
+            let ctor: JsFunction = store.get_named_property("AudioBuffer")?;
+            // this should be cleaned
+            let mut options = env.create_object()?;
+            options.set("__internal_caller__", env.get_null())?;
+            // populate with audio buffer
+            let js_audio_buffer = ctor.new_instance(&[options])?;
+            let napi_audio_buffer = env.unwrap::<NapiAudioBuffer>(&js_audio_buffer)?;
+            napi_audio_buffer.populate(audio_buffer);
 
-    // populate with audio buffer
-    let js_audio_buffer = ctor.new_instance(&[options])?;
-    let napi_audio_buffer = ctx.env.unwrap::<NapiAudioBuffer>(&js_audio_buffer)?;
-    napi_audio_buffer.populate(audio_buffer);
-
-    Ok(js_audio_buffer)
+            Ok(js_audio_buffer)
+        },
+    )
 }
 
-#[js_function(2)]
-fn suspend_and(ctx: CallContext) -> Result<JsUndefined> {
-    use napi::threadsafe_function::ThreadSafeCallContext;
+#[js_function(1)]
+fn suspend_offline(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
+    let clone = napi_obj.0.clone();
 
     let when = match ctx.try_get::<JsNumber>(0)? {
         Either::A(value) => value.get_double()?,
         Either::B(_) => 0.
     };
 
-    let js_func = match ctx.try_get::<JsFunction>(1)? {
-        Either::A(value) => value,
-        Either::B(_) => todo!(),
-    };
+    ctx.env.execute_tokio_future(
+        async move {
+            clone.suspend_at(when).await;
+            Ok(())
+        },
+        |&mut env, _val| {
+            env.get_undefined()
+        },
+    )
+}
 
-    println!("suspend_and {}", when);
+#[js_function]
+fn resume_offline(ctx: CallContext) -> Result<JsObject> {
+  // use napi::threadsafe_function::ThreadSafeCallContext;
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
+    let clone = napi_obj.0.clone();
 
-    let tsfn = ctx.env.create_threadsafe_function(&js_func, 0, |ctx: ThreadSafeCallContext<()>| {
-        Ok(vec![()])
-    })?;
-
-    napi_obj.0.suspend_at(when, move |_| {
-        println!("callback runs now");
-        // js_func.call_without_args(Some(&js_this)).unwrap();
-        tsfn.call(Ok(()), napi::threadsafe_function::ThreadsafeFunctionCallMode::Blocking);
-    });
-
-    ctx.env.get_undefined()
+    ctx.env.execute_tokio_future(
+        async move {
+            clone.resume().await;
+            Ok(())
+        },
+        |&mut env, _val| {
+            env.get_undefined()
+        },
+    )
 }
     `
 }

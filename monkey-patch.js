@@ -131,23 +131,15 @@ function patchOfflineAudioContext(nativeBinding) {
     }
 
     // promisify sync APIs
-    startRendering() {
+    async startRendering() {
       try {
-        const audioBuffer = super.startRendering();
+        const audioBuffer = await super.startRendering();
 
         clearTimeout(this.__keepAwakeId);
         return Promise.resolve(audioBuffer);
       } catch (err) {
         return Promise.reject(err);
       }
-    }
-
-    suspend() {
-      return new Promise((resolve, reject) => null);
-    }
-
-    resume() {
-      return new Promise((resolve, reject) => null);
     }
 
     decodeAudioData(audioData) {
