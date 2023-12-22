@@ -454,7 +454,6 @@ fn get_length(ctx: CallContext) -> Result<JsNumber> {
 fn start_rendering(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-
     let clone = napi_obj.0.clone();
 
     ctx.env.execute_tokio_future(
@@ -504,7 +503,6 @@ fn suspend_offline(ctx: CallContext) -> Result<JsObject> {
 
 #[js_function]
 fn resume_offline(ctx: CallContext) -> Result<JsObject> {
-  // use napi::threadsafe_function::ThreadSafeCallContext;
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
     let clone = napi_obj.0.clone();

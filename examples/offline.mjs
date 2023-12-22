@@ -21,9 +21,8 @@ console.log("buffer duration:", buffer.duration);
 const channelData = buffer.getChannelData(0);
 
 for (let i = 0; i < 48000; i++) {
-  // we check
+  // before suspend the graph is empty
   if (i < 128) {
-    // before suspend the graph is empty
     if (channelData[i] !== 0) {
       throw new Error('should be zero')
     }
