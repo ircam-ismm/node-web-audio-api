@@ -495,9 +495,7 @@ fn suspend_offline(ctx: CallContext) -> Result<JsObject> {
             clone.suspend_at(when).await;
             Ok(())
         },
-        |&mut env, _val| {
-            env.get_undefined()
-        },
+        |&mut env, _val| env.get_undefined(),
     )
 }
 
@@ -512,9 +510,7 @@ fn resume_offline(ctx: CallContext) -> Result<JsObject> {
             clone.resume().await;
             Ok(())
         },
-        |&mut env, _val| {
-            env.get_undefined()
-        },
+        |&mut env, _val| env.get_undefined(),
     )
 }
     `
