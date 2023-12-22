@@ -24,6 +24,7 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 
 const nativeModule = require('./index.cjs');
+console.log(nativeModule);
 export const {
   AudioContext,
   OfflineAudioContext,
@@ -47,9 +48,10 @@ export const {
   PannerNode,
   StereoPannerNode,
   WaveShaperNode,
-
   // helper methods
   mediaDevices,
+  // for wpt tests (maybe not required actually)
+  NotSupportedError
 } = nativeModule;
 
 export default nativeModule;

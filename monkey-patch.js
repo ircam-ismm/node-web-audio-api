@@ -160,9 +160,48 @@ function patchOfflineAudioContext(nativeBinding) {
   return OfflineAudioContext;
 }
 
+function monkeyPatchGainNode(nativeBinding) {
+  class GainNode extends nativeBinding.GainNode {
+    constructor(...args) {
+      super(...args);
+
+      const ctorName = this.constructor.name;
+
+      return new Proxy(this, {
+        get(obj, prop) {
+
+        },
+        set(obj, prop, value) {
+          try {
+            return Reflect.set(obj, prop, value);
+          } catch (err) {
+            if (err.message.startsWith('NotSupportedError')) {
+              let msg = `Failed to set the "${prop}" property on "${ctorName}":`
+              msg += ` ${err.message.replace(/^NotSupportedError - /, '')}`
+
+              throw new NotSupportedError(msg);
+            }
+          }
+
+          return true;
+        },
+        apply(target, thisArg, argumentsList) {
+
+        },
+      });
+    }
+  }
+
+  return GainNode;
+}
+
 module.exports = function monkeyPatch(nativeBinding) {
   nativeBinding.AudioContext = patchAudioContext(nativeBinding);
   nativeBinding.OfflineAudioContext = patchOfflineAudioContext(nativeBinding);
+  nativeBinding.GainNode = monkeyPatchGainNode(nativeBinding);
+
+  // for wpt tests
+  nativeBinding.NotSupportedError = NotSupportedError;
 
   // Promisify MediaDevices API
   enumerateDevicesSync = nativeBinding.mediaDevices.enumerateDevices;
