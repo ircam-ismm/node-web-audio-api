@@ -118,7 +118,7 @@ fn get_current_time(ctx: CallContext) -> Result<JsNumber> {
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
     let obj = napi_obj.unwrap();
 
-    let current_time = obj.current_time() as f64;
+    let current_time = obj.current_time();
     ctx.env.create_double(current_time)
 }
 

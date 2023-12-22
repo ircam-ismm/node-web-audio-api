@@ -1,3 +1,8 @@
+## v0.14.0 (06/12/2023)
+
+- Update upstream create to [v0.38.0](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-0380-2023-12-03)
+- Implement AudioListener
+
 ## v0.13.0 (08/11/2023)
 
 - Update upstream crate to [v0.36.1](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-0361-2023-11-08)

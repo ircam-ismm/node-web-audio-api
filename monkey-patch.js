@@ -90,8 +90,9 @@ function patchAudioContext(nativeBinding) {
     }
 
     decodeAudioData(audioData) {
-      if (!audioData instanceof ArrayBuffer) {
-        throw new Error('Invalid argument, please provide an ArrayBuffer');
+      if (!(audioData instanceof ArrayBuffer)) {
+        // should be TypeError
+        throw new Error(`Failed to execute 'decodeAudioData': parameter 1 is not of type 'ArrayBuffer'`);
       }
       try {
         const audioBuffer = super.decodeAudioData(audioData);
@@ -143,8 +144,9 @@ function patchOfflineAudioContext(nativeBinding) {
     }
 
     decodeAudioData(audioData) {
-      if (!audioData instanceof ArrayBuffer) {
-        throw new Error('Invalid argument, please provide an ArrayBuffer');
+      if (!(audioData instanceof ArrayBuffer)) {
+        // should be TypeError
+        throw new Error(`Failed to execute 'decodeAudioData': parameter 1 is not of type 'ArrayBuffer'`);
       }
       try {
         const audioBuffer = super.decodeAudioData(audioData);

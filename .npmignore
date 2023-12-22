@@ -16,6 +16,9 @@ src-manual
 target
 samples
 bin
+wpt
+tests
+issues
 
 *.tgz
 *.bak
