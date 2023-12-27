@@ -494,7 +494,7 @@ fn suspend_offline(ctx: CallContext) -> Result<JsObject> {
 
     ctx.env.execute_tokio_future(
         async move {
-            clone.suspend_at(when).await;
+            clone.suspend(when).await;
             Ok(())
         },
         |&mut env, _val| env.get_undefined(),
