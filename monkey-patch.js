@@ -90,8 +90,9 @@ function patchAudioContext(nativeBinding) {
     }
 
     decodeAudioData(audioData) {
-      if (!audioData instanceof ArrayBuffer) {
-        throw new Error('Invalid argument, please provide an ArrayBuffer');
+      if (!(audioData instanceof ArrayBuffer)) {
+        // should be TypeError
+        throw new Error(`Failed to execute 'decodeAudioData': parameter 1 is not of type 'ArrayBuffer'`);
       }
       try {
         const audioBuffer = super.decodeAudioData(audioData);
@@ -131,9 +132,9 @@ function patchOfflineAudioContext(nativeBinding) {
     }
 
     // promisify sync APIs
-    startRendering() {
+    async startRendering() {
       try {
-        const audioBuffer = super.startRendering();
+        const audioBuffer = await super.startRendering();
 
         clearTimeout(this.__keepAwakeId);
         return Promise.resolve(audioBuffer);
@@ -142,17 +143,10 @@ function patchOfflineAudioContext(nativeBinding) {
       }
     }
 
-    suspend() {
-      return new Promise((resolve, reject) => null);
-    }
-
-    resume() {
-      return new Promise((resolve, reject) => null);
-    }
-
     decodeAudioData(audioData) {
-      if (!audioData instanceof ArrayBuffer) {
-        throw new Error('Invalid argument, please provide an ArrayBuffer');
+      if (!(audioData instanceof ArrayBuffer)) {
+        // should be TypeError
+        throw new Error(`Failed to execute 'decodeAudioData': parameter 1 is not of type 'ArrayBuffer'`);
       }
       try {
         const audioBuffer = super.decodeAudioData(audioData);

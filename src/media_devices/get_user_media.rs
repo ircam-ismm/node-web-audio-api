@@ -43,7 +43,7 @@ pub(crate) fn napi_get_user_media(ctx: CallContext) -> Result<JsObject> {
                 }
 
                 if let Ok(Some(js_latency)) = js_constraints.get::<&str, JsNumber>("latency") {
-                    let latency = js_latency.get_double()? as f64;
+                    let latency = js_latency.get_double()?;
                     constraints.latency = Some(latency);
                 }
 

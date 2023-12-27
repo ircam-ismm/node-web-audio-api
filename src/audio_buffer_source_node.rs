@@ -134,14 +134,14 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
             let some_loop_end_js = options_js.get::<&str, JsNumber>("loopEnd")?;
             let loop_end = if let Some(loop_end_js) = some_loop_end_js {
-                loop_end_js.get_double()? as f64
+                loop_end_js.get_double()?
             } else {
                 0.
             };
 
             let some_loop_start_js = options_js.get::<&str, JsNumber>("loopStart")?;
             let loop_start = if let Some(loop_start_js) = some_loop_start_js {
-                loop_start_js.get_double()? as f64
+                loop_start_js.get_double()?
             } else {
                 0.
             };
@@ -393,7 +393,7 @@ fn get_loop_start(ctx: CallContext) -> Result<JsNumber> {
     let node = napi_node.unwrap();
 
     let value = node.loop_start();
-    ctx.env.create_double(value as f64)
+    ctx.env.create_double(value)
 }
 
 #[js_function(0)]
@@ -403,7 +403,7 @@ fn get_loop_end(ctx: CallContext) -> Result<JsNumber> {
     let node = napi_node.unwrap();
 
     let value = node.loop_end();
-    ctx.env.create_double(value as f64)
+    ctx.env.create_double(value)
 }
 
 // -------------------------------------------------
@@ -444,7 +444,7 @@ fn set_loop_start(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()? as f64;
+    let value = ctx.get::<JsNumber>(0)?.get_double()?;
     node.set_loop_start(value);
 
     ctx.env.get_undefined()
@@ -456,7 +456,7 @@ fn set_loop_end(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()? as f64;
+    let value = ctx.get::<JsNumber>(0)?.get_double()?;
     node.set_loop_end(value);
 
     ctx.env.get_undefined()
