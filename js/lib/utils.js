@@ -9,3 +9,8 @@ exports.isPositiveInt = function isPositiveInt(n) {
 exports.isPositiveNumber = function isPositiveNumber(n) {
   return Number(n) === n && 0 < n;
 };
+
+exports.isFunction = function isFunction(val) {
+  return Object.prototype.toString.call(val) == '[object Function]' ||
+    Object.prototype.toString.call(val) == '[object AsyncFunction]';
+}
