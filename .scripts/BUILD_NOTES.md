@@ -1,10 +1,16 @@
-# prepare RPi
+# Prepare RPi build systems
 
-- install rust
-  + [https://www.rust-lang.org/tools/install](https://www.rust-lang.org/tools/install)
-  + `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
-  
-Note: for RP4 w/ 32 bit system, choose custom installation
+## Install rust
+
+[https://www.rust-lang.org/tools/install](https://www.rust-lang.org/tools/install)
+
+```sh
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+```
+
+### RPI 4 w/ 32 system
+
+Choose custom installation:
 
 ```
 1) Proceed with installation (default)
@@ -21,6 +27,11 @@ Default toolchain? (stable/beta/nightly/none) [stable]
 Profile (which tools and data to install)? (minimal/default/complete) [default]
 ```
 
-- install dev libs
-  + `sudo apt-get install -y libjack-jackd2-dev`
-  + `sudo apt-get install -y libasound2-dev`
+## Install dev libs
+
+```sh
+sudo apt-get install -y libjack-jackd2-dev
+sudo apt-get install -y libasound2-dev
+```
+
+
