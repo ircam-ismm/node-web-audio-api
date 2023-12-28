@@ -5,7 +5,7 @@ import { AudioContext } from '../index.mjs';
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });
 
-const pathname = path.join(process.cwd(), 'samples', 'think-stereo-48000.wav');
+const pathname = path.join(process.cwd(), 'examples', 'samples', 'think-stereo-48000.wav');
 const arrayBuffer = fs.readFileSync(pathname).buffer;
 const buffer = await audioContext.decodeAudioData(arrayBuffer);
 

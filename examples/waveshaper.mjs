@@ -22,7 +22,7 @@ console.log('> gradually increase the amount of distortion applied on the sample
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });
 
-let file = fs.readFileSync(path.join('samples', 'sample.wav')).buffer;
+let file = fs.readFileSync(path.join('examples', 'samples', 'sample.wav')).buffer;
 let buffer = await audioContext.decodeAudioData(file);
 let curve = makeDistortionCurve(2048);
 

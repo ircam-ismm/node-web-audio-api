@@ -6,7 +6,7 @@ import { AudioContext, mediaDevices } from '../index.mjs';
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });
 
-const file = fs.readFileSync(path.join('samples', 'sample.wav')).buffer;
+const file = fs.readFileSync(path.join('examples', 'samples', 'sample.wav')).buffer;
 const buffer = await audioContext.decodeAudioData(file);
 
 const src = audioContext.createBufferSource();

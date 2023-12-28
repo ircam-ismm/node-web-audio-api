@@ -8,7 +8,7 @@ const audioContext = new AudioContext({ latencyHint });
 
 const scheduler = new Scheduler(() => audioContext.currentTime);
 
-const arrayBuffer = fs.readFileSync(path.join(process.cwd(), 'samples', 'sample.wav')).buffer;
+const arrayBuffer = fs.readFileSync(path.join('examples', 'samples', 'sample.wav')).buffer;
 const buffer = await audioContext.decodeAudioData(arrayBuffer);
 
 const period = 0.05;

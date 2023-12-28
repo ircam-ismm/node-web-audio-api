@@ -17,7 +17,7 @@ import { AudioContext, PannerNode } from '../index.mjs';
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });
 
-const arrayBuffer = await fs.readFileSync(path.join('samples', 'siren.mp3')).buffer;
+const arrayBuffer = await fs.readFileSync(path.join('examples', 'samples', 'siren.mp3')).buffer;
 const buffer = await audioContext.decodeAudioData(arrayBuffer);
 
 const pannerOptions = {

@@ -12,13 +12,13 @@ const audioContext = new AudioContext({ latencyHint });
 //     update_interval: 1.,
 // });
 
-const arrayBuffer = fs.readFileSync(path.join('samples', 'vocals-dry.wav')).buffer;
+const arrayBuffer = fs.readFileSync(path.join('examples', 'samples', 'vocals-dry.wav')).buffer;
 const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
-const impulseFile1 = fs.readFileSync(path.join('samples', 'small-room-response.wav')).buffer;
+const impulseFile1 = fs.readFileSync(path.join('examples', 'samples', 'small-room-response.wav')).buffer;
 const impulseBuffer1 = await audioContext.decodeAudioData(impulseFile1);
 
-const impulseFile2 = fs.readFileSync(path.join('samples', 'parking-garage-response.wav')).buffer;
+const impulseFile2 = fs.readFileSync(path.join('examples', 'samples', 'parking-garage-response.wav')).buffer;
 const impulseBuffer2 = await audioContext.decodeAudioData(impulseFile2);
 
 const src = audioContext.createBufferSource();
