@@ -49,9 +49,9 @@ panner.positionY.linearRampToValueAtTime(-100., now + 10.);
 const delay = audioContext.createDelay(1.);
 delay.connect(panner);
 const dopplerMax = 100. / 343.;
-delay.delayTime.setValueAtTime(dopplerMax, now);
-delay.delayTime.linearRampToValueAtTime(0., now + 5.);
-delay.delayTime.linearRampToValueAtTime(dopplerMax, now + 10.);
+delay.delayTime.setValueAtTime(dopplerMax, now)
+    .linearRampToValueAtTime(0., now + 5.)
+    .linearRampToValueAtTime(dopplerMax, now + 10.);
 
 
 const src = audioContext.createBufferSource();
