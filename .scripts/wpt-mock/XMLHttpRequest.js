@@ -4,8 +4,8 @@ const fs = require('node:fs');
 class XMLHttpRequest {
   constructor() {
     this._pathname;
-    this._onload;
-    this._onerror;
+    this.onload;
+    this.onerror;
     this.response;
   }
 
@@ -19,20 +19,12 @@ class XMLHttpRequest {
     try {
       buffer = fs.readFileSync(this._pathname).buffer;
     } catch (err) {
-      this._onerror(err);
+      this.onerror(err);
       return;
     }
 
     this.response = buffer;
-    this._onload();
-  }
-
-  set onload(func) {
-    this._onload = func;
-  }
-
-  set onerror(func) {
-    this._onerror = func;
+    this.onload();
   }
 }
 
