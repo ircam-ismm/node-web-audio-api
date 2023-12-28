@@ -83,7 +83,7 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding for OS: ${platform}, architecture: ${arch}`);
 }
 
-const monkeyPatch = require('./monkey-patch.js');
+const monkeyPatch = require('./js/index.js');
 nativeBinding = monkeyPatch(nativeBinding);
 
 module.exports = nativeBinding;
