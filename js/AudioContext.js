@@ -47,7 +47,6 @@ module.exports = function(NativeAudioContext) {
 
     decodeAudioData(audioData) {
       if (!(audioData instanceof ArrayBuffer)) {
-        // should be TypeError
         throw new TypeError(`Failed to execute 'decodeAudioData': parameter 1 is not of type 'ArrayBuffer'`);
       }
       try {

@@ -4,10 +4,15 @@ const patchAudioContext = require('./AudioContext.js');
 const patchOfflineAudioContext = require('./OfflineAudioContext.js');
 
 module.exports = function monkeyPatch(nativeBinding) {
+  // --------------------------------------------------------------------------
+  // Monkey Patch Web Audio API
+  // --------------------------------------------------------------------------
   nativeBinding.AudioContext = patchAudioContext(nativeBinding.AudioContext);
   nativeBinding.OfflineAudioContext = patchOfflineAudioContext(nativeBinding.OfflineAudioContext);
 
+  // --------------------------------------------------------------------------
   // Promisify MediaDevices API
+  // --------------------------------------------------------------------------
   const enumerateDevicesSync = nativeBinding.mediaDevices.enumerateDevices;
   nativeBinding.mediaDevices.enumerateDevices = async function enumerateDevices(options) {
     const list = enumerateDevicesSync();
