@@ -40,6 +40,7 @@ impl NapiOfflineAudioContext {
                 Property::new("decodeAudioData")?.with_method(decode_audio_data),
                 Property::new("createPeriodicWave")?.with_method(create_periodic_wave),
                 Property::new("createBuffer")?.with_method(create_buffer),
+                Property::new("state")?.with_getter(get_state),
                 // ----------------------------------------------------
                 // Factory methods
                 // ----------------------------------------------------
@@ -63,6 +64,7 @@ impl NapiOfflineAudioContext {
                 // ----------------------------------------------------
                 Property::new("length")?.with_getter(get_length),
                 Property::new("startRendering")?.with_method(start_rendering),
+                // implementation specific to offline audio context
                 Property::new("suspend")?.with_method(suspend_offline),
                 Property::new("resume")?.with_method(resume_offline),
             ],
@@ -149,6 +151,22 @@ fn get_listener(ctx: CallContext) -> Result<JsObject> {
 
         Ok(js_obj)
     }
+}
+
+#[js_function]
+fn get_state(ctx: CallContext) -> Result<JsString> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
+    let obj = napi_obj.unwrap();
+
+    let state = obj.state();
+    let state_str = match state {
+        AudioContextState::Suspended => "suspended",
+        AudioContextState::Running => "running",
+        AudioContextState::Closed => "closed",
+    };
+
+    ctx.env.create_string(state_str)
 }
 
 // ----------------------------------------------------

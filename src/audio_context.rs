@@ -40,6 +40,7 @@ impl NapiAudioContext {
                 Property::new("decodeAudioData")?.with_method(decode_audio_data),
                 Property::new("createPeriodicWave")?.with_method(create_periodic_wave),
                 Property::new("createBuffer")?.with_method(create_buffer),
+                Property::new("state")?.with_getter(get_state),
                 // ----------------------------------------------------
                 // Factory methods
                 // ----------------------------------------------------
@@ -58,11 +59,6 @@ impl NapiAudioContext {
                 Property::new("createPanner")?.with_method(create_panner),
                 Property::new("createStereoPanner")?.with_method(create_stereo_panner),
                 Property::new("createWaveShaper")?.with_method(create_wave_shaper),
-                // @todo - expose in OfflineAudioContext as well
-                Property::new("state")?.with_getter(get_state),
-                Property::new("resume")?.with_method(resume),
-                Property::new("suspend")?.with_method(suspend),
-                Property::new("close")?.with_method(close),
                 // ----------------------------------------------------
                 // Methods and attributes specific to AudioContext
                 // ----------------------------------------------------
@@ -70,6 +66,10 @@ impl NapiAudioContext {
                 Property::new("outputLatency")?.with_getter(get_output_latency),
                 Property::new("setSinkId")?.with_method(set_sink_id),
                 Property::new("createMediaStreamSource")?.with_method(create_media_stream_source),
+                // implementation specific to online audio context
+                Property::new("resume")?.with_method(resume),
+                Property::new("suspend")?.with_method(suspend),
+                Property::new("close")?.with_method(close),
             ],
         )
     }
@@ -203,6 +203,22 @@ fn get_listener(ctx: CallContext) -> Result<JsObject> {
 
         Ok(js_obj)
     }
+}
+
+#[js_function]
+fn get_state(ctx: CallContext) -> Result<JsString> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
+    let obj = napi_obj.unwrap();
+
+    let state = obj.state();
+    let state_str = match state {
+        AudioContextState::Suspended => "suspended",
+        AudioContextState::Running => "running",
+        AudioContextState::Closed => "closed",
+    };
+
+    ctx.env.create_string(state_str)
 }
 
 // ----------------------------------------------------
@@ -495,24 +511,6 @@ fn create_wave_shaper(ctx: CallContext) -> Result<JsObject> {
 // ----------------------------------------------------
 // Methods and attributes specific to AudioContext
 // ----------------------------------------------------
-
-// @todo - expose in OfflineAudioContext
-// see https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-state
-#[js_function]
-fn get_state(ctx: CallContext) -> Result<JsString> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
-    let obj = napi_obj.unwrap();
-
-    let state = obj.state();
-    let state_str = match state {
-        AudioContextState::Suspended => "suspended",
-        AudioContextState::Running => "running",
-        AudioContextState::Closed => "closed",
-    };
-
-    ctx.env.create_string(state_str)
-}
 
 // @todo - async version
 #[js_function]

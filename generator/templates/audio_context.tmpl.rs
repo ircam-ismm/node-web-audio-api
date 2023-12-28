@@ -23,6 +23,8 @@ impl ${d.napiName(d.node)} {
                 Property::new("createPeriodicWave")?.with_method(create_periodic_wave),
                 Property::new("createBuffer")?.with_method(create_buffer),
 
+                Property::new("state")?.with_getter(get_state),
+
                 // ----------------------------------------------------
                 // Factory methods
                 // ----------------------------------------------------
@@ -35,12 +37,6 @@ impl ${d.napiName(d.node)} {
 
                 ${d.name(d.node) === 'AudioContext' ?
                     `
-                // @todo - expose in OfflineAudioContext as well
-                Property::new("state")?.with_getter(get_state),
-                Property::new("resume")?.with_method(resume),
-                Property::new("suspend")?.with_method(suspend),
-                Property::new("close")?.with_method(close),
-
                 // ----------------------------------------------------
                 // Methods and attributes specific to AudioContext
                 // ----------------------------------------------------
@@ -48,12 +44,17 @@ impl ${d.napiName(d.node)} {
                 Property::new("outputLatency")?.with_getter(get_output_latency),
                 Property::new("setSinkId")?.with_method(set_sink_id),
                 Property::new("createMediaStreamSource")?.with_method(create_media_stream_source),
+                // implementation specific to online audio context
+                Property::new("resume")?.with_method(resume),
+                Property::new("suspend")?.with_method(suspend),
+                Property::new("close")?.with_method(close),
                     ` : `
                 // ----------------------------------------------------
                 // Methods and attributes specifc to OfflineAudioContext
                 // ----------------------------------------------------
                 Property::new("length")?.with_getter(get_length),
                 Property::new("startRendering")?.with_method(start_rendering),
+                // implementation specific to offline audio context
                 Property::new("suspend")?.with_method(suspend_offline),
                 Property::new("resume")?.with_method(resume_offline),
                     `
@@ -206,6 +207,22 @@ fn get_listener(ctx: CallContext) -> Result<JsObject> {
     }
 }
 
+#[js_function]
+fn get_state(ctx: CallContext) -> Result<JsString> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+    let obj = napi_obj.unwrap();
+
+    let state = obj.state();
+    let state_str = match state {
+        AudioContextState::Suspended => "suspended",
+        AudioContextState::Running => "running",
+        AudioContextState::Closed => "closed",
+    };
+
+    ctx.env.create_string(state_str)
+}
+
 // ----------------------------------------------------
 // METHODS
 // ----------------------------------------------------
@@ -342,31 +359,11 @@ fn ${d.slug(factoryName)}(ctx: CallContext) -> Result<JsObject> {
     `;
 }).join('')}
 
-
 ${d.name(d.node) === 'AudioContext' ?
     `
 // ----------------------------------------------------
 // Methods and attributes specific to AudioContext
 // ----------------------------------------------------
-
-// @todo - expose in OfflineAudioContext
-// see https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-state
-#[js_function]
-fn get_state(ctx: CallContext) -> Result<JsString> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let obj = napi_obj.unwrap();
-
-    let state = obj.state();
-    let state_str = match state {
-        AudioContextState::Suspended => "suspended",
-        AudioContextState::Running => "running",
-        AudioContextState::Closed => "closed",
-    };
-
-    ctx.env.create_string(state_str)
-}
-
 ${['resume', 'suspend', 'close'].map(method => `
 // @todo - async version
 #[js_function]
