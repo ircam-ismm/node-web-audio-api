@@ -19,7 +19,7 @@
 
 use napi::*;
 use napi_derive::js_function;
-use web_audio_api::AudioParam;
+use web_audio_api::{AudioParam, AutomationRate};
 
 pub(crate) struct NapiAudioParam(AudioParam);
 
@@ -35,9 +35,17 @@ impl NapiAudioParam {
             Property::new("Symbol.toStringTag")?
                 .with_value(&env.create_string("AudioParam")?)
                 .with_property_attributes(PropertyAttributes::Static),
+            // Attributes
+            Property::new("automationRate")?
+                .with_getter(get_automation_rate)
+                .with_setter(set_automation_rate),
+            Property::new("defaultValue")?.with_getter(get_default_value),
+            Property::new("maxValue")?.with_getter(get_max_value),
+            Property::new("minValue")?.with_getter(get_min_value),
             Property::new("value")?
                 .with_getter(get_value)
                 .with_setter(set_value),
+            // Methods
             Property::new("setValueAtTime")?.with_method(set_value_at_time),
             Property::new("linearRampToValueAtTime")?.with_method(linear_ramp_to_value_at_time),
             Property::new("exponentialRampToValueAtTime")?
@@ -54,6 +62,73 @@ impl NapiAudioParam {
     pub fn unwrap(&self) -> &AudioParam {
         &self.0
     }
+}
+
+// Attributes
+#[js_function]
+fn get_automation_rate(ctx: CallContext) -> Result<JsString> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_this)?;
+    let obj = napi_obj.unwrap();
+
+    let value = obj.automation_rate();
+    let value_str = match value {
+        AutomationRate::A => "a-rate",
+        AutomationRate::K => "k-rate",
+    };
+
+    ctx.env.create_string(value_str)
+}
+
+#[js_function(1)]
+fn set_automation_rate(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_this)?;
+    let obj = napi_obj.unwrap();
+
+    let js_str = ctx.get::<JsString>(0)?;
+    let utf8_str = js_str.into_utf8()?.into_owned()?;
+    let value = match utf8_str.as_str() {
+        "a-rate" => AutomationRate::A,
+        "k-rate" => AutomationRate::K,
+        _ => panic!(
+            "The provided value '{:?}' is not a valid enum value of type AutomationRate.",
+            utf8_str
+        ),
+    };
+    obj.set_automation_rate(value);
+
+    ctx.env.get_undefined()
+}
+
+#[js_function]
+fn get_default_value(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_this)?;
+    let obj = napi_obj.unwrap();
+
+    let value = obj.default_value();
+    ctx.env.create_double(value as f64)
+}
+
+#[js_function]
+fn get_max_value(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_this)?;
+    let obj = napi_obj.unwrap();
+
+    let value = obj.max_value();
+    ctx.env.create_double(value as f64)
+}
+
+#[js_function]
+fn get_min_value(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_this)?;
+    let obj = napi_obj.unwrap();
+
+    let value = obj.min_value();
+    ctx.env.create_double(value as f64)
 }
 
 #[js_function]
@@ -78,6 +153,7 @@ fn set_value(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 
+// Methods
 #[js_function(2)]
 fn set_value_at_time(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();

@@ -257,8 +257,8 @@ fn set_channel_count_mode(ctx: CallContext) -> Result<JsUndefined> {
     let node = napi_node.unwrap();
 
     let js_str = ctx.get::<JsString>(0)?;
-    let uf8_str = js_str.into_utf8()?.into_owned()?;
-    let value = match uf8_str.as_str() {
+    let utf8_str = js_str.into_utf8()?.into_owned()?;
+    let value = match utf8_str.as_str() {
         "max" => ChannelCountMode::Max,
         "clamped-max" => ChannelCountMode::ClampedMax,
         "explicit" => ChannelCountMode::Explicit,
@@ -291,8 +291,8 @@ fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
     let node = napi_node.unwrap();
 
     let js_str = ctx.get::<JsString>(0)?;
-    let uf8_str = js_str.into_utf8()?.into_owned()?;
-    let value = match uf8_str.as_str() {
+    let utf8_str = js_str.into_utf8()?.into_owned()?;
+    let value = match utf8_str.as_str() {
         "speakers" => ChannelInterpretation::Speakers,
         "discrete" => ChannelInterpretation::Discrete,
         _ => panic!("undefined value for ChannelInterpretation"),

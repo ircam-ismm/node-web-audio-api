@@ -8,14 +8,24 @@ pub(crate) struct NapiAudioListener(AudioListener);
 
 impl NapiAudioListener {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
-        env.define_class("AudioListener", constructor, &[])
+        env.define_class(
+            "AudioListener",
+            constructor,
+            &[
+                Property::new("setPosition")?.with_method(set_position),
+                Property::new("setOrientation")?.with_method(set_orientation),
+            ],
+        )
+    }
+
+    pub fn unwrap(&mut self) -> &mut AudioListener {
+        &mut self.0
     }
 }
 
 // https://webaudio.github.io/web-audio-api/#AudioListener
 //
 // @note: should be a private constructor
-// #todo: implement deprecateds methods: `setOrientation` and `setPosition`
 #[js_function(1)]
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
@@ -109,6 +119,57 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // finalize instance creation
     let napi_node = NapiAudioListener(native_node);
     ctx.env.wrap(&mut js_this, napi_node)?;
+
+    ctx.env.get_undefined()
+}
+
+#[js_function(3)]
+fn set_position(ctx: CallContext) -> Result<JsUndefined> {
+    // TODO https://webaudio.github.io/web-audio-api/#dom-audiolistener-setposition
+    //
+    // When any of the positionX, positionY, and positionZ AudioParams for this AudioListener have
+    // an automation curve set using setValueCurveAtTime() at the time this method is called, a
+    // NotSupportedError MUST be thrown.
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiAudioListener>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let x = ctx.get::<JsNumber>(0)?.get_double()? as f32;
+    let y = ctx.get::<JsNumber>(1)?.get_double()? as f32;
+    let z = ctx.get::<JsNumber>(2)?.get_double()? as f32;
+
+    node.position_x().set_value(x);
+    node.position_y().set_value(y);
+    node.position_z().set_value(z);
+
+    ctx.env.get_undefined()
+}
+
+#[js_function(6)]
+fn set_orientation(ctx: CallContext) -> Result<JsUndefined> {
+    // TODO https://webaudio.github.io/web-audio-api/#dom-audiolistener-setorientation
+    //
+    // If any of the forwardX, forwardY, forwardZ, upX, upY and upZ AudioParams have an automation
+    // curve set using setValueCurveAtTime() at the time this method is called, a NotSupportedError
+    // MUST be thrown.
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiAudioListener>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let x_forward = ctx.get::<JsNumber>(0)?.get_double()? as f32;
+    let y_forward = ctx.get::<JsNumber>(1)?.get_double()? as f32;
+    let z_forward = ctx.get::<JsNumber>(2)?.get_double()? as f32;
+    let x_up = ctx.get::<JsNumber>(3)?.get_double()? as f32;
+    let y_up = ctx.get::<JsNumber>(4)?.get_double()? as f32;
+    let z_up = ctx.get::<JsNumber>(5)?.get_double()? as f32;
+
+    node.forward_x().set_value(x_forward);
+    node.forward_y().set_value(y_forward);
+    node.forward_z().set_value(z_forward);
+
+    node.up_x().set_value(x_up);
+    node.up_y().set_value(y_up);
+    node.up_z().set_value(z_up);
 
     ctx.env.get_undefined()
 }

@@ -129,6 +129,26 @@ The npm `postversion` script rely on [`cargo-bump`](https://crates.io/crates/car
 cargo install cargo-bump
 ```
 
+## Running the web-platform-test suite
+
+Follow the steps for 'Manual Build' first. Then checkout the web-platform-tests submodule with:
+
+```
+git submodule init
+git submodule update
+```
+
+Then run:
+
+```
+npm run wpt                      # build in debug mode and run all wpt test
+npm run wpt:only                 # run all wpt test without build
+npm run wpt -- --list            # list all wpt test files
+npm run wpt -- --filter <string> # apply <string> filter on executed/listed wpt tests 
+```
+
+Avai
+
 ## License
 
 [BSD-3-Clause](./LICENSE)

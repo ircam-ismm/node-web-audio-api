@@ -132,9 +132,9 @@ function patchOfflineAudioContext(nativeBinding) {
     }
 
     // promisify sync APIs
-    startRendering() {
+    async startRendering() {
       try {
-        const audioBuffer = super.startRendering();
+        const audioBuffer = await super.startRendering();
 
         clearTimeout(this.__keepAwakeId);
         return Promise.resolve(audioBuffer);
