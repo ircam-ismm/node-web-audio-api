@@ -1,8 +1,12 @@
 const path = require('node:path');
 
-const XMLHttpRequest = require('./XMLHttpRequest.js');
+const createXMLHttpRequest = require('./XMLHttpRequest.js');
 const { OfflineAudioContext } = require('../../index.cjs');
 
+// create a XMLHttpRequest to be passed to the runner
+// can be configured to handle the difference between process.cwd() and given path
+// window.XMLHttpRequest = createXMLHttpRequest(rootURL (?))
+const XMLHttpRequest = createXMLHttpRequest(path.join('examples', 'samples'));
 // maybe should be passed to wtp-runner setup too
 // window.alert = console.log.bind(console);
 const alert = console.log.bind(console);
@@ -60,24 +64,24 @@ const offlineContext = new OfflineAudioContext({
   sampleRate: 48000,
 });
 
-const okFile = [path.join('examples', 'samples', 'sample.wav')];
-const err1File = [path.join('examples', 'samples', 'corrupt.wav')];
-const err2File = [path.join('examples', 'samples', 'donotexists.wav')];
+const okFiles = [path.join('sample.wav')];
+const err1Files = [path.join('corrupt.wav')];
+const err2Files = [path.join('donotexists.wav')];
 
 {
   // should work
-  const loader = new BufferLoader(offlineContext, okFile, audioBuffer => console.log(audioBuffer));
+  const loader = new BufferLoader(offlineContext, okFiles, audioBuffer => console.log(audioBuffer));
   loader.load();
 }
 
 {
   // should fail - decode error
-  const loader = new BufferLoader(offlineContext, err1File, audioBuffer => console.log(audioBuffer));
+  const loader = new BufferLoader(offlineContext, err1Files, audioBuffer => console.log(audioBuffer));
   loader.load();
 }
 
 {
   // should fail - file not found
-  const loader = new BufferLoader(offlineContext, err2File, audioBuffer => console.log(audioBuffer));
+  const loader = new BufferLoader(offlineContext, err2Files, audioBuffer => console.log(audioBuffer));
   loader.load();
 }
