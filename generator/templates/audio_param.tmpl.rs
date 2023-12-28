@@ -136,7 +136,7 @@ fn set_value(ctx: CallContext) -> Result<JsUndefined> {
 
 // Methods
 #[js_function(2)]
-fn set_value_at_time(ctx: CallContext) -> Result<JsUndefined> {
+fn set_value_at_time(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_this)?;
     let obj = napi_obj.unwrap();
@@ -145,11 +145,11 @@ fn set_value_at_time(ctx: CallContext) -> Result<JsUndefined> {
     let start_time = ctx.get::<JsNumber>(1)?.get_double()?;
     obj.set_value_at_time(value as f32, start_time);
 
-    ctx.env.get_undefined()
+    Ok(js_this)
 }
 
 #[js_function(2)]
-fn linear_ramp_to_value_at_time(ctx: CallContext) -> Result<JsUndefined> {
+fn linear_ramp_to_value_at_time(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_this)?;
     let obj = napi_obj.unwrap();
@@ -158,11 +158,11 @@ fn linear_ramp_to_value_at_time(ctx: CallContext) -> Result<JsUndefined> {
     let end_time = ctx.get::<JsNumber>(1)?.get_double()?;
     obj.linear_ramp_to_value_at_time(value, end_time);
 
-    ctx.env.get_undefined()
+    Ok(js_this)
 }
 
 #[js_function(2)]
-fn exponential_ramp_to_value_at_time(ctx: CallContext) -> Result<JsUndefined> {
+fn exponential_ramp_to_value_at_time(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_this)?;
     let obj = napi_obj.unwrap();
@@ -171,11 +171,11 @@ fn exponential_ramp_to_value_at_time(ctx: CallContext) -> Result<JsUndefined> {
     let end_time = ctx.get::<JsNumber>(1)?.get_double()?;
     obj.exponential_ramp_to_value_at_time(value, end_time);
 
-    ctx.env.get_undefined()
+    Ok(js_this)
 }
 
 #[js_function(3)]
-fn set_value_curve_at_time(ctx: CallContext) -> Result<JsUndefined> {
+fn set_value_curve_at_time(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_this)?;
     let obj = napi_obj.unwrap();
@@ -187,11 +187,11 @@ fn set_value_curve_at_time(ctx: CallContext) -> Result<JsUndefined> {
     let duration = ctx.get::<JsNumber>(2)?.get_double()?;
     obj.set_value_curve_at_time(values, start_time, duration);
 
-    ctx.env.get_undefined()
+    Ok(js_this)
 }
 
 #[js_function(3)]
-fn set_target_at_time(ctx: CallContext) -> Result<JsUndefined> {
+fn set_target_at_time(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_this)?;
     let obj = napi_obj.unwrap();
@@ -201,11 +201,11 @@ fn set_target_at_time(ctx: CallContext) -> Result<JsUndefined> {
     let time_constant = ctx.get::<JsNumber>(2)?.get_double()?;
     obj.set_target_at_time(value, start_time, time_constant);
 
-    ctx.env.get_undefined()
+    Ok(js_this)
 }
 
 #[js_function(1)]
-fn cancel_scheduled_values(ctx: CallContext) -> Result<JsUndefined> {
+fn cancel_scheduled_values(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_this)?;
     let obj = napi_obj.unwrap();
@@ -213,11 +213,11 @@ fn cancel_scheduled_values(ctx: CallContext) -> Result<JsUndefined> {
     let cancel_time = ctx.get::<JsNumber>(0)?.get_double()?;
     obj.cancel_scheduled_values(cancel_time);
 
-    ctx.env.get_undefined()
+    Ok(js_this)
 }
 
 #[js_function(1)]
-fn cancel_and_hold_at_time(ctx: CallContext) -> Result<JsUndefined> {
+fn cancel_and_hold_at_time(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_this)?;
     let obj = napi_obj.unwrap();
@@ -225,5 +225,5 @@ fn cancel_and_hold_at_time(ctx: CallContext) -> Result<JsUndefined> {
     let cancel_time = ctx.get::<JsNumber>(0)?.get_double()?;
     obj.cancel_and_hold_at_time(cancel_time);
 
-    ctx.env.get_undefined()
+    Ok(js_this)
 }
