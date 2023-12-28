@@ -1,5 +1,7 @@
 import readline from 'node:readline';
 import fs from 'node:fs';
+import path from 'node:path';
+
 import { OfflineAudioContext, AudioContext } from '../index.mjs';
 import { getTime } from '@ircam/sc-gettime';
 import Table from 'cli-table';
@@ -46,12 +48,12 @@ const results = [];
 const DURATION = 120;
 const sampleRate = 48000.;
 
-await loadBuffer(sources, "samples/think-mono-38000.wav", 38000.);
-await loadBuffer(sources, "samples/think-mono-44100.wav", 44100.);
-await loadBuffer(sources, "samples/think-mono-48000.wav", 48000.);
-await loadBuffer(sources, "samples/think-stereo-38000.wav", 38000.);
-await loadBuffer(sources, "samples/think-stereo-44100.wav", 44100.);
-await loadBuffer(sources, "samples/think-stereo-48000.wav", 48000.);
+await loadBuffer(sources, path.join('examples', 'samples', 'think-mono-38000.wav'), 38000.);
+await loadBuffer(sources, path.join('examples', 'samples', 'think-mono-44100.wav'), 44100.);
+await loadBuffer(sources, path.join('examples', 'samples', 'think-mono-48000.wav'), 48000.);
+await loadBuffer(sources, path.join('examples', 'samples', 'think-stereo-38000.wav'), 38000.);
+await loadBuffer(sources, path.join('examples', 'samples', 'think-stereo-44100.wav'), 44100.);
+await loadBuffer(sources, path.join('examples', 'samples', 'think-stereo-48000.wav'), 48000.);
 
 // -------------------------------------------------------
 // benchmarks

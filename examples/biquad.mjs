@@ -7,7 +7,7 @@ const audioContext = new AudioContext({ latencyHint });
 
 // setup background music:
 // read from local file
-const pathname = path.join(process.cwd(), 'samples', 'think-stereo-48000.wav');
+const pathname = path.join('examples', 'samples', 'think-stereo-48000.wav');
 const arrayBuffer = fs.readFileSync(pathname).buffer;
 const buffer = await audioContext.decodeAudioData(arrayBuffer);
 

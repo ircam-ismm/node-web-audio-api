@@ -40,7 +40,7 @@ describe('# mediaDevices.getUserMedia(options)', () => {
     if (!failed) { assert.fail(); }
   });
 
-  it.only('should not fail if options.audio = true', async () => {
+  it('should not fail if options.audio = true', async () => {
     let failed = false;
 
     try {

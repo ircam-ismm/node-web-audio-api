@@ -3,16 +3,16 @@ import path from 'node:path';
 import { AudioContext } from '../index.mjs';
 
 const files = [
-  'samples/sample-faulty.wav',
-  'samples/sample.wav',
-  'samples/sample.flac',
-  'samples/sample.ogg',
-  'samples/sample.mp3',
+  path.join('examples', 'samples', 'sample-faulty.wav'),
+  path.join('examples', 'samples', 'sample.wav'),
+  path.join('examples', 'samples', 'sample.flac'),
+  path.join('examples', 'samples', 'sample.ogg'),
+  path.join('examples', 'samples', 'sample.mp3'),
   // cannot decode, format not supported or file corrupted
-  'samples/empty_2c.wav',
-  'samples/corrupt.wav',
-  'samples/sample.aiff',
-  'samples/sample.webm', // 48kHz,
+  path.join('examples', 'samples', 'empty_2c.wav'),
+  path.join('examples', 'samples', 'corrupt.wav'),
+  path.join('examples', 'samples', 'sample.aiff'),
+  path.join('examples', 'samples', 'sample.webm'), // 48kHz,
 ];
 
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';

@@ -40,10 +40,10 @@
     "generate": "node generator/index.mjs && cargo fmt",
     "lint": "eslint monkey-patch.js index.cjs index.mjs && eslint examples/*.mjs",
     "preversion": "yarn install && npm run generate",
-    "postversion": "cargo bump $npm_package_version && git commit -am \"v$npm_package_version\" && node bin/check-changelog.mjs",
+    "postversion": "cargo bump $npm_package_version && git commit -am \"v$npm_package_version\" && node .scripts/check-changelog.mjs",
     "test": "mocha",
-    "wpt": "npm run generate && napi build --platform && node ./bin/wpt-harness.mjs",
-    "wpt:only": "node ./bin/wpt-harness.mjs"
+    "wpt": "npm run generate && napi build --platform && node ./.scripts/wpt-harness.mjs",
+    "wpt:only": "node ./.scripts/wpt-harness.mjs"
   },
   "devDependencies": {
     "@ircam/eslint-config": "^1.3.0",

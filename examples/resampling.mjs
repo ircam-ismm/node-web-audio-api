@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { AudioContext } from '../index.mjs';
+import { AudioContext, OfflineAudioContext } from '../index.mjs';
 
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });
@@ -12,13 +12,13 @@ console.log('> AudioContext sampleRate: %f', audioContext.sampleRate);
   console.log('> Case 1: buffers are decoded at right sample rate by context');
   console.log('--------------------------------------------------------------');
 
-  const file38000 = fs.readFileSync(path.join('samples', 'sample-38000.wav')).buffer;
+  const file38000 = fs.readFileSync(path.join('examples', 'samples', 'sample-38000.wav')).buffer;
   const buffer38000 = await audioContext.decodeAudioData(file38000);
 
-  const file44100 = fs.readFileSync(path.join('samples', 'sample-44100.wav')).buffer;
+  const file44100 = fs.readFileSync(path.join('examples', 'samples', 'sample-44100.wav')).buffer;
   const buffer44100 = await audioContext.decodeAudioData(file44100);
 
-  const file48000 = fs.readFileSync(path.join('samples', 'sample-48000.wav')).buffer;
+  const file48000 = fs.readFileSync(path.join('examples', 'samples', 'sample-48000.wav')).buffer;
   const buffer48000 = await audioContext.decodeAudioData(file48000);
 
   // audio context at default system sample rate
@@ -65,22 +65,25 @@ console.log('> AudioContext sampleRate: %f', audioContext.sampleRate);
     sampleRate: 38000.,
     latencyHint: 'interactive',
   });
-  const file38000 = fs.readFileSync(path.join('samples', 'sample-38000.wav')).buffer;
+  const file38000 = fs.readFileSync(path.join('examples', 'samples', 'sample-38000.wav')).buffer;
   const buffer38000 = await audioContext38000.decodeAudioData(file38000);
+  await audioContext38000.close();
 
   const audioContext44100 = new AudioContext({
     sampleRate: 44100.,
     latencyHint: 'interactive',
   });
-  const file44100 = fs.readFileSync(path.join('samples', 'sample-44100.wav')).buffer;
+  const file44100 = fs.readFileSync(path.join('examples', 'samples', 'sample-44100.wav')).buffer;
   const buffer44100 = await audioContext44100.decodeAudioData(file44100);
+  await audioContext44100.close();
 
   const audioContext48000 = new AudioContext({
     sampleRate: 48000.,
     latencyHint: 'interactive',
   });
-  const file48000 = fs.readFileSync(path.join('samples', 'sample-48000.wav')).buffer;
+  const file48000 = fs.readFileSync(path.join('examples', 'samples', 'sample-48000.wav')).buffer;
   const buffer48000 = await audioContext48000.decodeAudioData(file48000);
+  await audioContext48000.close();
 
   {
     // audio context at default system sample rate
