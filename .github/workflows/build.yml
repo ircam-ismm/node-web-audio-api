@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  clippy:
+  checks:
     runs-on: ubuntu-latest
     steps:
       - name: Install Rust toolchain
@@ -33,8 +33,11 @@ jobs:
       - name: Clippy
         run: cargo clippy --all-features -- -D warnings
 
+      - name: Lint
+        run: npm run lint
+
   build:
-    needs: clippy
+    needs: checks
     if: "!contains(github.event.head_commit.message, 'skip ci')"
     strategy:
       fail-fast: false
