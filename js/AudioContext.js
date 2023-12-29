@@ -1,3 +1,5 @@
+const { isFunction } = require('./lib/utils.js');
+
 let contextId = 0;
 
 const kProcessId = Symbol('processId');
@@ -45,15 +47,29 @@ module.exports = function(NativeAudioContext) {
       }
     }
 
-    decodeAudioData(audioData) {
+    // This is not exactly what the spec says, but if we reject the promise
+    // when `decodeErrorCallback` is present the program will crash in an
+    // unexpected manner
+    // cf. https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-decodeaudiodata
+    decodeAudioData(audioData, decodeSuccessCallback, decodeErrorCallback) {
       if (!(audioData instanceof ArrayBuffer)) {
         throw new TypeError(`Failed to execute 'decodeAudioData': parameter 1 is not of type 'ArrayBuffer'`);
       }
+
       try {
         const audioBuffer = super.decodeAudioData(audioData);
-        return Promise.resolve(audioBuffer);
+
+        if (isFunction(decodeSuccessCallback)) {
+          decodeSuccessCallback(audioBuffer);
+        } else {
+          return Promise.resolve(audioBuffer);
+        }
       } catch (err) {
-        return Promise.reject(err);
+        if (isFunction(decodeErrorCallback)) {
+          decodeErrorCallback(err);
+        } else {
+          return Promise.reject(err);
+        }
       }
     }
   }
