@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import { AudioContext, AudioBuffer } from '../index.mjs';
+import { AudioContext } from '../index.mjs';
 
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });

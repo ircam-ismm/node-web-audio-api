@@ -38,7 +38,7 @@ for (let filepath of files) {
     src.start();
 
     await new Promise(resolve => setTimeout(resolve, 4 * 1000));
-  } catch(err) {
+  } catch (err) {
     console.log('> Error decoding audio file: %s', filepath);
     console.log(err);
     console.log('> --------------------------------');

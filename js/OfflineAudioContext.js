@@ -51,4 +51,4 @@ module.exports = function patchOfflineAudioContext(NativeOfflineAudioContext) {
   }
 
   return OfflineAudioContext;
-}
+};

@@ -15,11 +15,12 @@ osc.start();
 
 let direction = 1;
 setInterval(function loop() {
-    console.log(audioContext.listener.positionX.value);
-    if (Math.abs(audioContext.listener.positionX.value) >= 10.) {
-        direction *= -1;
-        const now = audioContext.currentTime;
-        audioContext.listener.positionX.linearRampToValueAtTime(10 * direction, now + 4);
-    }
+  console.log(audioContext.listener.positionX.value);
+
+  if (Math.abs(audioContext.listener.positionX.value) >= 10.) {
+    direction *= -1;
+    const now = audioContext.currentTime;
+    audioContext.listener.positionX.linearRampToValueAtTime(10 * direction, now + 4);
+  }
 }, 500);
 
