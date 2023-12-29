@@ -1,12 +1,20 @@
+const EventTargetMixin = require('./lib/EventTarget.mixin.js');
+
 let contextId = 0;
 
 const kProcessId = Symbol('processId');
 const kKeepAwakeId = Symbol('keepAwakeId');
 
+const kDispatchEvent = Symbol.for('napiDispatchEvent');
+
 module.exports = function(NativeAudioContext) {
-  class AudioContext extends NativeAudioContext {
+  class AudioContext extends EventTargetMixin(NativeAudioContext, ['statechange']) {
+  // class AudioContext extends NativeAudioContext {
     constructor(options = {}) {
       super(options);
+      // EventTargetMixin[kDispatchEvent] is bound to this, this is safe to
+      // finalize event target initialization
+      super.__initEventTarget__();
 
       const id = contextId++;
       // store in process to prevent garbage collection

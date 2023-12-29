@@ -2,8 +2,10 @@ use std::io::Cursor;
 use std::sync::Arc;
 
 use napi::*;
+use napi::threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunctionCallMode};
 use napi_derive::js_function;
 use web_audio_api::context::*;
+use web_audio_api::Event;
 
 use crate::*;
 
@@ -59,6 +61,8 @@ impl ${d.napiName(d.node)} {
                 Property::new("resume")?.with_method(resume_offline),
                     `
                 }
+                // private
+                Property::new("__initEventTarget__")?.with_method(init_event_target),
             ],
         )
     }
@@ -142,10 +146,13 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let audio_context = ${d.name(d.node)}::new(number_of_channels, length, sample_rate);
         `}
 
+    // wrap audio context in Arc
+    let audio_context = Arc::new(audio_context);
+
     // -------------------------------------------------
     // Wrap context
     // -------------------------------------------------
-    let napi_audio_context = ${d.napiName(d.node)}(Arc::new(audio_context));
+    let napi_audio_context = ${d.napiName(d.node)}(audio_context);
     ctx.env.wrap(&mut js_this, napi_audio_context)?;
 
     js_this.define_properties(&[
@@ -155,6 +162,10 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_property_attributes(PropertyAttributes::Static),
     ])?;
 
+
+    // test symbol as property name
+    // let test_symbol = ctx.env.symbol_for("test").unwrap();
+    // js_this.set_property(test_symbol, &ctx.env.create_string("test").unwrap())?;
 
     // -------------------------------------------------
     // Bind AudioDestination
@@ -167,6 +178,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
     ctx.env.get_undefined()
 }
+
 
 #[js_function]
 fn get_current_time(ctx: CallContext) -> Result<JsNumber> {
@@ -512,3 +524,39 @@ fn resume_offline(ctx: CallContext) -> Result<JsObject> {
 }
     `
 }
+
+
+// ----------------------------------------------------
+// Private Event Target initialization
+// ----------------------------------------------------
+#[js_function]
+fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+    let context = napi_obj.0.clone();
+
+    let dispatch_event_symbol = ctx.env.symbol_for("napiDispatchEvent").unwrap();
+    let js_func = js_this.get_property(dispatch_event_symbol).unwrap();
+
+    let tsfn = ctx.env.create_threadsafe_function(&js_func, 0, |ctx: ThreadSafeCallContext<Event>| {
+        let event_type = ctx.env.create_string(ctx.value.type_)?;
+        Ok(vec![event_type])
+    })?;
+
+    let context_clone = context.clone();
+    context.set_onstatechange(move |e| {
+        tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
+
+        if context_clone.state() == AudioContextState::Closed {
+            // We need to clean things around so that the js object can be garbage collected.
+            // But we also need to wait so that the previous tsfn.call is executed,
+            // this is not clean, but don't see how to implement that properly right now.
+            std::thread::sleep(std::time::Duration::from_millis(100));
+            context_clone.clear_onstatechange();
+            let _ = tsfn.clone().abort();
+        }
+    });
+
+    ctx.env.get_undefined()
+}
+
