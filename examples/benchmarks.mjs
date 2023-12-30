@@ -19,7 +19,7 @@ async function loadBuffer(sources, pathname, sampleRate) {
 
 function getBuffer(sources, sampleRate, numberOfChannels) {
   return sources.find(buffer => {
-    return buffer.sampleRate == sampleRate && buffer.numberOfChannels == numberOfChannels
+    return buffer.sampleRate == sampleRate && buffer.numberOfChannels == numberOfChannels;
   });
 }
 
@@ -61,7 +61,7 @@ await loadBuffer(sources, path.join('examples', 'samples', 'think-stereo-48000.w
 console.log('');
 
 {
-  const name = "Baseline (silence)";
+  const name = 'Baseline (silence)';
 
   const context = new OfflineAudioContext(1, DURATION * sampleRate, sampleRate);
 
@@ -69,7 +69,7 @@ console.log('');
 }
 
 {
-  const name = "Simple source test without resampling (Mono)";
+  const name = 'Simple source test without resampling (Mono)';
 
   const context = new OfflineAudioContext(1, DURATION * sampleRate, sampleRate);
   const source = context.createBufferSource();
@@ -83,7 +83,7 @@ console.log('');
 }
 
 {
-  const name = "Simple source test without resampling (Stereo)";
+  const name = 'Simple source test without resampling (Stereo)';
 
   const context = new OfflineAudioContext(2, DURATION * sampleRate, sampleRate);
   const source = context.createBufferSource();
@@ -97,7 +97,7 @@ console.log('');
 }
 
 {
-  const name = "Simple source test without resampling (Stereo and positionnal)";
+  const name = 'Simple source test without resampling (Stereo and positionnal)';
 
   const context = new OfflineAudioContext(2, DURATION * sampleRate, sampleRate);
 
@@ -122,7 +122,7 @@ console.log('');
 }
 
 {
-  const name = "Simple source test with resampling (Mono)";
+  const name = 'Simple source test with resampling (Mono)';
 
   const context = new OfflineAudioContext(1, DURATION * sampleRate, sampleRate);
   const source = context.createBufferSource();
@@ -136,7 +136,7 @@ console.log('');
 }
 
 {
-  const name = "Simple source test with resampling (Stereo)";
+  const name = 'Simple source test with resampling (Stereo)';
 
   const context = new OfflineAudioContext(2, DURATION * sampleRate, sampleRate);
   const source = context.createBufferSource();
@@ -150,7 +150,7 @@ console.log('');
 }
 
 {
-  const name = "Simple source test with resampling (Stereo and positionnal)";
+  const name = 'Simple source test with resampling (Stereo and positionnal)';
 
   const context = new OfflineAudioContext(2, DURATION * sampleRate, sampleRate);
 
@@ -175,7 +175,7 @@ console.log('');
 }
 
 {
-  const name = "Upmix without resampling (Mono -> Stereo)";
+  const name = 'Upmix without resampling (Mono -> Stereo)';
 
   const context = new OfflineAudioContext(2, DURATION * sampleRate, sampleRate);
   const source = context.createBufferSource();
@@ -189,7 +189,7 @@ console.log('');
 }
 
 {
-  const name = "Downmix without resampling (Stereo -> Mono)";
+  const name = 'Downmix without resampling (Stereo -> Mono)';
 
   const context = new OfflineAudioContext(1, DURATION * sampleRate, sampleRate);
   const source = context.createBufferSource();
@@ -203,7 +203,7 @@ console.log('');
 }
 
 {
-  const name = "Simple mixing (100x same buffer) - be careful w/ volume here!";
+  const name = 'Simple mixing (100x same buffer) - be careful w/ volume here!';
 
   const adjusted_duration = DURATION / 4;
   const context =
@@ -222,7 +222,7 @@ console.log('');
 }
 
 {
-  const name = "Simple mixing (100 different buffers) - be careful w/ volume here!";
+  const name = 'Simple mixing (100 different buffers) - be careful w/ volume here!';
 
   const adjusted_duration = DURATION / 4;
   const context = new OfflineAudioContext(2, adjusted_duration * sampleRate, sampleRate);
@@ -244,7 +244,7 @@ console.log('');
 }
 
 {
-  const name = "Simple mixing with gains";
+  const name = 'Simple mixing with gains';
 
   const context = new OfflineAudioContext(2, DURATION * sampleRate, sampleRate);
 
@@ -281,7 +281,7 @@ console.log('');
 }
 
 {
-  const name = "Convolution reverb";
+  const name = 'Convolution reverb';
 
   const adjusted_duration = DURATION / 8.;
   const length = (adjusted_duration * sampleRate);
@@ -320,7 +320,7 @@ console.log('');
 }
 
 {
-  const name = "Granular synthesis";
+  const name = 'Granular synthesis';
 
   const adjusted_duration = DURATION / 16.;
   const length = (adjusted_duration * sampleRate);
@@ -357,7 +357,7 @@ console.log('');
 }
 
 {
-  const name = "Synth (Sawtooth with Envelope)";
+  const name = 'Synth (Sawtooth with Envelope)';
 
   const sampleRate = 44100.;
   const context = new OfflineAudioContext(1, DURATION * sampleRate, sampleRate);
@@ -387,7 +387,7 @@ console.log('');
 }
 
 {
-  const name = "Synth (Sawtooth with gain - no automation)";
+  const name = 'Synth (Sawtooth with gain - no automation)';
 
   const sampleRate = 44100.;
   const context = new OfflineAudioContext(1, DURATION * sampleRate, sampleRate);
@@ -413,7 +413,7 @@ console.log('');
 }
 
 {
-  const name = "Synth (Sawtooth without gain)";
+  const name = 'Synth (Sawtooth without gain)';
 
   const sampleRate = 44100.;
   const context = new OfflineAudioContext(1, DURATION * sampleRate, sampleRate);
@@ -436,7 +436,7 @@ console.log('');
 }
 
 {
-  const name = "Substractive Synth";
+  const name = 'Substractive Synth';
 
   const sampleRate = 44100.;
   const context = new OfflineAudioContext(1, DURATION * sampleRate, sampleRate);
@@ -473,7 +473,7 @@ console.log('');
 }
 
 {
-  const name = "Stereo panning";
+  const name = 'Stereo panning';
 
   const context = new OfflineAudioContext(2, DURATION * sampleRate, sampleRate);
 
@@ -492,7 +492,7 @@ console.log('');
 }
 
 {
-  const name = "Stereo panning with automation";
+  const name = 'Stereo panning with automation';
 
   const context = new OfflineAudioContext(2, DURATION * sampleRate, sampleRate);
 
@@ -512,7 +512,7 @@ console.log('');
 }
 
 {
-  const name = "Sawtooth with automation";
+  const name = 'Sawtooth with automation';
 
   const context = new OfflineAudioContext(2, DURATION * sampleRate, sampleRate);
 
@@ -528,7 +528,7 @@ console.log('');
 
 {
   // derived from "Simple source test without resampling (Stereo)""
-  const name = "Stereo source with delay";
+  const name = 'Stereo source with delay';
 
   const context = new OfflineAudioContext(2, DURATION * sampleRate, sampleRate);
 
@@ -547,7 +547,7 @@ console.log('');
 }
 
 {
-  const name = "IIR filter";
+  const name = 'IIR filter';
 
   const context = new OfflineAudioContext(2, DURATION * sampleRate, sampleRate);
 
@@ -570,7 +570,7 @@ console.log('');
 }
 
 {
-  const name = "Biquad filter";
+  const name = 'Biquad filter';
 
   const context = new OfflineAudioContext(2, DURATION * sampleRate, sampleRate);
 
@@ -600,14 +600,14 @@ console.log('');
 
 // instantiate
 const table = new Table({
-    head: ['+ id', 'name', 'duration (ms)', 'Speedup vs. realtime', 'buffer.duration (s)'],
-    colWidths: [10, 70, 15, 22, 22],
-    chars: {
-      'top': '', 'top-mid': '', 'top-left': '', 'top-right': '',
-      'bottom': '', 'bottom-mid': '', 'bottom-left': '', 'bottom-right': '',
-      'left': '', 'left-mid': '', 'mid': '', 'mid-mid': '',
-      'right': '', 'right-mid': '', 'middle': '|'
-    }
+  head: ['+ id', 'name', 'duration (ms)', 'Speedup vs. realtime', 'buffer.duration (s)'],
+  colWidths: [10, 70, 15, 22, 22],
+  chars: {
+    'top': '', 'top-mid': '', 'top-left': '', 'top-right': '',
+    'bottom': '', 'bottom-mid': '', 'bottom-left': '', 'bottom-right': '',
+    'left': '', 'left-mid': '', 'mid': '', 'mid-mid': '',
+    'right': '', 'right-mid': '', 'middle': '|',
+  },
 });
 
 results.forEach((result, index) => {
@@ -616,8 +616,8 @@ results.forEach((result, index) => {
     result.name,
     (result.duration * 1000).toFixed(3),
     (result.buffer.duration / result.duration).toFixed(1),
-    result.buffer.duration
-  ])
+    result.buffer.duration,
+  ]);
 });
 
 console.log(table.toString());

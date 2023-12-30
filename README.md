@@ -19,7 +19,7 @@ npm install [--save] node-web-audio-api
 
 ```js
 import { AudioContext, OscillatorNode, GainNode } from 'node-web-audio-api';
-// or using old fashionned commonjs syntax:
+// or using old fashioned commonjs syntax:
 // const { AudioContext, OscillatorNode, GainNode } = require('node-web-audio-api');
 
 const audioContext = new AudioContext();

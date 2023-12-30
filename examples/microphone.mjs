@@ -1,4 +1,4 @@
-import { mediaDevices, AudioContext, MediaStreamAudioSourceNode, GainNode } from '../index.mjs';
+import { mediaDevices, AudioContext, MediaStreamAudioSourceNode } from '../index.mjs';
 
 console.log('MediaDevices::getUserMedia - mic feedback, be careful with volume...)');
 

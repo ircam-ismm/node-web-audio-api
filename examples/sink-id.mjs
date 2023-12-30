@@ -24,7 +24,7 @@ console.log('');
 
 const prompt = readline.createInterface({
   input: process.stdin,
-  output: process.stdout
+  output: process.stdout,
 });
 
 (function selectSinkId() {

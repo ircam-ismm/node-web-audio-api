@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { AudioContext, OfflineAudioContext } from '../index.mjs';
+import { AudioContext } from '../index.mjs';
 
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });
