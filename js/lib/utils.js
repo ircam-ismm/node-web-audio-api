@@ -13,4 +13,4 @@ exports.isPositiveNumber = function isPositiveNumber(n) {
 exports.isFunction = function isFunction(val) {
   return Object.prototype.toString.call(val) == '[object Function]' ||
     Object.prototype.toString.call(val) == '[object AsyncFunction]';
-}
+};
