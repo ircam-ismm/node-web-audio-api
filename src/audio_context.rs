@@ -20,11 +20,9 @@
 use std::io::Cursor;
 use std::sync::Arc;
 
-use napi::threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunctionCallMode};
 use napi::*;
 use napi_derive::js_function;
 use web_audio_api::context::*;
-use web_audio_api::Event;
 
 use crate::*;
 
@@ -73,6 +71,7 @@ impl NapiAudioContext {
                 Property::new("suspend")?.with_method(suspend),
                 Property::new("close")?.with_method(close),
                 // private
+                // @todo - OfflineAudioContext version
                 Property::new("__initEventTarget__")?.with_method(init_event_target),
             ],
         )
@@ -616,9 +615,13 @@ fn create_media_stream_source(ctx: CallContext) -> Result<JsObject> {
 
 // ----------------------------------------------------
 // Private Event Target initialization
+// @todo - sinkchange
 // ----------------------------------------------------
 #[js_function]
 fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
+    use napi::threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunctionCallMode};
+    use web_audio_api::Event;
+
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
     let context = napi_obj.0.clone();
@@ -633,19 +636,33 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
                 Ok(vec![event_type])
             })?;
 
-    let context_clone = context.clone();
-    context.set_onstatechange(move |e| {
-        tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
+    // statechange event
+    {
+        let tsfn = tsfn.clone();
+        let context_clone = context.clone();
 
-        if context_clone.state() == AudioContextState::Closed {
-            // We need to clean things around so that the js object can be garbage collected.
-            // But we also need to wait so that the previous tsfn.call is executed,
-            // this is not clean, but don't see how to implement that properly right now.
-            std::thread::sleep(std::time::Duration::from_millis(100));
-            context_clone.clear_onstatechange();
-            let _ = tsfn.clone().abort();
-        }
-    });
+        context.set_onstatechange(move |e| {
+            tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
+
+            if context_clone.state() == AudioContextState::Closed {
+                // We need to clean things around so that the js object can be garbage collected.
+                // But we also need to wait so that the previous tsfn.call is executed,
+                // this is not clean, but don't see how to implement that properly right now.
+                std::thread::sleep(std::time::Duration::from_millis(1));
+                context_clone.clear_onstatechange();
+                context_clone.clear_onsinkchange();
+                let _ = tsfn.clone().abort();
+            }
+        });
+    }
+
+    // sinkchange event
+    {
+        let tsfn = tsfn.clone();
+        context.set_onsinkchange(move |e| {
+            tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
+        });
+    }
 
     ctx.env.get_undefined()
 }

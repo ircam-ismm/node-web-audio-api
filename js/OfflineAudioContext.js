@@ -1,6 +1,11 @@
 const { NotSupportedError } = require('./lib/errors.js');
 const { isFunction, isPlainObject, isPositiveInt, isPositiveNumber } = require('./lib/utils.js');
 
+// @todo - requires
+// - https://github.com/orottier/web-audio-api-rs/issues/411
+// - https://github.com/orottier/web-audio-api-rs/issues/416
+// const EventTargetMixin = require('./lib/EventTarget.mixin.js');
+
 module.exports = function patchOfflineAudioContext(NativeOfflineAudioContext) {
   class OfflineAudioContext extends NativeOfflineAudioContext {
     constructor(...args) {
@@ -24,6 +29,10 @@ module.exports = function patchOfflineAudioContext(NativeOfflineAudioContext) {
       }
 
       super(numberOfChannels, length, sampleRate);
+
+      // EventTargetMixin has been called so EventTargetMixin[kDispatchEvent] is
+      // bound to this, then we can safely finalize event target initialization
+      // super.__initEventTarget__();
     }
 
     // promisify sync APIs

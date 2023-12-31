@@ -20,11 +20,9 @@
 use std::io::Cursor;
 use std::sync::Arc;
 
-use napi::threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunctionCallMode};
 use napi::*;
 use napi_derive::js_function;
 use web_audio_api::context::*;
-use web_audio_api::Event;
 
 use crate::*;
 
@@ -69,8 +67,6 @@ impl NapiOfflineAudioContext {
                 // implementation specific to offline audio context
                 Property::new("suspend")?.with_method(suspend_offline),
                 Property::new("resume")?.with_method(resume_offline),
-                // private
-                Property::new("__initEventTarget__")?.with_method(init_event_target),
             ],
         )
     }
@@ -546,37 +542,6 @@ fn resume_offline(ctx: CallContext) -> Result<JsObject> {
 }
 
 // ----------------------------------------------------
-// Private Event Target initialization
+// @todo - Private Event Target initialization
+// statechange & complete
 // ----------------------------------------------------
-#[js_function]
-fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let context = napi_obj.0.clone();
-
-    let dispatch_event_symbol = ctx.env.symbol_for("napiDispatchEvent").unwrap();
-    let js_func = js_this.get_property(dispatch_event_symbol).unwrap();
-
-    let tsfn =
-        ctx.env
-            .create_threadsafe_function(&js_func, 0, |ctx: ThreadSafeCallContext<Event>| {
-                let event_type = ctx.env.create_string(ctx.value.type_)?;
-                Ok(vec![event_type])
-            })?;
-
-    let context_clone = context.clone();
-    context.set_onstatechange(move |e| {
-        tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
-
-        if context_clone.state() == AudioContextState::Closed {
-            // We need to clean things around so that the js object can be garbage collected.
-            // But we also need to wait so that the previous tsfn.call is executed,
-            // this is not clean, but don't see how to implement that properly right now.
-            std::thread::sleep(std::time::Duration::from_millis(100));
-            context_clone.clear_onstatechange();
-            let _ = tsfn.clone().abort();
-        }
-    });
-
-    ctx.env.get_undefined()
-}

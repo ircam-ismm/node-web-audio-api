@@ -9,12 +9,12 @@ const kKeepAwakeId = Symbol('keepAwakeId');
 const kDispatchEvent = Symbol.for('napiDispatchEvent');
 
 module.exports = function(NativeAudioContext) {
-  class AudioContext extends EventTargetMixin(NativeAudioContext, ['statechange']) {
+  class AudioContext extends EventTargetMixin(NativeAudioContext, ['statechange', 'sinkchange']) {
   // class AudioContext extends NativeAudioContext {
     constructor(options = {}) {
       super(options);
-      // EventTargetMixin[kDispatchEvent] is bound to this, this is safe to
-      // finalize event target initialization
+      // EventTargetMixin has been called so EventTargetMixin[kDispatchEvent] is
+      // bound to this, then we can safely finalize event target initialization
       super.__initEventTarget__();
 
       const id = contextId++;

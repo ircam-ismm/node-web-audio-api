@@ -6,6 +6,10 @@ import { AudioContext, mediaDevices } from '../index.mjs';
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });
 
+audioContext.addEventListener('sinkchange', (e) => {
+  console.log('sinkchange listener:', e);
+});
+
 const file = fs.readFileSync(path.join('examples', 'samples', 'sample.wav')).buffer;
 const buffer = await audioContext.decodeAudioData(file);
 
