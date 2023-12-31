@@ -24,6 +24,13 @@ use web_audio_api::node::*;
 
 pub(crate) struct NapiIIRFilterNode(IIRFilterNode);
 
+// for debug purpose
+// impl Drop for NapiIIRFilterNode {
+//     fn drop(&mut self) {
+//         println!("NAPI: NapiIIRFilterNode dropped");
+//     }
+// }
+
 impl NapiIIRFilterNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
         env.define_class(
@@ -193,7 +200,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             let audio_context = napi_audio_context.unwrap();
             IIRFilterNode::new(audio_context, options)
         }
-        &_ => panic!("not supported"),
+        &_ => unreachable!(),
     };
 
     // finalize instance creation

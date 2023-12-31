@@ -24,6 +24,13 @@ use web_audio_api::node::*;
 
 pub(crate) struct NapiWaveShaperNode(WaveShaperNode);
 
+// for debug purpose
+// impl Drop for NapiWaveShaperNode {
+//     fn drop(&mut self) {
+//         println!("NAPI: NapiWaveShaperNode dropped");
+//     }
+// }
+
 impl NapiWaveShaperNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
         env.define_class(
@@ -192,7 +199,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             let audio_context = napi_audio_context.unwrap();
             WaveShaperNode::new(audio_context, options)
         }
-        &_ => panic!("not supported"),
+        &_ => unreachable!(),
     };
 
     // finalize instance creation

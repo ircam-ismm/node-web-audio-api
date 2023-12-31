@@ -1,7 +1,7 @@
 const { isFunction } = require('./utils.js');
 
-const kEventListeners = Symbol('eventListeners');
-const kDispatchEvent = Symbol.for('napiDispatchEvent');
+const kEventListeners = Symbol('node-web-audio-api:event-listeners');
+const kDispatchEvent = Symbol.for('node-web-audio-api:napi-dispatch-event');
 
 module.exports = (superclass, eventTypes) => class extends superclass {
   [kEventListeners] = new Map();

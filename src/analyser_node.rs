@@ -24,6 +24,13 @@ use web_audio_api::node::*;
 
 pub(crate) struct NapiAnalyserNode(AnalyserNode);
 
+// for debug purpose
+// impl Drop for NapiAnalyserNode {
+//     fn drop(&mut self) {
+//         println!("NAPI: NapiAnalyserNode dropped");
+//     }
+// }
+
 impl NapiAnalyserNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
         env.define_class(
@@ -223,7 +230,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             let audio_context = napi_audio_context.unwrap();
             AnalyserNode::new(audio_context, options)
         }
-        &_ => panic!("not supported"),
+        &_ => unreachable!(),
     };
 
     // finalize instance creation

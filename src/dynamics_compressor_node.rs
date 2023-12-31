@@ -24,6 +24,13 @@ use web_audio_api::node::*;
 
 pub(crate) struct NapiDynamicsCompressorNode(DynamicsCompressorNode);
 
+// for debug purpose
+// impl Drop for NapiDynamicsCompressorNode {
+//     fn drop(&mut self) {
+//         println!("NAPI: NapiDynamicsCompressorNode dropped");
+//     }
+// }
+
 impl NapiDynamicsCompressorNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
         env.define_class(
@@ -201,7 +208,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             let audio_context = napi_audio_context.unwrap();
             DynamicsCompressorNode::new(audio_context, options)
         }
-        &_ => panic!("not supported"),
+        &_ => unreachable!(),
     };
 
     // AudioParam: DynamicsCompressorNode::threshold

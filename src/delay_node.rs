@@ -24,6 +24,13 @@ use web_audio_api::node::*;
 
 pub(crate) struct NapiDelayNode(DelayNode);
 
+// for debug purpose
+// impl Drop for NapiDelayNode {
+//     fn drop(&mut self) {
+//         println!("NAPI: NapiDelayNode dropped");
+//     }
+// }
+
 impl NapiDelayNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
         env.define_class(
@@ -175,7 +182,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             let audio_context = napi_audio_context.unwrap();
             DelayNode::new(audio_context, options)
         }
-        &_ => panic!("not supported"),
+        &_ => unreachable!(),
     };
 
     // AudioParam: DelayNode::delayTime

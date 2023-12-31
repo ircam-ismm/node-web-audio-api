@@ -7,13 +7,13 @@ const audioContext = new AudioContext({ latencyHint });
 
 console.log('Context state - %s', audioContext.state);
 
-audioContext.addEventListener('statechange', event => {
-  console.log('addEventListener (called second):', event);
-});
+// audioContext.addEventListener('statechange', event => {
+//   console.log('addEventListener (called second):', event);
+// });
 
-audioContext.onstatechange = event => {
-  console.log('onstatechange (called first):', event);
-};
+// audioContext.onstatechange = event => {
+//   console.log('onstatechange (called first):', event);
+// };
 
 const sine = audioContext.createOscillator();
 sine.connect(audioContext.destination);
