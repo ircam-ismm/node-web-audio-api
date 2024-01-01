@@ -531,7 +531,7 @@ fn set_type(ctx: CallContext) -> Result<JsUndefined> {
         "sawtooth" => OscillatorType::Sawtooth,
         "triangle" => OscillatorType::Triangle,
         "custom" => OscillatorType::Custom,
-        _ => panic!("undefined value for OscillatorType"),
+        _ => return ctx.env.get_undefined(),
     };
 
     node.set_type(value);

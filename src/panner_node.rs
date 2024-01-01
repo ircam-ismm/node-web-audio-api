@@ -639,7 +639,7 @@ fn set_panning_model(ctx: CallContext) -> Result<JsUndefined> {
     let value = match utf8_str.as_str() {
         "equalpower" => PanningModelType::EqualPower,
         "HRTF" => PanningModelType::HRTF,
-        _ => panic!("undefined value for PanningModelType"),
+        _ => return ctx.env.get_undefined(),
     };
 
     node.set_panning_model(value);
@@ -659,7 +659,7 @@ fn set_distance_model(ctx: CallContext) -> Result<JsUndefined> {
         "linear" => DistanceModelType::Linear,
         "inverse" => DistanceModelType::Inverse,
         "exponential" => DistanceModelType::Exponential,
-        _ => panic!("undefined value for DistanceModelType"),
+        _ => return ctx.env.get_undefined(),
     };
 
     node.set_distance_model(value);
