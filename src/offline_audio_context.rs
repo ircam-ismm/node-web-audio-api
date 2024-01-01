@@ -317,6 +317,7 @@ fn create_periodic_wave(ctx: CallContext) -> Result<JsObject> {
 
 // ----------------------------------------------------
 // Factory methods
+// @todo - move to JS
 // ----------------------------------------------------
 
 #[js_function(0)]
