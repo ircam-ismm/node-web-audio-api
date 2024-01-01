@@ -1,7 +1,7 @@
 const EventTargetMixin = require('./EventTarget.mixin.js');
 
-module.exports = function(NativeAudioBufferSourceNode) {
-  class AudioBufferSourceNode extends EventTargetMixin(NativeAudioBufferSourceNode, ['ended']) {
+module.exports = function(NativeConstantSourceNode) {
+  class ConstantSourceNode extends EventTargetMixin(NativeConstantSourceNode, ['ended']) {
     constructor(audioContext, options = {}) {
       super(audioContext, options);
       // EventTargetMixin has been called so EventTargetMixin[kDispatchEvent] is
@@ -10,5 +10,6 @@ module.exports = function(NativeAudioBufferSourceNode) {
     }
   }
 
-  return AudioBufferSourceNode;
+  return ConstantSourceNode;
 }
+

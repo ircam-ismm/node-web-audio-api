@@ -1,14 +1,14 @@
-const patchAudioContext = require('./AudioContext.js');
-const patchOfflineAudioContext = require('./OfflineAudioContext.js');
-const patchAudioBufferSourceNode = require('./AudioBufferSourceNode.js');
-
 module.exports = function monkeyPatch(nativeBinding) {
   // --------------------------------------------------------------------------
   // Monkey Patch Web Audio API
   // --------------------------------------------------------------------------
-  nativeBinding.AudioContext = patchAudioContext(nativeBinding.AudioContext);
-  nativeBinding.OfflineAudioContext = patchOfflineAudioContext(nativeBinding.OfflineAudioContext);
-  nativeBinding.AudioBufferSourceNode = patchAudioBufferSourceNode(nativeBinding.AudioBufferSourceNode);
+  nativeBinding.AudioBufferSourceNode = require('./AudioBufferSourceNode.js')(nativeBinding.AudioBufferSourceNode);
+  nativeBinding.ConstantSourceNode = require('./ConstantSourceNode.js')(nativeBinding.ConstantSourceNode);
+  nativeBinding.OscillatorNode = require('./OscillatorNode.js')(nativeBinding.OscillatorNode);
+
+
+  nativeBinding.AudioContext = require('./AudioContext.js')(nativeBinding);
+  nativeBinding.OfflineAudioContext = require('./OfflineAudioContext.js')(nativeBinding);
 
   // --------------------------------------------------------------------------
   // Promisify MediaDevices API

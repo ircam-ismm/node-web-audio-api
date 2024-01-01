@@ -1,9 +1,9 @@
-const { isFunction } = require('./utils.js');
+const { isFunction } = require('./lib/utils.js');
 
 const kEventListeners = Symbol('node-web-audio-api:event-listeners');
 const kDispatchEvent = Symbol.for('node-web-audio-api:napi-dispatch-event');
 
-module.exports = (superclass, eventTypes) => class extends superclass {
+module.exports = (superclass, eventTypes) => class EventTarget extends superclass {
   [kEventListeners] = new Map();
 
   constructor(...args) {
@@ -13,7 +13,7 @@ module.exports = (superclass, eventTypes) => class extends superclass {
       this[`on${eventType}`] = null;
     });
 
-    // we need to bind because calling [kDispatchEvent] loose `this`
+    // we need to bind because calling [kDispatchEvent] from rust loose `this`
     this[kDispatchEvent] = this[kDispatchEvent].bind(this);
   }
 

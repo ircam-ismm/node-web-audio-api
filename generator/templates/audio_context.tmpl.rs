@@ -16,7 +16,7 @@ use crate::*;
 #[derive(Clone)]
 pub(crate) struct ${d.napiName(d.node)} {
     context: Arc<${d.name(d.node)}>,
-    // store all ThreadSafeCallContext created for listening to events
+    // store all ThreadsafeFunction created for listening to events
     // so that they can be aborted when the context is closed
     tsfn_store: Arc<Mutex<HashMap<String, ThreadsafeFunction<Event>>>>,
 }
@@ -371,6 +371,7 @@ fn create_periodic_wave(ctx: CallContext) -> Result<JsObject> {
 
 // ----------------------------------------------------
 // Factory methods
+// @todo - move to JS
 // ----------------------------------------------------
 ${d.nodes.map(n => {
     let factoryName = d.factoryName(n);
@@ -500,8 +501,8 @@ fn create_media_stream_source(ctx: CallContext) -> Result<JsObject> {
 #[js_function]
 fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let context = napi_obj.unwrap();
+    let napi_context = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+    let context = napi_context.unwrap();
 
     let dispatch_event_symbol = ctx.env.symbol_for("node-web-audio-api:napi-dispatch-event").unwrap();
     let js_func = js_this.get_property(dispatch_event_symbol).unwrap();
@@ -511,18 +512,18 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
         Ok(vec![event_type])
     })?;
 
-    let _ = napi_obj.store_thread_safe_listener(tsfn.clone());
+    let _ = napi_context.store_thread_safe_listener(tsfn.clone());
 
     // statechange event
     {
         let tsfn = tsfn.clone();
-        let napi_obj = napi_obj.clone();
+        let napi_context = napi_context.clone();
 
         context.set_onstatechange(move |e| {
             tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
 
-            if napi_obj.unwrap().state() == AudioContextState::Closed {
-                napi_obj.clear_all_thread_safe_listeners();
+            if napi_context.unwrap().state() == AudioContextState::Closed {
+                napi_context.clear_all_thread_safe_listeners();
             }
         });
     }

@@ -21,7 +21,8 @@ use std::collections::HashMap;
 use std::io::Cursor;
 use std::sync::{Arc, Mutex};
 
-#[allow(unused_imports)] // @todo - remove once OfflineAudioContext events are implemented
+#[allow(unused_imports)]
+// @todo - remove directive once OfflineAudioContext events are implemented
 use napi::threadsafe_function::{
     ThreadSafeCallContext, ThreadsafeFunction, ThreadsafeFunctionCallMode,
 };
@@ -29,7 +30,8 @@ use napi::*;
 use napi_derive::js_function;
 use uuid::Uuid;
 use web_audio_api::context::*;
-#[allow(unused_imports)] // @todo - remove once OfflineAudioContext events are implemented
+#[allow(unused_imports)]
+// @todo - remove directive once OfflineAudioContext events are implemented
 use web_audio_api::Event;
 
 use crate::*;
@@ -37,7 +39,7 @@ use crate::*;
 #[derive(Clone)]
 pub(crate) struct NapiOfflineAudioContext {
     context: Arc<OfflineAudioContext>,
-    // store all ThreadSafeCallContext created for listening to events
+    // store all ThreadsafeFunction created for listening to events
     // so that they can be aborted when the context is closed
     tsfn_store: Arc<Mutex<HashMap<String, ThreadsafeFunction<Event>>>>,
 }
@@ -96,10 +98,7 @@ impl NapiOfflineAudioContext {
         &self.context
     }
 
-    // this is fucking worng...
-    // use HashMap with uuid instead
-
-    #[allow(dead_code)] // @todo - remove once OfflineAudioContext events are implemented
+    #[allow(dead_code)] // @todo - remove directive once OfflineAudioContext events are implemented
     pub fn store_thread_safe_listener(&self, tsfn: ThreadsafeFunction<Event>) -> String {
         let mut tsfn_store = self.tsfn_store.lock().unwrap();
         let uuid = Uuid::new_v4();
@@ -108,7 +107,7 @@ impl NapiOfflineAudioContext {
         uuid.to_string()
     }
 
-    #[allow(dead_code)] // @todo - remove once OfflineAudioContext events are implemented
+    #[allow(dead_code)] // @todo - remove directive once OfflineAudioContext events are implemented
     pub fn clear_thread_safe_listener(&self, store_id: String) {
         // We need to clean things around so that the js object can be garbage collected.
         // But we also need to wait so that the previous tsfn.call is executed,
@@ -120,15 +119,14 @@ impl NapiOfflineAudioContext {
         }
     }
 
-    #[allow(dead_code)]
+    #[allow(dead_code)] // @todo - remove directive once OfflineAudioContext events are implemented
     pub fn clear_all_thread_safe_listeners(&self) {
         std::thread::sleep(std::time::Duration::from_millis(1));
         let mut tsfn_store = self.tsfn_store.lock().unwrap();
-        // abort all remaining listeners that may be there
+
         for (_, tsfn) in tsfn_store.drain() {
             let _ = tsfn.abort();
         }
-        // tsfn_store.clear();
     }
 }
 
