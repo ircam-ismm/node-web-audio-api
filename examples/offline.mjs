@@ -22,6 +22,7 @@ offline.suspend(128 / 48000).then(async () => {
   console.log('resume', offline.state);
 });
 
+// offline.startRendering().then(audioBuffer => console.log(audioBuffer));
 const buffer = await offline.startRendering();
 console.log('buffer duration:', buffer.duration);
 

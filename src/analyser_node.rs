@@ -80,6 +80,8 @@ impl NapiAnalyserNode {
                 Property::new("channelInterpretation")?
                     .with_getter(get_channel_interpretation)
                     .with_setter(set_channel_interpretation),
+                Property::new("numberOfInputs")?.with_getter(get_number_of_inputs),
+                Property::new("numberOfOutputs")?.with_getter(get_number_of_outputs),
                 Property::new("connect")?
                     .with_method(connect)
                     .with_property_attributes(PropertyAttributes::Enumerable),
@@ -101,15 +103,33 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
     if ctx.length < 1 {
-        return Err(napi::Error::new(
-            napi::Status::InvalidArg, // error code
-            "Failed to construct 'AnalyserNode': 1 argument required, but only 0 present."
-                .to_string(),
-        ));
+        let msg = "Failed to construct 'AnalyserNode': 1 argument required, but only 0 present.";
+        return Err(napi::Error::new(napi::Status::InvalidArg, msg));
     }
 
-    // first argument is always AudioContext
+    // first argument should be an AudioContext
     let js_audio_context = ctx.get::<JsObject>(0)?;
+    // check that
+    let audio_context_utf8_name = if let Ok(audio_context_name) =
+        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")
+    {
+        let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
+        let audio_context_str = &audio_context_utf8_name[..];
+
+        if audio_context_str != "AudioContext" && audio_context_str != "OfflineAudioContext" {
+            let msg = "Failed to construct 'AnalyserNode': argument 0 should be an instance of BaseAudioContext";
+            return Err(napi::Error::new(napi::Status::InvalidArg, msg));
+        }
+
+        audio_context_utf8_name
+    } else {
+        // this crashes in debug mode but not in release mode, weird...
+        // > Throw error failed, status: [PendingException], raw message: "...", raw status: [InvalidArg]
+        // > note: run with 'RUST_BACKTRACE=1' environment variable to display a backtrace
+        // > fatal runtime error: failed to initiate panic, error 5
+        let msg = "Failed to construct 'AnalyserNode': argument 0 should be an instance of BaseAudioContext";
+        return Err(napi::Error::new(napi::Status::InvalidArg, msg));
+    };
 
     js_this.define_properties(&[
         Property::new("context")?
@@ -122,101 +142,102 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     ])?;
 
     // parse options
-    let options = match ctx.try_get::<JsObject>(1)? {
-        Either::A(options_js) => {
-            let some_fft_size_js = options_js.get::<&str, JsNumber>("fftSize")?;
-            let fft_size = if let Some(fft_size_js) = some_fft_size_js {
-                fft_size_js.get_double()? as usize
-            } else {
-                2048
-            };
-
-            let some_max_decibels_js = options_js.get::<&str, JsNumber>("maxDecibels")?;
-            let max_decibels = if let Some(max_decibels_js) = some_max_decibels_js {
-                max_decibels_js.get_double()?
-            } else {
-                -30.
-            };
-
-            let some_min_decibels_js = options_js.get::<&str, JsNumber>("minDecibels")?;
-            let min_decibels = if let Some(min_decibels_js) = some_min_decibels_js {
-                min_decibels_js.get_double()?
-            } else {
-                -100.
-            };
-
-            let some_smoothing_time_constant_js =
-                options_js.get::<&str, JsNumber>("smoothingTimeConstant")?;
-            let smoothing_time_constant =
-                if let Some(smoothing_time_constant_js) = some_smoothing_time_constant_js {
-                    smoothing_time_constant_js.get_double()?
+    let options = if let Ok(either_options) = ctx.try_get::<JsObject>(1) {
+        match either_options {
+            Either::A(options_js) => {
+                let some_fft_size_js = options_js.get::<&str, JsNumber>("fftSize")?;
+                let fft_size = if let Some(fft_size_js) = some_fft_size_js {
+                    fft_size_js.get_double()? as usize
                 } else {
-                    0.8
+                    2048
                 };
 
-            let node_defaults = AnalyserOptions::default();
-            let channel_config_defaults = node_defaults.channel_config;
+                let some_max_decibels_js = options_js.get::<&str, JsNumber>("maxDecibels")?;
+                let max_decibels = if let Some(max_decibels_js) = some_max_decibels_js {
+                    max_decibels_js.get_double()?
+                } else {
+                    -30.
+                };
 
-            let some_channel_count_js = options_js.get::<&str, JsNumber>("channelCount")?;
-            let channel_count = if let Some(channel_count_js) = some_channel_count_js {
-                channel_count_js.get_double()? as usize
-            } else {
-                channel_config_defaults.count
-            };
+                let some_min_decibels_js = options_js.get::<&str, JsNumber>("minDecibels")?;
+                let min_decibels = if let Some(min_decibels_js) = some_min_decibels_js {
+                    min_decibels_js.get_double()?
+                } else {
+                    -100.
+                };
 
-            let some_channel_count_mode_js =
-                options_js.get::<&str, JsString>("channelCountMode")?;
-            let channel_count_mode = if let Some(channel_count_mode_js) = some_channel_count_mode_js
-            {
-                let channel_count_mode_str = channel_count_mode_js.into_utf8()?.into_owned()?;
+                let some_smoothing_time_constant_js =
+                    options_js.get::<&str, JsNumber>("smoothingTimeConstant")?;
+                let smoothing_time_constant =
+                    if let Some(smoothing_time_constant_js) = some_smoothing_time_constant_js {
+                        smoothing_time_constant_js.get_double()?
+                    } else {
+                        0.8
+                    };
 
-                match channel_count_mode_str.as_str() {
-                    "max" => ChannelCountMode::Max,
-                    "clamped-max" => ChannelCountMode::ClampedMax,
-                    "explicit" => ChannelCountMode::Explicit,
-                    _ => panic!("undefined value for ChannelCountMode"),
-                }
-            } else {
-                channel_config_defaults.count_mode
-            };
+                let node_defaults = AnalyserOptions::default();
+                let channel_config_defaults = node_defaults.channel_config;
 
-            let some_channel_interpretation_js =
-                options_js.get::<&str, JsString>("channelInterpretation")?;
-            let channel_interpretation =
-                if let Some(channel_interpretation_js) = some_channel_interpretation_js {
-                    let channel_interpretation_str =
-                        channel_interpretation_js.into_utf8()?.into_owned()?;
+                let some_channel_count_js = options_js.get::<&str, JsNumber>("channelCount")?;
+                let channel_count = if let Some(channel_count_js) = some_channel_count_js {
+                    channel_count_js.get_double()? as usize
+                } else {
+                    channel_config_defaults.count
+                };
 
-                    match channel_interpretation_str.as_str() {
-                        "speakers" => ChannelInterpretation::Speakers,
-                        "discrete" => ChannelInterpretation::Discrete,
-                        _ => panic!("undefined value for ChannelInterpretation"),
+                let some_channel_count_mode_js =
+                    options_js.get::<&str, JsString>("channelCountMode")?;
+                let channel_count_mode = if let Some(channel_count_mode_js) =
+                    some_channel_count_mode_js
+                {
+                    let channel_count_mode_str = channel_count_mode_js.into_utf8()?.into_owned()?;
+
+                    match channel_count_mode_str.as_str() {
+                        "max" => ChannelCountMode::Max,
+                        "clamped-max" => ChannelCountMode::ClampedMax,
+                        "explicit" => ChannelCountMode::Explicit,
+                        _ => panic!("undefined value for ChannelCountMode"),
                     }
                 } else {
-                    channel_config_defaults.interpretation
+                    channel_config_defaults.count_mode
                 };
 
-            AnalyserOptions {
-                fft_size,
-                max_decibels,
-                min_decibels,
-                smoothing_time_constant,
-                channel_config: ChannelConfigOptions {
-                    count: channel_count,
-                    count_mode: channel_count_mode,
-                    interpretation: channel_interpretation,
-                },
+                let some_channel_interpretation_js =
+                    options_js.get::<&str, JsString>("channelInterpretation")?;
+                let channel_interpretation =
+                    if let Some(channel_interpretation_js) = some_channel_interpretation_js {
+                        let channel_interpretation_str =
+                            channel_interpretation_js.into_utf8()?.into_owned()?;
+
+                        match channel_interpretation_str.as_str() {
+                            "speakers" => ChannelInterpretation::Speakers,
+                            "discrete" => ChannelInterpretation::Discrete,
+                            _ => panic!("undefined value for ChannelInterpretation"),
+                        }
+                    } else {
+                        channel_config_defaults.interpretation
+                    };
+
+                AnalyserOptions {
+                    fft_size,
+                    max_decibels,
+                    min_decibels,
+                    smoothing_time_constant,
+                    channel_config: ChannelConfigOptions {
+                        count: channel_count,
+                        count_mode: channel_count_mode,
+                        interpretation: channel_interpretation,
+                    },
+                }
             }
+            Either::B(_) => Default::default(),
         }
-        Either::B(_) => Default::default(),
+    } else {
+        Default::default()
     };
 
-    // create native node
-    let audio_context_name =
-        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
-    let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
     let audio_context_str = &audio_context_utf8_name[..];
-
+    // create native node
     let native_node = match audio_context_str {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
@@ -332,6 +353,28 @@ fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
     node.set_channel_interpretation(value);
 
     ctx.env.get_undefined()
+}
+
+#[js_function]
+fn get_number_of_inputs(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let number_of_inputs = node.number_of_inputs() as f64;
+
+    ctx.env.create_double(number_of_inputs)
+}
+
+#[js_function]
+fn get_number_of_outputs(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let number_of_outputs = node.number_of_outputs() as f64;
+
+    ctx.env.create_double(number_of_outputs)
 }
 
 // -------------------------------------------------

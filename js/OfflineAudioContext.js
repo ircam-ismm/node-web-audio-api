@@ -38,12 +38,14 @@ module.exports = function patchOfflineAudioContext(bindings) {
 
     // promisify sync APIs
     async startRendering() {
-      try {
-        const audioBuffer = await super.startRendering();
-        return Promise.resolve(audioBuffer);
-      } catch (err) {
-        return Promise.reject(err);
-      }
+      return new Promise(async (resolve, reject) => {
+        try {
+          const audioBuffer = await super.startRendering();
+          resolve(audioBuffer);
+        } catch (err) {
+          reject(err);
+        }
+      });
     }
 
   }

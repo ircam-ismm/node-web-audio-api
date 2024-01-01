@@ -43,6 +43,10 @@ impl ${d.napiName(d.node)} {
                 Property::new("channelInterpretation")?
                     .with_getter(get_channel_interpretation)
                     .with_setter(set_channel_interpretation),
+                Property::new("numberOfInputs")?
+                    .with_getter(get_number_of_inputs),
+                Property::new("numberOfOutputs")?
+                    .with_getter(get_number_of_outputs),
 
                 Property::new("connect")?
                     .with_method(connect)
@@ -79,14 +83,32 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
     if ctx.length < 1 {
-        return Err(napi::Error::new(
-            napi::Status::InvalidArg, // error code
-             "Failed to construct '${d.name(d.node)}': 1 argument required, but only 0 present.".to_string(),
-        ));
+        let msg = "Failed to construct '${d.name(d.node)}': 1 argument required, but only 0 present.";
+        return Err(napi::Error::new(napi::Status::InvalidArg, msg));
     }
 
-    // first argument is always AudioContext
+    // first argument should be an AudioContext
     let js_audio_context = ctx.get::<JsObject>(0)?;
+    // check that
+    let audio_context_utf8_name = if let Ok(audio_context_name) = js_audio_context.get_named_property::<JsString>("Symbol.toStringTag") {
+        let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
+        let audio_context_str = &audio_context_utf8_name[..];
+
+        if audio_context_str != "AudioContext" && audio_context_str != "OfflineAudioContext" {
+            let msg = "Failed to construct '${d.name(d.node)}': argument 0 should be an instance of BaseAudioContext";
+            return Err(napi::Error::new(napi::Status::InvalidArg, msg));
+        }
+
+        audio_context_utf8_name
+    } else {
+        // this crashes in debug mode but not in release mode, weird...
+        // > Throw error failed, status: [PendingException], raw message: "...", raw status: [InvalidArg]
+        // > note: run with 'RUST_BACKTRACE=1' environment variable to display a backtrace
+        // > fatal runtime error: failed to initiate panic, error 5
+        let msg = "Failed to construct '${d.name(d.node)}': argument 0 should be an instance of BaseAudioContext";
+        return Err(napi::Error::new(napi::Status::InvalidArg, msg));
+    };
+
 
     js_this.define_properties(&[
         Property::new("context")?
@@ -97,6 +119,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_value(&ctx.env.create_string("${d.name(d.node)}")?)
             .with_property_attributes(PropertyAttributes::Static),
     ])?;
+
     ${d.constructor(d.node).arguments.map((argument, index) => {
         // ----------------------------------------------
         // parse options
@@ -117,203 +140,213 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
         return `
     // parse options
-    let options = match ctx.try_get::<JsObject>(${index})? {
-        Either::A(options_js) => {
-            ${argumentIdl.members.map(m => {
-                const simple_slug = d.slug(m);
-                const slug = d.slug(m, true);
+    let options = if let Ok(either_options) = ctx.try_get::<JsObject>(${index}) {
+        match either_options {
+            Either::A(options_js) => {
+                ${argumentIdl.members.map(m => {
+                    const simple_slug = d.slug(m);
+                    const slug = d.slug(m, true);
 
-                switch (d.memberType(m)) {
+                    switch (d.memberType(m)) {
 
-                    case 'boolean':
-                        return `
-            let some_${simple_slug}_js = options_js.get::<&str, JsBoolean>("${m.name}")?;
-            let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
-                ${simple_slug}_js.try_into()?
-            } else {
-                ${m.required ? `return Err(napi::Error::from_reason(
-                    "Parameter ${d.name(m)} is required".to_string(),
-                ));` : m.default.value}
-            };
-                        `;
-
-                    case 'unsigned long':
-                        return `
-            let some_${simple_slug}_js = options_js.get::<&str, JsNumber>("${m.name}")?;
-            let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
-                ${simple_slug}_js.get_double()? as usize
-            } else {
-                ${m.required ? `return Err(napi::Error::from_reason(
-                    "Parameter ${d.name(m)} is required".to_string(),
-                ));` : m.default.value}
-            };
-                        `;
-
-                    case 'float':
-                        return `
-            let some_${simple_slug}_js = options_js.get::<&str, JsNumber>("${m.name}")?;
-            let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
-                ${simple_slug}_js.get_double()? as f32
-            } else {
-                ${m.required ? `return Err(napi::Error::from_reason(
-                    "Parameter ${d.name(m)} is required".to_string(),
-                ));` : parseInt(m.default.value) ==  m.default.value ? `${parseInt(m.default.value)}.` : m.default.value}
-
-            };
-                        `;
-
-                    case 'double':
-                        return `
-            let some_${simple_slug}_js = options_js.get::<&str, JsNumber>("${m.name}")?;
-            let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
-                ${simple_slug}_js.get_double()?
-            } else {
-                ${m.required ? `return Err(napi::Error::from_reason(
-                    "Parameter ${d.name(m)} is required".to_string(),
-                ));` : parseInt(m.default.value) ==  m.default.value ? `${parseInt(m.default.value)}.` : m.default.value}
-            };
-                        `;
-                        break;
-
-                    default:
-                        // Handle Float32Arrays and Float64Arrays
-                        // ---------------------------------------------------
-                        if (m.idlType.type === 'dictionary-type' && m.idlType.generic === 'sequence') {
+                        case 'boolean':
                             return `
-            let ${simple_slug} = if let Some(${simple_slug}_js) = options_js.get::<&str, JsTypedArray>("${m.name}")? {
-                let ${simple_slug}_value = ${simple_slug}_js.into_value()?;
-                let ${simple_slug}: &[${m.idlType.idlType[0].idlType === 'double' ? 'f64' : 'f32'}] = ${simple_slug}_value.as_ref();
-
-                ${m.required ? `${simple_slug}.to_vec()` : `Some(${simple_slug}.to_vec())`}
-            } else {
-                ${m.required ? `return Err(napi::Error::from_reason(
-                    "Parameter ${d.name(m)} is required".to_string(),
-                ));` : `None`}
-            };
+                let some_${simple_slug}_js = options_js.get::<&str, JsBoolean>("${m.name}")?;
+                let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
+                    ${simple_slug}_js.try_into()?
+                } else {
+                    ${m.required ? `return Err(napi::Error::from_reason(
+                        "Parameter ${d.name(m)} is required".to_string(),
+                    ));` : m.default.value}
+                };
                             `;
-                        }
 
-                        // Handle type defined in IDL
-                        // ---------------------------------------------------
-                        const idl = d.findInTree(d.memberType(m));
-                        let idlType;
+                        case 'unsigned long':
+                            return `
+                let some_${simple_slug}_js = options_js.get::<&str, JsNumber>("${m.name}")?;
+                let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
+                    ${simple_slug}_js.get_double()? as usize
+                } else {
+                    ${m.required ? `return Err(napi::Error::from_reason(
+                        "Parameter ${d.name(m)} is required".to_string(),
+                    ));` : m.default.value}
+                };
+                            `;
 
-                        try {
-                            idlType = d.type(idl);
-                        } catch(err) {
-                            console.log('issue with member');
-                            console.log(JSON.stringify(m, null, 2));
-                            return '';
-                        }
+                        case 'float':
+                            return `
+                let some_${simple_slug}_js = options_js.get::<&str, JsNumber>("${m.name}")?;
+                let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
+                    ${simple_slug}_js.get_double()? as f32
+                } else {
+                    ${m.required ? `return Err(napi::Error::from_reason(
+                        "Parameter ${d.name(m)} is required".to_string(),
+                    ));` : parseInt(m.default.value) ==  m.default.value ? `${parseInt(m.default.value)}.` : m.default.value}
 
-                        switch (idlType) {
+                };
+                            `;
 
-                            case 'enum':
+                        case 'double':
+                            return `
+                let some_${simple_slug}_js = options_js.get::<&str, JsNumber>("${m.name}")?;
+                let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
+                    ${simple_slug}_js.get_double()?
+                } else {
+                    ${m.required ? `return Err(napi::Error::from_reason(
+                        "Parameter ${d.name(m)} is required".to_string(),
+                    ));` : parseInt(m.default.value) ==  m.default.value ? `${parseInt(m.default.value)}.` : m.default.value}
+                };
+                            `;
+                            break;
+
+                        default:
+                            // Handle Float32Arrays and Float64Arrays
+                            // ---------------------------------------------------
+                            if (m.idlType.type === 'dictionary-type' && m.idlType.generic === 'sequence') {
                                 return `
-            let some_${simple_slug}_js = options_js.get::<&str, JsString>("${m.name}")?;
-            let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
-                let ${simple_slug}_str = ${simple_slug}_js.into_utf8()?.into_owned()?;
+                let ${simple_slug} = if let Some(${simple_slug}_js) = options_js.get::<&str, JsTypedArray>("${m.name}")? {
+                    let ${simple_slug}_value = ${simple_slug}_js.into_value()?;
+                    let ${simple_slug}: &[${m.idlType.idlType[0].idlType === 'double' ? 'f64' : 'f32'}] = ${simple_slug}_value.as_ref();
 
-                match ${simple_slug}_str.as_str() {${idl.values.map(v => `
-                    "${v.value}" => ${idl.name}::${d.camelcase(v.value)},`).join('')}
-                    _ => panic!("undefined value for ${idl.name}"),
-                }
-            } else {
-                ${m.required ? `return Err(napi::Error::from_reason(
-                    "Parameter ${d.name(m)} is required".to_string(),
-                ));` : `${idl.name}::default()`}
-            };
+                    ${m.required ? `${simple_slug}.to_vec()` : `Some(${simple_slug}.to_vec())`}
+                } else {
+                    ${m.required ? `return Err(napi::Error::from_reason(
+                        "Parameter ${d.name(m)} is required".to_string(),
+                    ));` : `None`}
+                };
                                 `;
-                                break;
+                            }
 
-                            case 'interface':
-                                return `
-            let some_${simple_slug}_js = options_js.get::<&str, JsObject>("${m.name}")?;
-            let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
-                let ${simple_slug}_napi = ctx.env.unwrap::<${d.napiName(idl)}>(&${simple_slug}_js)?;
-                Some(${simple_slug}_napi.unwrap().clone())
-            } else {
-                None
-            };
-                                `;
-                            default:
-                                console.log(`[constructor2] > cannot parse argument ${d.name(idl)} - idlType ${idlType}`);
-                                break;
-                        }
-                        break;
+                            // Handle type defined in IDL
+                            // ---------------------------------------------------
+                            const idl = d.findInTree(d.memberType(m));
+                            let idlType;
+
+                            try {
+                                idlType = d.type(idl);
+                            } catch(err) {
+                                console.log('issue with member');
+                                console.log(JSON.stringify(m, null, 2));
+                                return '';
+                            }
+
+                            switch (idlType) {
+
+                                case 'enum':
+                                    return `
+                let some_${simple_slug}_js = options_js.get::<&str, JsString>("${m.name}")?;
+                let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
+                    let ${simple_slug}_str = ${simple_slug}_js.into_utf8()?.into_owned()?;
+
+                    match ${simple_slug}_str.as_str() {${idl.values.map(v => `
+                        "${v.value}" => ${idl.name}::${d.camelcase(v.value)},`).join('')}
+                        _ => panic!("undefined value for ${idl.name}"),
+                    }
+                } else {
+                    ${m.required ? `return Err(napi::Error::from_reason(
+                        "Parameter ${d.name(m)} is required".to_string(),
+                    ));` : `${idl.name}::default()`}
+                };
+                                    `;
+                                    break;
+
+                                case 'interface':
+                                    return `
+                let some_${simple_slug}_js = options_js.get::<&str, JsObject>("${m.name}")?;
+                let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
+                    let ${simple_slug}_napi = ctx.env.unwrap::<${d.napiName(idl)}>(&${simple_slug}_js)?;
+                    Some(${simple_slug}_napi.unwrap().clone())
+                } else {
+                    None
+                };
+                                    `;
+                                default:
+                                    console.log(`[constructor2] > cannot parse argument ${d.name(idl)} - idlType ${idlType}`);
+                                    break;
+                            }
+                            break;
+                    }
+                }).join('')}
+
+                ${d.parent(argumentIdl) === 'AudioNodeOptions' ? `
+                    ${argumentIdl.members.reduce((acc, current) => acc || current.required, false) ? `
+                // can't create default from ${argIdlType}
+                let channel_config_defaults = ChannelConfigOptions::default();
+                    ` : `
+                let node_defaults = ${argIdlType}::default();
+                let channel_config_defaults = node_defaults.channel_config;
+                    `}
+
+                let some_channel_count_js = options_js.get::<&str, JsNumber>("channelCount")?;
+                let channel_count = if let Some(channel_count_js) = some_channel_count_js {
+                    channel_count_js.get_double()? as usize
+                } else {
+                    channel_config_defaults.count
+                };
+
+                let some_channel_count_mode_js = options_js.get::<&str, JsString>("channelCountMode")?;
+                let channel_count_mode = if let Some(channel_count_mode_js) = some_channel_count_mode_js {
+                    let channel_count_mode_str = channel_count_mode_js.into_utf8()?.into_owned()?;
+
+                    match channel_count_mode_str.as_str() {
+                        "max" => ChannelCountMode::Max,
+                        "clamped-max" => ChannelCountMode::ClampedMax,
+                        "explicit" => ChannelCountMode::Explicit,
+                        _ => panic!("undefined value for ChannelCountMode"),
+                    }
+                } else {
+                    channel_config_defaults.count_mode
+                };
+
+                let some_channel_interpretation_js = options_js.get::<&str, JsString>("channelInterpretation")?;
+                let channel_interpretation = if let Some(channel_interpretation_js) = some_channel_interpretation_js {
+                    let channel_interpretation_str = channel_interpretation_js.into_utf8()?.into_owned()?;
+
+                    match channel_interpretation_str.as_str() {
+                        "speakers" => ChannelInterpretation::Speakers,
+                        "discrete" => ChannelInterpretation::Discrete,
+                        _ => panic!("undefined value for ChannelInterpretation"),
+                    }
+                } else {
+                    channel_config_defaults.interpretation
+                };
+                ` : ``}
+
+                ${argIdlType} {
+                    ${argumentIdl.members.map(m => d.slug(m, true)).join(', ')},
+                    ${d.parent(argumentIdl) === 'AudioNodeOptions' ?
+                    `channel_config: ChannelConfigOptions {
+                        count: channel_count,
+                        count_mode: channel_count_mode,
+                        interpretation: channel_interpretation,
+                    },` : ``}
                 }
-            }).join('')}
-
-            ${d.parent(argumentIdl) === 'AudioNodeOptions' ? `
+            },
+            Either::B(_) => {
                 ${argumentIdl.members.reduce((acc, current) => acc || current.required, false) ? `
-            // can't create default from ${argIdlType}
-            let channel_config_defaults = ChannelConfigOptions::default();
+                    return Err(napi::Error::from_reason(
+                        "Options are mandatory for node ${d.name(d.node)}".to_string(),
+                    ));
                 ` : `
-            let node_defaults = ${argIdlType}::default();
-            let channel_config_defaults = node_defaults.channel_config;
+                    Default::default()
                 `}
-
-            let some_channel_count_js = options_js.get::<&str, JsNumber>("channelCount")?;
-            let channel_count = if let Some(channel_count_js) = some_channel_count_js {
-                channel_count_js.get_double()? as usize
-            } else {
-                channel_config_defaults.count
-            };
-
-            let some_channel_count_mode_js = options_js.get::<&str, JsString>("channelCountMode")?;
-            let channel_count_mode = if let Some(channel_count_mode_js) = some_channel_count_mode_js {
-                let channel_count_mode_str = channel_count_mode_js.into_utf8()?.into_owned()?;
-
-                match channel_count_mode_str.as_str() {
-                    "max" => ChannelCountMode::Max,
-                    "clamped-max" => ChannelCountMode::ClampedMax,
-                    "explicit" => ChannelCountMode::Explicit,
-                    _ => panic!("undefined value for ChannelCountMode"),
-                }
-            } else {
-                channel_config_defaults.count_mode
-            };
-
-            let some_channel_interpretation_js = options_js.get::<&str, JsString>("channelInterpretation")?;
-            let channel_interpretation = if let Some(channel_interpretation_js) = some_channel_interpretation_js {
-                let channel_interpretation_str = channel_interpretation_js.into_utf8()?.into_owned()?;
-
-                match channel_interpretation_str.as_str() {
-                    "speakers" => ChannelInterpretation::Speakers,
-                    "discrete" => ChannelInterpretation::Discrete,
-                    _ => panic!("undefined value for ChannelInterpretation"),
-                }
-            } else {
-                channel_config_defaults.interpretation
-            };
-            ` : ``}
-
-            ${argIdlType} {
-                ${argumentIdl.members.map(m => d.slug(m, true)).join(', ')},
-                ${d.parent(argumentIdl) === 'AudioNodeOptions' ?
-                `channel_config: ChannelConfigOptions {
-                    count: channel_count,
-                    count_mode: channel_count_mode,
-                    interpretation: channel_interpretation,
-                },` : ``}
             }
-        },
-        Either::B(_) => { ${argumentIdl.members.reduce((acc, current) => acc || current.required, false) ? `
+        }
+    } else {
+        ${argumentIdl.members.reduce((acc, current) => acc || current.required, false) ? `
             return Err(napi::Error::from_reason(
                 "Options are mandatory for node ${d.name(d.node)}".to_string(),
-            ));` : `
-            Default::default()` }
-        }
+            ));
+        ` : `
+            Default::default()
+        `}
     };
-        `;
+
+        `; // end options
     }).join('')}
 
-    // create native node
-    let audio_context_name =
-        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
-    let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
     let audio_context_str = &audio_context_utf8_name[..];
-
+    // create native node
     let native_node = match audio_context_str {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
@@ -439,6 +472,29 @@ fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
 
     ctx.env.get_undefined()
 }
+
+#[js_function]
+fn get_number_of_inputs(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let number_of_inputs = node.number_of_inputs() as f64;
+
+    ctx.env.create_double(number_of_inputs)
+}
+
+#[js_function]
+fn get_number_of_outputs(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let number_of_outputs = node.number_of_outputs() as f64;
+
+    ctx.env.create_double(number_of_outputs)
+}
+
 
 // -------------------------------------------------
 // connect / disconnect macros

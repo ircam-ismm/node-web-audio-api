@@ -42,7 +42,7 @@
     "preversion": "yarn install && npm run generate",
     "postversion": "cargo bump $npm_package_version && git commit -am \"v$npm_package_version\" && node .scripts/check-changelog.mjs",
     "test": "mocha",
-    "wpt": "npm run generate && napi build --platform && node ./.scripts/wpt-harness.mjs",
+    "wpt": "npm run build && node ./.scripts/wpt-harness.mjs",
     "wpt:only": "node ./.scripts/wpt-harness.mjs"
   },
   "devDependencies": {
