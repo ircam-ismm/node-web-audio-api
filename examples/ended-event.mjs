@@ -50,7 +50,7 @@ if (TEST_ABORT_EARLY) {
       console.log('> OscillatorNode::onended', e);
     });
 
-    const now = audioContext.currentTime
+    const now = audioContext.currentTime;
     src.start(now);
     src.stop(now + 1);
   }
@@ -69,7 +69,7 @@ if (TEST_ABORT_EARLY) {
       console.log('> ConstantSourceNode::onended', e);
     });
 
-    const now = audioContext.currentTime
+    const now = audioContext.currentTime;
     src.start(now);
     src.stop(now + 1);
   }

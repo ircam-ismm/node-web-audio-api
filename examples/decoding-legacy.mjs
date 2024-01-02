@@ -8,7 +8,7 @@ const audioContext = new AudioContext({ latencyHint });
 const offlineContext = new OfflineAudioContext({
   numberOfChannels: 1,
   length: 1,
-  sampleRate: audioContext.sampleRate
+  sampleRate: audioContext.sampleRate,
 });
 
 const okFile = path.join('examples', 'samples', 'sample.wav');

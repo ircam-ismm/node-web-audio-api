@@ -51,4 +51,4 @@ module.exports = (superclass, bindings) => {
   }
 
   return BaseAudioContext;
-}
+};

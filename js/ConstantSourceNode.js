@@ -11,5 +11,5 @@ module.exports = function(NativeConstantSourceNode) {
   }
 
   return ConstantSourceNode;
-}
+};
 

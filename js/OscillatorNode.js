@@ -11,5 +11,5 @@ module.exports = function(NativeOscillatorNode) {
   }
 
   return OscillatorNode;
-}
+};
 

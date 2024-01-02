@@ -56,4 +56,4 @@ module.exports = (superclass, eventTypes) => class EventTarget extends superclas
     // event.srcElement = this;
     this.dispatchEvent(event);
   }
-}
+};
