@@ -112,7 +112,7 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     //     }
     // }));
 
-    // Store constructor for factory methods and internal instantiations
+    // Store constructors for factory methods and internal instantiations
     // Note that we need to create the js class twice so that export and store
     // have both their owned constructor.
     // This could maybe be simplified in the future
@@ -154,8 +154,6 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     // ----------------------------------------------------------------
     let napi_class = NapiMediaStreamAudioSourceNode::create_js_class(&env)?;
     exports.set_named_property("MediaStreamAudioSourceNode", napi_class)?;
-    let napi_class = NapiMediaStreamAudioSourceNode::create_js_class(&env)?;
-    store.set_named_property("MediaStreamAudioSourceNode", napi_class)?;
 
     // ----------------------------------------------------------------
     // generated audio nodes

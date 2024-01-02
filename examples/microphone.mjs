@@ -7,7 +7,7 @@ const mediaStream = await mediaDevices.getUserMedia({ audio: true });
 const audioContext = new AudioContext();
 await audioContext.resume();
 
-const source = new MediaStreamAudioSourceNode(audioContext, { mediaStream });
-// const source = audioContext.createMediaStreamSource(mediaStream); // factory API
+// const source = new MediaStreamAudioSourceNode(audioContext, { mediaStream });
+const source = audioContext.createMediaStreamSource(mediaStream); // factory API
 source.connect(audioContext.destination);
 
