@@ -16,10 +16,14 @@ import {
   WaveShaperNode,
   AudioContext,
   OfflineAudioContext,
+
+  // for AudioContext
+  mediaDevices,
+  MediaStreamAudioSourceNode,
 } from '../index.mjs';
 
-const audioContext = new OfflineAudioContext(1, 1, 48000);
-// const audioContext = new AudioContext();
+// const audioContext = new OfflineAudioContext(1, 1, 48000);
+const audioContext = new AudioContext();
 
 console.log('## factory methods');
 console.log('');
@@ -90,69 +94,86 @@ console.log('## constructors');
 console.log('');
 
 {
-  console.log('new AnalyserNode(audioContext)')
+  console.log('new AnalyserNode(audioContext)');
   const node = new AnalyserNode(audioContext);
 }
 {
-  console.log('new AudioBufferSourceNode(audioContext)')
+  console.log('new AudioBufferSourceNode(audioContext)');
   const node = new AudioBufferSourceNode(audioContext);
 }
 {
-  console.log('new BiquadFilterNode(audioContext)')
+  console.log('new BiquadFilterNode(audioContext)');
   const node = new BiquadFilterNode(audioContext);
 }
 {
-  console.log('new ChannelMergerNode(audioContext)')
+  console.log('new ChannelMergerNode(audioContext)');
   const node = new ChannelMergerNode(audioContext);
 }
 {
-  console.log('new ChannelSplitterNode(audioContext)')
+  console.log('new ChannelSplitterNode(audioContext)');
   const node = new ChannelSplitterNode(audioContext);
 }
 {
-  console.log('new ConstantSourceNode(audioContext)')
+  console.log('new ConstantSourceNode(audioContext)');
   const node = new ConstantSourceNode(audioContext);
 }
 {
-  console.log('new ConvolverNode(audioContext)')
+  console.log('new ConvolverNode(audioContext)');
   const node = new ConvolverNode(audioContext);
 }
 {
-  console.log('new DelayNode(audioContext)')
+  console.log('new DelayNode(audioContext)');
   const node = new DelayNode(audioContext);
 }
 {
-  console.log('new DynamicsCompressorNode(audioContext)')
+  console.log('new DynamicsCompressorNode(audioContext)');
   const node = new DynamicsCompressorNode(audioContext);
 }
 {
-  console.log('new GainNode(audioContext)')
+  console.log('new GainNode(audioContext)');
   const node = new GainNode(audioContext);
 }
 {
-  console.log('new IIRFilterNode(audioContext)')
+  console.log('new IIRFilterNode(audioContext)');
   const node = new IIRFilterNode(audioContext, {
     feedforward: new Float64Array([0.1]),
     feedback: new Float64Array([0.1]),
   });
 }
 {
-  console.log('new OscillatorNode(audioContext)')
+  console.log('new OscillatorNode(audioContext)');
   const node = new OscillatorNode(audioContext);
 }
 {
-  console.log('new PannerNode(audioContext)')
+  console.log('new PannerNode(audioContext)');
   const node = new PannerNode(audioContext);
 }
 {
-  console.log('new StereoPannerNode(audioContext)')
+  console.log('new StereoPannerNode(audioContext)');
   const node = new StereoPannerNode(audioContext);
 }
 {
-  console.log('new WaveShaperNode(audioContext)')
+  console.log('new WaveShaperNode(audioContext)');
   const node = new WaveShaperNode(audioContext);
 }
 
-if (audioContext.close) {
+if (audioContext instanceof AudioContext) {
+  console.log('');
+  console.log('## AudioContext only');
+  console.log('');
+
+  const mediaStream = await mediaDevices.getUserMedia({ audio: true });
+
+  {
+    console.log('audioContext.createMediaStreamSource(mediaStream)');
+    const node = audioContext.createMediaStreamSource(mediaStream);
+  }
+
+  {
+    console.log('new MediaStreamAudioSourceNode(audioContext, { mediaStream })');
+    const node = new MediaStreamAudioSourceNode(audioContext, { mediaStream });
+  }
+
+  console.log('');
   audioContext.close();
 }

@@ -104,7 +104,7 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     store.set_named_property("PeriodicWave", napi_class)?;
 
     // ----------------------------------------------------------------
-    // manually written nodes
+    // manually written nodes - AudioContext only
     // ----------------------------------------------------------------
     let napi_class = NapiMediaStreamAudioSourceNode::create_js_class(&env)?;
     exports.set_named_property("MediaStreamAudioSourceNode", napi_class)?;
@@ -117,8 +117,6 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     ${d.nodes.map(n => { return `
     let napi_class = ${d.napiName(n)}::create_js_class(&env)?;
     exports.set_named_property("${d.name(n)}", napi_class)?;
-    let napi_class = ${d.napiName(n)}::create_js_class(&env)?;
-    store.set_named_property("${d.name(n)}", napi_class)?;
     `}).join('')}
 
 

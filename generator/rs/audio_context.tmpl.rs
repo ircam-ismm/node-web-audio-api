@@ -37,22 +37,13 @@ impl ${d.napiName(d.node)} {
                 Property::new("currentTime")?.with_getter(get_current_time),
                 Property::new("sampleRate")?.with_getter(get_sample_rate),
                 Property::new("listener")?.with_getter(get_listener),
-
-                Property::new("decodeAudioData")?.with_method(decode_audio_data),
-                Property::new("createPeriodicWave")?.with_method(create_periodic_wave),
-                Property::new("createBuffer")?.with_method(create_buffer),
-
                 Property::new("state")?.with_getter(get_state),
 
-                // ----------------------------------------------------
-                // Factory methods
-                // ----------------------------------------------------
-                ${d.nodes.map(n => {
-                    let factory = d.factoryName(n);
-                    return `
-                Property::new("${factory}")?.with_method(${d.slug(factory)}),`
-                }).join('')}
+                Property::new("decodeAudioData")?.with_method(decode_audio_data),
 
+                // @todo - move to js
+                Property::new("createPeriodicWave")?.with_method(create_periodic_wave),
+                Property::new("createBuffer")?.with_method(create_buffer),
 
                 ${d.name(d.node) === 'AudioContext' ?
                     `
@@ -368,58 +359,6 @@ fn create_periodic_wave(ctx: CallContext) -> Result<JsObject> {
 
     ctor.new_instance(&[js_this, options])
 }
-
-// ----------------------------------------------------
-// Factory methods
-// @todo - move to JS
-// ----------------------------------------------------
-${d.nodes.map(n => {
-    let factoryName = d.factoryName(n);
-    let factoryIdl = d.factoryIdl(factoryName);
-    let args = factoryIdl.arguments;
-
-    return `
-#[js_function(${args.length})]
-fn ${d.slug(factoryName)}(ctx: CallContext) -> Result<JsObject> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-
-    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
-    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
-    let ctor: JsFunction = store.get_named_property("${d.name(n)}")?;
-
-    ${args.length > 0 ?
-        `let mut options = ctx.env.create_object()?;
-        ${args.map((arg, index) => {
-            switch (arg.idlType.idlType) {
-                case 'unsigned long': // channel merger, channel splitter
-                case 'double': // delay
-                    return `
-    match ctx.try_get::<JsNumber>(${index})? {
-        Either::A(value) => options.set("${arg.name}", value)?,
-        Either::B(_) => ()
-    }
-                `
-                    break;
-                default:
-                    // IIR Filter
-                    if (arg.idlType.generic == 'sequence' &&  arg.idlType.idlType[0].idlType === 'double') {
-                        return `
-                            match ctx.try_get::<JsTypedArray>(${index})? {
-                                Either::A(value) => options.set("${arg.name}", value)?,
-                                Either::B(_) => ()
-                            }
-                        `
-                    } else {
-                        console.log(`[factory] argument ${idl.name} for ${factoryName} not parsed`);
-                    }
-
-                    break;
-        }}).join('')}
-    ctor.new_instance(&[js_this, options])` : `ctor.new_instance(&[js_this])`
-    }
-}
-    `;
-}).join('')}
 
 ${d.name(d.node) === 'AudioContext' ?
     `
