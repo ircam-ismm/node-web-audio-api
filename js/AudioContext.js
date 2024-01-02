@@ -4,6 +4,10 @@ const kProcessId = Symbol('processId');
 const kKeepAwakeId = Symbol('keepAwakeId');
 
 module.exports = function(bindings) {
+  const {
+    MediaStreamAudioSourceNode
+  } = bindings;
+
   const EventTarget = require('./EventTarget.mixin.js')(bindings.AudioContext, ['statechange', 'sinkchange']);
   const BaseAudioContext = require('./BaseAudioContext.mixin.js')(EventTarget, bindings);
 
@@ -51,6 +55,12 @@ module.exports = function(bindings) {
       } catch (err) {
         return Promise.reject(err);
       }
+    }
+
+    // online context only AudioNodes
+    createMediaStreamSource(mediaStream) {
+      const options = { mediaStream };
+      return new MediaStreamAudioSourceNode(this, options);
     }
   }
 

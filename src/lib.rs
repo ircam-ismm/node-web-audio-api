@@ -112,7 +112,7 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     //     }
     // }));
 
-    // Store constructor for factory methods and internal instantiations
+    // Store constructors for factory methods and internal instantiations
     // Note that we need to create the js class twice so that export and store
     // have both their owned constructor.
     // This could maybe be simplified in the future
@@ -150,12 +150,10 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     store.set_named_property("PeriodicWave", napi_class)?;
 
     // ----------------------------------------------------------------
-    // manually written nodes
+    // manually written nodes - AudioContext only
     // ----------------------------------------------------------------
     let napi_class = NapiMediaStreamAudioSourceNode::create_js_class(&env)?;
     exports.set_named_property("MediaStreamAudioSourceNode", napi_class)?;
-    let napi_class = NapiMediaStreamAudioSourceNode::create_js_class(&env)?;
-    store.set_named_property("MediaStreamAudioSourceNode", napi_class)?;
 
     // ----------------------------------------------------------------
     // generated audio nodes
@@ -163,78 +161,48 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
 
     let napi_class = NapiAnalyserNode::create_js_class(&env)?;
     exports.set_named_property("AnalyserNode", napi_class)?;
-    let napi_class = NapiAnalyserNode::create_js_class(&env)?;
-    store.set_named_property("AnalyserNode", napi_class)?;
 
     let napi_class = NapiAudioBufferSourceNode::create_js_class(&env)?;
     exports.set_named_property("AudioBufferSourceNode", napi_class)?;
-    let napi_class = NapiAudioBufferSourceNode::create_js_class(&env)?;
-    store.set_named_property("AudioBufferSourceNode", napi_class)?;
 
     let napi_class = NapiBiquadFilterNode::create_js_class(&env)?;
     exports.set_named_property("BiquadFilterNode", napi_class)?;
-    let napi_class = NapiBiquadFilterNode::create_js_class(&env)?;
-    store.set_named_property("BiquadFilterNode", napi_class)?;
 
     let napi_class = NapiChannelMergerNode::create_js_class(&env)?;
     exports.set_named_property("ChannelMergerNode", napi_class)?;
-    let napi_class = NapiChannelMergerNode::create_js_class(&env)?;
-    store.set_named_property("ChannelMergerNode", napi_class)?;
 
     let napi_class = NapiChannelSplitterNode::create_js_class(&env)?;
     exports.set_named_property("ChannelSplitterNode", napi_class)?;
-    let napi_class = NapiChannelSplitterNode::create_js_class(&env)?;
-    store.set_named_property("ChannelSplitterNode", napi_class)?;
 
     let napi_class = NapiConstantSourceNode::create_js_class(&env)?;
     exports.set_named_property("ConstantSourceNode", napi_class)?;
-    let napi_class = NapiConstantSourceNode::create_js_class(&env)?;
-    store.set_named_property("ConstantSourceNode", napi_class)?;
 
     let napi_class = NapiConvolverNode::create_js_class(&env)?;
     exports.set_named_property("ConvolverNode", napi_class)?;
-    let napi_class = NapiConvolverNode::create_js_class(&env)?;
-    store.set_named_property("ConvolverNode", napi_class)?;
 
     let napi_class = NapiDelayNode::create_js_class(&env)?;
     exports.set_named_property("DelayNode", napi_class)?;
-    let napi_class = NapiDelayNode::create_js_class(&env)?;
-    store.set_named_property("DelayNode", napi_class)?;
 
     let napi_class = NapiDynamicsCompressorNode::create_js_class(&env)?;
     exports.set_named_property("DynamicsCompressorNode", napi_class)?;
-    let napi_class = NapiDynamicsCompressorNode::create_js_class(&env)?;
-    store.set_named_property("DynamicsCompressorNode", napi_class)?;
 
     let napi_class = NapiGainNode::create_js_class(&env)?;
     exports.set_named_property("GainNode", napi_class)?;
-    let napi_class = NapiGainNode::create_js_class(&env)?;
-    store.set_named_property("GainNode", napi_class)?;
 
     let napi_class = NapiIIRFilterNode::create_js_class(&env)?;
     exports.set_named_property("IIRFilterNode", napi_class)?;
-    let napi_class = NapiIIRFilterNode::create_js_class(&env)?;
-    store.set_named_property("IIRFilterNode", napi_class)?;
 
     let napi_class = NapiOscillatorNode::create_js_class(&env)?;
     exports.set_named_property("OscillatorNode", napi_class)?;
-    let napi_class = NapiOscillatorNode::create_js_class(&env)?;
-    store.set_named_property("OscillatorNode", napi_class)?;
 
     let napi_class = NapiPannerNode::create_js_class(&env)?;
     exports.set_named_property("PannerNode", napi_class)?;
-    let napi_class = NapiPannerNode::create_js_class(&env)?;
-    store.set_named_property("PannerNode", napi_class)?;
 
     let napi_class = NapiStereoPannerNode::create_js_class(&env)?;
     exports.set_named_property("StereoPannerNode", napi_class)?;
-    let napi_class = NapiStereoPannerNode::create_js_class(&env)?;
-    store.set_named_property("StereoPannerNode", napi_class)?;
 
     let napi_class = NapiWaveShaperNode::create_js_class(&env)?;
     exports.set_named_property("WaveShaperNode", napi_class)?;
-    let napi_class = NapiWaveShaperNode::create_js_class(&env)?;
-    store.set_named_property("WaveShaperNode", napi_class)?;
 
     // ----------------------------------------------------------------
     // MediaStream API & Media Devices API

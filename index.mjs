@@ -17,7 +17,7 @@
 // -------------------------------------------------------------------------- //
 // -------------------------------------------------------------------------- //
 
-// re-export index.js to support clean esm syntax
+// re-export index.cjs to support esm import syntax
 // see https://github.com/nodejs/node/issues/40541#issuecomment-951609570
 
 import { createRequire } from 'module';
@@ -53,5 +53,6 @@ export const {
 } = nativeModule;
 
 export default nativeModule;
+
 
   
