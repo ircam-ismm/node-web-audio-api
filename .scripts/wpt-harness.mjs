@@ -5,6 +5,9 @@ import { program } from 'commander';
 
 import * as nodeWebAudioAPI from '../index.mjs';
 
+// mocks
+import createXMLHttpRequest from './wpt-mock/XMLHttpRequest.js';
+
 program
   .option('--list', 'List the name of the test files')
   .option('--with_crashtests', 'Also run crashtests')
@@ -27,7 +30,7 @@ function indent(string, times) {
 // -------------------------------------------------------
 // WPT Runner configuration options
 // -------------------------------------------------------
-const testsPath = 'wpt/webaudio';
+const testsPath = path.join('wpt','webaudio');
 const rootURL = 'webaudio';
 
 // monkey patch `window` with our web audio API
@@ -36,6 +39,9 @@ const setup = window => {
 
   // seems required (weirdly...), cf. `the-audiobuffer-interface/audiobuffer.html`
   window.Float32Array = Float32Array;
+
+  // e.g. 'resources/audiobuffersource-multi-channels-expected.wav'
+  window.XMLHttpRequest = createXMLHttpRequest(testsPath)
 }
 
 const filterRe = new RegExp(`${options.filter}`);

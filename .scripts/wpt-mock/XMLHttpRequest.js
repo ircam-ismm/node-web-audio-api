@@ -23,6 +23,7 @@ module.exports = function createXMLHttpRequest(basepath) {
         const pathname = path.join(basepath, this._pathname);
         buffer = fs.readFileSync(pathname).buffer;
       } catch (err) {
+        console.log(err.message);
         this.onerror(err);
         return;
       }
