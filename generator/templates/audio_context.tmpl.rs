@@ -1,13 +1,32 @@
+use std::collections::HashMap;
 use std::io::Cursor;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use napi::*;
 use napi_derive::js_function;
+#[allow(unused_imports)] // @todo - remove directive once OfflineAudioContext events are implemented
+use napi::threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunction, ThreadsafeFunctionCallMode};
 use web_audio_api::context::*;
+#[allow(unused_imports)] // @todo - remove directive once OfflineAudioContext events are implemented
+use web_audio_api::Event;
+use uuid::Uuid;
 
 use crate::*;
 
-pub(crate) struct ${d.napiName(d.node)}(Arc<${d.name(d.node)}>);
+#[derive(Clone)]
+pub(crate) struct ${d.napiName(d.node)} {
+    context: Arc<${d.name(d.node)}>,
+    // store all ThreadsafeFunction created for listening to events
+    // so that they can be aborted when the context is closed
+    tsfn_store: Arc<Mutex<HashMap<String, ThreadsafeFunction<Event>>>>,
+}
+
+// for debug purpose
+// impl Drop for ${d.napiName(d.node)} {
+//     fn drop(&mut self) {
+//         println!("NAPI: ${d.napiName(d.node)} dropped");
+//     }
+// }
 
 impl ${d.napiName(d.node)} {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -48,6 +67,9 @@ impl ${d.napiName(d.node)} {
                 Property::new("resume")?.with_method(resume),
                 Property::new("suspend")?.with_method(suspend),
                 Property::new("close")?.with_method(close),
+                // private
+                // @todo - OfflineAudioContext version
+                Property::new("__initEventTarget__")?.with_method(init_event_target),
                     ` : `
                 // ----------------------------------------------------
                 // Methods and attributes specifc to OfflineAudioContext
@@ -64,7 +86,38 @@ impl ${d.napiName(d.node)} {
     }
 
     pub fn unwrap(&self) -> &${d.name(d.node)} {
-        &self.0
+        &self.context
+    }
+
+    #[allow(dead_code)] // @todo - remove directive once OfflineAudioContext events are implemented
+    pub fn store_thread_safe_listener(&self, tsfn: ThreadsafeFunction<Event>) -> String {
+        let mut tsfn_store = self.tsfn_store.lock().unwrap();
+        let uuid = Uuid::new_v4();
+        tsfn_store.insert(uuid.to_string(), tsfn);
+
+        uuid.to_string()
+    }
+
+    #[allow(dead_code)] // @todo - remove directive once OfflineAudioContext events are implemented
+    pub fn clear_thread_safe_listener(&self, store_id: String) {
+        // We need to clean things around so that the js object can be garbage collected.
+        // But we also need to wait so that the previous tsfn.call is executed,
+        // this is not clean, but don't see how to implement that properly right now.
+        std::thread::sleep(std::time::Duration::from_millis(1));
+        let mut tsfn_store = self.tsfn_store.lock().unwrap();
+        if let Some(tsfn) = tsfn_store.remove(&store_id) {
+            let _ = tsfn.abort();
+        }
+    }
+
+    #[allow(dead_code)]  // @todo - remove directive once OfflineAudioContext events are implemented
+    pub fn clear_all_thread_safe_listeners(&self) {
+        std::thread::sleep(std::time::Duration::from_millis(1));
+        let mut tsfn_store = self.tsfn_store.lock().unwrap();
+
+        for (_, tsfn) in tsfn_store.drain() {
+            let _ = tsfn.abort();
+        }
     }
 }
 
@@ -145,7 +198,10 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // -------------------------------------------------
     // Wrap context
     // -------------------------------------------------
-    let napi_audio_context = ${d.napiName(d.node)}(Arc::new(audio_context));
+    let napi_audio_context = ${d.napiName(d.node)} {
+        context: Arc::new(audio_context),
+        tsfn_store: Arc::new(HashMap::new().into()),
+    };
     ctx.env.wrap(&mut js_this, napi_audio_context)?;
 
     js_this.define_properties(&[
@@ -155,6 +211,10 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_property_attributes(PropertyAttributes::Static),
     ])?;
 
+
+    // test symbol as property name
+    // let test_symbol = ctx.env.symbol_for("test").unwrap();
+    // js_this.set_property(test_symbol, &ctx.env.create_string("test").unwrap())?;
 
     // -------------------------------------------------
     // Bind AudioDestination
@@ -167,6 +227,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
     ctx.env.get_undefined()
 }
+
 
 #[js_function]
 fn get_current_time(ctx: CallContext) -> Result<JsNumber> {
@@ -310,6 +371,7 @@ fn create_periodic_wave(ctx: CallContext) -> Result<JsObject> {
 
 // ----------------------------------------------------
 // Factory methods
+// @todo - move to JS
 // ----------------------------------------------------
 ${d.nodes.map(n => {
     let factoryName = d.factoryName(n);
@@ -432,6 +494,51 @@ fn create_media_stream_source(ctx: CallContext) -> Result<JsObject> {
 
     ctor.new_instance(&[js_this, options])
 }
+
+// ----------------------------------------------------
+// Private Event Target initialization
+// ----------------------------------------------------
+#[js_function]
+fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_context = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+    let context = napi_context.unwrap();
+
+    let dispatch_event_symbol = ctx.env.symbol_for("node-web-audio-api:napi-dispatch-event").unwrap();
+    let js_func = js_this.get_property(dispatch_event_symbol).unwrap();
+
+    let tsfn = ctx.env.create_threadsafe_function(&js_func, 0, |ctx: ThreadSafeCallContext<Event>| {
+        let event_type = ctx.env.create_string(ctx.value.type_)?;
+        Ok(vec![event_type])
+    })?;
+
+    let _ = napi_context.store_thread_safe_listener(tsfn.clone());
+
+    // statechange event
+    {
+        let tsfn = tsfn.clone();
+        let napi_context = napi_context.clone();
+
+        context.set_onstatechange(move |e| {
+            tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
+
+            if napi_context.unwrap().state() == AudioContextState::Closed {
+                napi_context.clear_all_thread_safe_listeners();
+            }
+        });
+    }
+
+    // sinkchange event
+    {
+        let tsfn = tsfn.clone();
+
+        context.set_onsinkchange(move |e| {
+            tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
+        });
+    }
+
+    ctx.env.get_undefined()
+}
     `: `
 // ----------------------------------------------------
 // Methods and attributes specific to OfflineAudioContext
@@ -451,7 +558,7 @@ fn get_length(ctx: CallContext) -> Result<JsNumber> {
 fn start_rendering(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let clone = napi_obj.0.clone();
+    let clone = Arc::clone(&napi_obj.context);
 
     ctx.env.execute_tokio_future(
         async move {
@@ -480,7 +587,7 @@ fn start_rendering(ctx: CallContext) -> Result<JsObject> {
 fn suspend_offline(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let clone = napi_obj.0.clone();
+    let clone = Arc::clone(&napi_obj.context);
 
     let when = match ctx.try_get::<JsNumber>(0)? {
         Either::A(value) => value.get_double()?,
@@ -500,7 +607,7 @@ fn suspend_offline(ctx: CallContext) -> Result<JsObject> {
 fn resume_offline(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let clone = napi_obj.0.clone();
+    let clone = Arc::clone(&napi_obj.context);
 
     ctx.env.execute_tokio_future(
         async move {
@@ -510,5 +617,12 @@ fn resume_offline(ctx: CallContext) -> Result<JsObject> {
         |&mut env, _val| env.get_undefined(),
     )
 }
+
+// ----------------------------------------------------
+// @todo - Private Event Target initialization
+// statechange & complete
+// ----------------------------------------------------
     `
 }
+
+

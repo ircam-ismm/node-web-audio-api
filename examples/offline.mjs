@@ -2,18 +2,27 @@ import { AudioContext, OfflineAudioContext } from '../index.mjs';
 
 const offline = new OfflineAudioContext(1, 48000, 48000);
 
-offline.suspend(128 / 48000).then(() => {
-  console.log('suspend');
+// offline.addEventListener('statechange', () => {
+//   console.log('> statechange event:', offline.state);
+// });
+
+// offline.addEventListener('complete', (e) => {
+//   console.log('> complete event:', e.renderedBuffer);
+// });
+
+offline.suspend(128 / 48000).then(async () => {
+  console.log('suspend', offline.state);
 
   const osc = offline.createOscillator();
   osc.connect(offline.destination);
   osc.frequency.value = 220;
   osc.start(0);
 
-  console.log('resume');
-  offline.resume();
+  await offline.resume();
+  console.log('resume', offline.state);
 });
 
+// offline.startRendering().then(audioBuffer => console.log(audioBuffer));
 const buffer = await offline.startRendering();
 console.log('buffer duration:', buffer.duration);
 
@@ -39,6 +48,8 @@ for (let i = 0; i < 48000; i++) {
   }
 }
 
+console.log('> playback computed buffer in loop (should have a small silent gap)');
+
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const online = new AudioContext({ latencyHint });
 
@@ -51,4 +62,5 @@ src.start();
 
 await new Promise(resolve => setTimeout(resolve, 2000));
 
+console.log('close context');
 await online.close();

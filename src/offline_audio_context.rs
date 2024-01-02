@@ -17,16 +17,39 @@
 // -------------------------------------------------------------------------- //
 // -------------------------------------------------------------------------- //
 
+use std::collections::HashMap;
 use std::io::Cursor;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
+#[allow(unused_imports)]
+// @todo - remove directive once OfflineAudioContext events are implemented
+use napi::threadsafe_function::{
+    ThreadSafeCallContext, ThreadsafeFunction, ThreadsafeFunctionCallMode,
+};
 use napi::*;
 use napi_derive::js_function;
+use uuid::Uuid;
 use web_audio_api::context::*;
+#[allow(unused_imports)]
+// @todo - remove directive once OfflineAudioContext events are implemented
+use web_audio_api::Event;
 
 use crate::*;
 
-pub(crate) struct NapiOfflineAudioContext(Arc<OfflineAudioContext>);
+#[derive(Clone)]
+pub(crate) struct NapiOfflineAudioContext {
+    context: Arc<OfflineAudioContext>,
+    // store all ThreadsafeFunction created for listening to events
+    // so that they can be aborted when the context is closed
+    tsfn_store: Arc<Mutex<HashMap<String, ThreadsafeFunction<Event>>>>,
+}
+
+// for debug purpose
+// impl Drop for NapiOfflineAudioContext {
+//     fn drop(&mut self) {
+//         println!("NAPI: NapiOfflineAudioContext dropped");
+//     }
+// }
 
 impl NapiOfflineAudioContext {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -72,7 +95,38 @@ impl NapiOfflineAudioContext {
     }
 
     pub fn unwrap(&self) -> &OfflineAudioContext {
-        &self.0
+        &self.context
+    }
+
+    #[allow(dead_code)] // @todo - remove directive once OfflineAudioContext events are implemented
+    pub fn store_thread_safe_listener(&self, tsfn: ThreadsafeFunction<Event>) -> String {
+        let mut tsfn_store = self.tsfn_store.lock().unwrap();
+        let uuid = Uuid::new_v4();
+        tsfn_store.insert(uuid.to_string(), tsfn);
+
+        uuid.to_string()
+    }
+
+    #[allow(dead_code)] // @todo - remove directive once OfflineAudioContext events are implemented
+    pub fn clear_thread_safe_listener(&self, store_id: String) {
+        // We need to clean things around so that the js object can be garbage collected.
+        // But we also need to wait so that the previous tsfn.call is executed,
+        // this is not clean, but don't see how to implement that properly right now.
+        std::thread::sleep(std::time::Duration::from_millis(1));
+        let mut tsfn_store = self.tsfn_store.lock().unwrap();
+        if let Some(tsfn) = tsfn_store.remove(&store_id) {
+            let _ = tsfn.abort();
+        }
+    }
+
+    #[allow(dead_code)] // @todo - remove directive once OfflineAudioContext events are implemented
+    pub fn clear_all_thread_safe_listeners(&self) {
+        std::thread::sleep(std::time::Duration::from_millis(1));
+        let mut tsfn_store = self.tsfn_store.lock().unwrap();
+
+        for (_, tsfn) in tsfn_store.drain() {
+            let _ = tsfn.abort();
+        }
     }
 }
 
@@ -92,7 +146,10 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // -------------------------------------------------
     // Wrap context
     // -------------------------------------------------
-    let napi_audio_context = NapiOfflineAudioContext(Arc::new(audio_context));
+    let napi_audio_context = NapiOfflineAudioContext {
+        context: Arc::new(audio_context),
+        tsfn_store: Arc::new(HashMap::new().into()),
+    };
     ctx.env.wrap(&mut js_this, napi_audio_context)?;
 
     js_this.define_properties(&[
@@ -101,6 +158,10 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_value(&ctx.env.create_string("OfflineAudioContext")?)
             .with_property_attributes(PropertyAttributes::Static),
     ])?;
+
+    // test symbol as property name
+    // let test_symbol = ctx.env.symbol_for("test").unwrap();
+    // js_this.set_property(test_symbol, &ctx.env.create_string("test").unwrap())?;
 
     // -------------------------------------------------
     // Bind AudioDestination
@@ -256,6 +317,7 @@ fn create_periodic_wave(ctx: CallContext) -> Result<JsObject> {
 
 // ----------------------------------------------------
 // Factory methods
+// @todo - move to JS
 // ----------------------------------------------------
 
 #[js_function(0)]
@@ -474,7 +536,7 @@ fn get_length(ctx: CallContext) -> Result<JsNumber> {
 fn start_rendering(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let clone = napi_obj.0.clone();
+    let clone = Arc::clone(&napi_obj.context);
 
     ctx.env.execute_tokio_future(
         async move {
@@ -503,7 +565,7 @@ fn start_rendering(ctx: CallContext) -> Result<JsObject> {
 fn suspend_offline(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let clone = napi_obj.0.clone();
+    let clone = Arc::clone(&napi_obj.context);
 
     let when = match ctx.try_get::<JsNumber>(0)? {
         Either::A(value) => value.get_double()?,
@@ -523,7 +585,7 @@ fn suspend_offline(ctx: CallContext) -> Result<JsObject> {
 fn resume_offline(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let clone = napi_obj.0.clone();
+    let clone = Arc::clone(&napi_obj.context);
 
     ctx.env.execute_tokio_future(
         async move {
@@ -533,3 +595,8 @@ fn resume_offline(ctx: CallContext) -> Result<JsObject> {
         |&mut env, _val| env.get_undefined(),
     )
 }
+
+// ----------------------------------------------------
+// @todo - Private Event Target initialization
+// statechange & complete
+// ----------------------------------------------------

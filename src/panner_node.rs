@@ -24,6 +24,13 @@ use web_audio_api::node::*;
 
 pub(crate) struct NapiPannerNode(PannerNode);
 
+// for debug purpose
+// impl Drop for NapiPannerNode {
+//     fn drop(&mut self) {
+//         println!("NAPI: NapiPannerNode dropped");
+//     }
+// }
+
 impl NapiPannerNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
         env.define_class(
@@ -80,6 +87,8 @@ impl NapiPannerNode {
                 Property::new("channelInterpretation")?
                     .with_getter(get_channel_interpretation)
                     .with_setter(set_channel_interpretation),
+                Property::new("numberOfInputs")?.with_getter(get_number_of_inputs),
+                Property::new("numberOfOutputs")?.with_getter(get_number_of_outputs),
                 Property::new("connect")?
                     .with_method(connect)
                     .with_property_attributes(PropertyAttributes::Enumerable),
@@ -101,15 +110,33 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
     if ctx.length < 1 {
-        return Err(napi::Error::new(
-            napi::Status::InvalidArg, // error code
-            "Failed to construct 'PannerNode': 1 argument required, but only 0 present."
-                .to_string(),
-        ));
+        let msg = "Failed to construct 'PannerNode': 1 argument required, but only 0 present.";
+        return Err(napi::Error::new(napi::Status::InvalidArg, msg));
     }
 
-    // first argument is always AudioContext
+    // first argument should be an AudioContext
     let js_audio_context = ctx.get::<JsObject>(0)?;
+    // check that
+    let audio_context_utf8_name = if let Ok(audio_context_name) =
+        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")
+    {
+        let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
+        let audio_context_str = &audio_context_utf8_name[..];
+
+        if audio_context_str != "AudioContext" && audio_context_str != "OfflineAudioContext" {
+            let msg = "Failed to construct 'PannerNode': argument 0 should be an instance of BaseAudioContext";
+            return Err(napi::Error::new(napi::Status::InvalidArg, msg));
+        }
+
+        audio_context_utf8_name
+    } else {
+        // this crashes in debug mode but not in release mode, weird...
+        // > Throw error failed, status: [PendingException], raw message: "...", raw status: [InvalidArg]
+        // > note: run with 'RUST_BACKTRACE=1' environment variable to display a backtrace
+        // > fatal runtime error: failed to initiate panic, error 5
+        let msg = "Failed to construct 'PannerNode': argument 0 should be an instance of BaseAudioContext";
+        return Err(napi::Error::new(napi::Status::InvalidArg, msg));
+    };
 
     js_this.define_properties(&[
         Property::new("context")?
@@ -122,192 +149,195 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     ])?;
 
     // parse options
-    let options = match ctx.try_get::<JsObject>(1)? {
-        Either::A(options_js) => {
-            let some_panning_model_js = options_js.get::<&str, JsString>("panningModel")?;
-            let panning_model = if let Some(panning_model_js) = some_panning_model_js {
-                let panning_model_str = panning_model_js.into_utf8()?.into_owned()?;
+    let options = if let Ok(either_options) = ctx.try_get::<JsObject>(1) {
+        match either_options {
+            Either::A(options_js) => {
+                let some_panning_model_js = options_js.get::<&str, JsString>("panningModel")?;
+                let panning_model = if let Some(panning_model_js) = some_panning_model_js {
+                    let panning_model_str = panning_model_js.into_utf8()?.into_owned()?;
 
-                match panning_model_str.as_str() {
-                    "equalpower" => PanningModelType::EqualPower,
-                    "HRTF" => PanningModelType::HRTF,
-                    _ => panic!("undefined value for PanningModelType"),
-                }
-            } else {
-                PanningModelType::default()
-            };
-
-            let some_distance_model_js = options_js.get::<&str, JsString>("distanceModel")?;
-            let distance_model = if let Some(distance_model_js) = some_distance_model_js {
-                let distance_model_str = distance_model_js.into_utf8()?.into_owned()?;
-
-                match distance_model_str.as_str() {
-                    "linear" => DistanceModelType::Linear,
-                    "inverse" => DistanceModelType::Inverse,
-                    "exponential" => DistanceModelType::Exponential,
-                    _ => panic!("undefined value for DistanceModelType"),
-                }
-            } else {
-                DistanceModelType::default()
-            };
-
-            let some_position_x_js = options_js.get::<&str, JsNumber>("positionX")?;
-            let position_x = if let Some(position_x_js) = some_position_x_js {
-                position_x_js.get_double()? as f32
-            } else {
-                0.
-            };
-
-            let some_position_y_js = options_js.get::<&str, JsNumber>("positionY")?;
-            let position_y = if let Some(position_y_js) = some_position_y_js {
-                position_y_js.get_double()? as f32
-            } else {
-                0.
-            };
-
-            let some_position_z_js = options_js.get::<&str, JsNumber>("positionZ")?;
-            let position_z = if let Some(position_z_js) = some_position_z_js {
-                position_z_js.get_double()? as f32
-            } else {
-                0.
-            };
-
-            let some_orientation_x_js = options_js.get::<&str, JsNumber>("orientationX")?;
-            let orientation_x = if let Some(orientation_x_js) = some_orientation_x_js {
-                orientation_x_js.get_double()? as f32
-            } else {
-                1.
-            };
-
-            let some_orientation_y_js = options_js.get::<&str, JsNumber>("orientationY")?;
-            let orientation_y = if let Some(orientation_y_js) = some_orientation_y_js {
-                orientation_y_js.get_double()? as f32
-            } else {
-                0.
-            };
-
-            let some_orientation_z_js = options_js.get::<&str, JsNumber>("orientationZ")?;
-            let orientation_z = if let Some(orientation_z_js) = some_orientation_z_js {
-                orientation_z_js.get_double()? as f32
-            } else {
-                0.
-            };
-
-            let some_ref_distance_js = options_js.get::<&str, JsNumber>("refDistance")?;
-            let ref_distance = if let Some(ref_distance_js) = some_ref_distance_js {
-                ref_distance_js.get_double()?
-            } else {
-                1.
-            };
-
-            let some_max_distance_js = options_js.get::<&str, JsNumber>("maxDistance")?;
-            let max_distance = if let Some(max_distance_js) = some_max_distance_js {
-                max_distance_js.get_double()?
-            } else {
-                10000.
-            };
-
-            let some_rolloff_factor_js = options_js.get::<&str, JsNumber>("rolloffFactor")?;
-            let rolloff_factor = if let Some(rolloff_factor_js) = some_rolloff_factor_js {
-                rolloff_factor_js.get_double()?
-            } else {
-                1.
-            };
-
-            let some_cone_inner_angle_js = options_js.get::<&str, JsNumber>("coneInnerAngle")?;
-            let cone_inner_angle = if let Some(cone_inner_angle_js) = some_cone_inner_angle_js {
-                cone_inner_angle_js.get_double()?
-            } else {
-                360.
-            };
-
-            let some_cone_outer_angle_js = options_js.get::<&str, JsNumber>("coneOuterAngle")?;
-            let cone_outer_angle = if let Some(cone_outer_angle_js) = some_cone_outer_angle_js {
-                cone_outer_angle_js.get_double()?
-            } else {
-                360.
-            };
-
-            let some_cone_outer_gain_js = options_js.get::<&str, JsNumber>("coneOuterGain")?;
-            let cone_outer_gain = if let Some(cone_outer_gain_js) = some_cone_outer_gain_js {
-                cone_outer_gain_js.get_double()?
-            } else {
-                0.
-            };
-
-            let node_defaults = PannerOptions::default();
-            let channel_config_defaults = node_defaults.channel_config;
-
-            let some_channel_count_js = options_js.get::<&str, JsNumber>("channelCount")?;
-            let channel_count = if let Some(channel_count_js) = some_channel_count_js {
-                channel_count_js.get_double()? as usize
-            } else {
-                channel_config_defaults.count
-            };
-
-            let some_channel_count_mode_js =
-                options_js.get::<&str, JsString>("channelCountMode")?;
-            let channel_count_mode = if let Some(channel_count_mode_js) = some_channel_count_mode_js
-            {
-                let channel_count_mode_str = channel_count_mode_js.into_utf8()?.into_owned()?;
-
-                match channel_count_mode_str.as_str() {
-                    "max" => ChannelCountMode::Max,
-                    "clamped-max" => ChannelCountMode::ClampedMax,
-                    "explicit" => ChannelCountMode::Explicit,
-                    _ => panic!("undefined value for ChannelCountMode"),
-                }
-            } else {
-                channel_config_defaults.count_mode
-            };
-
-            let some_channel_interpretation_js =
-                options_js.get::<&str, JsString>("channelInterpretation")?;
-            let channel_interpretation =
-                if let Some(channel_interpretation_js) = some_channel_interpretation_js {
-                    let channel_interpretation_str =
-                        channel_interpretation_js.into_utf8()?.into_owned()?;
-
-                    match channel_interpretation_str.as_str() {
-                        "speakers" => ChannelInterpretation::Speakers,
-                        "discrete" => ChannelInterpretation::Discrete,
-                        _ => panic!("undefined value for ChannelInterpretation"),
+                    match panning_model_str.as_str() {
+                        "equalpower" => PanningModelType::EqualPower,
+                        "HRTF" => PanningModelType::HRTF,
+                        _ => panic!("undefined value for PanningModelType"),
                     }
                 } else {
-                    channel_config_defaults.interpretation
+                    PanningModelType::default()
                 };
 
-            PannerOptions {
-                panning_model,
-                distance_model,
-                position_x,
-                position_y,
-                position_z,
-                orientation_x,
-                orientation_y,
-                orientation_z,
-                ref_distance,
-                max_distance,
-                rolloff_factor,
-                cone_inner_angle,
-                cone_outer_angle,
-                cone_outer_gain,
-                channel_config: ChannelConfigOptions {
-                    count: channel_count,
-                    count_mode: channel_count_mode,
-                    interpretation: channel_interpretation,
-                },
+                let some_distance_model_js = options_js.get::<&str, JsString>("distanceModel")?;
+                let distance_model = if let Some(distance_model_js) = some_distance_model_js {
+                    let distance_model_str = distance_model_js.into_utf8()?.into_owned()?;
+
+                    match distance_model_str.as_str() {
+                        "linear" => DistanceModelType::Linear,
+                        "inverse" => DistanceModelType::Inverse,
+                        "exponential" => DistanceModelType::Exponential,
+                        _ => panic!("undefined value for DistanceModelType"),
+                    }
+                } else {
+                    DistanceModelType::default()
+                };
+
+                let some_position_x_js = options_js.get::<&str, JsNumber>("positionX")?;
+                let position_x = if let Some(position_x_js) = some_position_x_js {
+                    position_x_js.get_double()? as f32
+                } else {
+                    0.
+                };
+
+                let some_position_y_js = options_js.get::<&str, JsNumber>("positionY")?;
+                let position_y = if let Some(position_y_js) = some_position_y_js {
+                    position_y_js.get_double()? as f32
+                } else {
+                    0.
+                };
+
+                let some_position_z_js = options_js.get::<&str, JsNumber>("positionZ")?;
+                let position_z = if let Some(position_z_js) = some_position_z_js {
+                    position_z_js.get_double()? as f32
+                } else {
+                    0.
+                };
+
+                let some_orientation_x_js = options_js.get::<&str, JsNumber>("orientationX")?;
+                let orientation_x = if let Some(orientation_x_js) = some_orientation_x_js {
+                    orientation_x_js.get_double()? as f32
+                } else {
+                    1.
+                };
+
+                let some_orientation_y_js = options_js.get::<&str, JsNumber>("orientationY")?;
+                let orientation_y = if let Some(orientation_y_js) = some_orientation_y_js {
+                    orientation_y_js.get_double()? as f32
+                } else {
+                    0.
+                };
+
+                let some_orientation_z_js = options_js.get::<&str, JsNumber>("orientationZ")?;
+                let orientation_z = if let Some(orientation_z_js) = some_orientation_z_js {
+                    orientation_z_js.get_double()? as f32
+                } else {
+                    0.
+                };
+
+                let some_ref_distance_js = options_js.get::<&str, JsNumber>("refDistance")?;
+                let ref_distance = if let Some(ref_distance_js) = some_ref_distance_js {
+                    ref_distance_js.get_double()?
+                } else {
+                    1.
+                };
+
+                let some_max_distance_js = options_js.get::<&str, JsNumber>("maxDistance")?;
+                let max_distance = if let Some(max_distance_js) = some_max_distance_js {
+                    max_distance_js.get_double()?
+                } else {
+                    10000.
+                };
+
+                let some_rolloff_factor_js = options_js.get::<&str, JsNumber>("rolloffFactor")?;
+                let rolloff_factor = if let Some(rolloff_factor_js) = some_rolloff_factor_js {
+                    rolloff_factor_js.get_double()?
+                } else {
+                    1.
+                };
+
+                let some_cone_inner_angle_js =
+                    options_js.get::<&str, JsNumber>("coneInnerAngle")?;
+                let cone_inner_angle = if let Some(cone_inner_angle_js) = some_cone_inner_angle_js {
+                    cone_inner_angle_js.get_double()?
+                } else {
+                    360.
+                };
+
+                let some_cone_outer_angle_js =
+                    options_js.get::<&str, JsNumber>("coneOuterAngle")?;
+                let cone_outer_angle = if let Some(cone_outer_angle_js) = some_cone_outer_angle_js {
+                    cone_outer_angle_js.get_double()?
+                } else {
+                    360.
+                };
+
+                let some_cone_outer_gain_js = options_js.get::<&str, JsNumber>("coneOuterGain")?;
+                let cone_outer_gain = if let Some(cone_outer_gain_js) = some_cone_outer_gain_js {
+                    cone_outer_gain_js.get_double()?
+                } else {
+                    0.
+                };
+
+                let node_defaults = PannerOptions::default();
+                let channel_config_defaults = node_defaults.channel_config;
+
+                let some_channel_count_js = options_js.get::<&str, JsNumber>("channelCount")?;
+                let channel_count = if let Some(channel_count_js) = some_channel_count_js {
+                    channel_count_js.get_double()? as usize
+                } else {
+                    channel_config_defaults.count
+                };
+
+                let some_channel_count_mode_js =
+                    options_js.get::<&str, JsString>("channelCountMode")?;
+                let channel_count_mode = if let Some(channel_count_mode_js) =
+                    some_channel_count_mode_js
+                {
+                    let channel_count_mode_str = channel_count_mode_js.into_utf8()?.into_owned()?;
+
+                    match channel_count_mode_str.as_str() {
+                        "max" => ChannelCountMode::Max,
+                        "clamped-max" => ChannelCountMode::ClampedMax,
+                        "explicit" => ChannelCountMode::Explicit,
+                        _ => panic!("undefined value for ChannelCountMode"),
+                    }
+                } else {
+                    channel_config_defaults.count_mode
+                };
+
+                let some_channel_interpretation_js =
+                    options_js.get::<&str, JsString>("channelInterpretation")?;
+                let channel_interpretation =
+                    if let Some(channel_interpretation_js) = some_channel_interpretation_js {
+                        let channel_interpretation_str =
+                            channel_interpretation_js.into_utf8()?.into_owned()?;
+
+                        match channel_interpretation_str.as_str() {
+                            "speakers" => ChannelInterpretation::Speakers,
+                            "discrete" => ChannelInterpretation::Discrete,
+                            _ => panic!("undefined value for ChannelInterpretation"),
+                        }
+                    } else {
+                        channel_config_defaults.interpretation
+                    };
+
+                PannerOptions {
+                    panning_model,
+                    distance_model,
+                    position_x,
+                    position_y,
+                    position_z,
+                    orientation_x,
+                    orientation_y,
+                    orientation_z,
+                    ref_distance,
+                    max_distance,
+                    rolloff_factor,
+                    cone_inner_angle,
+                    cone_outer_angle,
+                    cone_outer_gain,
+                    channel_config: ChannelConfigOptions {
+                        count: channel_count,
+                        count_mode: channel_count_mode,
+                        interpretation: channel_interpretation,
+                    },
+                }
             }
+            Either::B(_) => Default::default(),
         }
-        Either::B(_) => Default::default(),
+    } else {
+        Default::default()
     };
 
-    // create native node
-    let audio_context_name =
-        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
-    let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
     let audio_context_str = &audio_context_utf8_name[..];
-
+    // create native node
     let native_node = match audio_context_str {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
@@ -321,7 +351,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             let audio_context = napi_audio_context.unwrap();
             PannerNode::new(audio_context, options)
         }
-        &_ => panic!("not supported"),
+        &_ => unreachable!(),
     };
 
     // AudioParam: PannerNode::positionX
@@ -467,6 +497,28 @@ fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 
+#[js_function]
+fn get_number_of_inputs(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let number_of_inputs = node.number_of_inputs() as f64;
+
+    ctx.env.create_double(number_of_inputs)
+}
+
+#[js_function]
+fn get_number_of_outputs(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let number_of_outputs = node.number_of_outputs() as f64;
+
+    ctx.env.create_double(number_of_outputs)
+}
+
 // -------------------------------------------------
 // connect / disconnect macros
 // -------------------------------------------------
@@ -587,7 +639,7 @@ fn set_panning_model(ctx: CallContext) -> Result<JsUndefined> {
     let value = match utf8_str.as_str() {
         "equalpower" => PanningModelType::EqualPower,
         "HRTF" => PanningModelType::HRTF,
-        _ => panic!("undefined value for PanningModelType"),
+        _ => return ctx.env.get_undefined(),
     };
 
     node.set_panning_model(value);
@@ -607,7 +659,7 @@ fn set_distance_model(ctx: CallContext) -> Result<JsUndefined> {
         "linear" => DistanceModelType::Linear,
         "inverse" => DistanceModelType::Inverse,
         "exponential" => DistanceModelType::Exponential,
-        _ => panic!("undefined value for DistanceModelType"),
+        _ => return ctx.env.get_undefined(),
     };
 
     node.set_distance_model(value);

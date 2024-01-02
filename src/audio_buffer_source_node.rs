@@ -24,6 +24,13 @@ use web_audio_api::node::*;
 
 pub(crate) struct NapiAudioBufferSourceNode(AudioBufferSourceNode);
 
+// for debug purpose
+// impl Drop for NapiAudioBufferSourceNode {
+//     fn drop(&mut self) {
+//         println!("NAPI: NapiAudioBufferSourceNode dropped");
+//     }
+// }
+
 impl NapiAudioBufferSourceNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
         env.define_class(
@@ -59,6 +66,8 @@ impl NapiAudioBufferSourceNode {
                 Property::new("channelInterpretation")?
                     .with_getter(get_channel_interpretation)
                     .with_setter(set_channel_interpretation),
+                Property::new("numberOfInputs")?.with_getter(get_number_of_inputs),
+                Property::new("numberOfOutputs")?.with_getter(get_number_of_outputs),
                 Property::new("connect")?
                     .with_method(connect)
                     .with_property_attributes(PropertyAttributes::Enumerable),
@@ -72,6 +81,7 @@ impl NapiAudioBufferSourceNode {
                 Property::new("stop")?
                     .with_method(stop)
                     .with_property_attributes(PropertyAttributes::Enumerable),
+                Property::new("__initEventTarget__")?.with_method(init_event_target),
             ],
         )
     }
@@ -87,15 +97,34 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
     if ctx.length < 1 {
-        return Err(napi::Error::new(
-            napi::Status::InvalidArg, // error code
-            "Failed to construct 'AudioBufferSourceNode': 1 argument required, but only 0 present."
-                .to_string(),
-        ));
+        let msg =
+            "Failed to construct 'AudioBufferSourceNode': 1 argument required, but only 0 present.";
+        return Err(napi::Error::new(napi::Status::InvalidArg, msg));
     }
 
-    // first argument is always AudioContext
+    // first argument should be an AudioContext
     let js_audio_context = ctx.get::<JsObject>(0)?;
+    // check that
+    let audio_context_utf8_name = if let Ok(audio_context_name) =
+        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")
+    {
+        let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
+        let audio_context_str = &audio_context_utf8_name[..];
+
+        if audio_context_str != "AudioContext" && audio_context_str != "OfflineAudioContext" {
+            let msg = "Failed to construct 'AudioBufferSourceNode': argument 0 should be an instance of BaseAudioContext";
+            return Err(napi::Error::new(napi::Status::InvalidArg, msg));
+        }
+
+        audio_context_utf8_name
+    } else {
+        // this crashes in debug mode but not in release mode, weird...
+        // > Throw error failed, status: [PendingException], raw message: "...", raw status: [InvalidArg]
+        // > note: run with 'RUST_BACKTRACE=1' environment variable to display a backtrace
+        // > fatal runtime error: failed to initiate panic, error 5
+        let msg = "Failed to construct 'AudioBufferSourceNode': argument 0 should be an instance of BaseAudioContext";
+        return Err(napi::Error::new(napi::Status::InvalidArg, msg));
+    };
 
     js_this.define_properties(&[
         Property::new("context")?
@@ -108,69 +137,69 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     ])?;
 
     // parse options
-    let options = match ctx.try_get::<JsObject>(1)? {
-        Either::A(options_js) => {
-            let some_buffer_js = options_js.get::<&str, JsObject>("buffer")?;
-            let buffer = if let Some(buffer_js) = some_buffer_js {
-                let buffer_napi = ctx.env.unwrap::<NapiAudioBuffer>(&buffer_js)?;
-                Some(buffer_napi.unwrap().clone())
-            } else {
-                None
-            };
+    let options = if let Ok(either_options) = ctx.try_get::<JsObject>(1) {
+        match either_options {
+            Either::A(options_js) => {
+                let some_buffer_js = options_js.get::<&str, JsObject>("buffer")?;
+                let buffer = if let Some(buffer_js) = some_buffer_js {
+                    let buffer_napi = ctx.env.unwrap::<NapiAudioBuffer>(&buffer_js)?;
+                    Some(buffer_napi.unwrap().clone())
+                } else {
+                    None
+                };
 
-            let some_detune_js = options_js.get::<&str, JsNumber>("detune")?;
-            let detune = if let Some(detune_js) = some_detune_js {
-                detune_js.get_double()? as f32
-            } else {
-                0.
-            };
+                let some_detune_js = options_js.get::<&str, JsNumber>("detune")?;
+                let detune = if let Some(detune_js) = some_detune_js {
+                    detune_js.get_double()? as f32
+                } else {
+                    0.
+                };
 
-            let some_loop_js = options_js.get::<&str, JsBoolean>("loop")?;
-            let loop_ = if let Some(loop_js) = some_loop_js {
-                loop_js.try_into()?
-            } else {
-                false
-            };
+                let some_loop_js = options_js.get::<&str, JsBoolean>("loop")?;
+                let loop_ = if let Some(loop_js) = some_loop_js {
+                    loop_js.try_into()?
+                } else {
+                    false
+                };
 
-            let some_loop_end_js = options_js.get::<&str, JsNumber>("loopEnd")?;
-            let loop_end = if let Some(loop_end_js) = some_loop_end_js {
-                loop_end_js.get_double()?
-            } else {
-                0.
-            };
+                let some_loop_end_js = options_js.get::<&str, JsNumber>("loopEnd")?;
+                let loop_end = if let Some(loop_end_js) = some_loop_end_js {
+                    loop_end_js.get_double()?
+                } else {
+                    0.
+                };
 
-            let some_loop_start_js = options_js.get::<&str, JsNumber>("loopStart")?;
-            let loop_start = if let Some(loop_start_js) = some_loop_start_js {
-                loop_start_js.get_double()?
-            } else {
-                0.
-            };
+                let some_loop_start_js = options_js.get::<&str, JsNumber>("loopStart")?;
+                let loop_start = if let Some(loop_start_js) = some_loop_start_js {
+                    loop_start_js.get_double()?
+                } else {
+                    0.
+                };
 
-            let some_playback_rate_js = options_js.get::<&str, JsNumber>("playbackRate")?;
-            let playback_rate = if let Some(playback_rate_js) = some_playback_rate_js {
-                playback_rate_js.get_double()? as f32
-            } else {
-                1.
-            };
+                let some_playback_rate_js = options_js.get::<&str, JsNumber>("playbackRate")?;
+                let playback_rate = if let Some(playback_rate_js) = some_playback_rate_js {
+                    playback_rate_js.get_double()? as f32
+                } else {
+                    1.
+                };
 
-            AudioBufferSourceOptions {
-                buffer,
-                detune,
-                loop_,
-                loop_end,
-                loop_start,
-                playback_rate,
+                AudioBufferSourceOptions {
+                    buffer,
+                    detune,
+                    loop_,
+                    loop_end,
+                    loop_start,
+                    playback_rate,
+                }
             }
+            Either::B(_) => Default::default(),
         }
-        Either::B(_) => Default::default(),
+    } else {
+        Default::default()
     };
 
-    // create native node
-    let audio_context_name =
-        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
-    let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
     let audio_context_str = &audio_context_utf8_name[..];
-
+    // create native node
     let native_node = match audio_context_str {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
@@ -184,7 +213,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             let audio_context = napi_audio_context.unwrap();
             AudioBufferSourceNode::new(audio_context, options)
         }
-        &_ => panic!("not supported"),
+        &_ => unreachable!(),
     };
 
     // AudioParam: AudioBufferSourceNode::playbackRate
@@ -302,6 +331,28 @@ fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 
+#[js_function]
+fn get_number_of_inputs(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let number_of_inputs = node.number_of_inputs() as f64;
+
+    ctx.env.create_double(number_of_inputs)
+}
+
+#[js_function]
+fn get_number_of_outputs(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let number_of_outputs = node.number_of_outputs() as f64;
+
+    ctx.env.create_double(number_of_outputs)
+}
+
 // -------------------------------------------------
 // connect / disconnect macros
 // -------------------------------------------------
@@ -354,6 +405,67 @@ fn stop(ctx: CallContext) -> Result<JsUndefined> {
             node.stop_at(when);
         }
         _ => (),
+    };
+
+    ctx.env.get_undefined()
+}
+
+// ----------------------------------------------------
+// Private Event Target initialization
+// ----------------------------------------------------
+#[js_function]
+fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
+    use napi::threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunctionCallMode};
+    use web_audio_api::Event;
+
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    // garb the napi audio context
+    let js_audio_context: JsObject = js_this.get_named_property("context")?;
+    let audio_context_name =
+        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
+    let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
+    let audio_context_str = &audio_context_utf8_name[..];
+
+    let dispatch_event_symbol = ctx
+        .env
+        .symbol_for("node-web-audio-api:napi-dispatch-event")
+        .unwrap();
+    let js_func = js_this.get_property(dispatch_event_symbol).unwrap();
+
+    let tsfn =
+        ctx.env
+            .create_threadsafe_function(&js_func, 0, |ctx: ThreadSafeCallContext<Event>| {
+                let event_type = ctx.env.create_string(ctx.value.type_)?;
+                Ok(vec![event_type])
+            })?;
+
+    match audio_context_str {
+        "AudioContext" => {
+            let napi_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
+            let store_id = napi_context.store_thread_safe_listener(tsfn.clone());
+            let napi_context = napi_context.clone();
+
+            node.set_onended(move |e| {
+                tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
+                napi_context.clear_thread_safe_listener(store_id);
+            });
+        }
+        "OfflineAudioContext" => {
+            let napi_context = ctx
+                .env
+                .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
+            let store_id = napi_context.store_thread_safe_listener(tsfn.clone());
+            let napi_context = napi_context.clone();
+
+            node.set_onended(move |e| {
+                tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
+                napi_context.clear_thread_safe_listener(store_id);
+            });
+        }
+        &_ => unreachable!(),
     };
 
     ctx.env.get_undefined()

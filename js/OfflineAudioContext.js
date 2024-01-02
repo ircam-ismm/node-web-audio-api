@@ -1,8 +1,14 @@
 const { NotSupportedError } = require('./lib/errors.js');
-const { isFunction, isPlainObject, isPositiveInt, isPositiveNumber } = require('./lib/utils.js');
+const { isPlainObject, isPositiveInt, isPositiveNumber } = require('./lib/utils.js');
 
-module.exports = function patchOfflineAudioContext(NativeOfflineAudioContext) {
-  class OfflineAudioContext extends NativeOfflineAudioContext {
+module.exports = function patchOfflineAudioContext(bindings) {
+  // @todo - EventTarget
+  // - https://github.com/orottier/web-audio-api-rs/issues/411
+  // - https://github.com/orottier/web-audio-api-rs/issues/416
+
+  const BaseAudioContext = require('./BaseAudioContext.mixin.js')(bindings.OfflineAudioContext, bindings);
+
+  class OfflineAudioContext extends BaseAudioContext {
     constructor(...args) {
       // handle initialisation with either an options object or a sequence of parameters
       // https://webaudio.github.io/web-audio-api/#dom-offlineaudiocontext-constructor-contextoptions-contextoptions
@@ -24,42 +30,10 @@ module.exports = function patchOfflineAudioContext(NativeOfflineAudioContext) {
       }
 
       super(numberOfChannels, length, sampleRate);
-    }
 
-    // promisify sync APIs
-    async startRendering() {
-      try {
-        const audioBuffer = await super.startRendering();
-        return Promise.resolve(audioBuffer);
-      } catch (err) {
-        return Promise.reject(err);
-      }
-    }
-
-    // This is not exactly what the spec says, but if we reject the promise
-    // when `decodeErrorCallback` is present the program will crash in an
-    // unexpected manner
-    // cf. https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-decodeaudiodata
-    decodeAudioData(audioData, decodeSuccessCallback, decodeErrorCallback) {
-      if (!(audioData instanceof ArrayBuffer)) {
-        throw new TypeError(`Failed to execute 'decodeAudioData': parameter 1 is not of type 'ArrayBuffer'`);
-      }
-
-      try {
-        const audioBuffer = super.decodeAudioData(audioData);
-
-        if (isFunction(decodeSuccessCallback)) {
-          decodeSuccessCallback(audioBuffer);
-        } else {
-          return Promise.resolve(audioBuffer);
-        }
-      } catch (err) {
-        if (isFunction(decodeErrorCallback)) {
-          decodeErrorCallback(err);
-        } else {
-          return Promise.reject(err);
-        }
-      }
+      // EventTargetMixin has been called so EventTargetMixin[kDispatchEvent] is
+      // bound to this, then we can safely finalize event target initialization
+      // super.__initEventTarget__();
     }
   }
 
