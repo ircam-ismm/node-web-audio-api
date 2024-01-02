@@ -7,6 +7,10 @@ import * as nodeWebAudioAPI from '../index.mjs';
 
 // mocks
 import createXMLHttpRequest from './wpt-mock/XMLHttpRequest.js';
+import {
+  NotSupportedError,
+  InvalidStateError,
+} from '../js/lib/errors.js';
 
 program
   .option('--list', 'List the name of the test files')
@@ -41,7 +45,12 @@ const setup = window => {
   window.Float32Array = Float32Array;
 
   // e.g. 'resources/audiobuffersource-multi-channels-expected.wav'
-  window.XMLHttpRequest = createXMLHttpRequest(testsPath)
+  window.XMLHttpRequest = createXMLHttpRequest(testsPath);
+  // errors
+  window.TypeError = TypeError;
+  window.RangeError = RangeError;
+  window.NotSupportedError = NotSupportedError;
+  window.InvalidStateError = InvalidStateError;
 }
 
 const filterRe = new RegExp(`${options.filter}`);

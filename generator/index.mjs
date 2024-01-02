@@ -205,7 +205,7 @@ const nodesTmpl = compile(nodesCodeTmpl);
 supportedNodes.sort().forEach((name, index) => {
   const nodeIdl = findInTree(name);
   const pathname = path.join(rsOutput, `${utils.slug(nodeIdl)}.rs`);
-  console.log('> generating file: ', path.relative(process.cwd(), pathname));
+  console.log(`> generating file: ${path.relative(process.cwd(), pathname)}`);
 
   const code = nodesTmpl({
     node: nodeIdl,
