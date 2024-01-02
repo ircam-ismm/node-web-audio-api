@@ -38,9 +38,7 @@ impl ${d.napiName(d.node)} {
                 Property::new("sampleRate")?.with_getter(get_sample_rate),
                 Property::new("listener")?.with_getter(get_listener),
                 Property::new("state")?.with_getter(get_state),
-
                 Property::new("decodeAudioData")?.with_method(decode_audio_data),
-
                 // @todo - move to js
                 Property::new("createPeriodicWave")?.with_method(create_periodic_wave),
                 Property::new("createBuffer")?.with_method(create_buffer),
@@ -53,7 +51,6 @@ impl ${d.napiName(d.node)} {
                 Property::new("baseLatency")?.with_getter(get_base_latency),
                 Property::new("outputLatency")?.with_getter(get_output_latency),
                 Property::new("setSinkId")?.with_method(set_sink_id),
-                Property::new("createMediaStreamSource")?.with_method(create_media_stream_source),
                 // implementation specific to online audio context
                 Property::new("resume")?.with_method(resume),
                 Property::new("suspend")?.with_method(suspend),
@@ -68,8 +65,8 @@ impl ${d.napiName(d.node)} {
                 Property::new("length")?.with_getter(get_length),
                 Property::new("startRendering")?.with_method(start_rendering),
                 // implementation specific to offline audio context
-                Property::new("suspend")?.with_method(suspend_offline),
-                Property::new("resume")?.with_method(resume_offline),
+                Property::new("suspend")?.with_method(suspend),
+                Property::new("resume")?.with_method(resume),
                     `
                 }
             ],
@@ -417,23 +414,6 @@ fn set_sink_id(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 
-#[js_function(1)]
-fn create_media_stream_source(ctx: CallContext) -> Result<JsObject> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-
-    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
-    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
-    let ctor: JsFunction = store.get_named_property("MediaStreamAudioSourceNode")?;
-
-    let media_stream = ctx.get::<JsObject>(0)?;
-
-    // create options object according to MediaStreamAudioSourceNode ctor API
-    let mut options = ctx.env.create_object()?;
-    options.set("mediaStream", media_stream)?;
-
-    ctor.new_instance(&[js_this, options])
-}
-
 // ----------------------------------------------------
 // Private Event Target initialization
 // ----------------------------------------------------
@@ -523,7 +503,7 @@ fn start_rendering(ctx: CallContext) -> Result<JsObject> {
 }
 
 #[js_function(1)]
-fn suspend_offline(ctx: CallContext) -> Result<JsObject> {
+fn suspend(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
     let clone = Arc::clone(&napi_obj.context);
@@ -543,7 +523,7 @@ fn suspend_offline(ctx: CallContext) -> Result<JsObject> {
 }
 
 #[js_function]
-fn resume_offline(ctx: CallContext) -> Result<JsObject> {
+fn resume(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
     let clone = Arc::clone(&napi_obj.context);

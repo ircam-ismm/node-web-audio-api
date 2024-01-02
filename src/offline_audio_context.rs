@@ -71,8 +71,8 @@ impl NapiOfflineAudioContext {
                 Property::new("length")?.with_getter(get_length),
                 Property::new("startRendering")?.with_method(start_rendering),
                 // implementation specific to offline audio context
-                Property::new("suspend")?.with_method(suspend_offline),
-                Property::new("resume")?.with_method(resume_offline),
+                Property::new("suspend")?.with_method(suspend),
+                Property::new("resume")?.with_method(resume),
             ],
         )
     }
@@ -342,7 +342,7 @@ fn start_rendering(ctx: CallContext) -> Result<JsObject> {
 }
 
 #[js_function(1)]
-fn suspend_offline(ctx: CallContext) -> Result<JsObject> {
+fn suspend(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
     let clone = Arc::clone(&napi_obj.context);
@@ -362,7 +362,7 @@ fn suspend_offline(ctx: CallContext) -> Result<JsObject> {
 }
 
 #[js_function]
-fn resume_offline(ctx: CallContext) -> Result<JsObject> {
+fn resume(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
     let clone = Arc::clone(&napi_obj.context);

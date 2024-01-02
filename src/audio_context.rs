@@ -71,7 +71,6 @@ impl NapiAudioContext {
                 Property::new("baseLatency")?.with_getter(get_base_latency),
                 Property::new("outputLatency")?.with_getter(get_output_latency),
                 Property::new("setSinkId")?.with_method(set_sink_id),
-                Property::new("createMediaStreamSource")?.with_method(create_media_stream_source),
                 // implementation specific to online audio context
                 Property::new("resume")?.with_method(resume),
                 Property::new("suspend")?.with_method(suspend),
@@ -429,23 +428,6 @@ fn set_sink_id(ctx: CallContext) -> Result<JsUndefined> {
     }
 
     ctx.env.get_undefined()
-}
-
-#[js_function(1)]
-fn create_media_stream_source(ctx: CallContext) -> Result<JsObject> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-
-    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
-    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
-    let ctor: JsFunction = store.get_named_property("MediaStreamAudioSourceNode")?;
-
-    let media_stream = ctx.get::<JsObject>(0)?;
-
-    // create options object according to MediaStreamAudioSourceNode ctor API
-    let mut options = ctx.env.create_object()?;
-    options.set("mediaStream", media_stream)?;
-
-    ctor.new_instance(&[js_this, options])
 }
 
 // ----------------------------------------------------
