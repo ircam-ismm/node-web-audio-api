@@ -1,5 +1,5 @@
 const { NotSupportedError } = require('./lib/errors.js');
-const { isFunction, isPlainObject, isPositiveInt, isPositiveNumber } = require('./lib/utils.js');
+const { isPlainObject, isPositiveInt, isPositiveNumber } = require('./lib/utils.js');
 
 module.exports = function patchOfflineAudioContext(bindings) {
   // @todo - EventTarget
@@ -35,19 +35,6 @@ module.exports = function patchOfflineAudioContext(bindings) {
       // bound to this, then we can safely finalize event target initialization
       // super.__initEventTarget__();
     }
-
-    // promisify sync APIs
-    async startRendering() {
-      return new Promise(async (resolve, reject) => {
-        try {
-          const audioBuffer = await super.startRendering();
-          resolve(audioBuffer);
-        } catch (err) {
-          reject(err);
-        }
-      });
-    }
-
   }
 
   return OfflineAudioContext;
