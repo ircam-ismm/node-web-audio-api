@@ -97,11 +97,15 @@ const utils = {
     return attrs;
   },
 
-  methods(idl) {
+  methods(idl, filterStartStop = true) {
     let methods = idl.members
-      .filter(member => member.constructor.name === 'Operation')
-      .filter(member => member.name !== 'start')
-      .filter(member => member.name !== 'stop')
+      .filter(member => member.constructor.name === 'Operation');
+
+    if (filterStartStop) {
+      methods = methods
+        .filter(member => member.name !== 'start')
+        .filter(member => member.name !== 'stop')
+    }
 
     return methods;
   },
@@ -191,51 +195,54 @@ function findInTree(name) {
   return tree.find(l => l.name === name);
 }
 
+console.log('-------------------------------------------------------------');
 console.log('## generating rs files');
-console.log('');
+console.log('-------------------------------------------------------------');
 
 let rsTemplates = path.join(__dirname, 'rs');
 let rsOutput = path.join(process.cwd(), 'src');
 
-// parse AudioNodes
-const nodesCodeTmpl = fs.readFileSync(path.join(rsTemplates, `audio_nodes.tmpl.rs`), 'utf8');
-const nodesTmpl = compile(nodesCodeTmpl);
+{ // parse AudioNodes
+  const nodesCodeTmpl = fs.readFileSync(path.join(rsTemplates, `audio_nodes.tmpl.rs`), 'utf8');
+  const nodesTmpl = compile(nodesCodeTmpl);
 
-// process audio nodes
-supportedNodes.sort().forEach((name, index) => {
-  const nodeIdl = findInTree(name);
-  const pathname = path.join(rsOutput, `${utils.slug(nodeIdl)}.rs`);
-  console.log(`> generating file: ${path.relative(process.cwd(), pathname)}`);
+  // process audio nodes
+  supportedNodes.sort().forEach((name, index) => {
+    const nodeIdl = findInTree(name);
+    const pathname = path.join(rsOutput, `${utils.slug(nodeIdl)}.rs`);
+    console.log(`> generating file: ${path.relative(process.cwd(), pathname)}`);
 
-  const code = nodesTmpl({
-    node: nodeIdl,
-    tree,
-    ...utils
+    const code = nodesTmpl({
+      node: nodeIdl,
+      tree,
+      ...utils
+    });
+
+    fs.writeFileSync(pathname, generatedPrefix(code));
+
+    audioNodes.push(nodeIdl);
   });
+}
 
-  fs.writeFileSync(pathname, generatedPrefix(code));
+{ // parse AudioContext
+  const audioContextCodeTmpl = fs.readFileSync(path.join(rsTemplates, 'audio_context.tmpl.rs'), 'utf8');
+  const audioContextTmpl = compile(audioContextCodeTmpl);
 
-  audioNodes.push(nodeIdl);
-});
+  ['AudioContext', 'OfflineAudioContext'].forEach((name, index) => {
+    const nodeIdl = findInTree(name);
+    const pathname = path.join(rsOutput, `${utils.slug(nodeIdl)}.rs`);
+    console.log(`> generating file: ${path.relative(process.cwd(), pathname)}`);
 
-// parse AudioContext
-const audioContextCodeTmpl = fs.readFileSync(path.join(rsTemplates, 'audio_context.tmpl.rs'), 'utf8');
-const audioContextTmpl = compile(audioContextCodeTmpl);
+    const code = audioContextTmpl({
+      node: nodeIdl,
+      nodes: audioNodes,
+      tree,
+      ...utils
+    });
 
-['AudioContext', 'OfflineAudioContext'].forEach((name, index) => {
-  const nodeIdl = findInTree(name);
-  const pathname = path.join(rsOutput, `${utils.slug(nodeIdl)}.rs`);
-  console.log(`> generating file: ${path.relative(process.cwd(), pathname)}`);
-
-  const code = audioContextTmpl({
-    node: nodeIdl,
-    nodes: audioNodes,
-    tree,
-    ...utils
+    fs.writeFileSync(pathname, generatedPrefix(code));
   });
-
-  fs.writeFileSync(pathname, generatedPrefix(code));
-});
+}
 
 // process other nodes and objects
 ['audio_param', 'audio_node', 'lib'].forEach(src => {
@@ -254,9 +261,9 @@ const audioContextTmpl = compile(audioContextCodeTmpl);
   fs.writeFileSync(pathname, generatedPrefix(code));
 });
 
-console.log('');
+console.log('-------------------------------------------------------------');
 console.log('## generating js files');
-console.log('');
+console.log('-------------------------------------------------------------');
 
 let jsTemplates = path.join(__dirname, 'js');
 let jsOutput = path.join(process.cwd(), 'js');
@@ -290,6 +297,22 @@ let jsOutput = path.join(process.cwd(), 'js');
   fs.writeFileSync(pathname, generatedPrefix(code));
 }
 
+['AudioNode', 'AudioScheduledSourceNode'].forEach((name, index) => {
+  const nodeIdl = findInTree(name);
+  const pathname = path.join(jsOutput, `${name}.mixin.js`);
+  console.log(`> generating file: ${path.relative(process.cwd(), pathname)}`);
+
+  const codeTmpl = fs.readFileSync(path.join(jsTemplates, `AudioNode.mixin.tmpl.js`), 'utf8');
+  const tmpl = compile(codeTmpl);
+
+  const code = tmpl({
+    node: nodeIdl,
+    tree,
+    ...utils
+  });
+
+  fs.writeFileSync(pathname, generatedPrefix(code));
+});
 
 console.log('');
 

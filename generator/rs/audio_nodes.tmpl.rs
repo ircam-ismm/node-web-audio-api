@@ -83,7 +83,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
     if ctx.length < 1 {
-        let msg = "Failed to construct '${d.name(d.node)}': 1 argument required, but only 0 present.";
+        let msg = "TypeError - Failed to construct '${d.name(d.node)}': 1 argument required, but only 0 present.";
         return Err(napi::Error::new(napi::Status::InvalidArg, msg));
     }
 
@@ -95,7 +95,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         let audio_context_str = &audio_context_utf8_name[..];
 
         if audio_context_str != "AudioContext" && audio_context_str != "OfflineAudioContext" {
-            let msg = "Failed to construct '${d.name(d.node)}': argument 0 should be an instance of BaseAudioContext";
+            let msg = "TypeError - Failed to construct '${d.name(d.node)}': argument 1 is not of type BaseAudioContext";
             return Err(napi::Error::new(napi::Status::InvalidArg, msg));
         }
 
@@ -105,7 +105,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         // > Throw error failed, status: [PendingException], raw message: "...", raw status: [InvalidArg]
         // > note: run with 'RUST_BACKTRACE=1' environment variable to display a backtrace
         // > fatal runtime error: failed to initiate panic, error 5
-        let msg = "Failed to construct '${d.name(d.node)}': argument 0 should be an instance of BaseAudioContext";
+        let msg = "TypeError - Failed to construct '${d.name(d.node)}': argument 1 is not of type BaseAudioContext";
         return Err(napi::Error::new(napi::Status::InvalidArg, msg));
     };
 
@@ -151,9 +151,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
                         case 'boolean':
                             return `
-                let some_${simple_slug}_js = options_js.get::<&str, JsBoolean>("${m.name}")?;
+                let some_${simple_slug}_js = options_js.get::<&str, JsObject>("${m.name}")?;
                 let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
-                    ${simple_slug}_js.try_into()?
+                    ${simple_slug}_js.coerce_to_bool()?.try_into()?
                 } else {
                     ${m.required ? `return Err(napi::Error::from_reason(
                         "Parameter ${d.name(m)} is required".to_string(),
@@ -163,9 +163,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
                         case 'unsigned long':
                             return `
-                let some_${simple_slug}_js = options_js.get::<&str, JsNumber>("${m.name}")?;
+                let some_${simple_slug}_js = options_js.get::<&str, JsObject>("${m.name}")?;
                 let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
-                    ${simple_slug}_js.get_double()? as usize
+                    ${simple_slug}_js.coerce_to_number()?.get_double()? as usize
                 } else {
                     ${m.required ? `return Err(napi::Error::from_reason(
                         "Parameter ${d.name(m)} is required".to_string(),
@@ -175,9 +175,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
                         case 'float':
                             return `
-                let some_${simple_slug}_js = options_js.get::<&str, JsNumber>("${m.name}")?;
+                let some_${simple_slug}_js = options_js.get::<&str, JsObject>("${m.name}")?;
                 let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
-                    ${simple_slug}_js.get_double()? as f32
+                    ${simple_slug}_js.coerce_to_number()?.get_double()? as f32
                 } else {
                     ${m.required ? `return Err(napi::Error::from_reason(
                         "Parameter ${d.name(m)} is required".to_string(),
@@ -188,9 +188,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
                         case 'double':
                             return `
-                let some_${simple_slug}_js = options_js.get::<&str, JsNumber>("${m.name}")?;
+                let some_${simple_slug}_js = options_js.get::<&str, JsObject>("${m.name}")?;
                 let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
-                    ${simple_slug}_js.get_double()?
+                    ${simple_slug}_js.coerce_to_number()?.get_double()?
                 } else {
                     ${m.required ? `return Err(napi::Error::from_reason(
                         "Parameter ${d.name(m)} is required".to_string(),
@@ -277,16 +277,16 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                 let channel_config_defaults = node_defaults.channel_config;
                     `}
 
-                let some_channel_count_js = options_js.get::<&str, JsNumber>("channelCount")?;
+                let some_channel_count_js = options_js.get::<&str, JsObject>("channelCount")?;
                 let channel_count = if let Some(channel_count_js) = some_channel_count_js {
-                    channel_count_js.get_double()? as usize
+                    channel_count_js.coerce_to_number()?.get_double()? as usize
                 } else {
                     channel_config_defaults.count
                 };
 
-                let some_channel_count_mode_js = options_js.get::<&str, JsString>("channelCountMode")?;
+                let some_channel_count_mode_js = options_js.get::<&str, JsObject>("channelCountMode")?;
                 let channel_count_mode = if let Some(channel_count_mode_js) = some_channel_count_mode_js {
-                    let channel_count_mode_str = channel_count_mode_js.into_utf8()?.into_owned()?;
+                    let channel_count_mode_str = channel_count_mode_js.coerce_to_string()?.into_utf8()?.into_owned()?;
 
                     match channel_count_mode_str.as_str() {
                         "max" => ChannelCountMode::Max,
@@ -298,9 +298,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                     channel_config_defaults.count_mode
                 };
 
-                let some_channel_interpretation_js = options_js.get::<&str, JsString>("channelInterpretation")?;
+                let some_channel_interpretation_js = options_js.get::<&str, JsObject>("channelInterpretation")?;
                 let channel_interpretation = if let Some(channel_interpretation_js) = some_channel_interpretation_js {
-                    let channel_interpretation_str = channel_interpretation_js.into_utf8()?.into_owned()?;
+                    let channel_interpretation_str = channel_interpretation_js.coerce_to_string()?.into_utf8()?.into_owned()?;
 
                     match channel_interpretation_str.as_str() {
                         "speakers" => ChannelInterpretation::Speakers,
@@ -521,7 +521,7 @@ ${d.name(d.node) !== 'AudioBufferSourceNode' ?
     match ctx.length {
         0 => node.start(),
         1 => {
-            let when = ctx.get::<JsNumber>(0)?.get_double()?;
+            let when = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
             node.start_at(when);
         }
         _ => (),
@@ -530,18 +530,18 @@ ${d.name(d.node) !== 'AudioBufferSourceNode' ?
     match ctx.length {
         0 => node.start(),
         1 => {
-            let when = ctx.get::<JsNumber>(0)?.get_double()?;
+            let when = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
             node.start_at(when);
         }
         2 => {
-            let when = ctx.get::<JsNumber>(0)?.get_double()?;
-            let offset = ctx.get::<JsNumber>(1)?.get_double()?;
+            let when = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
+            let offset = ctx.get::<JsObject>(1)?.coerce_to_number()?.get_double()?;
             node.start_at_with_offset(when, offset);
         }
         3 => {
-            let when = ctx.get::<JsNumber>(0)?.get_double()?;
-            let offset = ctx.get::<JsNumber>(1)?.get_double()?;
-            let duration = ctx.get::<JsNumber>(2)?.get_double()?;
+            let when = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
+            let offset = ctx.get::<JsObject>(1)?.coerce_to_number()?.get_double()?;
+            let duration = ctx.get::<JsObject>(2)?.coerce_to_number()?.get_double()?;
             node.start_at_with_offset_and_duration(when, offset, duration);
         }
         _ => (),
@@ -559,7 +559,7 @@ fn stop(ctx: CallContext) -> Result<JsUndefined> {
     match ctx.length {
         0 => node.stop(),
         1 => {
-            let when = ctx.get::<JsNumber>(0)?.try_into()?;
+            let when = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
             node.stop_at(when);
         }
         _ => (),
@@ -780,7 +780,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsBoolean>(0)?.try_into()?;
+    let value = ctx.get::<JsObject>(0)?.coerce_to_bool()?.try_into()?;
     node.set_${d.slug(attr)}(value);
 
     ctx.env.get_undefined()
@@ -795,7 +795,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()? as f32;
+    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()? as f32;
     node.set_${d.slug(attr)}(value);
 
     ctx.env.get_undefined()
@@ -810,7 +810,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()?;
+    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
     node.set_${d.slug(attr)}(value);
 
     ctx.env.get_undefined()
@@ -825,7 +825,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()? as usize;
+    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()? as usize;
     node.set_${d.slug(attr)}(value);
 
     ctx.env.get_undefined()
@@ -860,14 +860,14 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
             let idl = d.findInTree(attrType);
             let idlType;
 
+            // for debugging
             try {
                 idlType = d.type(idl);
             } catch(err) {
-                console.log('issue in getter');
+                console.log('issue in setter');
                 console.log(JSON.stringify(attr, null, 2));
                 return '';
             }
-
 
             switch (idlType) {
                 case 'enum':
@@ -878,7 +878,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let js_str = ctx.get::<JsString>(0)?;
+    let js_str = ctx.get::<JsObject>(0)?.coerce_to_string()?;
     let utf8_str = js_str.into_utf8()?.into_owned()?;
     let value = match utf8_str.as_str() {${idl.values.map(v => `
         "${v.value}" => ${idl.name}::${d.camelcase(v.value)},`).join('')}
@@ -943,13 +943,13 @@ fn ${d.slug(method)}(ctx: CallContext) -> Result<JsUndefined> {
         switch (d.memberType(arg)) {
             case 'float':
                 return `
-    let ${d.slug(arg.name)}_js = ctx.get::<JsNumber>(${index})?;
+    let ${d.slug(arg.name)}_js = ctx.get::<JsObject>(${index})?.coerce_to_number()?;
     let ${d.slug(arg.name)} = ${d.slug(arg.name)}_js.get_double()? as f32;
                 `;
                 break;
             case 'double':
                 return `
-    let ${d.slug(arg.name)}_js = ctx.get::<JsNumber>(${index})?;
+    let ${d.slug(arg.name)}_js = ctx.get::<JsObject>(${index})?.coerce_to_number()?;
     let ${d.slug(arg.name)} = ${d.slug(arg.name)}_js.get_double()? as f64;
                 `;
                 break;

@@ -97,8 +97,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
     if ctx.length < 1 {
-        let msg =
-            "Failed to construct 'AudioBufferSourceNode': 1 argument required, but only 0 present.";
+        let msg = "TypeError - Failed to construct 'AudioBufferSourceNode': 1 argument required, but only 0 present.";
         return Err(napi::Error::new(napi::Status::InvalidArg, msg));
     }
 
@@ -112,7 +111,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         let audio_context_str = &audio_context_utf8_name[..];
 
         if audio_context_str != "AudioContext" && audio_context_str != "OfflineAudioContext" {
-            let msg = "Failed to construct 'AudioBufferSourceNode': argument 0 should be an instance of BaseAudioContext";
+            let msg = "TypeError - Failed to construct 'AudioBufferSourceNode': argument 1 is not of type BaseAudioContext";
             return Err(napi::Error::new(napi::Status::InvalidArg, msg));
         }
 
@@ -122,7 +121,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         // > Throw error failed, status: [PendingException], raw message: "...", raw status: [InvalidArg]
         // > note: run with 'RUST_BACKTRACE=1' environment variable to display a backtrace
         // > fatal runtime error: failed to initiate panic, error 5
-        let msg = "Failed to construct 'AudioBufferSourceNode': argument 0 should be an instance of BaseAudioContext";
+        let msg = "TypeError - Failed to construct 'AudioBufferSourceNode': argument 1 is not of type BaseAudioContext";
         return Err(napi::Error::new(napi::Status::InvalidArg, msg));
     };
 
@@ -148,37 +147,37 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                     None
                 };
 
-                let some_detune_js = options_js.get::<&str, JsNumber>("detune")?;
+                let some_detune_js = options_js.get::<&str, JsObject>("detune")?;
                 let detune = if let Some(detune_js) = some_detune_js {
-                    detune_js.get_double()? as f32
+                    detune_js.coerce_to_number()?.get_double()? as f32
                 } else {
                     0.
                 };
 
-                let some_loop_js = options_js.get::<&str, JsBoolean>("loop")?;
+                let some_loop_js = options_js.get::<&str, JsObject>("loop")?;
                 let loop_ = if let Some(loop_js) = some_loop_js {
-                    loop_js.try_into()?
+                    loop_js.coerce_to_bool()?.try_into()?
                 } else {
                     false
                 };
 
-                let some_loop_end_js = options_js.get::<&str, JsNumber>("loopEnd")?;
+                let some_loop_end_js = options_js.get::<&str, JsObject>("loopEnd")?;
                 let loop_end = if let Some(loop_end_js) = some_loop_end_js {
-                    loop_end_js.get_double()?
+                    loop_end_js.coerce_to_number()?.get_double()?
                 } else {
                     0.
                 };
 
-                let some_loop_start_js = options_js.get::<&str, JsNumber>("loopStart")?;
+                let some_loop_start_js = options_js.get::<&str, JsObject>("loopStart")?;
                 let loop_start = if let Some(loop_start_js) = some_loop_start_js {
-                    loop_start_js.get_double()?
+                    loop_start_js.coerce_to_number()?.get_double()?
                 } else {
                     0.
                 };
 
-                let some_playback_rate_js = options_js.get::<&str, JsNumber>("playbackRate")?;
+                let some_playback_rate_js = options_js.get::<&str, JsObject>("playbackRate")?;
                 let playback_rate = if let Some(playback_rate_js) = some_playback_rate_js {
-                    playback_rate_js.get_double()? as f32
+                    playback_rate_js.coerce_to_number()?.get_double()? as f32
                 } else {
                     1.
                 };
@@ -372,18 +371,18 @@ fn start(ctx: CallContext) -> Result<JsUndefined> {
     match ctx.length {
         0 => node.start(),
         1 => {
-            let when = ctx.get::<JsNumber>(0)?.get_double()?;
+            let when = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
             node.start_at(when);
         }
         2 => {
-            let when = ctx.get::<JsNumber>(0)?.get_double()?;
-            let offset = ctx.get::<JsNumber>(1)?.get_double()?;
+            let when = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
+            let offset = ctx.get::<JsObject>(1)?.coerce_to_number()?.get_double()?;
             node.start_at_with_offset(when, offset);
         }
         3 => {
-            let when = ctx.get::<JsNumber>(0)?.get_double()?;
-            let offset = ctx.get::<JsNumber>(1)?.get_double()?;
-            let duration = ctx.get::<JsNumber>(2)?.get_double()?;
+            let when = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
+            let offset = ctx.get::<JsObject>(1)?.coerce_to_number()?.get_double()?;
+            let duration = ctx.get::<JsObject>(2)?.coerce_to_number()?.get_double()?;
             node.start_at_with_offset_and_duration(when, offset, duration);
         }
         _ => (),
@@ -401,7 +400,7 @@ fn stop(ctx: CallContext) -> Result<JsUndefined> {
     match ctx.length {
         0 => node.stop(),
         1 => {
-            let when = ctx.get::<JsNumber>(0)?.try_into()?;
+            let when = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
             node.stop_at(when);
         }
         _ => (),
@@ -545,7 +544,7 @@ fn set_loop(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsBoolean>(0)?.try_into()?;
+    let value = ctx.get::<JsObject>(0)?.coerce_to_bool()?.try_into()?;
     node.set_loop(value);
 
     ctx.env.get_undefined()
@@ -557,7 +556,7 @@ fn set_loop_start(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()?;
+    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
     node.set_loop_start(value);
 
     ctx.env.get_undefined()
@@ -569,7 +568,7 @@ fn set_loop_end(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()?;
+    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
     node.set_loop_end(value);
 
     ctx.env.get_undefined()

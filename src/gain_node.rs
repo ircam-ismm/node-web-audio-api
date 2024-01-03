@@ -74,7 +74,8 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
     if ctx.length < 1 {
-        let msg = "Failed to construct 'GainNode': 1 argument required, but only 0 present.";
+        let msg =
+            "TypeError - Failed to construct 'GainNode': 1 argument required, but only 0 present.";
         return Err(napi::Error::new(napi::Status::InvalidArg, msg));
     }
 
@@ -88,7 +89,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         let audio_context_str = &audio_context_utf8_name[..];
 
         if audio_context_str != "AudioContext" && audio_context_str != "OfflineAudioContext" {
-            let msg = "Failed to construct 'GainNode': argument 0 should be an instance of BaseAudioContext";
+            let msg = "TypeError - Failed to construct 'GainNode': argument 1 is not of type BaseAudioContext";
             return Err(napi::Error::new(napi::Status::InvalidArg, msg));
         }
 
@@ -98,8 +99,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         // > Throw error failed, status: [PendingException], raw message: "...", raw status: [InvalidArg]
         // > note: run with 'RUST_BACKTRACE=1' environment variable to display a backtrace
         // > fatal runtime error: failed to initiate panic, error 5
-        let msg =
-            "Failed to construct 'GainNode': argument 0 should be an instance of BaseAudioContext";
+        let msg = "TypeError - Failed to construct 'GainNode': argument 1 is not of type BaseAudioContext";
         return Err(napi::Error::new(napi::Status::InvalidArg, msg));
     };
 
@@ -117,9 +117,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let options = if let Ok(either_options) = ctx.try_get::<JsObject>(1) {
         match either_options {
             Either::A(options_js) => {
-                let some_gain_js = options_js.get::<&str, JsNumber>("gain")?;
+                let some_gain_js = options_js.get::<&str, JsObject>("gain")?;
                 let gain = if let Some(gain_js) = some_gain_js {
-                    gain_js.get_double()? as f32
+                    gain_js.coerce_to_number()?.get_double()? as f32
                 } else {
                     1.
                 };
@@ -127,36 +127,40 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                 let node_defaults = GainOptions::default();
                 let channel_config_defaults = node_defaults.channel_config;
 
-                let some_channel_count_js = options_js.get::<&str, JsNumber>("channelCount")?;
+                let some_channel_count_js = options_js.get::<&str, JsObject>("channelCount")?;
                 let channel_count = if let Some(channel_count_js) = some_channel_count_js {
-                    channel_count_js.get_double()? as usize
+                    channel_count_js.coerce_to_number()?.get_double()? as usize
                 } else {
                     channel_config_defaults.count
                 };
 
                 let some_channel_count_mode_js =
-                    options_js.get::<&str, JsString>("channelCountMode")?;
-                let channel_count_mode = if let Some(channel_count_mode_js) =
-                    some_channel_count_mode_js
-                {
-                    let channel_count_mode_str = channel_count_mode_js.into_utf8()?.into_owned()?;
+                    options_js.get::<&str, JsObject>("channelCountMode")?;
+                let channel_count_mode =
+                    if let Some(channel_count_mode_js) = some_channel_count_mode_js {
+                        let channel_count_mode_str = channel_count_mode_js
+                            .coerce_to_string()?
+                            .into_utf8()?
+                            .into_owned()?;
 
-                    match channel_count_mode_str.as_str() {
-                        "max" => ChannelCountMode::Max,
-                        "clamped-max" => ChannelCountMode::ClampedMax,
-                        "explicit" => ChannelCountMode::Explicit,
-                        _ => panic!("undefined value for ChannelCountMode"),
-                    }
-                } else {
-                    channel_config_defaults.count_mode
-                };
+                        match channel_count_mode_str.as_str() {
+                            "max" => ChannelCountMode::Max,
+                            "clamped-max" => ChannelCountMode::ClampedMax,
+                            "explicit" => ChannelCountMode::Explicit,
+                            _ => panic!("undefined value for ChannelCountMode"),
+                        }
+                    } else {
+                        channel_config_defaults.count_mode
+                    };
 
                 let some_channel_interpretation_js =
-                    options_js.get::<&str, JsString>("channelInterpretation")?;
+                    options_js.get::<&str, JsObject>("channelInterpretation")?;
                 let channel_interpretation =
                     if let Some(channel_interpretation_js) = some_channel_interpretation_js {
-                        let channel_interpretation_str =
-                            channel_interpretation_js.into_utf8()?.into_owned()?;
+                        let channel_interpretation_str = channel_interpretation_js
+                            .coerce_to_string()?
+                            .into_utf8()?
+                            .into_owned()?;
 
                         match channel_interpretation_str.as_str() {
                             "speakers" => ChannelInterpretation::Speakers,

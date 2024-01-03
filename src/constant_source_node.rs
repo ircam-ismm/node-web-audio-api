@@ -82,8 +82,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
     if ctx.length < 1 {
-        let msg =
-            "Failed to construct 'ConstantSourceNode': 1 argument required, but only 0 present.";
+        let msg = "TypeError - Failed to construct 'ConstantSourceNode': 1 argument required, but only 0 present.";
         return Err(napi::Error::new(napi::Status::InvalidArg, msg));
     }
 
@@ -97,7 +96,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         let audio_context_str = &audio_context_utf8_name[..];
 
         if audio_context_str != "AudioContext" && audio_context_str != "OfflineAudioContext" {
-            let msg = "Failed to construct 'ConstantSourceNode': argument 0 should be an instance of BaseAudioContext";
+            let msg = "TypeError - Failed to construct 'ConstantSourceNode': argument 1 is not of type BaseAudioContext";
             return Err(napi::Error::new(napi::Status::InvalidArg, msg));
         }
 
@@ -107,7 +106,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         // > Throw error failed, status: [PendingException], raw message: "...", raw status: [InvalidArg]
         // > note: run with 'RUST_BACKTRACE=1' environment variable to display a backtrace
         // > fatal runtime error: failed to initiate panic, error 5
-        let msg = "Failed to construct 'ConstantSourceNode': argument 0 should be an instance of BaseAudioContext";
+        let msg = "TypeError - Failed to construct 'ConstantSourceNode': argument 1 is not of type BaseAudioContext";
         return Err(napi::Error::new(napi::Status::InvalidArg, msg));
     };
 
@@ -125,9 +124,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let options = if let Ok(either_options) = ctx.try_get::<JsObject>(1) {
         match either_options {
             Either::A(options_js) => {
-                let some_offset_js = options_js.get::<&str, JsNumber>("offset")?;
+                let some_offset_js = options_js.get::<&str, JsObject>("offset")?;
                 let offset = if let Some(offset_js) = some_offset_js {
-                    offset_js.get_double()? as f32
+                    offset_js.coerce_to_number()?.get_double()? as f32
                 } else {
                     1.
                 };
@@ -307,7 +306,7 @@ fn start(ctx: CallContext) -> Result<JsUndefined> {
     match ctx.length {
         0 => node.start(),
         1 => {
-            let when = ctx.get::<JsNumber>(0)?.get_double()?;
+            let when = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
             node.start_at(when);
         }
         _ => (),
@@ -325,7 +324,7 @@ fn stop(ctx: CallContext) -> Result<JsUndefined> {
     match ctx.length {
         0 => node.stop(),
         1 => {
-            let when = ctx.get::<JsNumber>(0)?.try_into()?;
+            let when = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
             node.stop_at(when);
         }
         _ => (),

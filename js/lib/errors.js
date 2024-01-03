@@ -56,29 +56,6 @@ exports.throwSanitizedError = function throwSanitizedError(err) {
     throw error;
   } // etc...
 
-  // not handled yet...
+  console.warn('[lib/errors.js] Unhandled error type', err.name, err.message);
   throw err;
 }
-
-exports.errorHandler = {
-  set(obj, prop, value) {
-    console.log(obj, prop, value);
-    try {
-      return Reflect.set(obj, prop, value);
-    } catch (err) {
-      console.log(err.message);
-      throwSanitizedError(err);
-    }
-    return true;
-  },
-  apply(target, thisArg, argumentsList) {
-    console.log('in apply');
-    try {
-      return Reflect.apply(target, thisArg, argumentsList);
-    } catch (err) {
-      throwSanitizedError(err);
-    }
-    return true;
-  },
-};
-

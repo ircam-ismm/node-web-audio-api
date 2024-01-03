@@ -1,5 +1,5 @@
 const EventTargetMixin = require('./EventTarget.mixin.js');
-const { errorHandler, throwSanitizedError } = require('./lib/errors.js');
+const { throwSanitizedError } = require('./lib/errors.js');
 
 module.exports = function(NativeAudioBufferSourceNode) {
   class AudioBufferSourceNode extends EventTargetMixin(NativeAudioBufferSourceNode, ['ended']) {
@@ -10,9 +10,12 @@ module.exports = function(NativeAudioBufferSourceNode) {
       super.__initEventTarget__();
     }
 
-    start(when) {
+    // setters can fail too, e.g.
+    // src.buffer = 'test';
+
+    start(...args) {
       try {
-        super.start(when);
+        super.start(...args);
       } catch (err) {
         throwSanitizedError(err);
       }

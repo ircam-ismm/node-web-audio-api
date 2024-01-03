@@ -81,7 +81,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
     if ctx.length < 1 {
-        let msg = "Failed to construct 'ConvolverNode': 1 argument required, but only 0 present.";
+        let msg = "TypeError - Failed to construct 'ConvolverNode': 1 argument required, but only 0 present.";
         return Err(napi::Error::new(napi::Status::InvalidArg, msg));
     }
 
@@ -95,7 +95,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         let audio_context_str = &audio_context_utf8_name[..];
 
         if audio_context_str != "AudioContext" && audio_context_str != "OfflineAudioContext" {
-            let msg = "Failed to construct 'ConvolverNode': argument 0 should be an instance of BaseAudioContext";
+            let msg = "TypeError - Failed to construct 'ConvolverNode': argument 1 is not of type BaseAudioContext";
             return Err(napi::Error::new(napi::Status::InvalidArg, msg));
         }
 
@@ -105,7 +105,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         // > Throw error failed, status: [PendingException], raw message: "...", raw status: [InvalidArg]
         // > note: run with 'RUST_BACKTRACE=1' environment variable to display a backtrace
         // > fatal runtime error: failed to initiate panic, error 5
-        let msg = "Failed to construct 'ConvolverNode': argument 0 should be an instance of BaseAudioContext";
+        let msg = "TypeError - Failed to construct 'ConvolverNode': argument 1 is not of type BaseAudioContext";
         return Err(napi::Error::new(napi::Status::InvalidArg, msg));
     };
 
@@ -132,10 +132,10 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                 };
 
                 let some_disable_normalization_js =
-                    options_js.get::<&str, JsBoolean>("disableNormalization")?;
+                    options_js.get::<&str, JsObject>("disableNormalization")?;
                 let disable_normalization =
                     if let Some(disable_normalization_js) = some_disable_normalization_js {
-                        disable_normalization_js.try_into()?
+                        disable_normalization_js.coerce_to_bool()?.try_into()?
                     } else {
                         false
                     };
@@ -143,36 +143,40 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                 let node_defaults = ConvolverOptions::default();
                 let channel_config_defaults = node_defaults.channel_config;
 
-                let some_channel_count_js = options_js.get::<&str, JsNumber>("channelCount")?;
+                let some_channel_count_js = options_js.get::<&str, JsObject>("channelCount")?;
                 let channel_count = if let Some(channel_count_js) = some_channel_count_js {
-                    channel_count_js.get_double()? as usize
+                    channel_count_js.coerce_to_number()?.get_double()? as usize
                 } else {
                     channel_config_defaults.count
                 };
 
                 let some_channel_count_mode_js =
-                    options_js.get::<&str, JsString>("channelCountMode")?;
-                let channel_count_mode = if let Some(channel_count_mode_js) =
-                    some_channel_count_mode_js
-                {
-                    let channel_count_mode_str = channel_count_mode_js.into_utf8()?.into_owned()?;
+                    options_js.get::<&str, JsObject>("channelCountMode")?;
+                let channel_count_mode =
+                    if let Some(channel_count_mode_js) = some_channel_count_mode_js {
+                        let channel_count_mode_str = channel_count_mode_js
+                            .coerce_to_string()?
+                            .into_utf8()?
+                            .into_owned()?;
 
-                    match channel_count_mode_str.as_str() {
-                        "max" => ChannelCountMode::Max,
-                        "clamped-max" => ChannelCountMode::ClampedMax,
-                        "explicit" => ChannelCountMode::Explicit,
-                        _ => panic!("undefined value for ChannelCountMode"),
-                    }
-                } else {
-                    channel_config_defaults.count_mode
-                };
+                        match channel_count_mode_str.as_str() {
+                            "max" => ChannelCountMode::Max,
+                            "clamped-max" => ChannelCountMode::ClampedMax,
+                            "explicit" => ChannelCountMode::Explicit,
+                            _ => panic!("undefined value for ChannelCountMode"),
+                        }
+                    } else {
+                        channel_config_defaults.count_mode
+                    };
 
                 let some_channel_interpretation_js =
-                    options_js.get::<&str, JsString>("channelInterpretation")?;
+                    options_js.get::<&str, JsObject>("channelInterpretation")?;
                 let channel_interpretation =
                     if let Some(channel_interpretation_js) = some_channel_interpretation_js {
-                        let channel_interpretation_str =
-                            channel_interpretation_js.into_utf8()?.into_owned()?;
+                        let channel_interpretation_str = channel_interpretation_js
+                            .coerce_to_string()?
+                            .into_utf8()?
+                            .into_owned()?;
 
                         match channel_interpretation_str.as_str() {
                             "speakers" => ChannelInterpretation::Speakers,
@@ -403,7 +407,7 @@ fn set_normalize(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiConvolverNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsBoolean>(0)?.try_into()?;
+    let value = ctx.get::<JsObject>(0)?.coerce_to_bool()?.try_into()?;
     node.set_normalize(value);
 
     ctx.env.get_undefined()

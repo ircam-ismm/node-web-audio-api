@@ -103,7 +103,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
     if ctx.length < 1 {
-        let msg = "Failed to construct 'AnalyserNode': 1 argument required, but only 0 present.";
+        let msg = "TypeError - Failed to construct 'AnalyserNode': 1 argument required, but only 0 present.";
         return Err(napi::Error::new(napi::Status::InvalidArg, msg));
     }
 
@@ -117,7 +117,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         let audio_context_str = &audio_context_utf8_name[..];
 
         if audio_context_str != "AudioContext" && audio_context_str != "OfflineAudioContext" {
-            let msg = "Failed to construct 'AnalyserNode': argument 0 should be an instance of BaseAudioContext";
+            let msg = "TypeError - Failed to construct 'AnalyserNode': argument 1 is not of type BaseAudioContext";
             return Err(napi::Error::new(napi::Status::InvalidArg, msg));
         }
 
@@ -127,7 +127,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         // > Throw error failed, status: [PendingException], raw message: "...", raw status: [InvalidArg]
         // > note: run with 'RUST_BACKTRACE=1' environment variable to display a backtrace
         // > fatal runtime error: failed to initiate panic, error 5
-        let msg = "Failed to construct 'AnalyserNode': argument 0 should be an instance of BaseAudioContext";
+        let msg = "TypeError - Failed to construct 'AnalyserNode': argument 1 is not of type BaseAudioContext";
         return Err(napi::Error::new(napi::Status::InvalidArg, msg));
     };
 
@@ -145,32 +145,34 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let options = if let Ok(either_options) = ctx.try_get::<JsObject>(1) {
         match either_options {
             Either::A(options_js) => {
-                let some_fft_size_js = options_js.get::<&str, JsNumber>("fftSize")?;
+                let some_fft_size_js = options_js.get::<&str, JsObject>("fftSize")?;
                 let fft_size = if let Some(fft_size_js) = some_fft_size_js {
-                    fft_size_js.get_double()? as usize
+                    fft_size_js.coerce_to_number()?.get_double()? as usize
                 } else {
                     2048
                 };
 
-                let some_max_decibels_js = options_js.get::<&str, JsNumber>("maxDecibels")?;
+                let some_max_decibels_js = options_js.get::<&str, JsObject>("maxDecibels")?;
                 let max_decibels = if let Some(max_decibels_js) = some_max_decibels_js {
-                    max_decibels_js.get_double()?
+                    max_decibels_js.coerce_to_number()?.get_double()?
                 } else {
                     -30.
                 };
 
-                let some_min_decibels_js = options_js.get::<&str, JsNumber>("minDecibels")?;
+                let some_min_decibels_js = options_js.get::<&str, JsObject>("minDecibels")?;
                 let min_decibels = if let Some(min_decibels_js) = some_min_decibels_js {
-                    min_decibels_js.get_double()?
+                    min_decibels_js.coerce_to_number()?.get_double()?
                 } else {
                     -100.
                 };
 
                 let some_smoothing_time_constant_js =
-                    options_js.get::<&str, JsNumber>("smoothingTimeConstant")?;
+                    options_js.get::<&str, JsObject>("smoothingTimeConstant")?;
                 let smoothing_time_constant =
                     if let Some(smoothing_time_constant_js) = some_smoothing_time_constant_js {
-                        smoothing_time_constant_js.get_double()?
+                        smoothing_time_constant_js
+                            .coerce_to_number()?
+                            .get_double()?
                     } else {
                         0.8
                     };
@@ -178,36 +180,40 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                 let node_defaults = AnalyserOptions::default();
                 let channel_config_defaults = node_defaults.channel_config;
 
-                let some_channel_count_js = options_js.get::<&str, JsNumber>("channelCount")?;
+                let some_channel_count_js = options_js.get::<&str, JsObject>("channelCount")?;
                 let channel_count = if let Some(channel_count_js) = some_channel_count_js {
-                    channel_count_js.get_double()? as usize
+                    channel_count_js.coerce_to_number()?.get_double()? as usize
                 } else {
                     channel_config_defaults.count
                 };
 
                 let some_channel_count_mode_js =
-                    options_js.get::<&str, JsString>("channelCountMode")?;
-                let channel_count_mode = if let Some(channel_count_mode_js) =
-                    some_channel_count_mode_js
-                {
-                    let channel_count_mode_str = channel_count_mode_js.into_utf8()?.into_owned()?;
+                    options_js.get::<&str, JsObject>("channelCountMode")?;
+                let channel_count_mode =
+                    if let Some(channel_count_mode_js) = some_channel_count_mode_js {
+                        let channel_count_mode_str = channel_count_mode_js
+                            .coerce_to_string()?
+                            .into_utf8()?
+                            .into_owned()?;
 
-                    match channel_count_mode_str.as_str() {
-                        "max" => ChannelCountMode::Max,
-                        "clamped-max" => ChannelCountMode::ClampedMax,
-                        "explicit" => ChannelCountMode::Explicit,
-                        _ => panic!("undefined value for ChannelCountMode"),
-                    }
-                } else {
-                    channel_config_defaults.count_mode
-                };
+                        match channel_count_mode_str.as_str() {
+                            "max" => ChannelCountMode::Max,
+                            "clamped-max" => ChannelCountMode::ClampedMax,
+                            "explicit" => ChannelCountMode::Explicit,
+                            _ => panic!("undefined value for ChannelCountMode"),
+                        }
+                    } else {
+                        channel_config_defaults.count_mode
+                    };
 
                 let some_channel_interpretation_js =
-                    options_js.get::<&str, JsString>("channelInterpretation")?;
+                    options_js.get::<&str, JsObject>("channelInterpretation")?;
                 let channel_interpretation =
                     if let Some(channel_interpretation_js) = some_channel_interpretation_js {
-                        let channel_interpretation_str =
-                            channel_interpretation_js.into_utf8()?.into_owned()?;
+                        let channel_interpretation_str = channel_interpretation_js
+                            .coerce_to_string()?
+                            .into_utf8()?
+                            .into_owned()?;
 
                         match channel_interpretation_str.as_str() {
                             "speakers" => ChannelInterpretation::Speakers,
@@ -451,7 +457,7 @@ fn set_fft_size(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()? as usize;
+    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()? as usize;
     node.set_fft_size(value);
 
     ctx.env.get_undefined()
@@ -463,7 +469,7 @@ fn set_min_decibels(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()?;
+    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
     node.set_min_decibels(value);
 
     ctx.env.get_undefined()
@@ -475,7 +481,7 @@ fn set_max_decibels(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()?;
+    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
     node.set_max_decibels(value);
 
     ctx.env.get_undefined()
@@ -487,7 +493,7 @@ fn set_smoothing_time_constant(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()?;
+    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
     node.set_smoothing_time_constant(value);
 
     ctx.env.get_undefined()
