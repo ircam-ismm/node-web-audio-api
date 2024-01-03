@@ -41,6 +41,8 @@ const rootURL = 'webaudio';
 const setup = window => {
   Object.assign(window, nodeWebAudioAPI);
 
+  window.navigator.mediaDevices = nodeWebAudioAPI.mediaDevices;
+
   // seems required (weirdly...), cf. `the-audiobuffer-interface/audiobuffer.html`
   window.Float32Array = Float32Array;
 
