@@ -25,7 +25,7 @@ const AudioNodeMixin = require('./AudioNode.mixin.js');
 
 module.exports = (NativeChannelMergerNode) => {
 
-  const EventTarget = EventTargetMixin(NativeChannelMergerNode, ['ended']);
+  const EventTarget = EventTargetMixin(NativeChannelMergerNode);
   const AudioNode = AudioNodeMixin(EventTarget);
 
   class ChannelMergerNode extends AudioNode {

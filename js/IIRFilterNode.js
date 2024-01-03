@@ -25,7 +25,7 @@ const AudioNodeMixin = require('./AudioNode.mixin.js');
 
 module.exports = (NativeIIRFilterNode) => {
 
-  const EventTarget = EventTargetMixin(NativeIIRFilterNode, ['ended']);
+  const EventTarget = EventTargetMixin(NativeIIRFilterNode);
   const AudioNode = AudioNodeMixin(EventTarget);
 
   class IIRFilterNode extends AudioNode {

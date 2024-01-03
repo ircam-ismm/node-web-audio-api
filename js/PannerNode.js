@@ -25,7 +25,7 @@ const AudioNodeMixin = require('./AudioNode.mixin.js');
 
 module.exports = (NativePannerNode) => {
 
-  const EventTarget = EventTargetMixin(NativePannerNode, ['ended']);
+  const EventTarget = EventTargetMixin(NativePannerNode);
   const AudioNode = AudioNodeMixin(EventTarget);
 
   class PannerNode extends AudioNode {

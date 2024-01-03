@@ -25,7 +25,7 @@ const AudioNodeMixin = require('./AudioNode.mixin.js');
 
 module.exports = (NativeBiquadFilterNode) => {
 
-  const EventTarget = EventTargetMixin(NativeBiquadFilterNode, ['ended']);
+  const EventTarget = EventTargetMixin(NativeBiquadFilterNode);
   const AudioNode = AudioNodeMixin(EventTarget);
 
   class BiquadFilterNode extends AudioNode {

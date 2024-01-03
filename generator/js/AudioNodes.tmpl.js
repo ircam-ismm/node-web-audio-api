@@ -19,7 +19,7 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `
       super.__initEventTarget__();
     }
 `: `
-  const EventTarget = EventTargetMixin(Native${d.name(d.node)}, ['ended']);
+  const EventTarget = EventTargetMixin(Native${d.name(d.node)});
   const AudioNode = AudioNodeMixin(EventTarget);
 
   class ${d.name(d.node)} extends AudioNode {

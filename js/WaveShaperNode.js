@@ -25,7 +25,7 @@ const AudioNodeMixin = require('./AudioNode.mixin.js');
 
 module.exports = (NativeWaveShaperNode) => {
 
-  const EventTarget = EventTargetMixin(NativeWaveShaperNode, ['ended']);
+  const EventTarget = EventTargetMixin(NativeWaveShaperNode);
   const AudioNode = AudioNodeMixin(EventTarget);
 
   class WaveShaperNode extends AudioNode {

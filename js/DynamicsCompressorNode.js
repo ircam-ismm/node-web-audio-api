@@ -25,7 +25,7 @@ const AudioNodeMixin = require('./AudioNode.mixin.js');
 
 module.exports = (NativeDynamicsCompressorNode) => {
 
-  const EventTarget = EventTargetMixin(NativeDynamicsCompressorNode, ['ended']);
+  const EventTarget = EventTargetMixin(NativeDynamicsCompressorNode);
   const AudioNode = AudioNodeMixin(EventTarget);
 
   class DynamicsCompressorNode extends AudioNode {

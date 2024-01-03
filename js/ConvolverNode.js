@@ -25,7 +25,7 @@ const AudioNodeMixin = require('./AudioNode.mixin.js');
 
 module.exports = (NativeConvolverNode) => {
 
-  const EventTarget = EventTargetMixin(NativeConvolverNode, ['ended']);
+  const EventTarget = EventTargetMixin(NativeConvolverNode);
   const AudioNode = AudioNodeMixin(EventTarget);
 
   class ConvolverNode extends AudioNode {
