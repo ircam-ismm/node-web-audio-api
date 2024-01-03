@@ -2,10 +2,10 @@ module.exports = function monkeyPatch(nativeBinding) {
   // --------------------------------------------------------------------------
   // Monkey Patch Web Audio API
   // --------------------------------------------------------------------------
-  nativeBinding.AudioBufferSourceNode = require('./AudioBufferSourceNode.js')(nativeBinding.AudioBufferSourceNode);
-  nativeBinding.ConstantSourceNode = require('./ConstantSourceNode.js')(nativeBinding.ConstantSourceNode);
-  nativeBinding.OscillatorNode = require('./OscillatorNode.js')(nativeBinding.OscillatorNode);
-
+${d.nodes.map((node) => {
+  return `
+  nativeBinding.${d.name(node)} = require('./${d.name(node)}.js')(nativeBinding.${d.name(node)});`
+}).join('')}
 
   nativeBinding.AudioContext = require('./AudioContext.js')(nativeBinding);
   nativeBinding.OfflineAudioContext = require('./OfflineAudioContext.js')(nativeBinding);
@@ -22,7 +22,7 @@ module.exports = function monkeyPatch(nativeBinding) {
   const getUserMediaSync = nativeBinding.mediaDevices.getUserMedia;
   nativeBinding.mediaDevices.getUserMedia = async function getUserMedia(options) {
     if (options === undefined) {
-      throw new TypeError(`Failed to execute 'getUserMedia' on 'MediaDevices': audio must be requested`);
+      throw new TypeError('Failed to execute "getUserMedia" on "MediaDevices": audio must be requested');
     }
 
     const stream = getUserMediaSync(options);
@@ -31,3 +31,4 @@ module.exports = function monkeyPatch(nativeBinding) {
 
   return nativeBinding;
 };
+

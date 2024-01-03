@@ -17,57 +17,40 @@
 // -------------------------------------------------------------------------- //
 // -------------------------------------------------------------------------- //
 
-const { throwSanitizedError } = require('./lib/errors.js');
+const EventTargetMixin = require('./EventTarget.mixin.js');
+const AudioNodeMixin = require('./AudioNode.mixin.js');
 
-module.exports = (superclass) => {
-  class AudioNode extends superclass {
+
+module.exports = (NativeConvolverNode) => {
+
+  const EventTarget = EventTargetMixin(NativeConvolverNode, ['ended']);
+  const AudioNode = AudioNodeMixin(EventTarget);
+
+  class ConvolverNode extends AudioNode {
+
     // getters
 
-    get context() {
-      return super.context;
+    get buffer() {
+      return super.buffer;
     }
 
-    get numberOfInputs() {
-      return super.numberOfInputs;
-    }
-
-    get numberOfOutputs() {
-      return super.numberOfOutputs;
-    }
-
-    get channelCount() {
-      return super.channelCount;
-    }
-
-    get channelCountMode() {
-      return super.channelCountMode;
-    }
-
-    get channelInterpretation() {
-      return super.channelInterpretation;
+    get normalize() {
+      return super.normalize;
     }
 
     // setters
 
-    set channelCount(value) {
+    set buffer(value) {
       try {
-        super.channelCount = value;
+        super.buffer = value;
       } catch (err) {
         throwSanitizedError(err);
       }
     }
 
-    set channelCountMode(value) {
+    set normalize(value) {
       try {
-        super.channelCountMode = value;
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
-    set channelInterpretation(value) {
-      try {
-        super.channelInterpretation = value;
+        super.normalize = value;
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -75,25 +58,10 @@ module.exports = (superclass) => {
 
     // methods
     
-    connect(...args) {
-      try {
-        return super.connect(...args);
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
-    disconnect(...args) {
-      try {
-        return super.disconnect(...args);
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
   }
 
-  return AudioNode;
+  return ConvolverNode;
 }
+
 
   

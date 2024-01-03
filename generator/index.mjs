@@ -271,14 +271,26 @@ let jsOutput = path.join(process.cwd(), 'js');
 // create the mjs export file
 {
   console.log('> generating file: index.mjs (esm re-export)');
-  const esmIndexCodeTempl = fs.readFileSync(path.join(jsTemplates, `index.tmpl.mjs`), 'utf8');
-  const esmIndexTmpl = compile(esmIndexCodeTempl);
-  const esmIndexCode = esmIndexTmpl({
+  const codeTempl = fs.readFileSync(path.join(jsTemplates, `index.tmpl.mjs`), 'utf8');
+  const tmpl = compile(codeTempl);
+  const code = tmpl({
     nodes: audioNodes,
     ...utils,
   });
 
-  fs.writeFileSync(path.join(process.cwd(), 'index.mjs'), generatedPrefix(esmIndexCode));
+  fs.writeFileSync(path.join(process.cwd(), 'index.mjs'), generatedPrefix(code));
+}
+
+{
+  console.log('> generating file: monkey-patch.js');
+  const codeTmpl = fs.readFileSync(path.join(jsTemplates, `monkey-patch.tmpl.js`), 'utf8');
+  const tmpl = compile(codeTmpl);
+  const code = tmpl({
+    nodes: audioNodes,
+    ...utils,
+  });
+
+  fs.writeFileSync(path.join(jsOutput, 'monkey-patch.js'), generatedPrefix(code));
 }
 
 {
@@ -303,6 +315,23 @@ let jsOutput = path.join(process.cwd(), 'js');
   console.log(`> generating file: ${path.relative(process.cwd(), pathname)}`);
 
   const codeTmpl = fs.readFileSync(path.join(jsTemplates, `AudioNode.mixin.tmpl.js`), 'utf8');
+  const tmpl = compile(codeTmpl);
+
+  const code = tmpl({
+    node: nodeIdl,
+    tree,
+    ...utils
+  });
+
+  fs.writeFileSync(pathname, generatedPrefix(code));
+});
+
+audioNodes.forEach((nodeIdl, index) => {
+  // const nodeIdl = findInTree(name);
+  const pathname = path.join(jsOutput, `${utils.name(nodeIdl)}.js`);
+  console.log(`> generating file: ${path.relative(process.cwd(), pathname)}`);
+
+  const codeTmpl = fs.readFileSync(path.join(jsTemplates, `AudioNodes.tmpl.js`), 'utf8');
   const tmpl = compile(codeTmpl);
 
   const code = tmpl({

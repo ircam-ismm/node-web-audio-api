@@ -17,57 +17,68 @@
 // -------------------------------------------------------------------------- //
 // -------------------------------------------------------------------------- //
 
-const { throwSanitizedError } = require('./lib/errors.js');
+const EventTargetMixin = require('./EventTarget.mixin.js');
+const AudioNodeMixin = require('./AudioNode.mixin.js');
 
-module.exports = (superclass) => {
-  class AudioNode extends superclass {
+
+module.exports = (NativeAnalyserNode) => {
+
+  const EventTarget = EventTargetMixin(NativeAnalyserNode, ['ended']);
+  const AudioNode = AudioNodeMixin(EventTarget);
+
+  class AnalyserNode extends AudioNode {
+
     // getters
 
-    get context() {
-      return super.context;
+    get fftSize() {
+      return super.fftSize;
     }
 
-    get numberOfInputs() {
-      return super.numberOfInputs;
+    get frequencyBinCount() {
+      return super.frequencyBinCount;
     }
 
-    get numberOfOutputs() {
-      return super.numberOfOutputs;
+    get minDecibels() {
+      return super.minDecibels;
     }
 
-    get channelCount() {
-      return super.channelCount;
+    get maxDecibels() {
+      return super.maxDecibels;
     }
 
-    get channelCountMode() {
-      return super.channelCountMode;
-    }
-
-    get channelInterpretation() {
-      return super.channelInterpretation;
+    get smoothingTimeConstant() {
+      return super.smoothingTimeConstant;
     }
 
     // setters
 
-    set channelCount(value) {
+    set fftSize(value) {
       try {
-        super.channelCount = value;
+        super.fftSize = value;
       } catch (err) {
         throwSanitizedError(err);
       }
     }
 
-    set channelCountMode(value) {
+    set minDecibels(value) {
       try {
-        super.channelCountMode = value;
+        super.minDecibels = value;
       } catch (err) {
         throwSanitizedError(err);
       }
     }
 
-    set channelInterpretation(value) {
+    set maxDecibels(value) {
       try {
-        super.channelInterpretation = value;
+        super.maxDecibels = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
+
+    set smoothingTimeConstant(value) {
+      try {
+        super.smoothingTimeConstant = value;
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -75,17 +86,33 @@ module.exports = (superclass) => {
 
     // methods
     
-    connect(...args) {
+    getFloatFrequencyData(...args) {
       try {
-        return super.connect(...args);
+        return super.getFloatFrequencyData(...args);
       } catch (err) {
         throwSanitizedError(err);
       }
     }
 
-    disconnect(...args) {
+    getByteFrequencyData(...args) {
       try {
-        return super.disconnect(...args);
+        return super.getByteFrequencyData(...args);
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
+
+    getFloatTimeDomainData(...args) {
+      try {
+        return super.getFloatTimeDomainData(...args);
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
+
+    getByteTimeDomainData(...args) {
+      try {
+        return super.getByteTimeDomainData(...args);
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -93,7 +120,8 @@ module.exports = (superclass) => {
 
   }
 
-  return AudioNode;
+  return AnalyserNode;
 }
+
 
   

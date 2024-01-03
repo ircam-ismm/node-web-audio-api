@@ -6,7 +6,7 @@ module.exports = (superclass) => {
 ${d.attributes(d.node).map(attr => {
   return `
     get ${d.name(attr)}() {
-      return super.${d.name(attr)}
+      return super.${d.name(attr)};
     }
 `}).join('')}
     // setters
@@ -31,7 +31,7 @@ ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
   return `
     ${d.name(method)}(...args) {
       try {
-        super.${d.name(method)}(...args);
+        return super.${d.name(method)}(...args);
       } catch (err) {
         throwSanitizedError(err);
       }

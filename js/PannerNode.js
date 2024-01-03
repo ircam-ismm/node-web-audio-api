@@ -17,57 +17,112 @@
 // -------------------------------------------------------------------------- //
 // -------------------------------------------------------------------------- //
 
-const { throwSanitizedError } = require('./lib/errors.js');
+const EventTargetMixin = require('./EventTarget.mixin.js');
+const AudioNodeMixin = require('./AudioNode.mixin.js');
 
-module.exports = (superclass) => {
-  class AudioNode extends superclass {
+
+module.exports = (NativePannerNode) => {
+
+  const EventTarget = EventTargetMixin(NativePannerNode, ['ended']);
+  const AudioNode = AudioNodeMixin(EventTarget);
+
+  class PannerNode extends AudioNode {
+
     // getters
 
-    get context() {
-      return super.context;
+    get panningModel() {
+      return super.panningModel;
     }
 
-    get numberOfInputs() {
-      return super.numberOfInputs;
+    get distanceModel() {
+      return super.distanceModel;
     }
 
-    get numberOfOutputs() {
-      return super.numberOfOutputs;
+    get refDistance() {
+      return super.refDistance;
     }
 
-    get channelCount() {
-      return super.channelCount;
+    get maxDistance() {
+      return super.maxDistance;
     }
 
-    get channelCountMode() {
-      return super.channelCountMode;
+    get rolloffFactor() {
+      return super.rolloffFactor;
     }
 
-    get channelInterpretation() {
-      return super.channelInterpretation;
+    get coneInnerAngle() {
+      return super.coneInnerAngle;
+    }
+
+    get coneOuterAngle() {
+      return super.coneOuterAngle;
+    }
+
+    get coneOuterGain() {
+      return super.coneOuterGain;
     }
 
     // setters
 
-    set channelCount(value) {
+    set panningModel(value) {
       try {
-        super.channelCount = value;
+        super.panningModel = value;
       } catch (err) {
         throwSanitizedError(err);
       }
     }
 
-    set channelCountMode(value) {
+    set distanceModel(value) {
       try {
-        super.channelCountMode = value;
+        super.distanceModel = value;
       } catch (err) {
         throwSanitizedError(err);
       }
     }
 
-    set channelInterpretation(value) {
+    set refDistance(value) {
       try {
-        super.channelInterpretation = value;
+        super.refDistance = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
+
+    set maxDistance(value) {
+      try {
+        super.maxDistance = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
+
+    set rolloffFactor(value) {
+      try {
+        super.rolloffFactor = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
+
+    set coneInnerAngle(value) {
+      try {
+        super.coneInnerAngle = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
+
+    set coneOuterAngle(value) {
+      try {
+        super.coneOuterAngle = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
+
+    set coneOuterGain(value) {
+      try {
+        super.coneOuterGain = value;
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -75,17 +130,17 @@ module.exports = (superclass) => {
 
     // methods
     
-    connect(...args) {
+    setPosition(...args) {
       try {
-        return super.connect(...args);
+        return super.setPosition(...args);
       } catch (err) {
         throwSanitizedError(err);
       }
     }
 
-    disconnect(...args) {
+    setOrientation(...args) {
       try {
-        return super.disconnect(...args);
+        return super.setOrientation(...args);
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -93,7 +148,8 @@ module.exports = (superclass) => {
 
   }
 
-  return AudioNode;
+  return PannerNode;
 }
+
 
   

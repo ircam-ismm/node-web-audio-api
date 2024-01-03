@@ -24,7 +24,7 @@ module.exports = (superclass) => {
     // getters
 
     get onended() {
-      return super.onended
+      return super.onended;
     }
 
     // setters
@@ -41,7 +41,7 @@ module.exports = (superclass) => {
     
     start(...args) {
       try {
-        super.start(...args);
+        return super.start(...args);
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -49,7 +49,7 @@ module.exports = (superclass) => {
 
     stop(...args) {
       try {
-        super.stop(...args);
+        return super.stop(...args);
       } catch (err) {
         throwSanitizedError(err);
       }
