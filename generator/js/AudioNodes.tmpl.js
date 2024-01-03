@@ -1,3 +1,5 @@
+const { throwSanitizedError } = require('./lib/errors.js');
+
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 ${d.parent(d.node) === 'AudioScheduledSourceNode' ?

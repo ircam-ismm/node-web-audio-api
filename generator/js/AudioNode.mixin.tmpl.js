@@ -2,6 +2,13 @@ const { throwSanitizedError } = require('./lib/errors.js');
 
 module.exports = (superclass) => {
   class ${d.name(d.node)} extends superclass {
+    constructor(...args) {
+      try {
+        super(...args);
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
     // getters
 ${d.attributes(d.node).map(attr => {
   return `

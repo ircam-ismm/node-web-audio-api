@@ -1,18 +1,29 @@
 const { EOL } = require('os');
 
-exports.NotSupportedError = class NotSupportedError extends Error {
+class NotSupportedError extends Error {
   constructor(message) {
     super(message);
     this.name = 'NotSupportedError';
   }
 }
 
-exports.InvalidStateError = class InvalidStateError extends Error {
+class InvalidStateError extends Error {
   constructor(message) {
     super(message);
-    this.name = 'RangeError';
+    this.name = 'InvalidStateError';
   }
 }
+
+class IndexSizeError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'IndexSizeError';
+  }
+}
+
+exports.NotSupportedError = NotSupportedError;
+exports.InvalidStateError = InvalidStateError;
+exports.IndexSizeError = IndexSizeError;
 
 function overrideStack(originalError, newError) {
   const lines = originalError.stack.split(EOL);
@@ -27,7 +38,6 @@ function overrideStack(originalError, newError) {
 exports.throwSanitizedError = function throwSanitizedError(err) {
   // "Native Errors"
   if (err.message.startsWith('TypeError')) {
-    console.log('here?')
     const msg = err.message.replace(/^TypeError - /, '');
     const error = new TypeError(msg);
     overrideStack(err, error);
@@ -51,6 +61,12 @@ exports.throwSanitizedError = function throwSanitizedError(err) {
   } else  if (err.message.startsWith('InvalidStateError')) {
     const msg = err.message.replace(/^InvalidStateError - /, '');
     const error = new InvalidStateError(msg);
+    overrideStack(err, error);
+
+    throw error;
+  } if (err.message.startsWith('IndexSizeError')) {
+    const msg = err.message.replace(/^IndexSizeError - /, '');
+    const error = new IndexSizeError(msg);
     overrideStack(err, error);
 
     throw error;

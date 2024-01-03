@@ -81,10 +81,11 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
     // first argument should be an AudioContext
     let js_audio_context = ctx.get::<JsObject>(0)?;
+
     // check that
-    let audio_context_utf8_name = if let Ok(audio_context_name) =
-        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")
-    {
+    let audio_context_utf8_name = if js_audio_context.has_named_property("Symbol.toStringTag")? {
+        let audio_context_name =
+            js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
         let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
         let audio_context_str = &audio_context_utf8_name[..];
 

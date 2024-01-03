@@ -21,6 +21,13 @@ const { throwSanitizedError } = require('./lib/errors.js');
 
 module.exports = (superclass) => {
   class AudioScheduledSourceNode extends superclass {
+    constructor(...args) {
+      try {
+        super(...args);
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
     // getters
 
     get onended() {
