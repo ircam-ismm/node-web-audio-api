@@ -1,11 +1,20 @@
-import { OfflineAudioContext } from '../index.mjs';
+import { AudioContext, OfflineAudioContext, mediaDevices } from '../index.mjs';
 
-var off = new OfflineAudioContext(1, 512, 48000);
-var osc = new OscillatorNode(off);
-var fb = new GainNode(off);
-// zero delay feedback loop
-osc.connect(fb).connect(fb).connect(off.destination);
-osc.start(0);
-return off.startRendering().then((b) => {
-  return Promise.resolve(b.getChannelData(0));
+mediaDevices.enumerateDevices().then((deviceList) => {
+  const outputDeviceList =
+      deviceList.filter(({kind}) => kind === 'audiooutput');
+
+  console.log(outputDeviceList);
+  const firstDeviceId = outputDeviceList[1].deviceId;
+
+  const audioContext = new AudioContext({ sinkId: firstDeviceId });
+  audioContext.addEventListener('statechange', () => {
+    console.log(audioContext.sinkId === firstDeviceId,
+                  'the context sinkId should match the given sinkId.');
+    audioContext.close();
+    // t.done();
+  }, {once: true});
+
+  console.log('coucou');
+  audioContext.resume();
 });
