@@ -19,6 +19,8 @@
 
 const { throwSanitizedError } = require('./lib/errors.js');
 
+const { AudioParam, kNativeAudioParam } = require('./AudioParam.js');
+
 module.exports = (superclass) => {
   class AudioNode extends superclass {
     constructor(...args) {
@@ -80,9 +82,14 @@ module.exports = (superclass) => {
       }
     }
 
-    // methods
+    // methods - connect / disconnect
     
     connect(...args) {
+      // unwrap raw audio params from facade
+      if (args[0] instanceof AudioParam) {
+        args[0] = args[0][kNativeAudioParam];
+      }
+
       try {
         return super.connect(...args);
       } catch (err) {
@@ -91,6 +98,11 @@ module.exports = (superclass) => {
     }
 
     disconnect(...args) {
+      // unwrap raw audio params from facade
+      if (args[0] instanceof AudioParam) {
+        args[0] = args[0][kNativeAudioParam];
+      }
+
       try {
         return super.disconnect(...args);
       } catch (err) {
@@ -101,6 +113,6 @@ module.exports = (superclass) => {
   }
 
   return AudioNode;
-}
+};
 
   

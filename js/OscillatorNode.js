@@ -19,6 +19,7 @@
 
 const { throwSanitizedError } = require('./lib/errors.js');
 
+const { AudioParam } = require('./AudioParam.js');
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 const AudioScheduledSourceNodeMixin = require('./AudioScheduledSourceNode.mixin.js');
@@ -30,11 +31,14 @@ module.exports = (NativeOscillatorNode) => {
   const AudioScheduledSourceNode = AudioScheduledSourceNodeMixin(AudioNode);
 
   class OscillatorNode extends AudioScheduledSourceNode {
-    constructor(audioContext, options) {
-      super(audioContext, options);
+    constructor(context, options) {
+      super(context, options);
       // EventTargetMixin has been called so EventTargetMixin[kDispatchEvent] is
       // bound to this, then we can safely finalize event target initialization
       super.__initEventTarget__();
+
+      this.frequency = new AudioParam(this.frequency);
+      this.detune = new AudioParam(this.detune);
     }
 
     // getters
@@ -66,7 +70,7 @@ module.exports = (NativeOscillatorNode) => {
   }
 
   return OscillatorNode;
-}
+};
 
 
   

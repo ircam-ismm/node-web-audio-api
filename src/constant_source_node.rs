@@ -226,7 +226,7 @@ fn set_channel_count_mode(ctx: CallContext) -> Result<JsUndefined> {
         "max" => ChannelCountMode::Max,
         "clamped-max" => ChannelCountMode::ClampedMax,
         "explicit" => ChannelCountMode::Explicit,
-        _ => panic!("undefined value for ChannelCountMode"),
+        _ => panic!("TypeError - The provided value '{:?}' is not a valid enum value of type ChannelCountMode", utf8_str.as_str()),
     };
     node.set_channel_count_mode(value);
 
@@ -259,7 +259,7 @@ fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
     let value = match utf8_str.as_str() {
         "speakers" => ChannelInterpretation::Speakers,
         "discrete" => ChannelInterpretation::Discrete,
-        _ => panic!("undefined value for ChannelInterpretation"),
+        _ => panic!("TypeError - The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", utf8_str.as_str()),
     };
     node.set_channel_interpretation(value);
 

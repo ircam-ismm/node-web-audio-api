@@ -19,6 +19,7 @@
 
 const { throwSanitizedError } = require('./lib/errors.js');
 
+const { AudioParam } = require('./AudioParam.js');
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 
@@ -29,6 +30,11 @@ module.exports = (NativeStereoPannerNode) => {
   const AudioNode = AudioNodeMixin(EventTarget);
 
   class StereoPannerNode extends AudioNode {
+    constructor(context, options) {
+      super(context, options);
+
+      this.pan = new AudioParam(this.pan);
+    }
 
     // getters
 
@@ -39,7 +45,7 @@ module.exports = (NativeStereoPannerNode) => {
   }
 
   return StereoPannerNode;
-}
+};
 
 
   

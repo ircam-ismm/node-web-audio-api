@@ -21,6 +21,13 @@ class IndexSizeError extends Error {
   }
 }
 
+class InvalidAccessError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'InvalidAccessError';
+  }
+}
+
 exports.NotSupportedError = NotSupportedError;
 exports.InvalidStateError = InvalidStateError;
 exports.IndexSizeError = IndexSizeError;
@@ -70,7 +77,13 @@ exports.throwSanitizedError = function throwSanitizedError(err) {
     overrideStack(err, error);
 
     throw error;
-  } // etc...
+  } if (err.message.startsWith('InvalidAccessError')) {
+    const msg = err.message.replace(/^InvalidAccessError - /, '');
+    const error = new InvalidAccessError(msg);
+    overrideStack(err, error);
+
+    throw error;
+  }
 
   console.warn('[lib/errors.js] Unhandled error type', err.name, err.message);
   throw err;

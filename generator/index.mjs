@@ -309,6 +309,24 @@ let jsOutput = path.join(process.cwd(), 'js');
   fs.writeFileSync(pathname, generatedPrefix(code));
 }
 
+{
+  const src = 'AudioParam';
+  const nodeIdl = findInTree(src);
+  const pathname = path.join(jsOutput, `${src}.js`);
+  console.log(`> generating file: ${path.relative(process.cwd(), pathname)}`);
+
+  const codeTmpl = fs.readFileSync(path.join(jsTemplates, `${src}.tmpl.js`), 'utf8');
+  const tmpl = compile(codeTmpl);
+
+  const code = tmpl({
+    node: nodeIdl,
+    tree,
+    ...utils,
+  });
+
+  fs.writeFileSync(pathname, generatedPrefix(code));
+}
+
 ['AudioNode', 'AudioScheduledSourceNode'].forEach((name, index) => {
   const nodeIdl = findInTree(name);
   const pathname = path.join(jsOutput, `${name}.mixin.js`);

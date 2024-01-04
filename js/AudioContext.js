@@ -5,7 +5,7 @@ const kKeepAwakeId = Symbol('keepAwakeId');
 
 module.exports = function(bindings) {
   const {
-    MediaStreamAudioSourceNode
+    MediaStreamAudioSourceNode,
   } = bindings;
 
   const EventTarget = require('./EventTarget.mixin.js')(bindings.AudioContext, ['statechange', 'sinkchange']);

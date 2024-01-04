@@ -144,40 +144,42 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
                 let some_channel_count_mode_js =
                     options_js.get::<&str, JsObject>("channelCountMode")?;
-                let channel_count_mode =
-                    if let Some(channel_count_mode_js) = some_channel_count_mode_js {
-                        let channel_count_mode_str = channel_count_mode_js
-                            .coerce_to_string()?
-                            .into_utf8()?
-                            .into_owned()?;
+                let channel_count_mode = if let Some(channel_count_mode_js) =
+                    some_channel_count_mode_js
+                {
+                    let channel_count_mode_str = channel_count_mode_js
+                        .coerce_to_string()?
+                        .into_utf8()?
+                        .into_owned()?;
 
-                        match channel_count_mode_str.as_str() {
-                            "max" => ChannelCountMode::Max,
-                            "clamped-max" => ChannelCountMode::ClampedMax,
-                            "explicit" => ChannelCountMode::Explicit,
-                            _ => panic!("undefined value for ChannelCountMode"),
-                        }
-                    } else {
-                        channel_config_defaults.count_mode
-                    };
+                    match channel_count_mode_str.as_str() {
+                        "max" => ChannelCountMode::Max,
+                        "clamped-max" => ChannelCountMode::ClampedMax,
+                        "explicit" => ChannelCountMode::Explicit,
+                        _ => panic!("TypeError - Failed to read the 'channelCountMode' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelCountMode", channel_count_mode_str.as_str()),
+                    }
+                } else {
+                    channel_config_defaults.count_mode
+                };
 
                 let some_channel_interpretation_js =
                     options_js.get::<&str, JsObject>("channelInterpretation")?;
-                let channel_interpretation =
-                    if let Some(channel_interpretation_js) = some_channel_interpretation_js {
-                        let channel_interpretation_str = channel_interpretation_js
-                            .coerce_to_string()?
-                            .into_utf8()?
-                            .into_owned()?;
+                let channel_interpretation = if let Some(channel_interpretation_js) =
+                    some_channel_interpretation_js
+                {
+                    let channel_interpretation_str = channel_interpretation_js
+                        .coerce_to_string()?
+                        .into_utf8()?
+                        .into_owned()?;
 
-                        match channel_interpretation_str.as_str() {
-                            "speakers" => ChannelInterpretation::Speakers,
-                            "discrete" => ChannelInterpretation::Discrete,
-                            _ => panic!("undefined value for ChannelInterpretation"),
-                        }
-                    } else {
-                        channel_config_defaults.interpretation
-                    };
+                    match channel_interpretation_str.as_str() {
+                        "speakers" => ChannelInterpretation::Speakers,
+                        "discrete" => ChannelInterpretation::Discrete,
+                        _ => panic!("TypeError - Failed to read the 'channelInterpretation' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", channel_interpretation_str.as_str()),
+                    }
+                } else {
+                    channel_config_defaults.interpretation
+                };
 
                 DelayOptions {
                     max_delay_time,
@@ -281,7 +283,7 @@ fn set_channel_count_mode(ctx: CallContext) -> Result<JsUndefined> {
         "max" => ChannelCountMode::Max,
         "clamped-max" => ChannelCountMode::ClampedMax,
         "explicit" => ChannelCountMode::Explicit,
-        _ => panic!("undefined value for ChannelCountMode"),
+        _ => panic!("TypeError - The provided value '{:?}' is not a valid enum value of type ChannelCountMode", utf8_str.as_str()),
     };
     node.set_channel_count_mode(value);
 
@@ -314,7 +316,7 @@ fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
     let value = match utf8_str.as_str() {
         "speakers" => ChannelInterpretation::Speakers,
         "discrete" => ChannelInterpretation::Discrete,
-        _ => panic!("undefined value for ChannelInterpretation"),
+        _ => panic!("TypeError - The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", utf8_str.as_str()),
     };
     node.set_channel_interpretation(value);
 

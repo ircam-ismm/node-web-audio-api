@@ -1,5 +1,6 @@
 const { throwSanitizedError } = require('./lib/errors.js');
 
+const { AudioParam } = require('./AudioParam.js');
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 ${d.parent(d.node) === 'AudioScheduledSourceNode' ?
@@ -12,17 +13,28 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `
   const AudioScheduledSourceNode = AudioScheduledSourceNodeMixin(AudioNode);
 
   class ${d.name(d.node)} extends AudioScheduledSourceNode {
-    constructor(audioContext, options) {
-      super(audioContext, options);
+    constructor(context, options) {
+      super(context, options);
       // EventTargetMixin has been called so EventTargetMixin[kDispatchEvent] is
       // bound to this, then we can safely finalize event target initialization
       super.__initEventTarget__();
+${d.audioParams(d.node).map(param => {
+    return `
+      this.${d.name(param)} = new AudioParam(this.${d.name(param)});`;
+}).join('')}
     }
 `: `
   const EventTarget = EventTargetMixin(Native${d.name(d.node)});
   const AudioNode = AudioNodeMixin(EventTarget);
 
   class ${d.name(d.node)} extends AudioNode {
+    constructor(context, options) {
+      super(context, options);
+${d.audioParams(d.node).map(param => {
+    return `
+      this.${d.name(param)} = new AudioParam(this.${d.name(param)});`;
+}).join('')}
+    }
 `}
     // getters
 ${d.attributes(d.node).map(attr => {
@@ -62,5 +74,5 @@ ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
   }
 
   return ${d.name(d.node)};
-}
+};
 

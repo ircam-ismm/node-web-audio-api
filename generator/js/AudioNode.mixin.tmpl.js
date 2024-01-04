@@ -1,5 +1,7 @@
 const { throwSanitizedError } = require('./lib/errors.js');
 
+const { AudioParam, kNativeAudioParam } = require('./AudioParam.js');
+
 module.exports = (superclass) => {
   class ${d.name(d.node)} extends superclass {
     constructor(...args) {
@@ -27,7 +29,7 @@ ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
       }
     }
 `}).join('')}
-    // methods
+    // methods - connect / disconnect
     ${d.methods(d.node, false).reduce((acc, method) => {
       // dedup method names
       if (!acc.find(i => d.name(i) === d.name(method))) {
@@ -37,6 +39,11 @@ ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
     }, []).map(method => {
   return `
     ${d.name(method)}(...args) {
+      // unwrap raw audio params from facade
+      if (args[0] instanceof AudioParam) {
+        args[0] = args[0][kNativeAudioParam];
+      }
+
       try {
         return super.${d.name(method)}(...args);
       } catch (err) {
@@ -47,4 +54,4 @@ ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
   }
 
   return ${d.name(d.node)};
-}
+};

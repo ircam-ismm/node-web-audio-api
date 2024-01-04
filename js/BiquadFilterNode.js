@@ -19,6 +19,7 @@
 
 const { throwSanitizedError } = require('./lib/errors.js');
 
+const { AudioParam } = require('./AudioParam.js');
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 
@@ -29,6 +30,14 @@ module.exports = (NativeBiquadFilterNode) => {
   const AudioNode = AudioNodeMixin(EventTarget);
 
   class BiquadFilterNode extends AudioNode {
+    constructor(context, options) {
+      super(context, options);
+
+      this.frequency = new AudioParam(this.frequency);
+      this.detune = new AudioParam(this.detune);
+      this.Q = new AudioParam(this.Q);
+      this.gain = new AudioParam(this.gain);
+    }
 
     // getters
 
@@ -59,7 +68,7 @@ module.exports = (NativeBiquadFilterNode) => {
   }
 
   return BiquadFilterNode;
-}
+};
 
 
   

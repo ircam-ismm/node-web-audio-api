@@ -294,7 +294,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                         "max" => ChannelCountMode::Max,
                         "clamped-max" => ChannelCountMode::ClampedMax,
                         "explicit" => ChannelCountMode::Explicit,
-                        _ => panic!("undefined value for ChannelCountMode"),
+                        _ => panic!("TypeError - Failed to read the 'channelCountMode' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelCountMode", channel_count_mode_str.as_str()),
                     }
                 } else {
                     channel_config_defaults.count_mode
@@ -307,7 +307,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                     match channel_interpretation_str.as_str() {
                         "speakers" => ChannelInterpretation::Speakers,
                         "discrete" => ChannelInterpretation::Discrete,
-                        _ => panic!("undefined value for ChannelInterpretation"),
+                        _ => panic!("TypeError - Failed to read the 'channelInterpretation' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", channel_interpretation_str.as_str()),
                     }
                 } else {
                     channel_config_defaults.interpretation
@@ -327,7 +327,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             Either::B(_) => {
                 ${argumentIdl.members.reduce((acc, current) => acc || current.required, false) ? `
                     return Err(napi::Error::from_reason(
-                        "Options are mandatory for node ${d.name(d.node)}".to_string(),
+                        "TypeError - Options are mandatory for node ${d.name(d.node)}".to_string(),
                     ));
                 ` : `
                     Default::default()
@@ -337,7 +337,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     } else {
         ${argumentIdl.members.reduce((acc, current) => acc || current.required, false) ? `
             return Err(napi::Error::from_reason(
-                "Options are mandatory for node ${d.name(d.node)}".to_string(),
+                "TypeError - Options are mandatory for node ${d.name(d.node)}".to_string(),
             ));
         ` : `
             Default::default()
@@ -435,7 +435,7 @@ fn set_channel_count_mode(ctx: CallContext) -> Result<JsUndefined> {
         "max" => ChannelCountMode::Max,
         "clamped-max" => ChannelCountMode::ClampedMax,
         "explicit" => ChannelCountMode::Explicit,
-        _ => panic!("undefined value for ChannelCountMode"),
+        _ => panic!("TypeError - The provided value '{:?}' is not a valid enum value of type ChannelCountMode", utf8_str.as_str()),
     };
     node.set_channel_count_mode(value);
 
@@ -468,7 +468,7 @@ fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
     let value = match utf8_str.as_str() {
         "speakers" => ChannelInterpretation::Speakers,
         "discrete" => ChannelInterpretation::Discrete,
-        _ => panic!("undefined value for ChannelInterpretation"),
+        _ => panic!("TypeError - The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", utf8_str.as_str()),
     };
     node.set_channel_interpretation(value);
 

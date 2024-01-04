@@ -1,4 +1,7 @@
-import { AnalyserNode, AudioContext, OfflineAudioContext, mediaDevices } from '../index.mjs';
+import { AnalyserNode, AudioContext, GainNode, OfflineAudioContext, mediaDevices } from '../index.mjs';
 
 const audioContext = new OfflineAudioContext(1, 1, 48000);
-const node = new AnalyserNode(1);
+// const node = new GainNode(audioContext);
+
+const node = new GainNode(audioContext, { channelCountMode: "foobar" });
+// node.channelCountMode
