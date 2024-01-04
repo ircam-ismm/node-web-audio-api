@@ -50,7 +50,8 @@ ${args.length > 0 ? `\
 `}
     }
 `
-  }).join('\n')}}
+  }).join('\n')}
+  }
 
   return BaseAudioContext;
 };

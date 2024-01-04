@@ -22,36 +22,42 @@ const { throwSanitizedError } = require('./lib/errors.js');
 const { AudioParam } = require('./AudioParam.js');
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
-const AudioScheduledSourceNodeMixin = require('./AudioScheduledSourceNode.mixin.js');
 
-module.exports = (NativeOscillatorNode) => {
 
-  const EventTarget = EventTargetMixin(NativeOscillatorNode, ['ended']);
+module.exports = (NativeWaveShaperNode) => {
+
+  const EventTarget = EventTargetMixin(NativeWaveShaperNode);
   const AudioNode = AudioNodeMixin(EventTarget);
-  const AudioScheduledSourceNode = AudioScheduledSourceNodeMixin(AudioNode);
 
-  class OscillatorNode extends AudioScheduledSourceNode {
+  class WaveShaperNode extends AudioNode {
     constructor(context, options) {
       super(context, options);
-      // EventTargetMixin has been called so EventTargetMixin[kDispatchEvent] is
-      // bound to this, then we can safely finalize event target initialization
-      super.__initEventTarget__();
 
-      this.frequency = new AudioParam(this.frequency);
-      this.detune = new AudioParam(this.detune);
     }
 
     // getters
 
-    get type() {
-      return super.type;
+    get curve() {
+      return super.curve;
+    }
+
+    get oversample() {
+      return super.oversample;
     }
 
     // setters
 
-    set type(value) {
+    set curve(value) {
       try {
-        super.type = value;
+        super.curve = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
+
+    set oversample(value) {
+      try {
+        super.oversample = value;
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -59,17 +65,9 @@ module.exports = (NativeOscillatorNode) => {
 
     // methods
     
-    setPeriodicWave(...args) {
-      try {
-        return super.setPeriodicWave(...args);
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
   }
 
-  return OscillatorNode;
+  return WaveShaperNode;
 };
 
 

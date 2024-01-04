@@ -110,31 +110,38 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
     if ctx.length < 1 {
-        let msg = "Failed to construct 'PannerNode': 1 argument required, but only 0 present.";
+        let msg = "TypeError - Failed to construct 'PannerNode': 1 argument required, but only 0 present.";
         return Err(napi::Error::new(napi::Status::InvalidArg, msg));
     }
 
     // first argument should be an AudioContext
     let js_audio_context = ctx.get::<JsObject>(0)?;
-    // check that
-    let audio_context_utf8_name = if let Ok(audio_context_name) =
-        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")
-    {
-        let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
-        let audio_context_str = &audio_context_utf8_name[..];
 
-        if audio_context_str != "AudioContext" && audio_context_str != "OfflineAudioContext" {
-            let msg = "Failed to construct 'PannerNode': argument 0 should be an instance of BaseAudioContext";
+    // check that
+    let audio_context_utf8_name = if let Ok(result) =
+        js_audio_context.has_named_property("Symbol.toStringTag")
+    {
+        if result {
+            let audio_context_name =
+                js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
+            let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
+            let audio_context_str = &audio_context_utf8_name[..];
+
+            if audio_context_str != "AudioContext" && audio_context_str != "OfflineAudioContext" {
+                let msg = "TypeError - Failed to construct 'PannerNode': argument 1 is not of type BaseAudioContext";
+                return Err(napi::Error::new(napi::Status::InvalidArg, msg));
+            }
+
+            audio_context_utf8_name
+        } else {
+            let msg = "TypeError - Failed to construct 'PannerNode': argument 1 is not of type BaseAudioContext";
             return Err(napi::Error::new(napi::Status::InvalidArg, msg));
         }
-
-        audio_context_utf8_name
     } else {
-        // this crashes in debug mode but not in release mode, weird...
-        // > Throw error failed, status: [PendingException], raw message: "...", raw status: [InvalidArg]
-        // > note: run with 'RUST_BACKTRACE=1' environment variable to display a backtrace
-        // > fatal runtime error: failed to initiate panic, error 5
-        let msg = "Failed to construct 'PannerNode': argument 0 should be an instance of BaseAudioContext";
+        // This swallowed somehow, .e.g const node = new GainNode(null); throws
+        // TypeError Cannot convert undefined or null to object
+        // To be investigated...
+        let msg = "TypeError - Failed to construct 'PannerNode': argument 1 is not of type BaseAudioContext";
         return Err(napi::Error::new(napi::Status::InvalidArg, msg));
     };
 
@@ -179,88 +186,88 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                     DistanceModelType::default()
                 };
 
-                let some_position_x_js = options_js.get::<&str, JsNumber>("positionX")?;
+                let some_position_x_js = options_js.get::<&str, JsObject>("positionX")?;
                 let position_x = if let Some(position_x_js) = some_position_x_js {
-                    position_x_js.get_double()? as f32
+                    position_x_js.coerce_to_number()?.get_double()? as f32
                 } else {
                     0.
                 };
 
-                let some_position_y_js = options_js.get::<&str, JsNumber>("positionY")?;
+                let some_position_y_js = options_js.get::<&str, JsObject>("positionY")?;
                 let position_y = if let Some(position_y_js) = some_position_y_js {
-                    position_y_js.get_double()? as f32
+                    position_y_js.coerce_to_number()?.get_double()? as f32
                 } else {
                     0.
                 };
 
-                let some_position_z_js = options_js.get::<&str, JsNumber>("positionZ")?;
+                let some_position_z_js = options_js.get::<&str, JsObject>("positionZ")?;
                 let position_z = if let Some(position_z_js) = some_position_z_js {
-                    position_z_js.get_double()? as f32
+                    position_z_js.coerce_to_number()?.get_double()? as f32
                 } else {
                     0.
                 };
 
-                let some_orientation_x_js = options_js.get::<&str, JsNumber>("orientationX")?;
+                let some_orientation_x_js = options_js.get::<&str, JsObject>("orientationX")?;
                 let orientation_x = if let Some(orientation_x_js) = some_orientation_x_js {
-                    orientation_x_js.get_double()? as f32
+                    orientation_x_js.coerce_to_number()?.get_double()? as f32
                 } else {
                     1.
                 };
 
-                let some_orientation_y_js = options_js.get::<&str, JsNumber>("orientationY")?;
+                let some_orientation_y_js = options_js.get::<&str, JsObject>("orientationY")?;
                 let orientation_y = if let Some(orientation_y_js) = some_orientation_y_js {
-                    orientation_y_js.get_double()? as f32
+                    orientation_y_js.coerce_to_number()?.get_double()? as f32
                 } else {
                     0.
                 };
 
-                let some_orientation_z_js = options_js.get::<&str, JsNumber>("orientationZ")?;
+                let some_orientation_z_js = options_js.get::<&str, JsObject>("orientationZ")?;
                 let orientation_z = if let Some(orientation_z_js) = some_orientation_z_js {
-                    orientation_z_js.get_double()? as f32
+                    orientation_z_js.coerce_to_number()?.get_double()? as f32
                 } else {
                     0.
                 };
 
-                let some_ref_distance_js = options_js.get::<&str, JsNumber>("refDistance")?;
+                let some_ref_distance_js = options_js.get::<&str, JsObject>("refDistance")?;
                 let ref_distance = if let Some(ref_distance_js) = some_ref_distance_js {
-                    ref_distance_js.get_double()?
+                    ref_distance_js.coerce_to_number()?.get_double()?
                 } else {
                     1.
                 };
 
-                let some_max_distance_js = options_js.get::<&str, JsNumber>("maxDistance")?;
+                let some_max_distance_js = options_js.get::<&str, JsObject>("maxDistance")?;
                 let max_distance = if let Some(max_distance_js) = some_max_distance_js {
-                    max_distance_js.get_double()?
+                    max_distance_js.coerce_to_number()?.get_double()?
                 } else {
                     10000.
                 };
 
-                let some_rolloff_factor_js = options_js.get::<&str, JsNumber>("rolloffFactor")?;
+                let some_rolloff_factor_js = options_js.get::<&str, JsObject>("rolloffFactor")?;
                 let rolloff_factor = if let Some(rolloff_factor_js) = some_rolloff_factor_js {
-                    rolloff_factor_js.get_double()?
+                    rolloff_factor_js.coerce_to_number()?.get_double()?
                 } else {
                     1.
                 };
 
                 let some_cone_inner_angle_js =
-                    options_js.get::<&str, JsNumber>("coneInnerAngle")?;
+                    options_js.get::<&str, JsObject>("coneInnerAngle")?;
                 let cone_inner_angle = if let Some(cone_inner_angle_js) = some_cone_inner_angle_js {
-                    cone_inner_angle_js.get_double()?
+                    cone_inner_angle_js.coerce_to_number()?.get_double()?
                 } else {
                     360.
                 };
 
                 let some_cone_outer_angle_js =
-                    options_js.get::<&str, JsNumber>("coneOuterAngle")?;
+                    options_js.get::<&str, JsObject>("coneOuterAngle")?;
                 let cone_outer_angle = if let Some(cone_outer_angle_js) = some_cone_outer_angle_js {
-                    cone_outer_angle_js.get_double()?
+                    cone_outer_angle_js.coerce_to_number()?.get_double()?
                 } else {
                     360.
                 };
 
-                let some_cone_outer_gain_js = options_js.get::<&str, JsNumber>("coneOuterGain")?;
+                let some_cone_outer_gain_js = options_js.get::<&str, JsObject>("coneOuterGain")?;
                 let cone_outer_gain = if let Some(cone_outer_gain_js) = some_cone_outer_gain_js {
-                    cone_outer_gain_js.get_double()?
+                    cone_outer_gain_js.coerce_to_number()?.get_double()?
                 } else {
                     0.
                 };
@@ -268,45 +275,51 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                 let node_defaults = PannerOptions::default();
                 let channel_config_defaults = node_defaults.channel_config;
 
-                let some_channel_count_js = options_js.get::<&str, JsNumber>("channelCount")?;
+                let some_channel_count_js = options_js.get::<&str, JsObject>("channelCount")?;
                 let channel_count = if let Some(channel_count_js) = some_channel_count_js {
-                    channel_count_js.get_double()? as usize
+                    channel_count_js.coerce_to_number()?.get_double()? as usize
                 } else {
                     channel_config_defaults.count
                 };
 
                 let some_channel_count_mode_js =
-                    options_js.get::<&str, JsString>("channelCountMode")?;
+                    options_js.get::<&str, JsObject>("channelCountMode")?;
                 let channel_count_mode = if let Some(channel_count_mode_js) =
                     some_channel_count_mode_js
                 {
-                    let channel_count_mode_str = channel_count_mode_js.into_utf8()?.into_owned()?;
+                    let channel_count_mode_str = channel_count_mode_js
+                        .coerce_to_string()?
+                        .into_utf8()?
+                        .into_owned()?;
 
                     match channel_count_mode_str.as_str() {
                         "max" => ChannelCountMode::Max,
                         "clamped-max" => ChannelCountMode::ClampedMax,
                         "explicit" => ChannelCountMode::Explicit,
-                        _ => panic!("undefined value for ChannelCountMode"),
+                        _ => panic!("TypeError - Failed to read the 'channelCountMode' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelCountMode", channel_count_mode_str.as_str()),
                     }
                 } else {
                     channel_config_defaults.count_mode
                 };
 
                 let some_channel_interpretation_js =
-                    options_js.get::<&str, JsString>("channelInterpretation")?;
-                let channel_interpretation =
-                    if let Some(channel_interpretation_js) = some_channel_interpretation_js {
-                        let channel_interpretation_str =
-                            channel_interpretation_js.into_utf8()?.into_owned()?;
+                    options_js.get::<&str, JsObject>("channelInterpretation")?;
+                let channel_interpretation = if let Some(channel_interpretation_js) =
+                    some_channel_interpretation_js
+                {
+                    let channel_interpretation_str = channel_interpretation_js
+                        .coerce_to_string()?
+                        .into_utf8()?
+                        .into_owned()?;
 
-                        match channel_interpretation_str.as_str() {
-                            "speakers" => ChannelInterpretation::Speakers,
-                            "discrete" => ChannelInterpretation::Discrete,
-                            _ => panic!("undefined value for ChannelInterpretation"),
-                        }
-                    } else {
-                        channel_config_defaults.interpretation
-                    };
+                    match channel_interpretation_str.as_str() {
+                        "speakers" => ChannelInterpretation::Speakers,
+                        "discrete" => ChannelInterpretation::Discrete,
+                        _ => panic!("TypeError - Failed to read the 'channelInterpretation' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", channel_interpretation_str.as_str()),
+                    }
+                } else {
+                    channel_config_defaults.interpretation
+                };
 
                 PannerOptions {
                     panning_model,
@@ -457,7 +470,7 @@ fn set_channel_count_mode(ctx: CallContext) -> Result<JsUndefined> {
         "max" => ChannelCountMode::Max,
         "clamped-max" => ChannelCountMode::ClampedMax,
         "explicit" => ChannelCountMode::Explicit,
-        _ => panic!("undefined value for ChannelCountMode"),
+        _ => panic!("TypeError - The provided value '{:?}' is not a valid enum value of type ChannelCountMode", utf8_str.as_str()),
     };
     node.set_channel_count_mode(value);
 
@@ -490,7 +503,7 @@ fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
     let value = match utf8_str.as_str() {
         "speakers" => ChannelInterpretation::Speakers,
         "discrete" => ChannelInterpretation::Discrete,
-        _ => panic!("undefined value for ChannelInterpretation"),
+        _ => panic!("TypeError - The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", utf8_str.as_str()),
     };
     node.set_channel_interpretation(value);
 
@@ -634,7 +647,7 @@ fn set_panning_model(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let js_str = ctx.get::<JsString>(0)?;
+    let js_str = ctx.get::<JsObject>(0)?.coerce_to_string()?;
     let utf8_str = js_str.into_utf8()?.into_owned()?;
     let value = match utf8_str.as_str() {
         "equalpower" => PanningModelType::EqualPower,
@@ -653,7 +666,7 @@ fn set_distance_model(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let js_str = ctx.get::<JsString>(0)?;
+    let js_str = ctx.get::<JsObject>(0)?.coerce_to_string()?;
     let utf8_str = js_str.into_utf8()?.into_owned()?;
     let value = match utf8_str.as_str() {
         "linear" => DistanceModelType::Linear,
@@ -673,7 +686,7 @@ fn set_ref_distance(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()?;
+    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
     node.set_ref_distance(value);
 
     ctx.env.get_undefined()
@@ -685,7 +698,7 @@ fn set_max_distance(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()?;
+    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
     node.set_max_distance(value);
 
     ctx.env.get_undefined()
@@ -697,7 +710,7 @@ fn set_rolloff_factor(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()?;
+    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
     node.set_rolloff_factor(value);
 
     ctx.env.get_undefined()
@@ -709,7 +722,7 @@ fn set_cone_inner_angle(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()?;
+    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
     node.set_cone_inner_angle(value);
 
     ctx.env.get_undefined()
@@ -721,7 +734,7 @@ fn set_cone_outer_angle(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()?;
+    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
     node.set_cone_outer_angle(value);
 
     ctx.env.get_undefined()
@@ -733,7 +746,7 @@ fn set_cone_outer_gain(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()?;
+    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
     node.set_cone_outer_gain(value);
 
     ctx.env.get_undefined()
@@ -751,13 +764,13 @@ fn set_position(ctx: CallContext) -> Result<JsUndefined> {
     #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
-    let x_js = ctx.get::<JsNumber>(0)?;
+    let x_js = ctx.get::<JsObject>(0)?.coerce_to_number()?;
     let x = x_js.get_double()? as f32;
 
-    let y_js = ctx.get::<JsNumber>(1)?;
+    let y_js = ctx.get::<JsObject>(1)?.coerce_to_number()?;
     let y = y_js.get_double()? as f32;
 
-    let z_js = ctx.get::<JsNumber>(2)?;
+    let z_js = ctx.get::<JsObject>(2)?.coerce_to_number()?;
     let z = z_js.get_double()? as f32;
 
     node.set_position(x, y, z);
@@ -773,13 +786,13 @@ fn set_orientation(ctx: CallContext) -> Result<JsUndefined> {
     #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
-    let x_js = ctx.get::<JsNumber>(0)?;
+    let x_js = ctx.get::<JsObject>(0)?.coerce_to_number()?;
     let x = x_js.get_double()? as f32;
 
-    let y_js = ctx.get::<JsNumber>(1)?;
+    let y_js = ctx.get::<JsObject>(1)?.coerce_to_number()?;
     let y = y_js.get_double()? as f32;
 
-    let z_js = ctx.get::<JsNumber>(2)?;
+    let z_js = ctx.get::<JsObject>(2)?.coerce_to_number()?;
     let z = z_js.get_double()? as f32;
 
     node.set_orientation(x, y, z);

@@ -131,7 +131,8 @@ module.exports = (superclass, bindings) => {
     createWaveShaper() {
       return new WaveShaperNode(this);
     }
-}
+
+  }
 
   return BaseAudioContext;
 };

@@ -50,6 +50,7 @@ impl ${d.napiName(d.node)} {
                 // ----------------------------------------------------
                 Property::new("baseLatency")?.with_getter(get_base_latency),
                 Property::new("outputLatency")?.with_getter(get_output_latency),
+                Property::new("sinkId")?.with_getter(get_sink_id),
                 Property::new("setSinkId")?.with_method(set_sink_id),
                 // implementation specific to online audio context
                 Property::new("resume")?.with_method(resume),
@@ -176,9 +177,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // -------------------------------------------------
     // Parse options and create OfflineAudioContext
     // -------------------------------------------------
-    let number_of_channels = ctx.get::<JsNumber>(0)?.get_double()? as usize;
-    let length = ctx.get::<JsNumber>(1)?.get_double()? as usize;
-    let sample_rate = ctx.get::<JsNumber>(2)?.get_double()? as f32;
+    let number_of_channels = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()? as usize;
+    let length = ctx.get::<JsObject>(1)?.coerce_to_number()?.get_double()? as usize;
+    let sample_rate = ctx.get::<JsObject>(2)?.coerce_to_number()?.get_double()? as f32;
 
     let audio_context = ${d.name(d.node)}::new(number_of_channels, length, sample_rate);
         `}
@@ -394,6 +395,16 @@ fn get_output_latency(ctx: CallContext) -> Result<JsNumber> {
 
     let output_latency = obj.output_latency();
     ctx.env.create_double(output_latency)
+}
+
+#[js_function]
+fn get_sink_id(ctx: CallContext) -> Result<JsString> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+    let obj = napi_obj.unwrap();
+
+    let sink_id = obj.sink_id();
+    ctx.env.create_string(&sink_id)
 }
 
 #[js_function(1)]

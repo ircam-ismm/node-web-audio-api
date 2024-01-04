@@ -7,7 +7,7 @@ const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 
 const audioContext = new AudioContext({ latencyHint });
 
 audioContext.addEventListener('sinkchange', (e) => {
-  console.log('sinkchange listener:', e);
+  // console.log('sinkchange listener:', e);
 });
 
 const file = fs.readFileSync(path.join('examples', 'samples', 'sample.wav')).buffer;
@@ -35,6 +35,9 @@ const prompt = readline.createInterface({
   prompt.question(`+ select output deviceId:
 > `, deviceId => {
     audioContext.setSinkId(deviceId);
+
+    console.log('+ switched to sinkId:', audioContext.sinkId);
+
     selectSinkId();
   });
 }());

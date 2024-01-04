@@ -87,31 +87,38 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
     if ctx.length < 1 {
-        let msg = "Failed to construct 'OscillatorNode': 1 argument required, but only 0 present.";
+        let msg = "TypeError - Failed to construct 'OscillatorNode': 1 argument required, but only 0 present.";
         return Err(napi::Error::new(napi::Status::InvalidArg, msg));
     }
 
     // first argument should be an AudioContext
     let js_audio_context = ctx.get::<JsObject>(0)?;
-    // check that
-    let audio_context_utf8_name = if let Ok(audio_context_name) =
-        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")
-    {
-        let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
-        let audio_context_str = &audio_context_utf8_name[..];
 
-        if audio_context_str != "AudioContext" && audio_context_str != "OfflineAudioContext" {
-            let msg = "Failed to construct 'OscillatorNode': argument 0 should be an instance of BaseAudioContext";
+    // check that
+    let audio_context_utf8_name = if let Ok(result) =
+        js_audio_context.has_named_property("Symbol.toStringTag")
+    {
+        if result {
+            let audio_context_name =
+                js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
+            let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
+            let audio_context_str = &audio_context_utf8_name[..];
+
+            if audio_context_str != "AudioContext" && audio_context_str != "OfflineAudioContext" {
+                let msg = "TypeError - Failed to construct 'OscillatorNode': argument 1 is not of type BaseAudioContext";
+                return Err(napi::Error::new(napi::Status::InvalidArg, msg));
+            }
+
+            audio_context_utf8_name
+        } else {
+            let msg = "TypeError - Failed to construct 'OscillatorNode': argument 1 is not of type BaseAudioContext";
             return Err(napi::Error::new(napi::Status::InvalidArg, msg));
         }
-
-        audio_context_utf8_name
     } else {
-        // this crashes in debug mode but not in release mode, weird...
-        // > Throw error failed, status: [PendingException], raw message: "...", raw status: [InvalidArg]
-        // > note: run with 'RUST_BACKTRACE=1' environment variable to display a backtrace
-        // > fatal runtime error: failed to initiate panic, error 5
-        let msg = "Failed to construct 'OscillatorNode': argument 0 should be an instance of BaseAudioContext";
+        // This swallowed somehow, .e.g const node = new GainNode(null); throws
+        // TypeError Cannot convert undefined or null to object
+        // To be investigated...
+        let msg = "TypeError - Failed to construct 'OscillatorNode': argument 1 is not of type BaseAudioContext";
         return Err(napi::Error::new(napi::Status::InvalidArg, msg));
     };
 
@@ -145,16 +152,16 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                     OscillatorType::default()
                 };
 
-                let some_frequency_js = options_js.get::<&str, JsNumber>("frequency")?;
+                let some_frequency_js = options_js.get::<&str, JsObject>("frequency")?;
                 let frequency = if let Some(frequency_js) = some_frequency_js {
-                    frequency_js.get_double()? as f32
+                    frequency_js.coerce_to_number()?.get_double()? as f32
                 } else {
                     440.
                 };
 
-                let some_detune_js = options_js.get::<&str, JsNumber>("detune")?;
+                let some_detune_js = options_js.get::<&str, JsObject>("detune")?;
                 let detune = if let Some(detune_js) = some_detune_js {
-                    detune_js.get_double()? as f32
+                    detune_js.coerce_to_number()?.get_double()? as f32
                 } else {
                     0.
                 };
@@ -171,45 +178,51 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                 let node_defaults = OscillatorOptions::default();
                 let channel_config_defaults = node_defaults.channel_config;
 
-                let some_channel_count_js = options_js.get::<&str, JsNumber>("channelCount")?;
+                let some_channel_count_js = options_js.get::<&str, JsObject>("channelCount")?;
                 let channel_count = if let Some(channel_count_js) = some_channel_count_js {
-                    channel_count_js.get_double()? as usize
+                    channel_count_js.coerce_to_number()?.get_double()? as usize
                 } else {
                     channel_config_defaults.count
                 };
 
                 let some_channel_count_mode_js =
-                    options_js.get::<&str, JsString>("channelCountMode")?;
+                    options_js.get::<&str, JsObject>("channelCountMode")?;
                 let channel_count_mode = if let Some(channel_count_mode_js) =
                     some_channel_count_mode_js
                 {
-                    let channel_count_mode_str = channel_count_mode_js.into_utf8()?.into_owned()?;
+                    let channel_count_mode_str = channel_count_mode_js
+                        .coerce_to_string()?
+                        .into_utf8()?
+                        .into_owned()?;
 
                     match channel_count_mode_str.as_str() {
                         "max" => ChannelCountMode::Max,
                         "clamped-max" => ChannelCountMode::ClampedMax,
                         "explicit" => ChannelCountMode::Explicit,
-                        _ => panic!("undefined value for ChannelCountMode"),
+                        _ => panic!("TypeError - Failed to read the 'channelCountMode' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelCountMode", channel_count_mode_str.as_str()),
                     }
                 } else {
                     channel_config_defaults.count_mode
                 };
 
                 let some_channel_interpretation_js =
-                    options_js.get::<&str, JsString>("channelInterpretation")?;
-                let channel_interpretation =
-                    if let Some(channel_interpretation_js) = some_channel_interpretation_js {
-                        let channel_interpretation_str =
-                            channel_interpretation_js.into_utf8()?.into_owned()?;
+                    options_js.get::<&str, JsObject>("channelInterpretation")?;
+                let channel_interpretation = if let Some(channel_interpretation_js) =
+                    some_channel_interpretation_js
+                {
+                    let channel_interpretation_str = channel_interpretation_js
+                        .coerce_to_string()?
+                        .into_utf8()?
+                        .into_owned()?;
 
-                        match channel_interpretation_str.as_str() {
-                            "speakers" => ChannelInterpretation::Speakers,
-                            "discrete" => ChannelInterpretation::Discrete,
-                            _ => panic!("undefined value for ChannelInterpretation"),
-                        }
-                    } else {
-                        channel_config_defaults.interpretation
-                    };
+                    match channel_interpretation_str.as_str() {
+                        "speakers" => ChannelInterpretation::Speakers,
+                        "discrete" => ChannelInterpretation::Discrete,
+                        _ => panic!("TypeError - Failed to read the 'channelInterpretation' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", channel_interpretation_str.as_str()),
+                    }
+                } else {
+                    channel_config_defaults.interpretation
+                };
 
                 OscillatorOptions {
                     type_,
@@ -322,7 +335,7 @@ fn set_channel_count_mode(ctx: CallContext) -> Result<JsUndefined> {
         "max" => ChannelCountMode::Max,
         "clamped-max" => ChannelCountMode::ClampedMax,
         "explicit" => ChannelCountMode::Explicit,
-        _ => panic!("undefined value for ChannelCountMode"),
+        _ => panic!("TypeError - The provided value '{:?}' is not a valid enum value of type ChannelCountMode", utf8_str.as_str()),
     };
     node.set_channel_count_mode(value);
 
@@ -355,7 +368,7 @@ fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
     let value = match utf8_str.as_str() {
         "speakers" => ChannelInterpretation::Speakers,
         "discrete" => ChannelInterpretation::Discrete,
-        _ => panic!("undefined value for ChannelInterpretation"),
+        _ => panic!("TypeError - The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", utf8_str.as_str()),
     };
     node.set_channel_interpretation(value);
 
@@ -403,7 +416,7 @@ fn start(ctx: CallContext) -> Result<JsUndefined> {
     match ctx.length {
         0 => node.start(),
         1 => {
-            let when = ctx.get::<JsNumber>(0)?.get_double()?;
+            let when = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
             node.start_at(when);
         }
         _ => (),
@@ -421,7 +434,7 @@ fn stop(ctx: CallContext) -> Result<JsUndefined> {
     match ctx.length {
         0 => node.stop(),
         1 => {
-            let when = ctx.get::<JsNumber>(0)?.try_into()?;
+            let when = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
             node.stop_at(when);
         }
         _ => (),
@@ -524,7 +537,7 @@ fn set_type(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let js_str = ctx.get::<JsString>(0)?;
+    let js_str = ctx.get::<JsObject>(0)?.coerce_to_string()?;
     let utf8_str = js_str.into_utf8()?.into_owned()?;
     let value = match utf8_str.as_str() {
         "sine" => OscillatorType::Sine,

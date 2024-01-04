@@ -82,32 +82,38 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
     if ctx.length < 1 {
-        let msg =
-            "Failed to construct 'ConstantSourceNode': 1 argument required, but only 0 present.";
+        let msg = "TypeError - Failed to construct 'ConstantSourceNode': 1 argument required, but only 0 present.";
         return Err(napi::Error::new(napi::Status::InvalidArg, msg));
     }
 
     // first argument should be an AudioContext
     let js_audio_context = ctx.get::<JsObject>(0)?;
-    // check that
-    let audio_context_utf8_name = if let Ok(audio_context_name) =
-        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")
-    {
-        let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
-        let audio_context_str = &audio_context_utf8_name[..];
 
-        if audio_context_str != "AudioContext" && audio_context_str != "OfflineAudioContext" {
-            let msg = "Failed to construct 'ConstantSourceNode': argument 0 should be an instance of BaseAudioContext";
+    // check that
+    let audio_context_utf8_name = if let Ok(result) =
+        js_audio_context.has_named_property("Symbol.toStringTag")
+    {
+        if result {
+            let audio_context_name =
+                js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
+            let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
+            let audio_context_str = &audio_context_utf8_name[..];
+
+            if audio_context_str != "AudioContext" && audio_context_str != "OfflineAudioContext" {
+                let msg = "TypeError - Failed to construct 'ConstantSourceNode': argument 1 is not of type BaseAudioContext";
+                return Err(napi::Error::new(napi::Status::InvalidArg, msg));
+            }
+
+            audio_context_utf8_name
+        } else {
+            let msg = "TypeError - Failed to construct 'ConstantSourceNode': argument 1 is not of type BaseAudioContext";
             return Err(napi::Error::new(napi::Status::InvalidArg, msg));
         }
-
-        audio_context_utf8_name
     } else {
-        // this crashes in debug mode but not in release mode, weird...
-        // > Throw error failed, status: [PendingException], raw message: "...", raw status: [InvalidArg]
-        // > note: run with 'RUST_BACKTRACE=1' environment variable to display a backtrace
-        // > fatal runtime error: failed to initiate panic, error 5
-        let msg = "Failed to construct 'ConstantSourceNode': argument 0 should be an instance of BaseAudioContext";
+        // This swallowed somehow, .e.g const node = new GainNode(null); throws
+        // TypeError Cannot convert undefined or null to object
+        // To be investigated...
+        let msg = "TypeError - Failed to construct 'ConstantSourceNode': argument 1 is not of type BaseAudioContext";
         return Err(napi::Error::new(napi::Status::InvalidArg, msg));
     };
 
@@ -125,9 +131,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let options = if let Ok(either_options) = ctx.try_get::<JsObject>(1) {
         match either_options {
             Either::A(options_js) => {
-                let some_offset_js = options_js.get::<&str, JsNumber>("offset")?;
+                let some_offset_js = options_js.get::<&str, JsObject>("offset")?;
                 let offset = if let Some(offset_js) = some_offset_js {
-                    offset_js.get_double()? as f32
+                    offset_js.coerce_to_number()?.get_double()? as f32
                 } else {
                     1.
                 };
@@ -226,7 +232,7 @@ fn set_channel_count_mode(ctx: CallContext) -> Result<JsUndefined> {
         "max" => ChannelCountMode::Max,
         "clamped-max" => ChannelCountMode::ClampedMax,
         "explicit" => ChannelCountMode::Explicit,
-        _ => panic!("undefined value for ChannelCountMode"),
+        _ => panic!("TypeError - The provided value '{:?}' is not a valid enum value of type ChannelCountMode", utf8_str.as_str()),
     };
     node.set_channel_count_mode(value);
 
@@ -259,7 +265,7 @@ fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
     let value = match utf8_str.as_str() {
         "speakers" => ChannelInterpretation::Speakers,
         "discrete" => ChannelInterpretation::Discrete,
-        _ => panic!("undefined value for ChannelInterpretation"),
+        _ => panic!("TypeError - The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", utf8_str.as_str()),
     };
     node.set_channel_interpretation(value);
 
@@ -307,7 +313,7 @@ fn start(ctx: CallContext) -> Result<JsUndefined> {
     match ctx.length {
         0 => node.start(),
         1 => {
-            let when = ctx.get::<JsNumber>(0)?.get_double()?;
+            let when = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
             node.start_at(when);
         }
         _ => (),
@@ -325,7 +331,7 @@ fn stop(ctx: CallContext) -> Result<JsUndefined> {
     match ctx.length {
         0 => node.stop(),
         1 => {
-            let when = ctx.get::<JsNumber>(0)?.try_into()?;
+            let when = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
             node.stop_at(when);
         }
         _ => (),

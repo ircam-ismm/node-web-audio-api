@@ -3,7 +3,7 @@ const { isFunction } = require('./lib/utils.js');
 const kEventListeners = Symbol('node-web-audio-api:event-listeners');
 const kDispatchEvent = Symbol.for('node-web-audio-api:napi-dispatch-event');
 
-module.exports = (superclass, eventTypes) => class EventTarget extends superclass {
+module.exports = (superclass, eventTypes = []) => class EventTarget extends superclass {
   [kEventListeners] = new Map();
 
   constructor(...args) {

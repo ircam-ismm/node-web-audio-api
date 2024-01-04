@@ -19,49 +19,92 @@
 
 const { throwSanitizedError } = require('./lib/errors.js');
 
-const { AudioParam } = require('./AudioParam.js');
-const EventTargetMixin = require('./EventTarget.mixin.js');
-const AudioNodeMixin = require('./AudioNode.mixin.js');
-const AudioScheduledSourceNodeMixin = require('./AudioScheduledSourceNode.mixin.js');
+const { AudioParam, kNativeAudioParam } = require('./AudioParam.js');
 
-module.exports = (NativeOscillatorNode) => {
-
-  const EventTarget = EventTargetMixin(NativeOscillatorNode, ['ended']);
-  const AudioNode = AudioNodeMixin(EventTarget);
-  const AudioScheduledSourceNode = AudioScheduledSourceNodeMixin(AudioNode);
-
-  class OscillatorNode extends AudioScheduledSourceNode {
-    constructor(context, options) {
-      super(context, options);
-      // EventTargetMixin has been called so EventTargetMixin[kDispatchEvent] is
-      // bound to this, then we can safely finalize event target initialization
-      super.__initEventTarget__();
-
-      this.frequency = new AudioParam(this.frequency);
-      this.detune = new AudioParam(this.detune);
+module.exports = (superclass) => {
+  class AudioNode extends superclass {
+    constructor(...args) {
+      try {
+        super(...args);
+      } catch (err) {
+        throwSanitizedError(err);
+      }
     }
-
     // getters
 
-    get type() {
-      return super.type;
+    get context() {
+      return super.context;
+    }
+
+    get numberOfInputs() {
+      return super.numberOfInputs;
+    }
+
+    get numberOfOutputs() {
+      return super.numberOfOutputs;
+    }
+
+    get channelCount() {
+      return super.channelCount;
+    }
+
+    get channelCountMode() {
+      return super.channelCountMode;
+    }
+
+    get channelInterpretation() {
+      return super.channelInterpretation;
     }
 
     // setters
 
-    set type(value) {
+    set channelCount(value) {
       try {
-        super.type = value;
+        super.channelCount = value;
       } catch (err) {
         throwSanitizedError(err);
       }
     }
 
-    // methods
-    
-    setPeriodicWave(...args) {
+    set channelCountMode(value) {
       try {
-        return super.setPeriodicWave(...args);
+        super.channelCountMode = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
+
+    set channelInterpretation(value) {
+      try {
+        super.channelInterpretation = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
+
+    // methods - connect / disconnect
+    
+    connect(...args) {
+      // unwrap raw audio params from facade
+      if (args[0] instanceof AudioParam) {
+        args[0] = args[0][kNativeAudioParam];
+      }
+
+      try {
+        return super.connect(...args);
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
+
+    disconnect(...args) {
+      // unwrap raw audio params from facade
+      if (args[0] instanceof AudioParam) {
+        args[0] = args[0][kNativeAudioParam];
+      }
+
+      try {
+        return super.disconnect(...args);
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -69,8 +112,7 @@ module.exports = (NativeOscillatorNode) => {
 
   }
 
-  return OscillatorNode;
+  return AudioNode;
 };
-
 
   

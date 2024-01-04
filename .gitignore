@@ -135,3 +135,5 @@ src-manual
 dummy.mjs
 
 issues
+
+all-check.sh
