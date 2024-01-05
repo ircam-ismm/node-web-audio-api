@@ -5,18 +5,17 @@ const audioContext = new AudioContext({ latencyHint });
 
 setInterval(() => {
   const now = audioContext.currentTime;
+  const frequency = 200 + Math.random() * 2800;
 
-  const env = new GainNode(audioContext);
+  const env = new GainNode(audioContext, { gain: 0 });
   env.connect(audioContext.destination);
-  env.gain.value = 0;
-  env.gain.setValueAtTime(0, now);
-  env.gain.linearRampToValueAtTime(0.2, now + 0.02);
-  env.gain.exponentialRampToValueAtTime(0.0001, now + 1);
+  env.gain
+    .setValueAtTime(0, now)
+    .linearRampToValueAtTime(0.2, now + 0.02)
+    .exponentialRampToValueAtTime(0.0001, now + 1);
 
-  const osc = new OscillatorNode(audioContext);
-  osc.frequency.value = 200 + Math.random() * 2800;
+  const osc = new OscillatorNode(audioContext, { frequency });
   osc.connect(env);
   osc.start(now);
   osc.stop(now + 1);
 }, 80);
-

@@ -2,9 +2,9 @@
 
 [![npm version](https://badge.fury.io/js/node-web-audio-api.svg)](https://badge.fury.io/js/node-web-audio-api)
 
-Node.js bindings for the Rust implementation of the Web Audio API Specification
+Node.js bindings for the Rust implementation of the [Web Audio API](https://www.w3.org/TR/webaudio/).
 
-The goal of this library is to provide an implementation that is both efficient and _exactly_ matches the browsers' API.
+This library aims to provide an implementation that is both efficient and compliant with the specification.
 
 - see [`orottier/web-audio-api-rs`](https://github.com/orottier/web-audio-api-rs/) for the "real" audio guts
 - use [`napi-rs`](https://github.com/napi-rs/napi-rs/) for the Node.js bindings
@@ -21,21 +21,20 @@ npm install [--save] node-web-audio-api
 import { AudioContext, OscillatorNode, GainNode } from 'node-web-audio-api';
 // or using old fashioned commonjs syntax:
 // const { AudioContext, OscillatorNode, GainNode } = require('node-web-audio-api');
-
 const audioContext = new AudioContext();
 
 setInterval(() => {
   const now = audioContext.currentTime;
+  const frequency = 200 + Math.random() * 2800;
 
-  const env = new GainNode(audioContext);
+  const env = new GainNode(audioContext, { gain: 0 });
   env.connect(audioContext.destination);
-  env.gain.value = 0;
-  env.gain.setValueAtTime(0, now);
-  env.gain.linearRampToValueAtTime(1, now + 0.02);
-  env.gain.exponentialRampToValueAtTime(0.0001, now + 1);
+  env.gain
+    .setValueAtTime(0, now)
+    .linearRampToValueAtTime(0.2, now + 0.02)
+    .exponentialRampToValueAtTime(0.0001, now + 1);
 
-  const osc = new OscillatorNode(audioContext);
-  osc.frequency.value = 200 + Math.random() * 2800;
+  const osc = new OscillatorNode(audioContext, { frequency });
   osc.connect(env);
   osc.start(now);
   osc.stop(now + 1);
@@ -66,8 +65,9 @@ node examples/granular-scrub.mjs
 
 ## Caveats
 
-- The async methods are not trully async for now and are just patched on the JS side. This will evolve once the "trully" async version of the methods are implemented in the upstream library.
-- On Raspberry Pi, the `Linux arm gnueabihf` binary provided only works on 32bit OS. We will provide a version for the 64 bit OS in the future.
+- Missing nodes: `ScriptProcessorNode`, `AudioWorkletNode`.
+- Streams: only a minimial audio input stream and the `MediaStreamSourceNode` are provided. All other `MediaStream` features are left on the side for now as they principaly concern a different API specification, which is not a trivial problem.
+- Some async methods (e.g. `decodeAudioData`, `setSinkId`) are not trully async yet. This will evolve with the implemetation of the async version in the upstream crate.
 
 ## Supported Platforms
 
@@ -76,7 +76,7 @@ node examples/granular-scrub.mjs
 | Windows x64                  | ✓        |        |
 | Windows arm64                | ✓        |        |
 | macOS x64                    | ✓        | ✓      |
-| macOS aarch64                | ✓        |        |
+| macOS aarch64                | ✓        | ✓      |
 | Linux x64 gnu                | ✓        |        |
 | Linux arm gnueabihf (RPi)    | ✓        | ✓      |
 | Linux arm64 gnu (RPi)        | ✓        | ✓      |
@@ -90,13 +90,13 @@ Using the library on Linux with the ALSA backend might lead to unexpected cranky
 const audioContext = new AudioContext({ latencyHint: 'playback' });
 ```
 
-You can pass the `WEB_AUDIO_LATENCY=playback` env variable to all examples to create the audio context with the playback latency hint, e.g.:
+For real-time and interactive applications where low latency is crucial, you should instead rely on the JACK backend provided by `cpal`. By default the audio context will use that backend if a running JACK server is found.
+
+If you don't have JACK installed, you can still pass the `WEB_AUDIO_LATENCY=playback` env variable to all examples to create the audio context with the playback latency hint, e.g.:
 
 ```sh
 WEB_AUDIO_LATENCY=playback node examples/amplitude-modulation.mjs
 ```
-
-For real-time and interactive applications where low latency is crucial, you should instead rely on the JACK backend provided by `cpal`. By default the audio context will use that backend if a running JACK server is found.
 
 ### Manual Build
 
@@ -146,8 +146,6 @@ npm run wpt:only                 # run all wpt test without build
 npm run wpt -- --list            # list all wpt test files
 npm run wpt -- --filter <string> # apply <string> filter on executed/listed wpt tests 
 ```
-
-Avai
 
 ## License
 

@@ -39,7 +39,7 @@ impl ${d.napiName(d.node)} {
                 Property::new("listener")?.with_getter(get_listener),
                 Property::new("state")?.with_getter(get_state),
                 Property::new("decodeAudioData")?.with_method(decode_audio_data),
-                // @todo - move to js
+                // @todo - move to js?
                 Property::new("createPeriodicWave")?.with_method(create_periodic_wave),
                 Property::new("createBuffer")?.with_method(create_buffer),
 
@@ -52,12 +52,10 @@ impl ${d.napiName(d.node)} {
                 Property::new("outputLatency")?.with_getter(get_output_latency),
                 Property::new("sinkId")?.with_getter(get_sink_id),
                 Property::new("setSinkId")?.with_method(set_sink_id),
-                // implementation specific to online audio context
                 Property::new("resume")?.with_method(resume),
                 Property::new("suspend")?.with_method(suspend),
                 Property::new("close")?.with_method(close),
                 // private
-                // @todo - OfflineAudioContext version
                 Property::new("__initEventTarget__")?.with_method(init_event_target),
                     ` : `
                 // ----------------------------------------------------
@@ -65,9 +63,10 @@ impl ${d.napiName(d.node)} {
                 // ----------------------------------------------------
                 Property::new("length")?.with_getter(get_length),
                 Property::new("startRendering")?.with_method(start_rendering),
-                // implementation specific to offline audio context
-                Property::new("suspend")?.with_method(suspend),
                 Property::new("resume")?.with_method(resume),
+                Property::new("suspend")?.with_method(suspend),
+                // private
+                Property::new("__initEventTarget__")?.with_method(init_event_target),
                     `
                 }
             ],
@@ -363,19 +362,50 @@ ${d.name(d.node) === 'AudioContext' ?
 // ----------------------------------------------------
 // Methods and attributes specific to AudioContext
 // ----------------------------------------------------
-${['resume', 'suspend', 'close'].map(method => `
-// @todo - async version
 #[js_function]
-fn ${method}(ctx: CallContext) -> Result<JsUndefined> {
+fn resume(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let obj = napi_obj.unwrap();
+    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
+    let clone = Arc::clone(&napi_obj.context);
 
-    obj.${method}_sync();
-
-    ctx.env.get_undefined()
+    ctx.env.execute_tokio_future(
+        async move {
+            clone.resume().await;
+            Ok(())
+        },
+        |&mut env, _val| env.get_undefined(),
+    )
 }
-`).join('')}
+
+#[js_function]
+fn suspend(ctx: CallContext) -> Result<JsObject> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
+    let clone = Arc::clone(&napi_obj.context);
+
+    ctx.env.execute_tokio_future(
+        async move {
+            clone.suspend().await;
+            Ok(())
+        },
+        |&mut env, _val| env.get_undefined(),
+    )
+}
+
+#[js_function]
+fn close(ctx: CallContext) -> Result<JsObject> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
+    let clone = Arc::clone(&napi_obj.context);
+
+    ctx.env.execute_tokio_future(
+        async move {
+            clone.close().await;
+            Ok(())
+        },
+        |&mut env, _val| env.get_undefined(),
+    )
+}
 
 #[js_function]
 fn get_base_latency(ctx: CallContext) -> Result<JsNumber> {
@@ -444,13 +474,12 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
 
     let _ = napi_context.store_thread_safe_listener(tsfn.clone());
 
-    // statechange event
-    {
+    { // statechange event
         let tsfn = tsfn.clone();
         let napi_context = napi_context.clone();
 
         context.set_onstatechange(move |e| {
-            tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
+            tsfn.call(Ok(e.clone()), ThreadsafeFunctionCallMode::Blocking);
 
             if napi_context.unwrap().state() == AudioContextState::Closed {
                 napi_context.clear_all_thread_safe_listeners();
@@ -458,8 +487,7 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
         });
     }
 
-    // sinkchange event
-    {
+    { // sinkchange event
         let tsfn = tsfn.clone();
 
         context.set_onsinkchange(move |e| {
@@ -477,7 +505,7 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
 #[js_function]
 fn get_length(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+    let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
     let obj = napi_obj.unwrap();
 
     let length = obj.length() as f64;
@@ -487,7 +515,7 @@ fn get_length(ctx: CallContext) -> Result<JsNumber> {
 #[js_function]
 fn start_rendering(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+    let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
     let clone = Arc::clone(&napi_obj.context);
 
     ctx.env.execute_tokio_future(
@@ -513,26 +541,6 @@ fn start_rendering(ctx: CallContext) -> Result<JsObject> {
     )
 }
 
-#[js_function(1)]
-fn suspend(ctx: CallContext) -> Result<JsObject> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let clone = Arc::clone(&napi_obj.context);
-
-    let when = match ctx.try_get::<JsNumber>(0)? {
-        Either::A(value) => value.get_double()?,
-        Either::B(_) => 0.
-    };
-
-    ctx.env.execute_tokio_future(
-        async move {
-            clone.suspend(when).await;
-            Ok(())
-        },
-        |&mut env, _val| env.get_undefined(),
-    )
-}
-
 #[js_function]
 fn resume(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -548,10 +556,66 @@ fn resume(ctx: CallContext) -> Result<JsObject> {
     )
 }
 
+#[js_function(1)]
+fn suspend(ctx: CallContext) -> Result<JsObject> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
+    let clone = Arc::clone(&napi_obj.context);
+
+    let when = match ctx.try_get::<JsNumber>(0)? {
+        Either::A(value) => value.get_double()?,
+        Either::B(_) => {
+            let msg = "TypeError - Failed to suspend '${d.name(d.node)}': argument 1 is not a number";
+            return Err(napi::Error::new(napi::Status::InvalidArg, msg));
+        }
+    };
+
+    ctx.env.execute_tokio_future(
+        async move {
+            clone.suspend(when).await;
+            Ok(())
+        },
+        |&mut env, _val| env.get_undefined(),
+    )
+}
+
 // ----------------------------------------------------
-// @todo - Private Event Target initialization
-// statechange & complete
+// Private Event Target initialization
+// @todo - to be finished
 // ----------------------------------------------------
+#[js_function]
+fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_context = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+    let context = napi_context.unwrap();
+
+    let dispatch_event_symbol = ctx.env.symbol_for("node-web-audio-api:napi-dispatch-event").unwrap();
+    let js_func = js_this.get_property(dispatch_event_symbol).unwrap();
+
+    let tsfn = ctx.env.create_threadsafe_function(&js_func, 0, |ctx: ThreadSafeCallContext<Event>| {
+        let event_type = ctx.env.create_string(ctx.value.type_)?;
+        Ok(vec![event_type])
+    })?;
+
+    let _ = napi_context.store_thread_safe_listener(tsfn.clone());
+
+    { // statechange event
+        let tsfn = tsfn.clone();
+        let napi_context = napi_context.clone();
+
+        context.set_onstatechange(move |e| {
+            tsfn.call(Ok(e.clone()), ThreadsafeFunctionCallMode::Blocking);
+
+            if napi_context.unwrap().state() == AudioContextState::Closed {
+                napi_context.clear_all_thread_safe_listeners();
+            }
+        });
+    }
+
+    // @todo - oncomplete event
+
+    ctx.env.get_undefined()
+}
     `
 }
 

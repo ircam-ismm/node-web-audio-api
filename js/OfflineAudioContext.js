@@ -6,7 +6,8 @@ module.exports = function patchOfflineAudioContext(bindings) {
   // - https://github.com/orottier/web-audio-api-rs/issues/411
   // - https://github.com/orottier/web-audio-api-rs/issues/416
 
-  const BaseAudioContext = require('./BaseAudioContext.mixin.js')(bindings.OfflineAudioContext, bindings);
+  const EventTarget = require('./EventTarget.mixin.js')(bindings.OfflineAudioContext, ['statechange']);
+  const BaseAudioContext = require('./BaseAudioContext.mixin.js')(EventTarget, bindings);
 
   class OfflineAudioContext extends BaseAudioContext {
     constructor(...args) {
@@ -30,6 +31,9 @@ module.exports = function patchOfflineAudioContext(bindings) {
       }
 
       super(numberOfChannels, length, sampleRate);
+
+      // @todo - do not init the event target, no way to clean the thread safe
+      // functions for now
 
       // EventTargetMixin has been called so EventTargetMixin[kDispatchEvent] is
       // bound to this, then we can safely finalize event target initialization

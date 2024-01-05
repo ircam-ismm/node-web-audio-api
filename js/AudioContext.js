@@ -29,23 +29,15 @@ module.exports = function(bindings) {
       // keep process awake until context is closed
       const keepAwakeId = setInterval(() => {}, 10 * 1000);
       this[kKeepAwakeId] = keepAwakeId;
-    }
 
-    // promisify sync APIs
-    resume() {
-      return Promise.resolve(super.resume());
-    }
-
-    suspend() {
-      return Promise.resolve(super.suspend());
-    }
-
-    close() {
-      // allow to garbage collect the context and to the close the process
-      delete process[this[kProcessId]];
-      clearTimeout(this[kKeepAwakeId]);
-
-      return Promise.resolve(super.close());
+      // clear on close
+      this.addEventListener('statechange', () => {
+        if (this.state === 'closed') {
+          // allow to garbage collect the context and to the close the process
+          delete process[this[kProcessId]];
+          clearTimeout(this[kKeepAwakeId]);
+        }
+      });
     }
 
     setSinkId(sinkId) {

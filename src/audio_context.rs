@@ -62,7 +62,7 @@ impl NapiAudioContext {
                 Property::new("listener")?.with_getter(get_listener),
                 Property::new("state")?.with_getter(get_state),
                 Property::new("decodeAudioData")?.with_method(decode_audio_data),
-                // @todo - move to js
+                // @todo - move to js?
                 Property::new("createPeriodicWave")?.with_method(create_periodic_wave),
                 Property::new("createBuffer")?.with_method(create_buffer),
                 // ----------------------------------------------------
@@ -72,12 +72,10 @@ impl NapiAudioContext {
                 Property::new("outputLatency")?.with_getter(get_output_latency),
                 Property::new("sinkId")?.with_getter(get_sink_id),
                 Property::new("setSinkId")?.with_method(set_sink_id),
-                // implementation specific to online audio context
                 Property::new("resume")?.with_method(resume),
                 Property::new("suspend")?.with_method(suspend),
                 Property::new("close")?.with_method(close),
                 // private
-                // @todo - OfflineAudioContext version
                 Property::new("__initEventTarget__")?.with_method(init_event_target),
             ],
         )
@@ -356,41 +354,49 @@ fn create_periodic_wave(ctx: CallContext) -> Result<JsObject> {
 // ----------------------------------------------------
 // Methods and attributes specific to AudioContext
 // ----------------------------------------------------
-
-// @todo - async version
 #[js_function]
-fn resume(ctx: CallContext) -> Result<JsUndefined> {
+fn resume(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
-    let obj = napi_obj.unwrap();
+    let clone = Arc::clone(&napi_obj.context);
 
-    obj.resume_sync();
-
-    ctx.env.get_undefined()
+    ctx.env.execute_tokio_future(
+        async move {
+            clone.resume().await;
+            Ok(())
+        },
+        |&mut env, _val| env.get_undefined(),
+    )
 }
 
-// @todo - async version
 #[js_function]
-fn suspend(ctx: CallContext) -> Result<JsUndefined> {
+fn suspend(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
-    let obj = napi_obj.unwrap();
+    let clone = Arc::clone(&napi_obj.context);
 
-    obj.suspend_sync();
-
-    ctx.env.get_undefined()
+    ctx.env.execute_tokio_future(
+        async move {
+            clone.suspend().await;
+            Ok(())
+        },
+        |&mut env, _val| env.get_undefined(),
+    )
 }
 
-// @todo - async version
 #[js_function]
-fn close(ctx: CallContext) -> Result<JsUndefined> {
+fn close(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
-    let obj = napi_obj.unwrap();
+    let clone = Arc::clone(&napi_obj.context);
 
-    obj.close_sync();
-
-    ctx.env.get_undefined()
+    ctx.env.execute_tokio_future(
+        async move {
+            clone.close().await;
+            Ok(())
+        },
+        |&mut env, _val| env.get_undefined(),
+    )
 }
 
 #[js_function]
@@ -471,7 +477,7 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
         let napi_context = napi_context.clone();
 
         context.set_onstatechange(move |e| {
-            tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
+            tsfn.call(Ok(e.clone()), ThreadsafeFunctionCallMode::Blocking);
 
             if napi_context.unwrap().state() == AudioContextState::Closed {
                 napi_context.clear_all_thread_safe_listeners();
