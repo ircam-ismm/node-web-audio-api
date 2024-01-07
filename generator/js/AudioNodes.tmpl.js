@@ -61,7 +61,10 @@ ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
         acc.push(method)
       }
       return acc;
-    }, []).map(method => {
+    }, [])
+    // filter AudioScheduledSourceNode methods to prevent re-throwing errors
+    .filter(method => d.name(method) !== 'start' && d.name(method) !== 'stop')
+    .map(method => {
   return `
     ${d.name(method)}(...args) {
       try {

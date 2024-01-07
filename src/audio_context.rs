@@ -471,8 +471,8 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
 
     let _ = napi_context.store_thread_safe_listener(tsfn.clone());
 
-    // statechange event
     {
+        // statechange event
         let tsfn = tsfn.clone();
         let napi_context = napi_context.clone();
 
@@ -485,8 +485,8 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
         });
     }
 
-    // sinkchange event
     {
+        // sinkchange event
         let tsfn = tsfn.clone();
 
         context.set_onsinkchange(move |e| {

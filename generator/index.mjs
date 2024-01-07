@@ -332,7 +332,7 @@ let jsOutput = path.join(process.cwd(), 'js');
   const pathname = path.join(jsOutput, `${name}.mixin.js`);
   console.log(`> generating file: ${path.relative(process.cwd(), pathname)}`);
 
-  const codeTmpl = fs.readFileSync(path.join(jsTemplates, `AudioNode.mixin.tmpl.js`), 'utf8');
+  const codeTmpl = fs.readFileSync(path.join(jsTemplates, `${name}.mixin.tmpl.js`), 'utf8');
   const tmpl = compile(codeTmpl);
 
   const code = tmpl({

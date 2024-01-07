@@ -383,6 +383,7 @@ fn suspend(ctx: CallContext) -> Result<JsObject> {
 
 // ----------------------------------------------------
 // Private Event Target initialization
+// @todo - to be finished
 // ----------------------------------------------------
 #[js_function]
 fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
@@ -405,8 +406,8 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
 
     let _ = napi_context.store_thread_safe_listener(tsfn.clone());
 
-    // statechange event
     {
+        // statechange event
         let tsfn = tsfn.clone();
         let napi_context = napi_context.clone();
 

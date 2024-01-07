@@ -95,14 +95,6 @@ module.exports = (NativeAudioBufferSourceNode) => {
 
     // methods
     
-    start(...args) {
-      try {
-        return super.start(...args);
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
   }
 
   return AudioBufferSourceNode;

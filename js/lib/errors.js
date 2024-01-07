@@ -47,7 +47,6 @@ exports.throwSanitizedError = function throwSanitizedError(err) {
   if (err.message.startsWith('TypeError')) {
     const msg = err.message.replace(/^TypeError - /, '');
     const error = new TypeError(msg);
-    overrideStack(err, error);
 
     throw error;
   } else if (err.message.startsWith('RangeError')) {
