@@ -10,6 +10,7 @@ module.exports = function createXMLHttpRequest(basepath) {
       this.onload;
       this.onerror;
       this.response;
+      this.status = null;
     }
 
     open(_protocol, url) {
@@ -21,13 +22,15 @@ module.exports = function createXMLHttpRequest(basepath) {
 
       try {
         const pathname = path.join(basepath, this._pathname);
+        // console.log('[XMLHttpRequest:MOCK]', pathname);
         buffer = fs.readFileSync(pathname).buffer;
       } catch (err) {
-        console.log(err.message);
+        this.status = 404;
         this.onerror(err);
         return;
       }
 
+      this.status = 200;
       this.response = buffer;
       this.onload();
     }
