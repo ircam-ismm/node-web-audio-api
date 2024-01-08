@@ -1,4 +1,9 @@
-import { mediaDevices, AudioContext, MediaStreamAudioSourceNode } from '../index.mjs';
+import {
+  mediaDevices,
+  AudioContext,
+  // eslint-disable-next-line no-unused-vars
+  MediaStreamAudioSourceNode,
+} from '../index.mjs';
 
 console.log('MediaDevices::getUserMedia - mic feedback, be careful with volume...)');
 

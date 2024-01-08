@@ -19,8 +19,6 @@
 
 const { throwSanitizedError } = require('./lib/errors.js');
 
-const { AudioParam, kNativeAudioParam } = require('./AudioParam.js');
-
 module.exports = (superclass) => {
   class AudioScheduledSourceNode extends superclass {
     constructor(...args) {

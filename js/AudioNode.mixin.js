@@ -23,6 +23,7 @@ const { AudioParam, kNativeAudioParam } = require('./AudioParam.js');
 
 module.exports = (superclass) => {
   class AudioNode extends superclass {
+    /* eslint-disable constructor-super */
     constructor(...args) {
       try {
         super(...args);
@@ -30,6 +31,8 @@ module.exports = (superclass) => {
         throwSanitizedError(err);
       }
     }
+    /* eslint-enable constructor-super */
+
     // getters
 
     get context() {

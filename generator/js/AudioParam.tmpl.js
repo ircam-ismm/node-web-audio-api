@@ -6,14 +6,14 @@ class AudioParam {
   constructor(nativeAudioParam) {
     this[kNativeAudioParam] = nativeAudioParam;
   }
-
+  // getters
 ${d.attributes(d.node).map(attr => {
   return `
   get ${d.name(attr)}() {
     return this[kNativeAudioParam].${d.name(attr)};
   }
 `}).join('')}
-    // setters
+  // setters
 ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
   return `
   set ${d.name(attr)}(value) {
@@ -24,14 +24,14 @@ ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
     }
   }
 `}).join('')}
-    // methods
-    ${d.methods(d.node, false).reduce((acc, method) => {
-      // dedup method names
-      if (!acc.find(i => d.name(i) === d.name(method))) {
-        acc.push(method)
-      }
-      return acc;
-    }, []).map(method => {
+  // methods
+${d.methods(d.node, false).reduce((acc, method) => {
+  // dedup method names
+  if (!acc.find(i => d.name(i) === d.name(method))) {
+    acc.push(method)
+  }
+  return acc;
+}, []).map(method => {
   return `
   ${d.name(method)}(...args) {
     try {

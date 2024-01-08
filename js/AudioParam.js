@@ -25,7 +25,7 @@ class AudioParam {
   constructor(nativeAudioParam) {
     this[kNativeAudioParam] = nativeAudioParam;
   }
-
+  // getters
 
   get value() {
     return this[kNativeAudioParam].value;
@@ -47,7 +47,7 @@ class AudioParam {
     return this[kNativeAudioParam].maxValue;
   }
 
-    // setters
+  // setters
 
   set value(value) {
     try {
@@ -65,8 +65,8 @@ class AudioParam {
     }
   }
 
-    // methods
-    
+  // methods
+
   setValueAtTime(...args) {
     try {
       return this[kNativeAudioParam].setValueAtTime(...args);
