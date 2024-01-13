@@ -1,4 +1,8 @@
 const { EOL } = require('os');
+const path = require('path');
+
+const internalPath = path.join('node-web-audio-api', 'js');
+const internalRe = new RegExp(internalPath);
 
 class NotSupportedError extends Error {
   constructor(message) {
@@ -33,24 +37,39 @@ exports.InvalidStateError = InvalidStateError;
 exports.IndexSizeError = IndexSizeError;
 
 function overrideStack(originalError, newError) {
-  const lines = originalError.stack.split(EOL);
   // override previous error message
-  lines[0] = newError.message;
-  // remove first stack line which correspond to the try / catch in Object
-  lines.splice(1, 1);
+  const stack = originalError.stack.replace(originalError.message, newError.message);
+  const lines = stack.split(EOL);
+
+  // remove all lines that refer to internal classes, i.e. contains `node-web-audio-api/js`
+  for (let i = lines.length - 1; i > 0; i--) {
+    const line = lines[i];
+    if (internalRe.test(line)) {
+      lines.splice(i, 1);
+    }
+  }
+
   // override new stack with modified one
   newError.stack = lines.join(EOL);
 }
 
 exports.throwSanitizedError = function throwSanitizedError(err) {
+  // We also need to handle output of `assert_ne!` as well, e.g.
+  // assertion `left != right` failed: NotSupportedError - StereoPannerNode channel count mode cannot be set to max
+  //   left: Max
+  //   right: Max
+  let originalMessage = err.message;
+  originalMessage = originalMessage.replace('assertion `left != right` failed: ', '');
+  originalMessage = originalMessage.split(EOL)[0]; // keep only first line
+
   // "Native Errors"
-  if (err.message.startsWith('TypeError')) {
-    const msg = err.message.replace(/^TypeError - /, '');
+  if (originalMessage.startsWith('TypeError')) {
+    const msg = originalMessage.replace(/^TypeError - /, '');
     const error = new TypeError(msg);
 
     throw error;
-  } else if (err.message.startsWith('RangeError')) {
-    const msg = err.message.replace(/^RangeError - /, '');
+  } else if (originalMessage.startsWith('RangeError')) {
+    const msg = originalMessage.replace(/^RangeError - /, '');
     const error = new RangeError(msg);
     overrideStack(err, error);
 
@@ -58,26 +77,26 @@ exports.throwSanitizedError = function throwSanitizedError(err) {
   }
 
   // "other errors"
-  if (err.message.startsWith('NotSupportedError')) {
-    const msg = err.message.replace(/^NotSupportedError - /, '');
+  if (originalMessage.startsWith('NotSupportedError')) {
+    const msg = originalMessage.replace(/^NotSupportedError - /, '');
     const error = new NotSupportedError(msg);
     overrideStack(err, error);
 
     throw error;
-  } else  if (err.message.startsWith('InvalidStateError')) {
-    const msg = err.message.replace(/^InvalidStateError - /, '');
+  } else  if (originalMessage.startsWith('InvalidStateError')) {
+    const msg = originalMessage.replace(/^InvalidStateError - /, '');
     const error = new InvalidStateError(msg);
     overrideStack(err, error);
 
     throw error;
-  } if (err.message.startsWith('IndexSizeError')) {
-    const msg = err.message.replace(/^IndexSizeError - /, '');
+  } if (originalMessage.startsWith('IndexSizeError')) {
+    const msg = originalMessage.replace(/^IndexSizeError - /, '');
     const error = new IndexSizeError(msg);
     overrideStack(err, error);
 
     throw error;
-  } if (err.message.startsWith('InvalidAccessError')) {
-    const msg = err.message.replace(/^InvalidAccessError - /, '');
+  } if (originalMessage.startsWith('InvalidAccessError')) {
+    const msg = originalMessage.replace(/^InvalidAccessError - /, '');
     const error = new InvalidAccessError(msg);
     overrideStack(err, error);
 
