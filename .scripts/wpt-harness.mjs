@@ -75,6 +75,17 @@ const filter = (name) => {
   if (name.includes('/resources/')) {
       return false;
   }
+
+  // TODO <https://github.com/ircam-ismm/node-web-audio-api/issues/57>
+  // these tests make the runner crash
+  if (
+      name.includes('the-audiocontext-interface/suspend-with-navigation.html')
+      || name.includes('the-audionode-interface/audionode-disconnect-audioparam.html')
+      || name.includes('the-audionode-interface/audionode-disconnect.html')
+  ) {
+      return false;
+  }
+
   if (filterRe.test(name)) {
     if (options.list) {
       console.log(name);
