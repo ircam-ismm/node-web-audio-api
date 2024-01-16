@@ -2,20 +2,20 @@
 .github
 .editorconfig
 .env
+.gitmodules
 
 build.rs
 Cargo.*
 NOTES.md
 dummy.mjs
+all-check.sh
 
-deploy
+.scripts
 examples
 generator
 src
 src-manual
 target
-samples
-bin
 wpt
 tests
 issues
