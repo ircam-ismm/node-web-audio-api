@@ -1,3 +1,10 @@
+## v0.15.0 (16/01/2024)
+
+- Update upstream create to [v0.41.1](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-0411-2024-01-11)
+- Better error handling
+- Implement online AudioContext and AudioScheduledSourceNode events
+- Test against wpt
+
 ## v0.14.0 (06/12/2023)
 
 - Update upstream create to [v0.38.0](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-0380-2023-12-03)
