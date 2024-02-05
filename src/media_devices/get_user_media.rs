@@ -47,6 +47,13 @@ pub(crate) fn napi_get_user_media(ctx: CallContext) -> Result<JsObject> {
                     constraints.latency = Some(latency);
                 }
 
+                if let Ok(Some(js_channel_count)) =
+                    js_constraints.get::<&str, JsNumber>("channelCount")
+                {
+                    let channel_count = js_channel_count.get_uint32()?;
+                    constraints.channel_count = Some(channel_count);
+                }
+
                 MediaStreamConstraints::AudioWithConstraints(constraints)
             } else {
                 return Err(napi::Error::from_reason(
