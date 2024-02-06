@@ -6,12 +6,6 @@ use napi_derive::js_function;
 use std::mem::ManuallyDrop;
 use web_audio_api::{AudioBuffer, AudioBufferOptions};
 
-// helper convert [f32] to [u8]
-// https://users.rust-lang.org/t/vec-f32-to-u8/21522/7
-fn to_byte_slice(floats: &[f32]) -> &[u8] {
-    unsafe { std::slice::from_raw_parts(floats.as_ptr() as *const _, floats.len() * 4) }
-}
-
 pub(crate) struct NapiAudioBuffer(Option<AudioBuffer>);
 
 impl NapiAudioBuffer {
@@ -63,7 +57,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
     match ctx.try_get::<JsObject>(0)? {
         Either::A(options_js) => {
-            // created by decodeAudioData
+            // created by decodeAudioData (to be cleaned)
             if options_js.has_own_property("__internal_caller__")? {
                 let napi_node = NapiAudioBuffer(None);
                 ctx.env.wrap(&mut js_this, napi_node)?;
@@ -81,16 +75,8 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                 if some_length_js.is_none() {
                     return Err(napi::Error::new(
                         napi::Status::InvalidArg,
-                        "AudioBuffer: Invalid options, length is required".to_string(),
+                        "TypeError - Invalid AudioBuffer options: length is required".to_string(),
                     ));
-                    // unsafe {
-                    //     JsTypeError::from(napi::Error::new(
-                    //         napi::Status::InvalidArg,
-                    //         "AudioBuffer: Invalid options, length is required".to_string(),
-                    //     ))
-                    //     .throw_into(ctx.env.raw())
-                    // }
-                    // return ctx.env.get_undefined();
                 }
                 let length = some_length_js.unwrap().get_double()? as usize;
 
@@ -98,16 +84,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                 if some_sample_rate_js.is_none() {
                     return Err(napi::Error::new(
                         napi::Status::InvalidArg, // error code
-                        "AudioBuffer: Invalid options, sampleRate is required".to_string(),
+                        "TypeError - Invalid AudioBuffer options: sampleRate is required"
+                            .to_string(),
                     ));
-                    // unsafe {
-                    //     JsTypeError::from(napi::Error::new(
-                    //         napi::Status::InvalidArg,
-                    //         "AudioBuffer: Invalid options, length is required".to_string(),
-                    //     ))
-                    //     .throw_into(ctx.env.raw())
-                    // }
-                    // return ctx.env.get_undefined();
                 }
                 let sample_rate = some_sample_rate_js.unwrap().get_double()? as f32;
 
@@ -124,17 +103,8 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         Either::B(_) => {
             return Err(napi::Error::new(
                 napi::Status::InvalidArg,
-                "AudioBuffer: Invalid options, options are required".to_string(),
+                "TypeError - Invalid AudioBuffer options: options are required".to_string(),
             ));
-            // unsafe {
-            //     JsTypeError::from(napi::Error::new(
-            //         napi::Status::InvalidArg,
-            //         "AudioBuffer: Invalid options, length is required".to_string(),
-            //     ))
-            //     .throw_into(ctx.env.raw())
-            // }
-
-            // return ctx.env.get_undefined();
         }
     }
 
@@ -181,8 +151,6 @@ fn number_of_channels(ctx: CallContext) -> Result<JsNumber> {
     ctx.env.create_double(number_of_channels as f64)
 }
 
-// this does not work as expected...
-// the returned Float32Array is not mutable
 // #[napi]
 #[js_function(1)]
 fn get_channel_data(ctx: CallContext) -> Result<JsTypedArray> {
@@ -192,22 +160,14 @@ fn get_channel_data(ctx: CallContext) -> Result<JsTypedArray> {
 
     let channel_number = ctx.get::<JsNumber>(0)?.get_double()? as usize;
     let length = obj.length();
+
     let channel_data = obj.get_channel_data_mut(channel_number);
+    let data = unsafe {
+        std::slice::from_raw_parts_mut(channel_data.as_ptr() as *mut _, channel_data.len() * 4)
+    };
 
-    let data = to_byte_slice(channel_data);
-
-    // // safe version but returned array buffer IS NOT mutable from the javascript
-    // create array buffer and cast it into Float32Array
-    // ctx.env
-    //     .create_arraybuffer_with_data(data.to_vec())
-    //     .and_then(|array_buffer| {
-    //         array_buffer
-    //             .into_raw()
-    //             .into_typedarray(TypedArrayType::Float32, length, 0)
-    //     })
-
-    // // unsafe version but returned array buffer IS mutable from the javascript
-    let data_ptr = data.as_ptr();
+    // unsafe version but returned array buffer IS mutable from the javascript
+    let data_ptr = data.as_mut_ptr();
     let ptr_length = data.len();
     let manually_drop = ManuallyDrop::new(data);
 
