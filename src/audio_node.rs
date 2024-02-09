@@ -28,24 +28,26 @@ macro_rules! connect_method {
 
             // get destination
             let js_dest = ctx.get::<napi::JsObject>(0)?;
-            let dest_name = js_dest.get_named_property::<napi::JsString>("Symbol.toStringTag")?;
+            let dest_uf8_name = if let Ok(result) = js_dest.has_named_property("Symbol.toStringTag") {
+                if result {
+                    let dest_name = js_dest.get_named_property::<napi::JsString>("Symbol.toStringTag")?;
+                    dest_name.into_utf8()?.into_owned()?
+                } else {
+                    let msg = "TypeError - Failed to execute 'connect' on 'AudioNode': Overload resolution failed";
+                    return Err(napi::Error::new(napi::Status::InvalidArg, msg));
+                }
+            } else {
+                let msg = "TypeError - Failed to execute 'connect' on 'AudioNode': Overload resolution failed";
+                return Err(napi::Error::new(napi::Status::InvalidArg, msg));
+            };
 
-            let dest_uf8_name = dest_name.into_utf8()?.into_owned()?;
             let dest_str = &dest_uf8_name[..];
 
             let output_js: Option<napi::JsNumber> = ctx.try_get::<napi::JsNumber>(1)?.into();
-            let output: u32 = if let Some(n) = output_js {
-                n.try_into()?
-            } else {
-                0
-            };
+            let output: u32 = if let Some(n) = output_js { n.try_into()? } else { 0 };
 
             let input_js: Option<napi::JsNumber> = ctx.try_get::<napi::JsNumber>(2)?.into();
-            let input: u32 = if let Some(n) = input_js {
-                n.try_into()?
-            } else {
-                0
-            };
+            let input: u32 = if let Some(n) = input_js { n.try_into()? } else { 0 };
 
             match dest_str {
                 "AudioParam" => {
@@ -80,9 +82,7 @@ macro_rules! connect_method {
                 "AudioBufferSourceNode" => {
                     let napi_dest = ctx
                         .env
-                        .unwrap::<$crate::audio_buffer_source_node::NapiAudioBufferSourceNode>(
-                        &js_dest,
-                    )?;
+                        .unwrap::<$crate::audio_buffer_source_node::NapiAudioBufferSourceNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     let _res = native_src.connect_at(native_dest, output as usize, input as usize);
 
@@ -109,9 +109,7 @@ macro_rules! connect_method {
                 "ChannelSplitterNode" => {
                     let napi_dest = ctx
                         .env
-                        .unwrap::<$crate::channel_splitter_node::NapiChannelSplitterNode>(
-                        &js_dest,
-                    )?;
+                        .unwrap::<$crate::channel_splitter_node::NapiChannelSplitterNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     let _res = native_src.connect_at(native_dest, output as usize, input as usize);
 
@@ -147,9 +145,7 @@ macro_rules! connect_method {
                 "DynamicsCompressorNode" => {
                     let napi_dest = ctx
                         .env
-                        .unwrap::<$crate::dynamics_compressor_node::NapiDynamicsCompressorNode>(
-                        &js_dest,
-                    )?;
+                        .unwrap::<$crate::dynamics_compressor_node::NapiDynamicsCompressorNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     let _res = native_src.connect_at(native_dest, output as usize, input as usize);
 
@@ -210,7 +206,10 @@ macro_rules! connect_method {
                     Ok(js_dest)
                 }
 
-                _ => panic!("Cannot connect: Invalid destination node"),
+                _ => {
+                    let msg = "TypeError - Failed to execute 'connect' on 'AudioNode': Overload resolution failed";
+                    return Err(napi::Error::new(napi::Status::InvalidArg, msg));
+                }
             }
         }
     };
@@ -357,7 +356,7 @@ macro_rules! disconnect_method {
                             native_src.disconnect_from(native_dest);
                         }
 
-                        _ => panic!("Cannot disconnect: Invalid destination node"),
+                        _ => panic!("TypeError - Failed to execute 'disconnect' on 'AudioNode': Overload resolution failed"),
                     }
                 }
                 None => native_src.disconnect(),

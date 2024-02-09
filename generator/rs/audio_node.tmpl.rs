@@ -9,11 +9,22 @@ macro_rules! connect_method {
 
             // get destination
             let js_dest = ctx.get::<napi::JsObject>(0)?;
-            let dest_name = js_dest.get_named_property::<napi::JsString>("Symbol.toStringTag")?;
+            let dest_uf8_name = if let Ok(result) = js_dest.has_named_property("Symbol.toStringTag") {
+                if result {
+                    let dest_name = js_dest.get_named_property::<napi::JsString>("Symbol.toStringTag")?;
+                    dest_name.into_utf8()?.into_owned()?
+                } else {
+                    let msg = "TypeError - Failed to execute 'connect' on 'AudioNode': Overload resolution failed";
+                    return Err(napi::Error::new(napi::Status::InvalidArg, msg));
+                }
+            } else {
+                let msg = "TypeError - Failed to execute 'connect' on 'AudioNode': Overload resolution failed";
+                return Err(napi::Error::new(napi::Status::InvalidArg, msg));
+            };
 
-            let dest_uf8_name = dest_name.into_utf8()?.into_owned()?;
             let dest_str = &dest_uf8_name[..];
 
+            // @todo - handle
             let output_js: Option<napi::JsNumber> = ctx.try_get::<napi::JsNumber>(1)?.into();
             let output: u32 = if let Some(n) = output_js { n.try_into()? } else { 0 };
 
@@ -51,7 +62,10 @@ macro_rules! connect_method {
                     Ok(js_dest)
                 }
                 `}).join('')}
-                _ => panic!("Cannot connect: Invalid destination node"),
+                _ => {
+                    let msg = "TypeError - Failed to execute 'connect' on 'AudioNode': Overload resolution failed";
+                    return Err(napi::Error::new(napi::Status::InvalidArg, msg));
+                }
             }
         }
     };
@@ -100,7 +114,7 @@ macro_rules! disconnect_method {
                             native_src.disconnect_from(native_dest);
                         }
                         `}).join('')}
-                        _ => panic!("Cannot disconnect: Invalid destination node"),
+                        _ => panic!("TypeError - Failed to execute 'disconnect' on 'AudioNode': Overload resolution failed"),
                     }
                 }
                 None => native_src.disconnect(),
