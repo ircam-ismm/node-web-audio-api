@@ -2,13 +2,12 @@ import { OfflineAudioContext } from '../index.mjs';
 
 const offline = new OfflineAudioContext(1, 1, 48000);
 
-const src = offline.createBufferSource();
-src.connect({});
-// src.start(-1, 1, null);
+const gain = offline.createGain();
+gain.connect(offline.destination);
 
-try {
-  // src.start(NaN);
-} catch (err) {
-  console.log('final err:');
-  console.log(err);
-}
+const src = offline.createBufferSource();
+
+src.connect({});
+
+// src.connect(gain);
+// src.disconnect({});

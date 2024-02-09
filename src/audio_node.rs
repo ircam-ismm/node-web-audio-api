@@ -43,6 +43,7 @@ macro_rules! connect_method {
 
             let dest_str = &dest_uf8_name[..];
 
+            // @todo - handle
             let output_js: Option<napi::JsNumber> = ctx.try_get::<napi::JsNumber>(1)?.into();
             let output: u32 = if let Some(n) = output_js { n.try_into()? } else { 0 };
 
@@ -228,9 +229,21 @@ macro_rules! disconnect_method {
 
             match js_dest_option {
                 Some(js_dest) => {
-                    let dest_name = js_dest.get_named_property::<napi::JsString>("Symbol.toStringTag")?;
+                    let dest_uf8_name = if let Ok(result) = js_dest.has_named_property("Symbol.toStringTag") {
+                        if result {
+                            let dest_name = js_dest.get_named_property::<napi::JsString>("Symbol.toStringTag")?;
+                            dest_name.into_utf8()?.into_owned()?
+                        } else {
+                            // if not a node, just disconnect from everything
+                            native_src.disconnect();
+                            return ctx.env.get_undefined();
+                        }
+                    } else {
+                        // if not a node, just disconnect from everything
+                        native_src.disconnect();
+                        return ctx.env.get_undefined();
+                    };
 
-                    let dest_uf8_name = dest_name.into_utf8()?.into_owned()?;
                     let dest_str = &dest_uf8_name[..];
 
                     match dest_str {
