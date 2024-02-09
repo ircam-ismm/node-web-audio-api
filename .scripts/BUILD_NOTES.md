@@ -35,3 +35,9 @@ sudo apt-get install -y libasound2-dev
 ```
 
 
+# Docker image
+
+```
+cd ./.scripts/docker_x86_64-unknown-linux-gnu/
+docker build -t bbmmaa/build-x86_64 .
+```

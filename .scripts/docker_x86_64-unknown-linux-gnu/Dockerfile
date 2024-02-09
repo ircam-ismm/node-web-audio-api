@@ -1,4 +1,4 @@
-FROM node:14
+FROM node:20
 
 ENV RUSTUP_HOME=/usr/local/rustup \
     CARGO_HOME=/usr/local/cargo \
@@ -19,6 +19,10 @@ RUN dpkg --add-architecture amd64 && \
         libjack-jackd2-dev:amd64 \
         gcc \
         g++ \
+        g++-x86-64-linux-gnu \
+        libc6-dev \
+        libc6-dev:amd64 \
+        libc6-dev-amd64-cross \
         ca-certificates \
         qemu-user \
         make \
