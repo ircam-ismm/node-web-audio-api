@@ -1,3 +1,9 @@
+## v0.16.0 (09/02/2024)
+
+- Update upstream create to [v0.42.0](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-0420-2024-02-05)
+- Improve Error handling
+- Add channelCounnt to media constraints
+
 ## v0.15.0 (16/01/2024)
 
 - Update upstream create to [v0.41.1](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-0411-2024-01-11)
