@@ -4,37 +4,55 @@ const path = require('path');
 const internalPath = path.join('node-web-audio-api', 'js');
 const internalRe = new RegExp(internalPath);
 
-class NotSupportedError extends Error {
-  constructor(message) {
+// from wpt/resources/tesharness.js (line 2226)
+const nameCodeMap = {
+    IndexSizeError: 1,
+    HierarchyRequestError: 3,
+    WrongDocumentError: 4,
+    InvalidCharacterError: 5,
+    NoModificationAllowedError: 7,
+    NotFoundError: 8,
+    NotSupportedError: 9,
+    InUseAttributeError: 10,
+    InvalidStateError: 11,
+    SyntaxError: 12,
+    InvalidModificationError: 13,
+    NamespaceError: 14,
+    InvalidAccessError: 15,
+    TypeMismatchError: 17,
+    SecurityError: 18,
+    NetworkError: 19,
+    AbortError: 20,
+    URLMismatchError: 21,
+    QuotaExceededError: 22,
+    TimeoutError: 23,
+    InvalidNodeTypeError: 24,
+    DataCloneError: 25,
+
+    EncodingError: 0,
+    NotReadableError: 0,
+    UnknownError: 0,
+    ConstraintError: 0,
+    DataError: 0,
+    TransactionInactiveError: 0,
+    ReadOnlyError: 0,
+    VersionError: 0,
+    OperationError: 0,
+    NotAllowedError: 0,
+    OptOutError: 0
+};
+
+
+class DOMException extends Error {
+  constructor(message, name) {
     super(message);
-    this.name = 'NotSupportedError';
+
+    this.name = name;
+    this.code = nameCodeMap[this.name];
   }
 }
 
-class InvalidStateError extends Error {
-  constructor(message) {
-    super(message);
-    this.name = 'InvalidStateError';
-  }
-}
-
-class IndexSizeError extends Error {
-  constructor(message) {
-    super(message);
-    this.name = 'IndexSizeError';
-  }
-}
-
-class InvalidAccessError extends Error {
-  constructor(message) {
-    super(message);
-    this.name = 'InvalidAccessError';
-  }
-}
-
-exports.NotSupportedError = NotSupportedError;
-exports.InvalidStateError = InvalidStateError;
-exports.IndexSizeError = IndexSizeError;
+exports.DOMException = DOMException;
 
 function overrideStack(originalError, newError) {
   // override previous error message
@@ -76,33 +94,33 @@ exports.throwSanitizedError = function throwSanitizedError(err) {
     throw error;
   }
 
-  // "other errors"
+  // DOM Exceptions
   if (originalMessage.startsWith('NotSupportedError')) {
     const msg = originalMessage.replace(/^NotSupportedError - /, '');
-    const error = new NotSupportedError(msg);
+    const error = new DOMException(msg, 'NotSupportedError');
     overrideStack(err, error);
 
     throw error;
   } else  if (originalMessage.startsWith('InvalidStateError')) {
     const msg = originalMessage.replace(/^InvalidStateError - /, '');
-    const error = new InvalidStateError(msg);
+    const error = new DOMException(msg, 'InvalidStateError');
     overrideStack(err, error);
 
     throw error;
   } if (originalMessage.startsWith('IndexSizeError')) {
     const msg = originalMessage.replace(/^IndexSizeError - /, '');
-    const error = new IndexSizeError(msg);
+    const error = new DOMException(msg, 'IndexSizeError');
     overrideStack(err, error);
 
     throw error;
   } if (originalMessage.startsWith('InvalidAccessError')) {
     const msg = originalMessage.replace(/^InvalidAccessError - /, '');
-    const error = new InvalidAccessError(msg);
+    const error = new DOMException(msg, 'InvalidAccessError');
     overrideStack(err, error);
 
     throw error;
   }
 
-  console.warn('[lib/errors.js] Unhandled error type', err.name, err.message);
+  console.warn('[lib/errors.js] Unhandled error type', err);
   throw err;
 }
