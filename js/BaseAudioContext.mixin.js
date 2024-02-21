@@ -17,6 +17,7 @@
 // -------------------------------------------------------------------------- //
 // -------------------------------------------------------------------------- //
 
+const { AudioDestinationNode } = require('./AudioDestinationNode.js');
 const { isFunction } = require('./lib/utils.js');
 
 module.exports = (superclass, bindings) => {
@@ -39,6 +40,12 @@ module.exports = (superclass, bindings) => {
   } = bindings;
 
   class BaseAudioContext extends superclass {
+    constructor(...args) {
+      super(...args);
+
+      this.destination = new AudioDestinationNode(this.destination);
+    }
+
     // This is not exactly what the spec says, but if we reject the promise
     // when decodeErrorCallback is present the program will crash in an
     // unexpected manner
