@@ -7,10 +7,7 @@ import * as nodeWebAudioAPI from '../index.mjs';
 
 // mocks
 import createXMLHttpRequest from './wpt-mock/XMLHttpRequest.js';
-// import {
-//   NotSupportedError,
-//   InvalidStateError,
-// } from '../js/lib/errors.js';
+import { DOMException } from '../js/lib/errors.js';
 
 program
   .option('--list', 'List the name of the test files')
@@ -41,6 +38,7 @@ const rootURL = 'webaudio';
 const setup = window => {
   Object.assign(window, nodeWebAudioAPI);
 
+  window.self = window;
   // window.navigator.mediaDevices = nodeWebAudioAPI.mediaDevices;
 
   // seems required (weirdly...), cf. `the-audiobuffer-interface/audiobuffer.html`
@@ -53,8 +51,7 @@ const setup = window => {
   window.TypeError = TypeError;
   window.RangeError = RangeError;
   window.Error = Error;
-  // window.NotSupportedError = NotSupportedError;
-  // window.InvalidStateError = InvalidStateError;
+  window.DOMException = DOMException;
 }
 
 // try catch unhandled error to prevent wpt process from crashing
