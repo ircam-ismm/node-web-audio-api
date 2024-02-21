@@ -121,6 +121,6 @@ exports.throwSanitizedError = function throwSanitizedError(err) {
     throw error;
   }
 
-  console.warn('[lib/errors.js] Unhandled error type', err);
+  console.warn('[lib/errors.js] Possibly unhandled error type', err.message);
   throw err;
 }

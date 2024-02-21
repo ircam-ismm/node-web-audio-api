@@ -32,6 +32,10 @@ module.exports = (NativeConvolverNode) => {
 
   class ConvolverNode extends AudioNode {
     constructor(context, options) {
+      if (options !== undefined && typeof options !== 'object') {
+        throw new TypeError("Failed to construct 'ConvolverNode': argument 2 is not of type 'ConvolverOptions'")
+      }
+
       super(context, options);
 
     }

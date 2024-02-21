@@ -15,6 +15,10 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `
 
   class ${d.name(d.node)} extends AudioScheduledSourceNode {
     constructor(context, options) {
+      if (options !== undefined && typeof options !== 'object') {
+        throw new TypeError("Failed to construct '${d.name(d.node)}': argument 2 is not of type '${d.name(d.node).replace("Node", "Options")}'")
+      }
+
       super(context, options);
       // EventTargetMixin has been called so EventTargetMixin[kDispatchEvent] is
       // bound to this, then we can safely finalize event target initialization
@@ -30,6 +34,10 @@ ${d.audioParams(d.node).map(param => {
 
   class ${d.name(d.node)} extends AudioNode {
     constructor(context, options) {
+      if (options !== undefined && typeof options !== 'object') {
+        throw new TypeError("Failed to construct '${d.name(d.node)}': argument 2 is not of type '${d.name(d.node).replace("Node", "Options")}'")
+      }
+
       super(context, options);
 ${d.audioParams(d.node).map(param => {
     return `

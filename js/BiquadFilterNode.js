@@ -32,6 +32,10 @@ module.exports = (NativeBiquadFilterNode) => {
 
   class BiquadFilterNode extends AudioNode {
     constructor(context, options) {
+      if (options !== undefined && typeof options !== 'object') {
+        throw new TypeError("Failed to construct 'BiquadFilterNode': argument 2 is not of type 'BiquadFilterOptions'")
+      }
+
       super(context, options);
 
       this.frequency = new AudioParam(this.frequency);

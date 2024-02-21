@@ -32,6 +32,10 @@ module.exports = (NativeDynamicsCompressorNode) => {
 
   class DynamicsCompressorNode extends AudioNode {
     constructor(context, options) {
+      if (options !== undefined && typeof options !== 'object') {
+        throw new TypeError("Failed to construct 'DynamicsCompressorNode': argument 2 is not of type 'DynamicsCompressorOptions'")
+      }
+
       super(context, options);
 
       this.threshold = new AudioParam(this.threshold);

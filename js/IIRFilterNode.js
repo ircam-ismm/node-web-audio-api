@@ -32,6 +32,10 @@ module.exports = (NativeIIRFilterNode) => {
 
   class IIRFilterNode extends AudioNode {
     constructor(context, options) {
+      if (options !== undefined && typeof options !== 'object') {
+        throw new TypeError("Failed to construct 'IIRFilterNode': argument 2 is not of type 'IIRFilterOptions'")
+      }
+
       super(context, options);
 
     }

@@ -41,6 +41,10 @@ module.exports = function monkeyPatch(nativeBinding) {
   nativeBinding.AudioContext = require('./AudioContext.js')(nativeBinding);
   nativeBinding.OfflineAudioContext = require('./OfflineAudioContext.js')(nativeBinding);
 
+  // find a way to make the constructor private
+  nativeBinding.AudioParam = require('./AudioParam.js').AudioParam;
+  nativeBinding.AudioDestinationNode = require('./AudioDestinationNode.js').AudioDestinationNode;
+
   // --------------------------------------------------------------------------
   // Promisify MediaDevices API
   // --------------------------------------------------------------------------

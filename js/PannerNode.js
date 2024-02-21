@@ -32,6 +32,10 @@ module.exports = (NativePannerNode) => {
 
   class PannerNode extends AudioNode {
     constructor(context, options) {
+      if (options !== undefined && typeof options !== 'object') {
+        throw new TypeError("Failed to construct 'PannerNode': argument 2 is not of type 'PannerOptions'")
+      }
+
       super(context, options);
 
       this.positionX = new AudioParam(this.positionX);

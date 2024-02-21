@@ -32,6 +32,10 @@ module.exports = (NativeWaveShaperNode) => {
 
   class WaveShaperNode extends AudioNode {
     constructor(context, options) {
+      if (options !== undefined && typeof options !== 'object') {
+        throw new TypeError("Failed to construct 'WaveShaperNode': argument 2 is not of type 'WaveShaperOptions'")
+      }
+
       super(context, options);
 
     }

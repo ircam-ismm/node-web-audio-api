@@ -32,6 +32,10 @@ module.exports = (NativeAnalyserNode) => {
 
   class AnalyserNode extends AudioNode {
     constructor(context, options) {
+      if (options !== undefined && typeof options !== 'object') {
+        throw new TypeError("Failed to construct 'AnalyserNode': argument 2 is not of type 'AnalyserOptions'")
+      }
+
       super(context, options);
 
     }

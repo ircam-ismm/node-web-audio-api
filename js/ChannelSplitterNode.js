@@ -32,6 +32,10 @@ module.exports = (NativeChannelSplitterNode) => {
 
   class ChannelSplitterNode extends AudioNode {
     constructor(context, options) {
+      if (options !== undefined && typeof options !== 'object') {
+        throw new TypeError("Failed to construct 'ChannelSplitterNode': argument 2 is not of type 'ChannelSplitterOptions'")
+      }
+
       super(context, options);
 
     }

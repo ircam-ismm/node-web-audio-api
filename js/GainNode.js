@@ -32,6 +32,10 @@ module.exports = (NativeGainNode) => {
 
   class GainNode extends AudioNode {
     constructor(context, options) {
+      if (options !== undefined && typeof options !== 'object') {
+        throw new TypeError("Failed to construct 'GainNode': argument 2 is not of type 'GainOptions'")
+      }
+
       super(context, options);
 
       this.gain = new AudioParam(this.gain);

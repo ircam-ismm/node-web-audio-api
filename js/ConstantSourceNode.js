@@ -33,6 +33,10 @@ module.exports = (NativeConstantSourceNode) => {
 
   class ConstantSourceNode extends AudioScheduledSourceNode {
     constructor(context, options) {
+      if (options !== undefined && typeof options !== 'object') {
+        throw new TypeError("Failed to construct 'ConstantSourceNode': argument 2 is not of type 'ConstantSourceOptions'")
+      }
+
       super(context, options);
       // EventTargetMixin has been called so EventTargetMixin[kDispatchEvent] is
       // bound to this, then we can safely finalize event target initialization

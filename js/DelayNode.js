@@ -32,6 +32,10 @@ module.exports = (NativeDelayNode) => {
 
   class DelayNode extends AudioNode {
     constructor(context, options) {
+      if (options !== undefined && typeof options !== 'object') {
+        throw new TypeError("Failed to construct 'DelayNode': argument 2 is not of type 'DelayOptions'")
+      }
+
       super(context, options);
 
       this.delayTime = new AudioParam(this.delayTime);
