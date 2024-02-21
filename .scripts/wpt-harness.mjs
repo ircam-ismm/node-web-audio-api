@@ -76,9 +76,8 @@ const filter = (name) => {
   // TODO <https://github.com/ircam-ismm/node-web-audio-api/issues/57>
   // these tests make the runner crash
   if (
-      name.includes('the-audiocontext-interface/suspend-with-navigation.html')
-      || name.includes('the-audionode-interface/audionode-disconnect-audioparam.html')
-      || name.includes('the-audionode-interface/audionode-disconnect.html')
+      name.includes('the-audiocontext-interface/suspend-with-navigation.html') // timeouts
+      || name.includes('the-audionode-interface/audionode-disconnect-audioparam.html') // FFI fatal error?
   ) {
       return false;
   }
