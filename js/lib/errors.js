@@ -78,6 +78,7 @@ exports.throwSanitizedError = function throwSanitizedError(err) {
   //   right: Max
   let originalMessage = err.message;
   originalMessage = originalMessage.replace('assertion `left != right` failed: ', '');
+  originalMessage = originalMessage.replace('assertion `left == right` failed: ', '');
   originalMessage = originalMessage.split(EOL)[0]; // keep only first line
 
   // "Native Errors"
