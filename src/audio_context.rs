@@ -101,6 +101,7 @@ impl NapiAudioContext {
         // this is not clean, but don't see how to implement that properly right now.
         std::thread::sleep(std::time::Duration::from_millis(1));
         let mut tsfn_store = self.tsfn_store.lock().unwrap();
+
         if let Some(tsfn) = tsfn_store.remove(&store_id) {
             let _ = tsfn.abort();
         }
@@ -477,7 +478,7 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
         let napi_context = napi_context.clone();
 
         context.set_onstatechange(move |e| {
-            tsfn.call(Ok(e.clone()), ThreadsafeFunctionCallMode::Blocking);
+            tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
 
             if napi_context.unwrap().state() == AudioContextState::Closed {
                 napi_context.clear_all_thread_safe_listeners();

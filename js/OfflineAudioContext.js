@@ -32,12 +32,22 @@ module.exports = function patchOfflineAudioContext(bindings) {
 
       super(numberOfChannels, length, sampleRate);
 
-      // @todo - do not init the event target, no way to clean the thread safe
-      // functions for now
-
       // EventTargetMixin has been called so EventTargetMixin[kDispatchEvent] is
       // bound to this, then we can safely finalize event target initialization
-      // super.__initEventTarget__();
+      super.__initEventTarget__();
+    }
+
+    async startRendering() {
+      const renderedBuffer = await super.startRendering();
+
+      // we do this here so that we can just share the same audioBuffer instance
+      // this also simplifies the code on the rust side as we don't have to deal
+      // with the OfflineAudioCompletionEvent.
+      const event = new Event('complete');
+      event.renderedBuffer = renderedBuffer;
+      this.dispatchEvent(event)
+
+      return renderedBuffer;
     }
   }
 

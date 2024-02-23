@@ -8,7 +8,7 @@ use napi_derive::js_function;
 use napi::threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunction, ThreadsafeFunctionCallMode};
 use web_audio_api::context::*;
 #[allow(unused_imports)] // @todo - remove directive once OfflineAudioContext events are implemented
-use web_audio_api::Event;
+use web_audio_api::{Event};
 use uuid::Uuid;
 
 use crate::*;
@@ -93,6 +93,7 @@ impl ${d.napiName(d.node)} {
         // this is not clean, but don't see how to implement that properly right now.
         std::thread::sleep(std::time::Duration::from_millis(1));
         let mut tsfn_store = self.tsfn_store.lock().unwrap();
+
         if let Some(tsfn) = tsfn_store.remove(&store_id) {
             let _ = tsfn.abort();
         }
@@ -479,7 +480,7 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
         let napi_context = napi_context.clone();
 
         context.set_onstatechange(move |e| {
-            tsfn.call(Ok(e.clone()), ThreadsafeFunctionCallMode::Blocking);
+            tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
 
             if napi_context.unwrap().state() == AudioContextState::Closed {
                 napi_context.clear_all_thread_safe_listeners();
@@ -600,19 +601,20 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
     let _ = napi_context.store_thread_safe_listener(tsfn.clone());
 
     { // statechange event
-        let tsfn = tsfn.clone();
+        context.set_onstatechange(move |e| {
+            tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
+        });
+    }
+
+    { // oncomplete event
         let napi_context = napi_context.clone();
 
-        context.set_onstatechange(move |e| {
-            tsfn.call(Ok(e.clone()), ThreadsafeFunctionCallMode::Blocking);
-
+        context.set_oncomplete(move |_e| {
             if napi_context.unwrap().state() == AudioContextState::Closed {
                 napi_context.clear_all_thread_safe_listeners();
             }
         });
     }
-
-    // @todo - oncomplete event
 
     ctx.env.get_undefined()
 }
