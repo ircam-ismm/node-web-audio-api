@@ -611,9 +611,7 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
         let napi_context = napi_context.clone();
 
         context.set_oncomplete(move |_e| {
-            if napi_context.unwrap().state() == AudioContextState::Closed {
-                napi_context.clear_all_thread_safe_listeners();
-            }
+            napi_context.clear_all_thread_safe_listeners();
         });
     }
 

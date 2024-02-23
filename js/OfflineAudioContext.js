@@ -40,8 +40,8 @@ module.exports = function patchOfflineAudioContext(bindings) {
     async startRendering() {
       const renderedBuffer = await super.startRendering();
 
-      // we do this here so that we can just share the same audioBuffer instance
-      // this also simplifies the code on the rust side as we don't have to deal
+      // We do this here, so that we can just share the same audioBuffer instance.
+      // This also simplifies code on the rust side as we don't need to deal
       // with the OfflineAudioCompletionEvent.
       const event = new Event('complete');
       event.renderedBuffer = renderedBuffer;

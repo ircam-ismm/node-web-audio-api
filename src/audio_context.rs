@@ -97,6 +97,8 @@ impl NapiAudioContext {
     // But we also need to wait so that the previous tsfn.call is executed,
     // this is not clean, but don't see how to implement that properly right now.
 
+    // no ended events for nodes that are created by OfflineAudioContext
+    // remove directive once implemented
     #[allow(dead_code)]
     pub fn clear_thread_safe_listener(&self, store_id: String) {
         std::thread::sleep(std::time::Duration::from_millis(1));

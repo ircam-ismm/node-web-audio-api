@@ -45,7 +45,7 @@ for (let i = 0; i < 48000; i++) {
   }
 }
 
-console.log('> playback computed buffer in loop (should have a small silent gap)');
+console.log('> playback computed buffer in loop, should hear a small silent gap in the middle');
 
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const online = new AudioContext({ latencyHint });
