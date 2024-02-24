@@ -8,7 +8,7 @@ use napi_derive::js_function;
 use napi::threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunction, ThreadsafeFunctionCallMode};
 use web_audio_api::context::*;
 #[allow(unused_imports)] // @todo - remove directive once OfflineAudioContext events are implemented
-use web_audio_api::Event;
+use web_audio_api::{Event};
 use uuid::Uuid;
 
 use crate::*;
@@ -77,7 +77,6 @@ impl ${d.napiName(d.node)} {
         &self.context
     }
 
-    #[allow(dead_code)] // @todo - remove directive once OfflineAudioContext events are implemented
     pub fn store_thread_safe_listener(&self, tsfn: ThreadsafeFunction<Event>) -> String {
         let mut tsfn_store = self.tsfn_store.lock().unwrap();
         let uuid = Uuid::new_v4();
@@ -86,19 +85,22 @@ impl ${d.napiName(d.node)} {
         uuid.to_string()
     }
 
-    #[allow(dead_code)] // @todo - remove directive once OfflineAudioContext events are implemented
+    // We need to clean things around so that the js object can be garbage collected.
+    // But we also need to wait so that the previous tsfn.call is executed,
+    // this is not clean, but don't see how to implement that properly right now.
+
+    // no ended events for nodes that are created by OfflineAudioContext
+    // remove directive once implemented
+    #[allow(dead_code)]
     pub fn clear_thread_safe_listener(&self, store_id: String) {
-        // We need to clean things around so that the js object can be garbage collected.
-        // But we also need to wait so that the previous tsfn.call is executed,
-        // this is not clean, but don't see how to implement that properly right now.
         std::thread::sleep(std::time::Duration::from_millis(1));
         let mut tsfn_store = self.tsfn_store.lock().unwrap();
+
         if let Some(tsfn) = tsfn_store.remove(&store_id) {
             let _ = tsfn.abort();
         }
     }
 
-    #[allow(dead_code)]  // @todo - remove directive once OfflineAudioContext events are implemented
     pub fn clear_all_thread_safe_listeners(&self) {
         std::thread::sleep(std::time::Duration::from_millis(1));
         let mut tsfn_store = self.tsfn_store.lock().unwrap();
@@ -479,7 +481,7 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
         let napi_context = napi_context.clone();
 
         context.set_onstatechange(move |e| {
-            tsfn.call(Ok(e.clone()), ThreadsafeFunctionCallMode::Blocking);
+            tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
 
             if napi_context.unwrap().state() == AudioContextState::Closed {
                 napi_context.clear_all_thread_safe_listeners();
@@ -600,19 +602,18 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
     let _ = napi_context.store_thread_safe_listener(tsfn.clone());
 
     { // statechange event
-        let tsfn = tsfn.clone();
-        let napi_context = napi_context.clone();
-
         context.set_onstatechange(move |e| {
-            tsfn.call(Ok(e.clone()), ThreadsafeFunctionCallMode::Blocking);
-
-            if napi_context.unwrap().state() == AudioContextState::Closed {
-                napi_context.clear_all_thread_safe_listeners();
-            }
+            tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
         });
     }
 
-    // @todo - oncomplete event
+    { // oncomplete event
+        let napi_context = napi_context.clone();
+
+        context.set_oncomplete(move |_e| {
+            napi_context.clear_all_thread_safe_listeners();
+        });
+    }
 
     ctx.env.get_undefined()
 }
