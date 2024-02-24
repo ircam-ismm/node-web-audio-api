@@ -37,6 +37,7 @@ module.exports = (superclass, bindings) => {
     PannerNode,
     StereoPannerNode,
     WaveShaperNode,
+    PeriodicWave,
   } = bindings;
 
   class BaseAudioContext extends superclass {
@@ -70,6 +71,10 @@ module.exports = (superclass, bindings) => {
           return Promise.reject(err);
         }
       }
+    }
+
+    createPeriodicWave(real, imag) {
+      return new PeriodicWave(this, { real, imag });
     }
 
     // --------------------------------------------------------------------

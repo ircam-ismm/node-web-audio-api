@@ -7,6 +7,9 @@ ${d.nodes.map((node) => {
   nativeBinding.${d.name(node)} = require('./${d.name(node)}.js')(nativeBinding.${d.name(node)});`
 }).join('')}
 
+  // @todo - wrap AudioBuffer interface as well
+  nativeBinding.PeriodicWave = require('./PeriodicWave.js')(nativeBinding.PeriodicWave);
+
   nativeBinding.AudioContext = require('./AudioContext.js')(nativeBinding);
   nativeBinding.OfflineAudioContext = require('./OfflineAudioContext.js')(nativeBinding);
 
