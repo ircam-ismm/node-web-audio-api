@@ -1,4 +1,4 @@
-const { NotSupportedError } = require('./lib/errors.js');
+const { nameCodeMap, DOMException } = require('./lib/errors.js');
 const { isPlainObject, isPositiveInt, isPositiveNumber } = require('./lib/utils.js');
 
 module.exports = function patchOfflineAudioContext(bindings) {
@@ -23,11 +23,11 @@ module.exports = function patchOfflineAudioContext(bindings) {
       const [numberOfChannels, length, sampleRate] = args;
 
       if (!isPositiveInt(numberOfChannels)) {
-        throw new NotSupportedError(`Invalid value for numberOfChannels: ${numberOfChannels}`);
+        throw new TypeError(`Invalid value for numberOfChannels: ${numberOfChannels}`);
       } else if (!isPositiveInt(length)) {
-        throw new NotSupportedError(`Invalid value for length: ${length}`);
+        throw new TypeError(`Invalid value for length: ${length}`);
       } else if (!isPositiveNumber(sampleRate)) {
-        throw new NotSupportedError(`Invalid value for sampleRate: ${sampleRate}`);
+        throw new TypeError(`Invalid value for sampleRate: ${sampleRate}`);
       }
 
       super(numberOfChannels, length, sampleRate);
