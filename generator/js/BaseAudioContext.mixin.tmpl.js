@@ -4,6 +4,7 @@ const { isFunction } = require('./lib/utils.js');
 module.exports = (superclass, bindings) => {
   const {
 ${d.nodes.map(n => `    ${d.name(n)},`).join('\n')}
+    PeriodicWave,
   } = bindings;
 
   class BaseAudioContext extends superclass {
@@ -37,6 +38,10 @@ ${d.nodes.map(n => `    ${d.name(n)},`).join('\n')}
           return Promise.reject(err);
         }
       }
+    }
+
+    createPeriodicWave(real, imag) {
+      return new PeriodicWave(this, { real, imag });
     }
 
     // --------------------------------------------------------------------
