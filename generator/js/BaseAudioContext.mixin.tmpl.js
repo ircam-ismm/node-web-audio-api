@@ -4,6 +4,7 @@ const { isFunction } = require('./lib/utils.js');
 module.exports = (superclass, bindings) => {
   const {
 ${d.nodes.map(n => `    ${d.name(n)},`).join('\n')}
+    AudioBuffer,
     PeriodicWave,
   } = bindings;
 
@@ -38,6 +39,10 @@ ${d.nodes.map(n => `    ${d.name(n)},`).join('\n')}
           return Promise.reject(err);
         }
       }
+    }
+
+    createBuffer(numberOfChannels, length, sampleRate) {
+      return new AudioBuffer({ numberOfChannels, length, sampleRate });
     }
 
     createPeriodicWave(real, imag) {

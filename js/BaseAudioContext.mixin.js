@@ -37,6 +37,7 @@ module.exports = (superclass, bindings) => {
     PannerNode,
     StereoPannerNode,
     WaveShaperNode,
+    AudioBuffer,
     PeriodicWave,
   } = bindings;
 
@@ -71,6 +72,10 @@ module.exports = (superclass, bindings) => {
           return Promise.reject(err);
         }
       }
+    }
+
+    createBuffer(numberOfChannels, length, sampleRate) {
+      return new AudioBuffer({ numberOfChannels, length, sampleRate });
     }
 
     createPeriodicWave(real, imag) {

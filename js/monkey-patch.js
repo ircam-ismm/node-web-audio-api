@@ -40,6 +40,7 @@ module.exports = function monkeyPatch(nativeBinding) {
 
   // @todo - wrap AudioBuffer interface as well
   nativeBinding.PeriodicWave = require('./PeriodicWave.js')(nativeBinding.PeriodicWave);
+  nativeBinding.AudioBuffer = require('./AudioBuffer.js')(nativeBinding.AudioBuffer);
 
   nativeBinding.AudioContext = require('./AudioContext.js')(nativeBinding);
   nativeBinding.OfflineAudioContext = require('./OfflineAudioContext.js')(nativeBinding);
