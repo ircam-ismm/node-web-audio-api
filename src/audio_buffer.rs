@@ -171,7 +171,7 @@ fn copy_from_channel(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 
-// # FIXME
+// @FIXME - cf. https://github.com/ircam-ismm/node-web-audio-api/issues/80
 #[js_function(1)]
 fn get_channel_data(ctx: CallContext) -> Result<JsTypedArray> {
     let js_this = ctx.this_unchecked::<JsObject>();

@@ -897,7 +897,8 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
 }
                     `;
                     break
-                case 'interface':
+                case 'interface': // buffer
+                    console.log(attr);
                     return `
 #[js_function(1)]
 fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {

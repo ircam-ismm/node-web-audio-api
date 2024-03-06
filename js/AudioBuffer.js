@@ -1,17 +1,39 @@
 const { throwSanitizedError, DOMException } = require('./lib/errors.js');
 
+const kNativeAudioBuffer = Symbol('node-web-audio-api:audio-buffer');
+
 module.exports = (NativeAudioBuffer) => {
-  class AudioBuffer extends NativeAudioBuffer {
+  class AudioBuffer {
     constructor(options) {
       if (typeof options !== 'object') {
         throw new TypeError("Failed to construct 'AudioBuffer': argument 1 is not of type 'AudioBufferOptions'");
       }
 
+      if (options[kNativeAudioBuffer] instanceof NativeAudioBuffer) {
+        this[kNativeAudioBuffer] = options[kNativeAudioBuffer];
+      }
+
       try {
-        super(options);
+        this[kNativeAudioBuffer] = new NativeAudioBuffer(options);
       } catch (err) {
         throwSanitizedError(err);
       }
+    }
+
+    get sampleRate() {
+      return this[kNativeAudioBuffer].sampleRate;
+    }
+
+    get duration() {
+      return this[kNativeAudioBuffer].duration;
+    }
+
+    get length() {
+      return this[kNativeAudioBuffer].length;
+    }
+
+    get numberOfChannels() {
+      return this[kNativeAudioBuffer].numberOfChannels;
     }
 
     copyFromChannel(destination, channelNumber, bufferOffset = 0) {
@@ -24,7 +46,7 @@ module.exports = (NativeAudioBuffer) => {
       }
 
       try {
-        super.copyFromChannel(destination, channelNumber, bufferOffset);
+        this[kNativeAudioBuffer].copyFromChannel(destination, channelNumber, bufferOffset);
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -40,7 +62,7 @@ module.exports = (NativeAudioBuffer) => {
       }
 
       try {
-        super.copyToChannel(source, channelNumber, bufferOffset);
+        this[kNativeAudioBuffer].copyToChannel(source, channelNumber, bufferOffset);
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -48,7 +70,7 @@ module.exports = (NativeAudioBuffer) => {
 
     getChannelData(channel) {
       try {
-        return super.getChannelData(channel);
+        return this[kNativeAudioBuffer].getChannelData(channel);
       } catch (err) {
         throwSanitizedError(err);
       }
