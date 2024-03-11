@@ -109,7 +109,7 @@ const reporter = {
     console.log(chalk.dim(indent(chalk.green("√ ") + message, INDENT_SIZE)));
   },
   fail: message => {
-    if (/threw "Error" instead of/.test(message)) {
+    if (/threw "[^\"]*Error" instead of/.test(message)) {
       typeErrorFail += 1;
       console.log(chalk.bold.yellow(indent(`| ${message}`, INDENT_SIZE)));
     } else {
