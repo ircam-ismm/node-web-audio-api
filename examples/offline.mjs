@@ -16,6 +16,10 @@ offline.suspend(128 / 48000).then(async () => {
   osc.frequency.value = 220;
   osc.start(0);
 
+  osc.addEventListener('ended', () => {
+    console.log('> ended event from oscillator');
+  });
+
   await offline.resume();
 });
 
