@@ -12,8 +12,6 @@ export const {
   AudioDestinationNode,
   AudioBuffer,
   PeriodicWave,
-  // manually written nodes
-  MediaStreamAudioSourceNode,
   // generated supported nodes
 ${d.nodes.map(n => `  ${d.name(n)},`).join('\n')}
 

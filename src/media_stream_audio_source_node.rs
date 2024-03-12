@@ -1,10 +1,35 @@
+// -------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
+//                                                                            //
+//                                                                            //
+//                                                                            //
+//    ██╗    ██╗ █████╗ ██████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗               //
+//    ██║    ██║██╔══██╗██╔══██╗████╗  ██║██║████╗  ██║██╔════╝               //
+//    ██║ █╗ ██║███████║██████╔╝██╔██╗ ██║██║██╔██╗ ██║██║  ███╗              //
+//    ██║███╗██║██╔══██║██╔══██╗██║╚██╗██║██║██║╚██╗██║██║   ██║              //
+//    ╚███╔███╔╝██║  ██║██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝              //
+//     ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝               //
+//                                                                            //
+//                                                                            //
+//    - This file has been generated ---------------------------              //
+//                                                                            //
+//                                                                            //
+// -------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
+
 use crate::*;
 use napi::*;
 use napi_derive::js_function;
-use std::rc::Rc;
 use web_audio_api::node::*;
 
-pub(crate) struct NapiMediaStreamAudioSourceNode(Rc<MediaStreamAudioSourceNode>);
+pub(crate) struct NapiMediaStreamAudioSourceNode(MediaStreamAudioSourceNode);
+
+// for debug purpose
+// impl Drop for NapiMediaStreamAudioSourceNode {
+//     fn drop(&mut self) {
+//         println!("NAPI: NapiMediaStreamAudioSourceNode dropped");
+//     }
+// }
 
 impl NapiMediaStreamAudioSourceNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -13,9 +38,7 @@ impl NapiMediaStreamAudioSourceNode {
             constructor,
             &[
                 // Attributes
-                // Property::new("mediaStream")?
-                //     .with_getter(get_media_stream)
-                //     .with_property_attributes(PropertyAttributes::Enumerable),
+
                 // Methods
 
                 // AudioNode interface
@@ -28,6 +51,8 @@ impl NapiMediaStreamAudioSourceNode {
                 Property::new("channelInterpretation")?
                     .with_getter(get_channel_interpretation)
                     .with_setter(set_channel_interpretation),
+                Property::new("numberOfInputs")?.with_getter(get_number_of_inputs),
+                Property::new("numberOfOutputs")?.with_getter(get_number_of_outputs),
                 Property::new("connect")?
                     .with_method(connect)
                     .with_property_attributes(PropertyAttributes::Enumerable),
@@ -38,8 +63,9 @@ impl NapiMediaStreamAudioSourceNode {
         )
     }
 
-    pub fn unwrap(&self) -> &MediaStreamAudioSourceNode {
-        &self.0
+    // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
+    pub fn unwrap(&mut self) -> &mut MediaStreamAudioSourceNode {
+        &mut self.0
     }
 }
 
@@ -47,8 +73,41 @@ impl NapiMediaStreamAudioSourceNode {
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
-    // first argument is always AudioContext
+    if ctx.length < 1 {
+        let msg = "TypeError - Failed to construct 'MediaStreamAudioSourceNode': 1 argument required, but only 0 present.";
+        return Err(napi::Error::new(napi::Status::InvalidArg, msg));
+    }
+
+    // first argument should be an AudioContext
     let js_audio_context = ctx.get::<JsObject>(0)?;
+
+    // check that
+    let audio_context_utf8_name = if let Ok(result) =
+        js_audio_context.has_named_property("Symbol.toStringTag")
+    {
+        if result {
+            let audio_context_name =
+                js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
+            let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
+            let audio_context_str = &audio_context_utf8_name[..];
+
+            if audio_context_str != "AudioContext" && audio_context_str != "OfflineAudioContext" {
+                let msg = "TypeError - Failed to construct 'MediaStreamAudioSourceNode': argument 1 is not of type BaseAudioContext";
+                return Err(napi::Error::new(napi::Status::InvalidArg, msg));
+            }
+
+            audio_context_utf8_name
+        } else {
+            let msg = "TypeError - Failed to construct 'MediaStreamAudioSourceNode': argument 1 is not of type BaseAudioContext";
+            return Err(napi::Error::new(napi::Status::InvalidArg, msg));
+        }
+    } else {
+        // This swallowed somehow, .e.g const node = new GainNode(null); throws
+        // TypeError Cannot convert undefined or null to object
+        // To be investigated...
+        let msg = "TypeError - Failed to construct 'MediaStreamAudioSourceNode': argument 1 is not of type BaseAudioContext";
+        return Err(napi::Error::new(napi::Status::InvalidArg, msg));
+    };
 
     js_this.define_properties(&[
         Property::new("context")?
@@ -61,51 +120,50 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     ])?;
 
     // parse options
-    let options = match ctx.try_get::<JsObject>(1)? {
-        Either::A(options_js) => {
-            // WARNING: only handle Microphone for now
-            let some_js_media_stream = options_js.get::<&str, JsObject>("mediaStream")?;
+    let options = if let Ok(either_options) = ctx.try_get::<JsObject>(1) {
+        match either_options {
+            Either::A(options_js) => {
+                let some_media_stream_js = options_js.get::<&str, JsObject>("mediaStream")?;
+                let media_stream = if let Some(media_stream_js) = some_media_stream_js {
+                    let media_stream_napi = ctx.env.unwrap::<NapiMediaStream>(&media_stream_js)?;
+                    media_stream_napi.unwrap()
+                } else {
+                    return Err(napi::Error::from_reason(
+                        "Parameter mediaStream is required".to_string(),
+                    ));
+                };
 
-            let media_stream = if let Some(js_media_stream) = some_js_media_stream {
-                let napi_media_stream = ctx.env.unwrap::<NapiMediaStream>(&js_media_stream)?;
-                napi_media_stream.unwrap()
-            } else {
+                MediaStreamAudioSourceOptions { media_stream }
+            }
+            Either::B(_) => {
                 return Err(napi::Error::from_reason(
-                    "mediaStream option is mandatory for node MediaStreamAudioSourceNode"
+                    "TypeError - Options are mandatory for node MediaStreamAudioSourceNode"
                         .to_string(),
                 ));
-            };
-
-            MediaStreamAudioSourceOptions { media_stream }
+            }
         }
-        Either::B(_) => {
-            return Err(napi::Error::from_reason(
-                "Options are mandatory for node MediaStreamAudioSourceNode".to_string(),
-            ));
-        }
+    } else {
+        return Err(napi::Error::from_reason(
+            "TypeError - Options are mandatory for node MediaStreamAudioSourceNode".to_string(),
+        ));
     };
 
-    // create native node
-    let audio_context_name =
-        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
-    let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
     let audio_context_str = &audio_context_utf8_name[..];
-
+    // create native node
     let native_node = match audio_context_str {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            Rc::new(MediaStreamAudioSourceNode::new(audio_context, options))
+            MediaStreamAudioSourceNode::new(audio_context, options)
         }
-        // NOTE: Online context only
-        // "OfflineAudioContext" => {
-        //     let napi_audio_context = ctx
-        //         .env
-        //         .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
-        //     let audio_context = napi_audio_context.unwrap();
-        //     Rc::new(MediaStreamAudioSourceNode::new(audio_context, options))
-        // }
-        &_ => panic!("not supported"),
+        "OfflineAudioContext" => {
+            let napi_audio_context = ctx
+                .env
+                .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
+            let audio_context = napi_audio_context.unwrap();
+            MediaStreamAudioSourceNode::new(audio_context, options)
+        }
+        &_ => unreachable!(),
     };
 
     // finalize instance creation
@@ -164,12 +222,12 @@ fn set_channel_count_mode(ctx: CallContext) -> Result<JsUndefined> {
     let node = napi_node.unwrap();
 
     let js_str = ctx.get::<JsString>(0)?;
-    let uf8_str = js_str.into_utf8()?.into_owned()?;
-    let value = match uf8_str.as_str() {
+    let utf8_str = js_str.into_utf8()?.into_owned()?;
+    let value = match utf8_str.as_str() {
         "max" => ChannelCountMode::Max,
         "clamped-max" => ChannelCountMode::ClampedMax,
         "explicit" => ChannelCountMode::Explicit,
-        _ => panic!("undefined value for ChannelCountMode"),
+        _ => panic!("TypeError - The provided value '{:?}' is not a valid enum value of type ChannelCountMode", utf8_str.as_str()),
     };
     node.set_channel_count_mode(value);
 
@@ -198,15 +256,37 @@ fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
     let node = napi_node.unwrap();
 
     let js_str = ctx.get::<JsString>(0)?;
-    let uf8_str = js_str.into_utf8()?.into_owned()?;
-    let value = match uf8_str.as_str() {
+    let utf8_str = js_str.into_utf8()?.into_owned()?;
+    let value = match utf8_str.as_str() {
         "speakers" => ChannelInterpretation::Speakers,
         "discrete" => ChannelInterpretation::Discrete,
-        _ => panic!("undefined value for ChannelInterpretation"),
+        _ => panic!("TypeError - The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", utf8_str.as_str()),
     };
     node.set_channel_interpretation(value);
 
     ctx.env.get_undefined()
+}
+
+#[js_function]
+fn get_number_of_inputs(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiMediaStreamAudioSourceNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let number_of_inputs = node.number_of_inputs() as f64;
+
+    ctx.env.create_double(number_of_inputs)
+}
+
+#[js_function]
+fn get_number_of_outputs(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiMediaStreamAudioSourceNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let number_of_outputs = node.number_of_outputs() as f64;
+
+    ctx.env.create_double(number_of_outputs)
 }
 
 // -------------------------------------------------
