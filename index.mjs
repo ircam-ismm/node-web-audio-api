@@ -31,8 +31,6 @@ export const {
   AudioDestinationNode,
   AudioBuffer,
   PeriodicWave,
-  // manually written nodes
-  // MediaStreamAudioSourceNode,
   // generated supported nodes
   AnalyserNode,
   AudioBufferSourceNode,
