@@ -23,10 +23,6 @@ use crate::audio_buffer::NapiAudioBuffer;
 mod periodic_wave;
 use crate::periodic_wave::NapiPeriodicWave;
 
-// manually written nodes
-// mod media_stream_audio_source_node;
-// use crate::media_stream_audio_source_node::NapiMediaStreamAudioSourceNode;
-
 // import audio nodes (generated)
 ${d.nodes.map(n => { return `
 mod ${d.slug(n)};

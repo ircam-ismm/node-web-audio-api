@@ -727,7 +727,6 @@ fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsUnknown> {
         // IDL types
         default: {
             // handle MediaStream
-            // console.log('getter', JSON.stringify(attr, null, 2));
             if (attr.idlType.type === 'attribute-type' && attr.idlType.idlType === 'MediaStream') {
                 console.log('!!!! ignored getter for MediaStream ');
                 return ``;
