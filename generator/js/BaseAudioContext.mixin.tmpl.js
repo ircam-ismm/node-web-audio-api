@@ -50,6 +50,12 @@ ${d.nodes.map(n => `    ${d.name(n)},`).join('\n')}
 ${d.nodes.map(n => {
   let factoryName = d.factoryName(n);
   let factoryIdl = d.factoryIdl(factoryName);
+
+  // createMediaStreamSource is online AudioContext only
+  if (factoryIdl === undefined) {
+    return ``;
+  }
+
   let args = factoryIdl.arguments;
 
 return `\

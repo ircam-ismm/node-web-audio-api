@@ -43,8 +43,8 @@ mod periodic_wave;
 use crate::periodic_wave::NapiPeriodicWave;
 
 // manually written nodes
-mod media_stream_audio_source_node;
-use crate::media_stream_audio_source_node::NapiMediaStreamAudioSourceNode;
+// mod media_stream_audio_source_node;
+// use crate::media_stream_audio_source_node::NapiMediaStreamAudioSourceNode;
 
 // import audio nodes (generated)
 
@@ -70,6 +70,8 @@ mod gain_node;
 use crate::gain_node::NapiGainNode;
 mod iir_filter_node;
 use crate::iir_filter_node::NapiIIRFilterNode;
+mod media_stream_audio_source_node;
+use crate::media_stream_audio_source_node::NapiMediaStreamAudioSourceNode;
 mod oscillator_node;
 use crate::oscillator_node::NapiOscillatorNode;
 mod panner_node;
@@ -180,6 +182,9 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
 
     let napi_class = NapiIIRFilterNode::create_js_class(&env)?;
     exports.set_named_property("IIRFilterNode", napi_class)?;
+
+    let napi_class = NapiMediaStreamAudioSourceNode::create_js_class(&env)?;
+    exports.set_named_property("MediaStreamAudioSourceNode", napi_class)?;
 
     let napi_class = NapiOscillatorNode::create_js_class(&env)?;
     exports.set_named_property("OscillatorNode", napi_class)?;

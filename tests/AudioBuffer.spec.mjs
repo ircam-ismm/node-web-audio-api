@@ -16,6 +16,7 @@ describe('# AudioBuffer', () => {
     it('should properly create audio buffer', () => {
       const audioBuffer = audioContext.createBuffer(1, 100, audioContext.sampleRate);
 
+      assert.equal(audioBuffer instanceof AudioBuffer, true);
       assert.equal(audioBuffer.numberOfChannels, 1);
       assert.equal(audioBuffer.length, 100);
       assert.equal(audioBuffer.sampleRate, audioContext.sampleRate);
@@ -35,6 +36,7 @@ describe('# AudioBuffer', () => {
         sampleRate: audioContext.sampleRate,
       });
 
+      assert.equal(audioBuffer instanceof AudioBuffer, true);
       assert.equal(audioBuffer.numberOfChannels, 1);
       assert.equal(audioBuffer.length, 100);
       assert.equal(audioBuffer.sampleRate, audioContext.sampleRate);
@@ -54,6 +56,23 @@ describe('# AudioBuffer', () => {
         console.log(err.message);
         assert.fail('should be TypeError');
       }
+    });
+  });
+
+  describe(`## AudioBuffer returned by other means`, () => {
+    it.skip(`OfflineAudioContext.startRendering() -> AudioBuffer`, () => {
+      const audioBuffer = '@todo';
+      assert.equal(audioBuffer instanceof AudioBuffer, true);
+    });
+
+    it.skip(`AudioContext.decodeAudioData() -> AudioBuffer`, () => {
+      const audioBuffer = '@todo';
+      assert.equal(audioBuffer instanceof AudioBuffer, true);
+    });
+
+    it.skip(`OfflineAudioContext.decodeAudioData() -> AudioBuffer`, () => {
+      const audioBuffer = '@todo';
+      assert.equal(audioBuffer instanceof AudioBuffer, true);
     });
   });
 });
