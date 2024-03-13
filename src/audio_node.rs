@@ -170,6 +170,15 @@ macro_rules! connect_method {
 
                     Ok(js_dest)
                 }
+                "MediaStreamAudioSourceNode" => {
+                    let napi_dest = ctx
+                        .env
+                        .unwrap::<$crate::media_stream_audio_source_node::NapiMediaStreamAudioSourceNode>(&js_dest)?;
+                    let native_dest = napi_dest.unwrap();
+                    let _res = native_src.connect_at(native_dest, output as usize, input as usize);
+
+                    Ok(js_dest)
+                }
                 "OscillatorNode" => {
                     let napi_dest = ctx
                         .env
@@ -337,6 +346,13 @@ macro_rules! disconnect_method {
                             let napi_dest = ctx
                                 .env
                                 .unwrap::<$crate::iir_filter_node::NapiIIRFilterNode>(&js_dest)?;
+                            let native_dest = napi_dest.unwrap();
+                            native_src.disconnect_from(native_dest);
+                        }
+                        "MediaStreamAudioSourceNode" => {
+                            let napi_dest = ctx
+                                .env
+                                .unwrap::<$crate::media_stream_audio_source_node::NapiMediaStreamAudioSourceNode>(&js_dest)?;
                             let native_dest = napi_dest.unwrap();
                             native_src.disconnect_from(native_dest);
                         }

@@ -20,6 +20,7 @@ let supportedNodes = [
   'DynamicsCompressorNode',
   `GainNode`,
   `IIRFilterNode`,
+  `MediaStreamAudioSourceNode`,
   `OscillatorNode`,
   `PannerNode`, // review rs wise, lots of inconsistencies
   `StereoPannerNode`,
@@ -141,7 +142,7 @@ const utils = {
     let idl = utils.findInTree('BaseAudioContext').members.find(m => m.name === name);
 
     if (!idl) {
-      throw new Error(`couldn't find idl for factory: ${name}`);
+      console.warn(`!!!!! couldn't find idl for factory ${name} in BaseAudioContext`);
     }
 
     return idl;
@@ -181,9 +182,6 @@ const utils = {
     return camelcase(idl.name, { pascalCase: true, preserveConsecutiveUppercase: true });
   },
 };
-
-// const audioBufferIdl = tree.find(l => l.name === 'AudioBuffer');
-// log(audioBufferIdl);
 
 let audioNodes = [];
 
