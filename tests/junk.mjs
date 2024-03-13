@@ -1,4 +1,4 @@
-// import { AudioBufferSourceNode, AnalyserNode, AudioContext, GainNode, OfflineAudioContext, StereoPannerNode, PeriodicWave, MediaStreamAudioSourceNode, mediaDevices } from '../index.mjs';
+import { AudioBufferSourceNode, AnalyserNode, AudioContext, GainNode, OfflineAudioContext, StereoPannerNode, PeriodicWave, MediaStreamAudioSourceNode, mediaDevices } from '../index.mjs';
 
 
 // const mediaStream = await mediaDevices.getUserMedia({ audio: true });
@@ -20,9 +20,39 @@
 
 // await context.startRendering();
 
+const SAMPLERATE = 8000;
+const LENGTH = 128;
 
-const key = Symbol('key');
+const oac = new OfflineAudioContext(1, LENGTH, SAMPLERATE);
 
-const options = { [key]: 'value' };
+// var buf = oac.createBuffer(1, LENGTH, SAMPLERATE)
+// var bs = new AudioBufferSourceNode(oac);
+// var channelData = buf.getChannelData(0);
+// for (var i = 0; i < channelData.length; i++) {
+//   channelData[i] = 1.0;
+// }
+// bs.buffer = buf;
+// bs.start(); // This acquires the content since buf is not null
+// for (var i = 0; i < channelData.length; i++) {
+//   channelData[i] = 0.5;
+// }
+// // allSamplesAtOne(buf, "reading back");
+// bs.connect(oac.destination);
+// const output = await oac.startRendering();
 
-console.log(key in options);
+
+var buf = oac.createBuffer(1, LENGTH, SAMPLERATE)
+var bs = new AudioBufferSourceNode(oac);
+var channelData = buf.getChannelData(0);
+for (var i = 0; i < channelData.length; i++) {
+  channelData[i] = 1.0;
+}
+bs.buffer = null;
+bs.start(); // This does not acquire the content
+bs.buffer = buf; // This does
+for (var i = 0; i < channelData.length; i++) {
+  channelData[i] = 0.5;
+}
+// allSamplesAtOne(buf, "reading back");
+bs.connect(oac.destination);
+const output = await oac.startRendering();

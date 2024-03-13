@@ -78,7 +78,14 @@ ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
   switch (d.memberType(attr)) {
     case 'AudioBuffer': {
       return `
+    // @todo - should be able to set to null afterward
     set ${d.name(attr)}(value) {
+      if (value === null) {
+        return;
+      } else if (!(kNativeAudioBuffer in value)) {
+        throw new TypeError("Failed to set the 'buffer' property on 'AudioBufferSourceNode': Failed to convert value to 'AudioBuffer'");
+      }
+
       try {
         super.${d.name(attr)} = value[kNativeAudioBuffer];
       } catch (err) {

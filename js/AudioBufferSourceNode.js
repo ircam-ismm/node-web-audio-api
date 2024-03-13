@@ -73,7 +73,14 @@ module.exports = (NativeAudioBufferSourceNode) => {
       
     // setters
 
+    // @todo - should be able to set to null afterward
     set buffer(value) {
+      if (value === null) {
+        return;
+      } else if (!(kNativeAudioBuffer in value)) {
+        throw new TypeError("Failed to set the 'buffer' property on 'AudioBufferSourceNode': Failed to convert value to 'AudioBuffer'");
+      }
+
       try {
         super.buffer = value[kNativeAudioBuffer];
       } catch (err) {
