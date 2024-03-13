@@ -1,22 +1,25 @@
 const { throwSanitizedError, DOMException } = require('./lib/errors.js');
 
-const kNativeAudioBuffer = Symbol('node-web-audio-api:audio-buffer');
+const kNativeAudioBuffer = Symbol('node-web-audio-api:native-audio-buffer');
+const kAudioBuffer = Symbol('node-web-audio-api:audio-buffer');
 
-module.exports = (NativeAudioBuffer) => {
+module.exports.AudioBuffer = (NativeAudioBuffer) => {
   class AudioBuffer {
     constructor(options) {
-      if (typeof options !== 'object') {
-        throw new TypeError("Failed to construct 'AudioBuffer': argument 1 is not of type 'AudioBufferOptions'");
-      }
-
-      if (options[kNativeAudioBuffer] instanceof NativeAudioBuffer) {
+      if (kNativeAudioBuffer in options) {
+        // internal constructor for `startRendering` and `decodeAudioData` cases
         this[kNativeAudioBuffer] = options[kNativeAudioBuffer];
-      }
+      } else {
+        // regular public constructor
+        if (typeof options !== 'object') {
+          throw new TypeError("Failed to construct 'AudioBuffer': argument 1 is not of type 'AudioBufferOptions'");
+        }
 
-      try {
-        this[kNativeAudioBuffer] = new NativeAudioBuffer(options);
-      } catch (err) {
-        throwSanitizedError(err);
+        try {
+          this[kNativeAudioBuffer] = new NativeAudioBuffer(options);
+        } catch (err) {
+          throwSanitizedError(err);
+        }
       }
     }
 
@@ -57,6 +60,7 @@ module.exports = (NativeAudioBuffer) => {
         throw new TypeError(`Failed to execute 'copyToChannel' on 'AudioBuffer': parameter 1 is not of type 'Float32Array'`);
       }
 
+      // rs implementation uses a usize so this check is irrelevant
       if (channelNumber < 0) {
         throw new DOMException(`Failed to execute 'copyToChannel' on 'AudioBuffer': channelNumber must equal or greater than 0`, 'IndexSizeError');
       }
@@ -79,4 +83,8 @@ module.exports = (NativeAudioBuffer) => {
 
   return AudioBuffer;
 };
+
+// so that AudioBufferSourceNode and ConvolverNode can retrieve the wrapped value to `super` class
+module.exports.kNativeAudioBuffer = kNativeAudioBuffer;
+module.exports.kAudioBuffer = kAudioBuffer;
 

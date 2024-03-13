@@ -23,6 +23,9 @@ const { throwSanitizedError } = require('./lib/errors.js');
 const { AudioParam } = require('./AudioParam.js');
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
+
+const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
+
 const AudioScheduledSourceNodeMixin = require('./AudioScheduledSourceNode.mixin.js');
 
 module.exports = (NativeOscillatorNode) => {
@@ -51,7 +54,7 @@ module.exports = (NativeOscillatorNode) => {
     get type() {
       return super.type;
     }
-
+      
     // setters
 
     set type(value) {
@@ -61,9 +64,10 @@ module.exports = (NativeOscillatorNode) => {
         throwSanitizedError(err);
       }
     }
+      
 
     // methods
-    
+
     setPeriodicWave(...args) {
       try {
         return super.setPeriodicWave(...args);

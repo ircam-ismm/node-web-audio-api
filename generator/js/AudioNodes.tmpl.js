@@ -4,6 +4,9 @@ const { throwSanitizedError } = require('./lib/errors.js');
 const { AudioParam } = require('./AudioParam.js');
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
+
+const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
+
 ${d.parent(d.node) === 'AudioScheduledSourceNode' ?
 `const AudioScheduledSourceNodeMixin = require('./AudioScheduledSourceNode.mixin.js');`: ``}
 
@@ -47,14 +50,48 @@ ${d.audioParams(d.node).map(param => {
 `}
     // getters
 ${d.attributes(d.node).map(attr => {
-  return `
+  switch (d.memberType(attr)) {
+    case 'AudioBuffer': {
+      return `
+    get ${d.name(attr)}() {
+      if (this[kNativeAudioBuffer]) {
+        return this[kNativeAudioBuffer];
+      } else {
+        return null;
+      }
+    }
+      `;
+      break;
+    }
+    default: {
+      return `
     get ${d.name(attr)}() {
       return super.${d.name(attr)};
     }
-`}).join('')}
+      `;
+      break;
+    }
+  }
+}).join('')}
     // setters
 ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
-  return `
+  switch (d.memberType(attr)) {
+    case 'AudioBuffer': {
+      return `
+    set ${d.name(attr)}(value) {
+      try {
+        super.${d.name(attr)} = value[kNativeAudioBuffer];
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+
+      this[kNativeAudioBuffer] = value;
+    }
+      `;
+      break;
+    }
+    default: {
+      return `
     set ${d.name(attr)}(value) {
       try {
         super.${d.name(attr)} = value;
@@ -62,19 +99,25 @@ ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
         throwSanitizedError(err);
       }
     }
-`}).join('')}
+      `;
+      break;
+    }
+  }
+}).join('')}
+
     // methods
-    ${d.methods(d.node, false).reduce((acc, method) => {
-      // dedup method names
-      if (!acc.find(i => d.name(i) === d.name(method))) {
-        acc.push(method)
-      }
-      return acc;
-    }, [])
-    // filter AudioScheduledSourceNode methods to prevent re-throwing errors
-    .filter(method => d.name(method) !== 'start' && d.name(method) !== 'stop')
-    .map(method => {
-  return `
+${d.methods(d.node, false)
+  .reduce((acc, method) => {
+    // dedup method names
+    if (!acc.find(i => d.name(i) === d.name(method))) {
+      acc.push(method)
+    }
+    return acc;
+  }, [])
+  // filter AudioScheduledSourceNode methods to prevent re-throwing errors
+  .filter(method => d.name(method) !== 'start' && d.name(method) !== 'stop')
+  .map(method => {
+    return `
     ${d.name(method)}(...args) {
       try {
         return super.${d.name(method)}(...args);

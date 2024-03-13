@@ -24,6 +24,9 @@ const { AudioParam } = require('./AudioParam.js');
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 
+const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
+
+
 
 module.exports = (NativeWaveShaperNode) => {
 
@@ -45,11 +48,11 @@ module.exports = (NativeWaveShaperNode) => {
     get curve() {
       return super.curve;
     }
-
+      
     get oversample() {
       return super.oversample;
     }
-
+      
     // setters
 
     set curve(value) {
@@ -59,7 +62,7 @@ module.exports = (NativeWaveShaperNode) => {
         throwSanitizedError(err);
       }
     }
-
+      
     set oversample(value) {
       try {
         super.oversample = value;
@@ -67,9 +70,10 @@ module.exports = (NativeWaveShaperNode) => {
         throwSanitizedError(err);
       }
     }
+      
 
     // methods
-    
+
   }
 
   return WaveShaperNode;

@@ -23,6 +23,9 @@ const { throwSanitizedError } = require('./lib/errors.js');
 const { AudioParam } = require('./AudioParam.js');
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
+
+const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
+
 const AudioScheduledSourceNodeMixin = require('./AudioScheduledSourceNode.mixin.js');
 
 module.exports = (NativeAudioBufferSourceNode) => {
@@ -49,31 +52,37 @@ module.exports = (NativeAudioBufferSourceNode) => {
     // getters
 
     get buffer() {
-      return super.buffer;
+      if (this[kNativeAudioBuffer]) {
+        return this[kNativeAudioBuffer];
+      } else {
+        return null;
+      }
     }
-
+      
     get loop() {
       return super.loop;
     }
-
+      
     get loopStart() {
       return super.loopStart;
     }
-
+      
     get loopEnd() {
       return super.loopEnd;
     }
-
+      
     // setters
 
     set buffer(value) {
       try {
-        super.buffer = value;
+        super.buffer = value[kNativeAudioBuffer];
       } catch (err) {
         throwSanitizedError(err);
       }
-    }
 
+      this[kNativeAudioBuffer] = value;
+    }
+      
     set loop(value) {
       try {
         super.loop = value;
@@ -81,7 +90,7 @@ module.exports = (NativeAudioBufferSourceNode) => {
         throwSanitizedError(err);
       }
     }
-
+      
     set loopStart(value) {
       try {
         super.loopStart = value;
@@ -89,7 +98,7 @@ module.exports = (NativeAudioBufferSourceNode) => {
         throwSanitizedError(err);
       }
     }
-
+      
     set loopEnd(value) {
       try {
         super.loopEnd = value;
@@ -97,9 +106,10 @@ module.exports = (NativeAudioBufferSourceNode) => {
         throwSanitizedError(err);
       }
     }
+      
 
     // methods
-    
+
   }
 
   return AudioBufferSourceNode;

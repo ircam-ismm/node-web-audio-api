@@ -24,6 +24,9 @@ const { AudioParam } = require('./AudioParam.js');
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 
+const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
+
+
 
 module.exports = (NativeConvolverNode) => {
 
@@ -43,23 +46,29 @@ module.exports = (NativeConvolverNode) => {
     // getters
 
     get buffer() {
-      return super.buffer;
+      if (this[kNativeAudioBuffer]) {
+        return this[kNativeAudioBuffer];
+      } else {
+        return null;
+      }
     }
-
+      
     get normalize() {
       return super.normalize;
     }
-
+      
     // setters
 
     set buffer(value) {
       try {
-        super.buffer = value;
+        super.buffer = value[kNativeAudioBuffer];
       } catch (err) {
         throwSanitizedError(err);
       }
-    }
 
+      this[kNativeAudioBuffer] = value;
+    }
+      
     set normalize(value) {
       try {
         super.normalize = value;
@@ -67,9 +76,10 @@ module.exports = (NativeConvolverNode) => {
         throwSanitizedError(err);
       }
     }
+      
 
     // methods
-    
+
   }
 
   return ConvolverNode;

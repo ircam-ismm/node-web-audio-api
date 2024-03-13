@@ -913,7 +913,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
 }
                     `;
                     break
-                case 'interface': // buffer
+                case 'interface': // AudioBuffer
                     console.log(attr);
                     return `
 #[js_function(1)]

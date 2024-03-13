@@ -23,6 +23,9 @@ const { throwSanitizedError } = require('./lib/errors.js');
 const { AudioParam } = require('./AudioParam.js');
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
+
+const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
+
 const AudioScheduledSourceNodeMixin = require('./AudioScheduledSourceNode.mixin.js');
 
 module.exports = (NativeConstantSourceNode) => {
@@ -49,8 +52,9 @@ module.exports = (NativeConstantSourceNode) => {
 
     // setters
 
+
     // methods
-    
+
   }
 
   return ConstantSourceNode;

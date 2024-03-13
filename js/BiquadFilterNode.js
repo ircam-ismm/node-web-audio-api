@@ -24,6 +24,9 @@ const { AudioParam } = require('./AudioParam.js');
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 
+const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
+
+
 
 module.exports = (NativeBiquadFilterNode) => {
 
@@ -49,7 +52,7 @@ module.exports = (NativeBiquadFilterNode) => {
     get type() {
       return super.type;
     }
-
+      
     // setters
 
     set type(value) {
@@ -59,9 +62,10 @@ module.exports = (NativeBiquadFilterNode) => {
         throwSanitizedError(err);
       }
     }
+      
 
     // methods
-    
+
     getFrequencyResponse(...args) {
       try {
         return super.getFrequencyResponse(...args);

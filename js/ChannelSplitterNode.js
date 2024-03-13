@@ -24,6 +24,9 @@ const { AudioParam } = require('./AudioParam.js');
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 
+const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
+
+
 
 module.exports = (NativeChannelSplitterNode) => {
 
@@ -44,8 +47,9 @@ module.exports = (NativeChannelSplitterNode) => {
 
     // setters
 
+
     // methods
-    
+
   }
 
   return ChannelSplitterNode;

@@ -24,6 +24,9 @@ const { AudioParam } = require('./AudioParam.js');
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 
+const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
+
+
 
 module.exports = (NativeMediaStreamAudioSourceNode) => {
 
@@ -45,11 +48,12 @@ module.exports = (NativeMediaStreamAudioSourceNode) => {
     get mediaStream() {
       return super.mediaStream;
     }
-
+      
     // setters
 
+
     // methods
-    
+
   }
 
   return MediaStreamAudioSourceNode;

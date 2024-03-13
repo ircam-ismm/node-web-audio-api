@@ -24,6 +24,9 @@ const { AudioParam } = require('./AudioParam.js');
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 
+const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
+
+
 
 module.exports = (NativeDynamicsCompressorNode) => {
 
@@ -50,11 +53,12 @@ module.exports = (NativeDynamicsCompressorNode) => {
     get reduction() {
       return super.reduction;
     }
-
+      
     // setters
 
+
     // methods
-    
+
   }
 
   return DynamicsCompressorNode;
