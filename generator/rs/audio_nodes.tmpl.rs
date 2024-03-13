@@ -20,19 +20,22 @@ impl ${d.napiName(d.node)} {
             &[
 
                 // Attributes
-                ${d.attributes(d.node).map(attr => `Property::new("${attr.name}")?
-                    .with_getter(get_${d.slug(attr)})${attr.readonly === false ? `
-                    .with_setter(set_${d.slug(attr)})` : ``}
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                `
-                ).join('')}
+                ${d.attributes(d.node)
+                    .filter(attr => attr.name !== 'mediaStream')
+                    .map(attr => `
+                        Property::new("${attr.name}")?
+                            .with_getter(get_${d.slug(attr)})${attr.readonly === false ? `
+                            .with_setter(set_${d.slug(attr)})` : ``}
+                            .with_property_attributes(PropertyAttributes::Enumerable),
+                        `
+                    ).join('')}
                 // Methods
-                ${d.methods(d.node).map(method => {
-                    return `Property::new("${method.name}")?
-                    .with_method(${d.slug(method)})
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                `
-                }).join('')}
+                ${d.methods(d.node).map(method => `
+                    Property::new("${method.name}")?
+                        .with_method(${d.slug(method)})
+                        .with_property_attributes(PropertyAttributes::Enumerable),
+                    `
+                ).join('')}
                 // AudioNode interface
                 Property::new("channelCount")?
                     .with_getter(get_channel_count)
@@ -223,53 +226,67 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                                 `;
                             }
 
-                            // Handle type defined in IDL
-                            // ---------------------------------------------------
                             const idl = d.findInTree(d.memberType(m));
-                            let idlType;
 
-                            try {
-                                idlType = d.type(idl);
-                            } catch(err) {
-                                console.log('issue with member');
-                                console.log(JSON.stringify(m, null, 2));
-                                return '';
+                            // Handle type defined in IDL
+                            // note that MediaStream is not defined in IDL
+                            // ---------------------------------------------------
+                            if (idl !== undefined) {
+                                const idlType = d.type(idl);
+
+                                switch (idlType) {
+                                    // type, panningModel, distanceModel, oversample
+                                    case 'enum':
+                                        return `
+                    let some_${simple_slug}_js = options_js.get::<&str, JsString>("${m.name}")?;
+                    let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
+                        let ${simple_slug}_str = ${simple_slug}_js.into_utf8()?.into_owned()?;
+
+                        match ${simple_slug}_str.as_str() {${idl.values.map(v => `
+                            "${v.value}" => ${idl.name}::${d.camelcase(v.value)},`).join('')}
+                            _ => panic!("undefined value for ${idl.name}"),
+                        }
+                    } else {
+                        ${m.required ? `return Err(napi::Error::from_reason(
+                            "Parameter ${d.name(m)} is required".to_string(),
+                        ));` : `${idl.name}::default()`}
+                    };
+                                        `;
+                                        break;
+                                    // AudioBuffer, PeriodicWave
+                                    case 'interface':
+                                        return `
+                    let some_${simple_slug}_js = options_js.get::<&str, JsObject>("${m.name}")?;
+                    let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
+                        let ${simple_slug}_napi = ctx.env.unwrap::<${d.napiName(idl)}>(&${simple_slug}_js)?;
+                        Some(${simple_slug}_napi.unwrap().clone())
+                    } else {
+                        None
+                    };
+                                        `;
+                                    default:
+                                        console.log(`[constructor2] > cannot parse argument ${d.name(idl)} - idlType ${idlType}`);
+                                        break;
+                                }
+                            } else {
+                                // MediaStream
+                                // - not defined in IDL, just use infos from member
+                                const idl = m;
+                                const napiName = `Napi${idl.idlType.idlType}`;
+
+                                return `
+                    let some_${simple_slug}_js = options_js.get::<&str, JsObject>("${m.name}")?;
+                    let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
+                        let ${simple_slug}_napi = ctx.env.unwrap::<${napiName}>(&${simple_slug}_js)?;
+                        ${simple_slug}_napi.unwrap()
+                    } else {
+                        return Err(napi::Error::from_reason(
+                            "Parameter ${d.name(m)} is required".to_string(),
+                        ));
+                    };
+                                `;
                             }
 
-                            switch (idlType) {
-
-                                case 'enum':
-                                    return `
-                let some_${simple_slug}_js = options_js.get::<&str, JsString>("${m.name}")?;
-                let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
-                    let ${simple_slug}_str = ${simple_slug}_js.into_utf8()?.into_owned()?;
-
-                    match ${simple_slug}_str.as_str() {${idl.values.map(v => `
-                        "${v.value}" => ${idl.name}::${d.camelcase(v.value)},`).join('')}
-                        _ => panic!("undefined value for ${idl.name}"),
-                    }
-                } else {
-                    ${m.required ? `return Err(napi::Error::from_reason(
-                        "Parameter ${d.name(m)} is required".to_string(),
-                    ));` : `${idl.name}::default()`}
-                };
-                                    `;
-                                    break;
-
-                                case 'interface':
-                                    return `
-                let some_${simple_slug}_js = options_js.get::<&str, JsObject>("${m.name}")?;
-                let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
-                    let ${simple_slug}_napi = ctx.env.unwrap::<${d.napiName(idl)}>(&${simple_slug}_js)?;
-                    Some(${simple_slug}_napi.unwrap().clone())
-                } else {
-                    None
-                };
-                                    `;
-                                default:
-                                    console.log(`[constructor2] > cannot parse argument ${d.name(idl)} - idlType ${idlType}`);
-                                    break;
-                            }
                             break;
                     }
                 }).join('')}
@@ -710,11 +727,10 @@ fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsUnknown> {
         // IDL types
         default: {
             // handle MediaStream
-            // console.log('getter', JSON.stringify(attr, null, 2));
-            // if (attr.idlType.type === 'attribute-type' && attr.idlType.idlType === 'MediaStream') {
-            //     console.log('> ok MediaStream');
-            //     return ``;
-            // }
+            if (attr.idlType.type === 'attribute-type' && attr.idlType.idlType === 'MediaStream') {
+                console.log('!!!! ignored getter for MediaStream ');
+                return ``;
+            }
 
             // handle IDL types
             let idl = d.findInTree(attrType);

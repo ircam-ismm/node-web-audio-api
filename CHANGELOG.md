@@ -1,3 +1,8 @@
+## v0.17.0 (08/03/2024)
+
+- Update upstream crate to [1.0.0-rc.2](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-100-rc2-2024-03-07)
+- Improve compliance and error handling
+
 ## v0.16.0 (09/02/2024)
 
 - Update upstream create to [v0.42.0](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-0420-2024-02-05)

@@ -33,6 +33,7 @@ module.exports = (superclass, bindings) => {
     DynamicsCompressorNode,
     GainNode,
     IIRFilterNode,
+    MediaStreamAudioSourceNode,
     OscillatorNode,
     PannerNode,
     StereoPannerNode,
@@ -132,6 +133,7 @@ module.exports = (superclass, bindings) => {
       const options = { feedforward, feedback };
       return new IIRFilterNode(this, options);
     }
+
 
     createOscillator() {
       return new OscillatorNode(this);

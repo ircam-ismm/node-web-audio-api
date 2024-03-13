@@ -13,10 +13,12 @@ module.exports = function patchOfflineAudioContext(bindings) {
     constructor(...args) {
       // handle initialisation with either an options object or a sequence of parameters
       // https://webaudio.github.io/web-audio-api/#dom-offlineaudiocontext-constructor-contextoptions-contextoptions
-      if (isPlainObject(args[0])
-          && 'numberOfChannels' in args[0] && 'length' in args[0] && 'sampleRate' in args[0]
+      if (isPlainObject(args[0]) && 'length' in args[0] && 'sampleRate' in args[0]
       ) {
-        const { numberOfChannels, length, sampleRate } = args[0];
+        let { numberOfChannels, length, sampleRate } = args[0];
+        if (numberOfChannels === undefined) {
+            numberOfChannels = 1;
+        }
         args = [numberOfChannels, length, sampleRate];
       }
 

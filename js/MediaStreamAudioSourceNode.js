@@ -17,43 +17,43 @@
 // -------------------------------------------------------------------------- //
 // -------------------------------------------------------------------------- //
 
-// re-export index.cjs to support esm import syntax
-// see https://github.com/nodejs/node/issues/40541#issuecomment-951609570
+// eslint-disable-next-line no-unused-vars
+const { throwSanitizedError } = require('./lib/errors.js');
+// eslint-disable-next-line no-unused-vars
+const { AudioParam } = require('./AudioParam.js');
+const EventTargetMixin = require('./EventTarget.mixin.js');
+const AudioNodeMixin = require('./AudioNode.mixin.js');
 
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
 
-const nativeModule = require('./index.cjs');
-export const {
-  AudioContext,
-  OfflineAudioContext,
-  AudioParam,
-  AudioDestinationNode,
-  AudioBuffer,
-  PeriodicWave,
-  // generated supported nodes
-  AnalyserNode,
-  AudioBufferSourceNode,
-  BiquadFilterNode,
-  ChannelMergerNode,
-  ChannelSplitterNode,
-  ConstantSourceNode,
-  ConvolverNode,
-  DelayNode,
-  DynamicsCompressorNode,
-  GainNode,
-  IIRFilterNode,
-  MediaStreamAudioSourceNode,
-  OscillatorNode,
-  PannerNode,
-  StereoPannerNode,
-  WaveShaperNode,
+module.exports = (NativeMediaStreamAudioSourceNode) => {
 
-  // helper methods
-  mediaDevices,
-} = nativeModule;
+  const EventTarget = EventTargetMixin(NativeMediaStreamAudioSourceNode);
+  const AudioNode = AudioNodeMixin(EventTarget);
 
-export default nativeModule;
+  class MediaStreamAudioSourceNode extends AudioNode {
+    constructor(context, options) {
+      if (options !== undefined && typeof options !== 'object') {
+        throw new TypeError("Failed to construct 'MediaStreamAudioSourceNode': argument 2 is not of type 'MediaStreamAudioSourceOptions'")
+      }
+
+      super(context, options);
+
+    }
+
+    // getters
+
+    get mediaStream() {
+      return super.mediaStream;
+    }
+
+    // setters
+
+    // methods
+    
+  }
+
+  return MediaStreamAudioSourceNode;
+};
 
 
   

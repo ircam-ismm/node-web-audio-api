@@ -33,6 +33,7 @@ module.exports = function monkeyPatch(nativeBinding) {
   nativeBinding.DynamicsCompressorNode = require('./DynamicsCompressorNode.js')(nativeBinding.DynamicsCompressorNode);
   nativeBinding.GainNode = require('./GainNode.js')(nativeBinding.GainNode);
   nativeBinding.IIRFilterNode = require('./IIRFilterNode.js')(nativeBinding.IIRFilterNode);
+  nativeBinding.MediaStreamAudioSourceNode = require('./MediaStreamAudioSourceNode.js')(nativeBinding.MediaStreamAudioSourceNode);
   nativeBinding.OscillatorNode = require('./OscillatorNode.js')(nativeBinding.OscillatorNode);
   nativeBinding.PannerNode = require('./PannerNode.js')(nativeBinding.PannerNode);
   nativeBinding.StereoPannerNode = require('./StereoPannerNode.js')(nativeBinding.StereoPannerNode);
