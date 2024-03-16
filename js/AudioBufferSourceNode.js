@@ -40,12 +40,17 @@ module.exports = (NativeAudioBufferSourceNode) => {
           throw new TypeError("Failed to construct 'AudioBufferSourceNode': argument 2 is not of type 'AudioBufferSourceOptions'")
         }
         
-        if ('buffer' in options && options.buffer !== null && !(kNativeAudioBuffer in options.buffer )) {
-          throw new TypeError("Failed to set the 'buffer' property on 'AudioBufferSourceNode': Failed to convert value to 'AudioBuffer'");
+        if ('buffer' in options) {
+          if (options.buffer !== null) {
+            if (!(kNativeAudioBuffer in options.buffer)) {
+              throw new TypeError("Failed to set the 'buffer' property on 'AudioBufferSourceNode': Failed to convert value to 'AudioBuffer'");
+            }
+
+            // unwrap napi audio buffer, clone the options object as it might be reused
+            options = Object.assign({}, options);
+            options.buffer = options.buffer[kNativeAudioBuffer];
+          }
         }
-        // unwrap napi audio buffer, clone the options object as it might be reused
-        options = Object.assign({}, options);
-        options.buffer = options.buffer[kNativeAudioBuffer];
               
       }
         

@@ -53,12 +53,17 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
           switch (type) {
             case 'AudioBuffer': {
               checkMember += `
-        if ('${optionName}' in options && options.${optionName} !== null && !(kNativeAudioBuffer in options.${optionName} )) {
-          throw new TypeError("Failed to set the 'buffer' property on 'AudioBufferSourceNode': Failed to convert value to 'AudioBuffer'");
+        if ('${optionName}' in options) {
+          if (options.${optionName} !== null) {
+            if (!(kNativeAudioBuffer in options.${optionName})) {
+              throw new TypeError("Failed to set the 'buffer' property on 'AudioBufferSourceNode': Failed to convert value to 'AudioBuffer'");
+            }
+
+            // unwrap napi audio buffer, clone the options object as it might be reused
+            options = Object.assign({}, options);
+            options.${optionName} = options.${optionName}[kNativeAudioBuffer];
+          }
         }
-        // unwrap napi audio buffer, clone the options object as it might be reused
-        options = Object.assign({}, options);
-        options.${optionName} = options.${optionName}[kNativeAudioBuffer];
               `;
               break;
             }
