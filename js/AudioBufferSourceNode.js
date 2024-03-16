@@ -43,7 +43,8 @@ module.exports = (NativeAudioBufferSourceNode) => {
         if ('buffer' in options && options.buffer !== null && !(kNativeAudioBuffer in options.buffer )) {
           throw new TypeError("Failed to set the 'buffer' property on 'AudioBufferSourceNode': Failed to convert value to 'AudioBuffer'");
         }
-        // unwrap napi audio buffer
+        // unwrap napi audio buffer, clone the options object as it might be reused
+        options = Object.assign({}, options);
         options.buffer = options.buffer[kNativeAudioBuffer];
               
       }
