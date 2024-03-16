@@ -24,23 +24,31 @@ const { AudioParam } = require('./AudioParam.js');
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 
+
 const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
 
-
-
 module.exports = (NativeWaveShaperNode) => {
-
-  const EventTarget = EventTargetMixin(NativeWaveShaperNode);
+  const EventTarget = EventTargetMixin(NativeWaveShaperNode, ['ended']);
   const AudioNode = AudioNodeMixin(EventTarget);
 
   class WaveShaperNode extends AudioNode {
     constructor(context, options) {
-      if (options !== undefined && typeof options !== 'object') {
-        throw new TypeError("Failed to construct 'WaveShaperNode': argument 2 is not of type 'WaveShaperOptions'")
+      
+      if (options !== undefined) {
+        if (typeof options !== 'object') {
+          throw new TypeError("Failed to construct 'WaveShaperNode': argument 2 is not of type 'WaveShaperOptions'")
+        }
+        
       }
+        
 
       super(context, options);
 
+      
+
+      
+
+      
     }
 
     // getters

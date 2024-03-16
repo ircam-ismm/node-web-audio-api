@@ -23,28 +23,46 @@ const { throwSanitizedError } = require('./lib/errors.js');
 const { AudioParam } = require('./AudioParam.js');
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
+const AudioScheduledSourceNodeMixin = require('./AudioScheduledSourceNode.mixin.js');
 
 const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
 
-const AudioScheduledSourceNodeMixin = require('./AudioScheduledSourceNode.mixin.js');
-
 module.exports = (NativeAudioBufferSourceNode) => {
-
   const EventTarget = EventTargetMixin(NativeAudioBufferSourceNode, ['ended']);
   const AudioNode = AudioNodeMixin(EventTarget);
   const AudioScheduledSourceNode = AudioScheduledSourceNodeMixin(AudioNode);
 
   class AudioBufferSourceNode extends AudioScheduledSourceNode {
     constructor(context, options) {
-      if (options !== undefined && typeof options !== 'object') {
-        throw new TypeError("Failed to construct 'AudioBufferSourceNode': argument 2 is not of type 'AudioBufferSourceOptions'")
+      
+      if (options !== undefined) {
+        if (typeof options !== 'object') {
+          throw new TypeError("Failed to construct 'AudioBufferSourceNode': argument 2 is not of type 'AudioBufferSourceOptions'")
+        }
+        
+        if ('buffer' in options && options.buffer !== null && !(kNativeAudioBuffer in options.buffer )) {
+          throw new TypeError("Failed to set the 'buffer' property on 'AudioBufferSourceNode': Failed to convert value to 'AudioBuffer'");
+        }
+        // unwrap napi audio buffer
+        options.buffer = options.buffer[kNativeAudioBuffer];
+              
       }
+        
 
       super(context, options);
-      // EventTargetMixin has been called so EventTargetMixin[kDispatchEvent] is
-      // bound to this, then we can safely finalize event target initialization
+
+      
+      if (options && 'buffer' in options) {
+        this[kAudioBuffer] = options.buffer;
+      }
+            
+
+      
+      // EventTargetMixin constructor has been called so EventTargetMixin[kDispatchEvent]
+      // is bound to this, then we can safely finalize event target initialization
       super.__initEventTarget__();
 
+      
       this.playbackRate = new AudioParam(this.playbackRate);
       this.detune = new AudioParam(this.detune);
     }
@@ -52,8 +70,8 @@ module.exports = (NativeAudioBufferSourceNode) => {
     // getters
 
     get buffer() {
-      if (this[kNativeAudioBuffer]) {
-        return this[kNativeAudioBuffer];
+      if (this[kAudioBuffer]) {
+        return this[kAudioBuffer];
       } else {
         return null;
       }
@@ -87,7 +105,7 @@ module.exports = (NativeAudioBufferSourceNode) => {
         throwSanitizedError(err);
       }
 
-      this[kNativeAudioBuffer] = value;
+      this[kAudioBuffer] = value;
     }
       
     set loop(value) {

@@ -133,14 +133,8 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         // ----------------------------------------------
         // parse options
         // ----------------------------------------------
-
         if (index == 0) { // index 0 is always AudioContext
             return;
-        }
-
-        if (d.constructor(d.node).arguments.length != 2) {
-            console.log(d.node.name, 'constructor has arguments.length != 2');
-            return ``;
         }
 
         const arg = d.constructor(d.node).arguments[1];

@@ -1,7 +1,13 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { assert } from 'chai';
-import { AudioBuffer, AudioContext, OfflineAudioContext } from '../index.mjs';
+import {
+  AudioBuffer,
+  AudioBufferSourceNode,
+  AudioContext,
+  ConvolverNode,
+  OfflineAudioContext
+} from '../index.mjs';
 
 describe('# AudioBuffer', () => {
 
@@ -101,8 +107,8 @@ describe('# AudioBuffer', () => {
     });
   });
 
-  describe(`AudioBufferSourceNode.buffer`, () => {
-    it(`should work properly`, async () => {
+  describe(`buffer attribute`, () => {
+    it(`AudioBufferSourceNode`, async () => {
       const audioContext = new AudioContext();
 
       const pathname = path.join('examples', 'samples', 'sample.wav');
@@ -117,11 +123,83 @@ describe('# AudioBuffer', () => {
       assert.deepEqual(src.buffer, audioBuffer);
 
       src.start(audioContext.currentTime);
-      src.stop(audioContext.currentTime + 0.3);
+      src.stop(audioContext.currentTime + 0.1);
 
-      await new Promise(resolve => setTimeout(resolve, 400));
+      await new Promise(resolve => setTimeout(resolve, 200));
       await audioContext.close();
     });
+
+    it(`ConvolverNode`, async () => {
+      const audioContext = new AudioContext();
+
+      const pathname = path.join('examples', 'samples', 'sample.wav');
+      const buffer = fs.readFileSync(pathname).buffer;
+      const audioBuffer = await audioContext.decodeAudioData(buffer);
+
+      const convolver = audioContext.createConvolver();
+      convolver.buffer = audioBuffer;
+      convolver.connect(audioContext.destination);
+
+      const src = audioContext.createBufferSource();
+       // should retrieve native audio buffer to native buffer source node
+      src.buffer = audioBuffer;
+      src.connect(convolver);
+
+      assert.deepEqual(src.buffer, audioBuffer);
+
+      src.start(audioContext.currentTime);
+      src.stop(audioContext.currentTime + 0.1);
+
+      await new Promise(resolve => setTimeout(resolve, 200));
+      await audioContext.close();
+    });
+  });
+
+  describe(`buffer in options`, () => {
+    it.only(`AudioBufferSourceNode`, async () => {
+      const audioContext = new AudioContext();
+
+      const pathname = path.join('examples', 'samples', 'sample.wav');
+      const buffer = fs.readFileSync(pathname).buffer;
+      const audioBuffer = await audioContext.decodeAudioData(buffer);
+
+      // should retrieve native audio buffer to native buffer source node
+      const src = new AudioBufferSourceNode(audioContext, { buffer: audioBuffer });
+      src.connect(audioContext.destination);
+
+      assert.deepEqual(src.buffer, audioBuffer);
+
+      src.start(audioContext.currentTime);
+      src.stop(audioContext.currentTime + 0.1);
+
+      await new Promise(resolve => setTimeout(resolve, 200));
+      await audioContext.close();
+    });
+
+    // it.only(`ConvolverNode`, async () => {
+    //   const audioContext = new AudioContext();
+
+    //   const pathname = path.join('examples', 'samples', 'sample.wav');
+    //   const buffer = fs.readFileSync(pathname).buffer;
+    //   const audioBuffer = await audioContext.decodeAudioData(buffer);
+
+    //   const convolver = audioContext.createConvolver();
+    //   convolver.buffer = audioBuffer;
+    //   convolver.connect(audioContext.destination);
+
+    //   const src = audioContext.createBufferSource();
+    //    // should retrieve native audio buffer to native buffer source node
+    //   src.buffer = audioBuffer;
+    //   src.connect(convolver);
+
+    //   assert.deepEqual(src.buffer, audioBuffer);
+
+    //   src.start(audioContext.currentTime);
+    //   src.stop(audioContext.currentTime + 0.1);
+
+    //   await new Promise(resolve => setTimeout(resolve, 200));
+    //   await audioContext.close();
+    // });
   });
 });
 

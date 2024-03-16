@@ -24,23 +24,31 @@ const { AudioParam } = require('./AudioParam.js');
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 
+
 const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
 
-
-
 module.exports = (NativeChannelSplitterNode) => {
-
-  const EventTarget = EventTargetMixin(NativeChannelSplitterNode);
+  const EventTarget = EventTargetMixin(NativeChannelSplitterNode, ['ended']);
   const AudioNode = AudioNodeMixin(EventTarget);
 
   class ChannelSplitterNode extends AudioNode {
     constructor(context, options) {
-      if (options !== undefined && typeof options !== 'object') {
-        throw new TypeError("Failed to construct 'ChannelSplitterNode': argument 2 is not of type 'ChannelSplitterOptions'")
+      
+      if (options !== undefined) {
+        if (typeof options !== 'object') {
+          throw new TypeError("Failed to construct 'ChannelSplitterNode': argument 2 is not of type 'ChannelSplitterOptions'")
+        }
+        
       }
+        
 
       super(context, options);
 
+      
+
+      
+
+      
     }
 
     // getters

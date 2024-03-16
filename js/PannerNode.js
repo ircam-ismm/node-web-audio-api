@@ -24,23 +24,31 @@ const { AudioParam } = require('./AudioParam.js');
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 
+
 const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
 
-
-
 module.exports = (NativePannerNode) => {
-
-  const EventTarget = EventTargetMixin(NativePannerNode);
+  const EventTarget = EventTargetMixin(NativePannerNode, ['ended']);
   const AudioNode = AudioNodeMixin(EventTarget);
 
   class PannerNode extends AudioNode {
     constructor(context, options) {
-      if (options !== undefined && typeof options !== 'object') {
-        throw new TypeError("Failed to construct 'PannerNode': argument 2 is not of type 'PannerOptions'")
+      
+      if (options !== undefined) {
+        if (typeof options !== 'object') {
+          throw new TypeError("Failed to construct 'PannerNode': argument 2 is not of type 'PannerOptions'")
+        }
+        
       }
+        
 
       super(context, options);
 
+      
+
+      
+
+      
       this.positionX = new AudioParam(this.positionX);
       this.positionY = new AudioParam(this.positionY);
       this.positionZ = new AudioParam(this.positionZ);

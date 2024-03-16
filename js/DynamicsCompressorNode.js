@@ -24,23 +24,31 @@ const { AudioParam } = require('./AudioParam.js');
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 
+
 const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
 
-
-
 module.exports = (NativeDynamicsCompressorNode) => {
-
-  const EventTarget = EventTargetMixin(NativeDynamicsCompressorNode);
+  const EventTarget = EventTargetMixin(NativeDynamicsCompressorNode, ['ended']);
   const AudioNode = AudioNodeMixin(EventTarget);
 
   class DynamicsCompressorNode extends AudioNode {
     constructor(context, options) {
-      if (options !== undefined && typeof options !== 'object') {
-        throw new TypeError("Failed to construct 'DynamicsCompressorNode': argument 2 is not of type 'DynamicsCompressorOptions'")
+      
+      if (options !== undefined) {
+        if (typeof options !== 'object') {
+          throw new TypeError("Failed to construct 'DynamicsCompressorNode': argument 2 is not of type 'DynamicsCompressorOptions'")
+        }
+        
       }
+        
 
       super(context, options);
 
+      
+
+      
+
+      
       this.threshold = new AudioParam(this.threshold);
       this.knee = new AudioParam(this.knee);
       this.ratio = new AudioParam(this.ratio);

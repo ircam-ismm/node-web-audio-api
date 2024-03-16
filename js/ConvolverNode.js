@@ -24,30 +24,48 @@ const { AudioParam } = require('./AudioParam.js');
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 
+
 const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
 
-
-
 module.exports = (NativeConvolverNode) => {
-
-  const EventTarget = EventTargetMixin(NativeConvolverNode);
+  const EventTarget = EventTargetMixin(NativeConvolverNode, ['ended']);
   const AudioNode = AudioNodeMixin(EventTarget);
 
   class ConvolverNode extends AudioNode {
     constructor(context, options) {
-      if (options !== undefined && typeof options !== 'object') {
-        throw new TypeError("Failed to construct 'ConvolverNode': argument 2 is not of type 'ConvolverOptions'")
+      
+      if (options !== undefined) {
+        if (typeof options !== 'object') {
+          throw new TypeError("Failed to construct 'ConvolverNode': argument 2 is not of type 'ConvolverOptions'")
+        }
+        
+        if ('buffer' in options && options.buffer !== null && !(kNativeAudioBuffer in options.buffer )) {
+          throw new TypeError("Failed to set the 'buffer' property on 'AudioBufferSourceNode': Failed to convert value to 'AudioBuffer'");
+        }
+        // unwrap napi audio buffer
+        options.buffer = options.buffer[kNativeAudioBuffer];
+              
       }
+        
 
       super(context, options);
 
+      
+      if (options && 'buffer' in options) {
+        this[kAudioBuffer] = options.buffer;
+      }
+            
+
+      
+
+      
     }
 
     // getters
 
     get buffer() {
-      if (this[kNativeAudioBuffer]) {
-        return this[kNativeAudioBuffer];
+      if (this[kAudioBuffer]) {
+        return this[kAudioBuffer];
       } else {
         return null;
       }
@@ -73,7 +91,7 @@ module.exports = (NativeConvolverNode) => {
         throwSanitizedError(err);
       }
 
-      this[kNativeAudioBuffer] = value;
+      this[kAudioBuffer] = value;
     }
       
     set normalize(value) {
