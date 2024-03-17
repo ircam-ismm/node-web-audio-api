@@ -1,11 +1,13 @@
 const { nameCodeMap, DOMException } = require('./lib/errors.js');
 const { isPlainObject, isPositiveInt, isPositiveNumber } = require('./lib/utils.js');
+const { kNativeAudioBuffer } = require('./AudioBuffer.js');
 
 module.exports = function patchOfflineAudioContext(bindings) {
+  const AudioBuffer = bindings.AudioBuffer;
+
   // @todo - EventTarget
   // - https://github.com/orottier/web-audio-api-rs/issues/411
   // - https://github.com/orottier/web-audio-api-rs/issues/416
-
   const EventTarget = require('./EventTarget.mixin.js')(bindings.OfflineAudioContext, ['statechange']);
   const BaseAudioContext = require('./BaseAudioContext.mixin.js')(EventTarget, bindings);
 
@@ -40,16 +42,17 @@ module.exports = function patchOfflineAudioContext(bindings) {
     }
 
     async startRendering() {
-      const renderedBuffer = await super.startRendering();
+      const nativeAudioBuffer = await super.startRendering();
+      const audioBuffer = new AudioBuffer({ [kNativeAudioBuffer]: nativeAudioBuffer });
 
-      // We do this here, so that we can just share the same audioBuffer instance.
-      // This also simplifies code on the rust side as we don't need to deal
-      // with the OfflineAudioCompletionEvent.
+      // We dispatch the complete envet manually to simplify the sharing of the
+      // `AudioBuffer` instance. This also simplifies code on the rust side as
+      // we don't need to deal with the `OfflineAudioCompletionEvent` type.
       const event = new Event('complete');
-      event.renderedBuffer = renderedBuffer;
-      this.dispatchEvent(event)
+      event.renderedBuffer = audioBuffer;
+      this.dispatchEvent(event);
 
-      return renderedBuffer;
+      return audioBuffer;
     }
   }
 

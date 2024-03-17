@@ -1,9 +1,11 @@
 const { AudioDestinationNode } = require('./AudioDestinationNode.js');
 const { isFunction } = require('./lib/utils.js');
+const { kNativeAudioBuffer } = require('./AudioBuffer.js');
 
 module.exports = (superclass, bindings) => {
   const {
 ${d.nodes.map(n => `    ${d.name(n)},`).join('\n')}
+    AudioBuffer,
     PeriodicWave,
   } = bindings;
 
@@ -24,7 +26,8 @@ ${d.nodes.map(n => `    ${d.name(n)},`).join('\n')}
       }
 
       try {
-        const audioBuffer = super.decodeAudioData(audioData);
+        const nativeAudioBuffer = super.decodeAudioData(audioData);
+        const audioBuffer = new AudioBuffer({ [kNativeAudioBuffer]: nativeAudioBuffer });
 
         if (isFunction(decodeSuccessCallback)) {
           decodeSuccessCallback(audioBuffer);
@@ -38,6 +41,10 @@ ${d.nodes.map(n => `    ${d.name(n)},`).join('\n')}
           return Promise.reject(err);
         }
       }
+    }
+
+    createBuffer(numberOfChannels, length, sampleRate) {
+      return new AudioBuffer({ numberOfChannels, length, sampleRate });
     }
 
     createPeriodicWave(real, imag) {

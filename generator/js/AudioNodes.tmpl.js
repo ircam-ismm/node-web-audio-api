@@ -7,54 +7,165 @@ const AudioNodeMixin = require('./AudioNode.mixin.js');
 ${d.parent(d.node) === 'AudioScheduledSourceNode' ?
 `const AudioScheduledSourceNodeMixin = require('./AudioScheduledSourceNode.mixin.js');`: ``}
 
+const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
+
 module.exports = (Native${d.name(d.node)}) => {
-${d.parent(d.node) === 'AudioScheduledSourceNode' ? `
   const EventTarget = EventTargetMixin(Native${d.name(d.node)}, ['ended']);
   const AudioNode = AudioNodeMixin(EventTarget);
+${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
   const AudioScheduledSourceNode = AudioScheduledSourceNodeMixin(AudioNode);
 
-  class ${d.name(d.node)} extends AudioScheduledSourceNode {
+  class ${d.name(d.node)} extends AudioScheduledSourceNode {` : `
+  class ${d.name(d.node)} extends AudioNode {`
+}
     constructor(context, options) {
-      if (options !== undefined && typeof options !== 'object') {
-        throw new TypeError("Failed to construct '${d.name(d.node)}': argument 2 is not of type '${d.name(d.node).replace("Node", "Options")}'")
+      // keep a handle to the original object, if we need to manipulate the
+      // options before passing them to NAPI
+      const originalOptions = Object.assign({}, options);
+
+      ${(function() {
+        // handle argument 2: options
+        const options = d.constructor(d.node).arguments[1];
+        const optionsType = d.memberType(options);
+        const optionsIdl = d.findInTree(optionsType);
+        let checkOptions = `
+      if (options !== undefined) {
+        if (typeof options !== 'object') {
+          throw new TypeError("Failed to construct '${d.name(d.node)}': argument 2 is not of type '${optionsType}'")
+        }
+        `;
+
+        checkOptions += optionsIdl.members.map(member => {
+          // @todo - improve checks
+          // cf. https://github.com/jsdom/webidl-conversions
+          const optionName = d.name(member);
+          const type = d.memberType(member);
+          const required = member.required;
+          const nullable = member.idlType.nullable;
+          const defaultValue = member.default; // null or object
+          let checkMember = '';
+
+          if (required) {
+          checkMember += `
+        if (options && !('${optionName}' in options)) {
+          throw new Error("Failed to read the '${optionName}'' property from ${optionsType}: Required member is undefined.")
+        }
+          `
+          }
+
+          // d.debug(member);
+          switch (type) {
+            case 'AudioBuffer': {
+              checkMember += `
+        if ('${optionName}' in options) {
+          if (options.${optionName} !== null) {
+            if (!(kNativeAudioBuffer in options.${optionName})) {
+              throw new TypeError("Failed to set the 'buffer' property on 'AudioBufferSourceNode': Failed to convert value to 'AudioBuffer'");
+            }
+
+            // unwrap napi audio buffer, clone the options object as it might be reused
+            options = Object.assign({}, options);
+            options.${optionName} = options.${optionName}[kNativeAudioBuffer];
+          }
+        }
+              `;
+              break;
+            }
+          }
+
+          return checkMember;
+        }).join('');
+
+        checkOptions += `
       }
+        `;
+
+        return checkOptions;
+      }())}
 
       super(context, options);
-      // EventTargetMixin has been called so EventTargetMixin[kDispatchEvent] is
-      // bound to this, then we can safely finalize event target initialization
-      super.__initEventTarget__();
-${d.audioParams(d.node).map(param => {
-    return `
-      this.${d.name(param)} = new AudioParam(this.${d.name(param)});`;
-}).join('')}
-    }
-`: `
-  const EventTarget = EventTargetMixin(Native${d.name(d.node)});
-  const AudioNode = AudioNodeMixin(EventTarget);
 
-  class ${d.name(d.node)} extends AudioNode {
-    constructor(context, options) {
-      if (options !== undefined && typeof options !== 'object') {
-        throw new TypeError("Failed to construct '${d.name(d.node)}': argument 2 is not of type '${d.name(d.node).replace("Node", "Options")}'")
+      ${(function() {
+        // handle special options cases
+        const options = d.constructor(d.node).arguments[1];
+        const optionsType = d.memberType(options);
+        const optionsIdl = d.findInTree(optionsType);
+
+        return optionsIdl.members.map(member => {
+          // at this point all type checks have been done, so it is safe to just manipulate the options
+          const optionName = d.name(member);
+          const type = d.memberType(member);
+          if (type === 'AudioBuffer') {
+            return `
+      // keep the wrapper AudioBuffer wrapperaround
+      this[kAudioBuffer] = null;
+
+      if (options && '${optionName}' in options) {
+        this[kAudioBuffer] = originalOptions.${optionName};
       }
+            `;
+          }
+        }).join('');
+      }())}
 
-      super(context, options);
-${d.audioParams(d.node).map(param => {
-    return `
+      ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `
+      // EventTargetMixin constructor has been called so EventTargetMixin[kDispatchEvent]
+      // is bound to this, then we can safely finalize event target initialization
+      super.__initEventTarget__();` : ``}
+
+      ${d.audioParams(d.node).map(param => {
+        return `
       this.${d.name(param)} = new AudioParam(this.${d.name(param)});`;
-}).join('')}
+      }).join('')}
     }
-`}
+
     // getters
 ${d.attributes(d.node).map(attr => {
-  return `
+  switch (d.memberType(attr)) {
+    case 'AudioBuffer': {
+      return `
+    get ${d.name(attr)}() {
+      return this[kAudioBuffer];
+    }
+      `;
+      break;
+    }
+    default: {
+      return `
     get ${d.name(attr)}() {
       return super.${d.name(attr)};
     }
-`}).join('')}
+      `;
+      break;
+    }
+  }
+}).join('')}
     // setters
 ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
-  return `
+  switch (d.memberType(attr)) {
+    case 'AudioBuffer': {
+      return `
+    // @todo - should be able to set to null afterward
+    set ${d.name(attr)}(value) {
+      if (value === null) {
+        return;
+      } else if (!(kNativeAudioBuffer in value)) {
+        throw new TypeError("Failed to set the 'buffer' property on 'AudioBufferSourceNode': Failed to convert value to 'AudioBuffer'");
+      }
+
+      try {
+        super.${d.name(attr)} = value[kNativeAudioBuffer];
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+
+      this[kAudioBuffer] = value;
+    }
+      `;
+      break;
+    }
+    default: {
+      return `
     set ${d.name(attr)}(value) {
       try {
         super.${d.name(attr)} = value;
@@ -62,19 +173,25 @@ ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
         throwSanitizedError(err);
       }
     }
-`}).join('')}
+      `;
+      break;
+    }
+  }
+}).join('')}
+
     // methods
-    ${d.methods(d.node, false).reduce((acc, method) => {
-      // dedup method names
-      if (!acc.find(i => d.name(i) === d.name(method))) {
-        acc.push(method)
-      }
-      return acc;
-    }, [])
-    // filter AudioScheduledSourceNode methods to prevent re-throwing errors
-    .filter(method => d.name(method) !== 'start' && d.name(method) !== 'stop')
-    .map(method => {
-  return `
+${d.methods(d.node, false)
+  .reduce((acc, method) => {
+    // dedup method names
+    if (!acc.find(i => d.name(i) === d.name(method))) {
+      acc.push(method)
+    }
+    return acc;
+  }, [])
+  // filter AudioScheduledSourceNode methods to prevent re-throwing errors
+  .filter(method => d.name(method) !== 'start' && d.name(method) !== 'stop')
+  .map(method => {
+    return `
     ${d.name(method)}(...args) {
       try {
         return super.${d.name(method)}(...args);

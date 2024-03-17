@@ -166,11 +166,19 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                     0.
                 };
 
-                let some_periodic_wave_js = options_js.get::<&str, JsObject>("periodicWave")?;
+                let some_periodic_wave_js = options_js.get::<&str, JsUnknown>("periodicWave")?;
                 let periodic_wave = if let Some(periodic_wave_js) = some_periodic_wave_js {
-                    let periodic_wave_napi =
-                        ctx.env.unwrap::<NapiPeriodicWave>(&periodic_wave_js)?;
-                    Some(periodic_wave_napi.unwrap().clone())
+                    // nullable options
+                    match periodic_wave_js.get_type()? {
+                        ValueType::Object => {
+                            let periodic_wave_js = periodic_wave_js.coerce_to_object()?;
+                            let periodic_wave_napi =
+                                ctx.env.unwrap::<NapiPeriodicWave>(&periodic_wave_js)?;
+                            Some(periodic_wave_napi.unwrap().clone())
+                        }
+                        ValueType::Null => None,
+                        _ => unreachable!(),
+                    }
                 } else {
                     None
                 };

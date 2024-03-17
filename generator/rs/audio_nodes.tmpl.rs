@@ -133,14 +133,8 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         // ----------------------------------------------
         // parse options
         // ----------------------------------------------
-
         if (index == 0) { // index 0 is always AudioContext
             return;
-        }
-
-        if (d.constructor(d.node).arguments.length != 2) {
-            console.log(d.node.name, 'constructor has arguments.length != 2');
-            return ``;
         }
 
         const arg = d.constructor(d.node).arguments[1];
@@ -256,10 +250,18 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                                     // AudioBuffer, PeriodicWave
                                     case 'interface':
                                         return `
-                    let some_${simple_slug}_js = options_js.get::<&str, JsObject>("${m.name}")?;
+                    let some_${simple_slug}_js = options_js.get::<&str, JsUnknown>("${m.name}")?;
                     let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
-                        let ${simple_slug}_napi = ctx.env.unwrap::<${d.napiName(idl)}>(&${simple_slug}_js)?;
-                        Some(${simple_slug}_napi.unwrap().clone())
+                        // nullable options
+                        match ${simple_slug}_js.get_type()? {
+                            ValueType::Object => {
+                                let ${simple_slug}_js = ${simple_slug}_js.coerce_to_object()?;
+                                let ${simple_slug}_napi = ctx.env.unwrap::<${d.napiName(idl)}>(&${simple_slug}_js)?;
+                                Some(${simple_slug}_napi.unwrap().clone())
+                            },
+                            ValueType::Null => None,
+                            _ => unreachable!(),
+                        }
                     } else {
                         None
                     };
@@ -913,7 +915,8 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
 }
                     `;
                     break
-                case 'interface':
+                case 'interface': // AudioBuffer
+                    console.log(attr);
                     return `
 #[js_function(1)]
 fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {

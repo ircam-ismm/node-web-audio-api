@@ -25,19 +25,34 @@ const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 
 
-module.exports = (NativeBiquadFilterNode) => {
+const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
 
-  const EventTarget = EventTargetMixin(NativeBiquadFilterNode);
+module.exports = (NativeBiquadFilterNode) => {
+  const EventTarget = EventTargetMixin(NativeBiquadFilterNode, ['ended']);
   const AudioNode = AudioNodeMixin(EventTarget);
 
   class BiquadFilterNode extends AudioNode {
     constructor(context, options) {
-      if (options !== undefined && typeof options !== 'object') {
-        throw new TypeError("Failed to construct 'BiquadFilterNode': argument 2 is not of type 'BiquadFilterOptions'")
+      // keep a handle to the original object, if we need to manipulate the
+      // options before passing them to NAPI
+      const originalOptions = Object.assign({}, options);
+
+      
+      if (options !== undefined) {
+        if (typeof options !== 'object') {
+          throw new TypeError("Failed to construct 'BiquadFilterNode': argument 2 is not of type 'BiquadFilterOptions'")
+        }
+        
       }
+        
 
       super(context, options);
 
+      
+
+      
+
+      
       this.frequency = new AudioParam(this.frequency);
       this.detune = new AudioParam(this.detune);
       this.Q = new AudioParam(this.Q);
@@ -49,7 +64,7 @@ module.exports = (NativeBiquadFilterNode) => {
     get type() {
       return super.type;
     }
-
+      
     // setters
 
     set type(value) {
@@ -59,9 +74,10 @@ module.exports = (NativeBiquadFilterNode) => {
         throwSanitizedError(err);
       }
     }
+      
 
     // methods
-    
+
     getFrequencyResponse(...args) {
       try {
         return super.getFrequencyResponse(...args);

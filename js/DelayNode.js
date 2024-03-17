@@ -25,19 +25,34 @@ const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 
 
-module.exports = (NativeDelayNode) => {
+const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
 
-  const EventTarget = EventTargetMixin(NativeDelayNode);
+module.exports = (NativeDelayNode) => {
+  const EventTarget = EventTargetMixin(NativeDelayNode, ['ended']);
   const AudioNode = AudioNodeMixin(EventTarget);
 
   class DelayNode extends AudioNode {
     constructor(context, options) {
-      if (options !== undefined && typeof options !== 'object') {
-        throw new TypeError("Failed to construct 'DelayNode': argument 2 is not of type 'DelayOptions'")
+      // keep a handle to the original object, if we need to manipulate the
+      // options before passing them to NAPI
+      const originalOptions = Object.assign({}, options);
+
+      
+      if (options !== undefined) {
+        if (typeof options !== 'object') {
+          throw new TypeError("Failed to construct 'DelayNode': argument 2 is not of type 'DelayOptions'")
+        }
+        
       }
+        
 
       super(context, options);
 
+      
+
+      
+
+      
       this.delayTime = new AudioParam(this.delayTime);
     }
 
@@ -45,8 +60,9 @@ module.exports = (NativeDelayNode) => {
 
     // setters
 
+
     // methods
-    
+
   }
 
   return DelayNode;

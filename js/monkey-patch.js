@@ -39,13 +39,13 @@ module.exports = function monkeyPatch(nativeBinding) {
   nativeBinding.StereoPannerNode = require('./StereoPannerNode.js')(nativeBinding.StereoPannerNode);
   nativeBinding.WaveShaperNode = require('./WaveShaperNode.js')(nativeBinding.WaveShaperNode);
 
-  // @todo - wrap AudioBuffer interface as well
   nativeBinding.PeriodicWave = require('./PeriodicWave.js')(nativeBinding.PeriodicWave);
+  nativeBinding.AudioBuffer = require('./AudioBuffer.js').AudioBuffer(nativeBinding.AudioBuffer);
 
   nativeBinding.AudioContext = require('./AudioContext.js')(nativeBinding);
   nativeBinding.OfflineAudioContext = require('./OfflineAudioContext.js')(nativeBinding);
 
-  // find a way to make the constructor private
+  // @todo - make the constructor private
   nativeBinding.AudioParam = require('./AudioParam.js').AudioParam;
   nativeBinding.AudioDestinationNode = require('./AudioDestinationNode.js').AudioDestinationNode;
 

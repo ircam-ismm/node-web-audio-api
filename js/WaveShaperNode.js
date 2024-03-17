@@ -25,19 +25,34 @@ const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 
 
-module.exports = (NativeWaveShaperNode) => {
+const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
 
-  const EventTarget = EventTargetMixin(NativeWaveShaperNode);
+module.exports = (NativeWaveShaperNode) => {
+  const EventTarget = EventTargetMixin(NativeWaveShaperNode, ['ended']);
   const AudioNode = AudioNodeMixin(EventTarget);
 
   class WaveShaperNode extends AudioNode {
     constructor(context, options) {
-      if (options !== undefined && typeof options !== 'object') {
-        throw new TypeError("Failed to construct 'WaveShaperNode': argument 2 is not of type 'WaveShaperOptions'")
+      // keep a handle to the original object, if we need to manipulate the
+      // options before passing them to NAPI
+      const originalOptions = Object.assign({}, options);
+
+      
+      if (options !== undefined) {
+        if (typeof options !== 'object') {
+          throw new TypeError("Failed to construct 'WaveShaperNode': argument 2 is not of type 'WaveShaperOptions'")
+        }
+        
       }
+        
 
       super(context, options);
 
+      
+
+      
+
+      
     }
 
     // getters
@@ -45,11 +60,11 @@ module.exports = (NativeWaveShaperNode) => {
     get curve() {
       return super.curve;
     }
-
+      
     get oversample() {
       return super.oversample;
     }
-
+      
     // setters
 
     set curve(value) {
@@ -59,7 +74,7 @@ module.exports = (NativeWaveShaperNode) => {
         throwSanitizedError(err);
       }
     }
-
+      
     set oversample(value) {
       try {
         super.oversample = value;
@@ -67,9 +82,10 @@ module.exports = (NativeWaveShaperNode) => {
         throwSanitizedError(err);
       }
     }
+      
 
     // methods
-    
+
   }
 
   return WaveShaperNode;

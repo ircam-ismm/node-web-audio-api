@@ -146,10 +146,18 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let options = if let Ok(either_options) = ctx.try_get::<JsObject>(1) {
         match either_options {
             Either::A(options_js) => {
-                let some_buffer_js = options_js.get::<&str, JsObject>("buffer")?;
+                let some_buffer_js = options_js.get::<&str, JsUnknown>("buffer")?;
                 let buffer = if let Some(buffer_js) = some_buffer_js {
-                    let buffer_napi = ctx.env.unwrap::<NapiAudioBuffer>(&buffer_js)?;
-                    Some(buffer_napi.unwrap().clone())
+                    // nullable options
+                    match buffer_js.get_type()? {
+                        ValueType::Object => {
+                            let buffer_js = buffer_js.coerce_to_object()?;
+                            let buffer_napi = ctx.env.unwrap::<NapiAudioBuffer>(&buffer_js)?;
+                            Some(buffer_napi.unwrap().clone())
+                        }
+                        ValueType::Null => None,
+                        _ => unreachable!(),
+                    }
                 } else {
                     None
                 };

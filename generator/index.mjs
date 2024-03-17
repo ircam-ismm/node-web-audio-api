@@ -181,6 +181,10 @@ const utils = {
 
     return camelcase(idl.name, { pascalCase: true, preserveConsecutiveUppercase: true });
   },
+
+  debug(value) {
+    console.log(JSON.stringify(value, null, 2));
+  }
 };
 
 let audioNodes = [];

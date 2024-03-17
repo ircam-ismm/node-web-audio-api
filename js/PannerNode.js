@@ -25,19 +25,34 @@ const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 
 
-module.exports = (NativePannerNode) => {
+const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
 
-  const EventTarget = EventTargetMixin(NativePannerNode);
+module.exports = (NativePannerNode) => {
+  const EventTarget = EventTargetMixin(NativePannerNode, ['ended']);
   const AudioNode = AudioNodeMixin(EventTarget);
 
   class PannerNode extends AudioNode {
     constructor(context, options) {
-      if (options !== undefined && typeof options !== 'object') {
-        throw new TypeError("Failed to construct 'PannerNode': argument 2 is not of type 'PannerOptions'")
+      // keep a handle to the original object, if we need to manipulate the
+      // options before passing them to NAPI
+      const originalOptions = Object.assign({}, options);
+
+      
+      if (options !== undefined) {
+        if (typeof options !== 'object') {
+          throw new TypeError("Failed to construct 'PannerNode': argument 2 is not of type 'PannerOptions'")
+        }
+        
       }
+        
 
       super(context, options);
 
+      
+
+      
+
+      
       this.positionX = new AudioParam(this.positionX);
       this.positionY = new AudioParam(this.positionY);
       this.positionZ = new AudioParam(this.positionZ);
@@ -51,35 +66,35 @@ module.exports = (NativePannerNode) => {
     get panningModel() {
       return super.panningModel;
     }
-
+      
     get distanceModel() {
       return super.distanceModel;
     }
-
+      
     get refDistance() {
       return super.refDistance;
     }
-
+      
     get maxDistance() {
       return super.maxDistance;
     }
-
+      
     get rolloffFactor() {
       return super.rolloffFactor;
     }
-
+      
     get coneInnerAngle() {
       return super.coneInnerAngle;
     }
-
+      
     get coneOuterAngle() {
       return super.coneOuterAngle;
     }
-
+      
     get coneOuterGain() {
       return super.coneOuterGain;
     }
-
+      
     // setters
 
     set panningModel(value) {
@@ -89,7 +104,7 @@ module.exports = (NativePannerNode) => {
         throwSanitizedError(err);
       }
     }
-
+      
     set distanceModel(value) {
       try {
         super.distanceModel = value;
@@ -97,7 +112,7 @@ module.exports = (NativePannerNode) => {
         throwSanitizedError(err);
       }
     }
-
+      
     set refDistance(value) {
       try {
         super.refDistance = value;
@@ -105,7 +120,7 @@ module.exports = (NativePannerNode) => {
         throwSanitizedError(err);
       }
     }
-
+      
     set maxDistance(value) {
       try {
         super.maxDistance = value;
@@ -113,7 +128,7 @@ module.exports = (NativePannerNode) => {
         throwSanitizedError(err);
       }
     }
-
+      
     set rolloffFactor(value) {
       try {
         super.rolloffFactor = value;
@@ -121,7 +136,7 @@ module.exports = (NativePannerNode) => {
         throwSanitizedError(err);
       }
     }
-
+      
     set coneInnerAngle(value) {
       try {
         super.coneInnerAngle = value;
@@ -129,7 +144,7 @@ module.exports = (NativePannerNode) => {
         throwSanitizedError(err);
       }
     }
-
+      
     set coneOuterAngle(value) {
       try {
         super.coneOuterAngle = value;
@@ -137,7 +152,7 @@ module.exports = (NativePannerNode) => {
         throwSanitizedError(err);
       }
     }
-
+      
     set coneOuterGain(value) {
       try {
         super.coneOuterGain = value;
@@ -145,9 +160,10 @@ module.exports = (NativePannerNode) => {
         throwSanitizedError(err);
       }
     }
+      
 
     // methods
-    
+
     setPosition(...args) {
       try {
         return super.setPosition(...args);

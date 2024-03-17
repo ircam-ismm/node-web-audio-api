@@ -25,19 +25,38 @@ const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 
 
-module.exports = (NativeMediaStreamAudioSourceNode) => {
+const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
 
-  const EventTarget = EventTargetMixin(NativeMediaStreamAudioSourceNode);
+module.exports = (NativeMediaStreamAudioSourceNode) => {
+  const EventTarget = EventTargetMixin(NativeMediaStreamAudioSourceNode, ['ended']);
   const AudioNode = AudioNodeMixin(EventTarget);
 
   class MediaStreamAudioSourceNode extends AudioNode {
     constructor(context, options) {
-      if (options !== undefined && typeof options !== 'object') {
-        throw new TypeError("Failed to construct 'MediaStreamAudioSourceNode': argument 2 is not of type 'MediaStreamAudioSourceOptions'")
+      // keep a handle to the original object, if we need to manipulate the
+      // options before passing them to NAPI
+      const originalOptions = Object.assign({}, options);
+
+      
+      if (options !== undefined) {
+        if (typeof options !== 'object') {
+          throw new TypeError("Failed to construct 'MediaStreamAudioSourceNode': argument 2 is not of type 'MediaStreamAudioSourceOptions'")
+        }
+        
+        if (options && !('mediaStream' in options)) {
+          throw new Error("Failed to read the 'mediaStream'' property from MediaStreamAudioSourceOptions: Required member is undefined.")
+        }
+          
       }
+        
 
       super(context, options);
 
+      
+
+      
+
+      
     }
 
     // getters
@@ -45,11 +64,12 @@ module.exports = (NativeMediaStreamAudioSourceNode) => {
     get mediaStream() {
       return super.mediaStream;
     }
-
+      
     // setters
 
+
     // methods
-    
+
   }
 
   return MediaStreamAudioSourceNode;
