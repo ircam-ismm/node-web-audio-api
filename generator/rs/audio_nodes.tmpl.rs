@@ -250,10 +250,18 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                                     // AudioBuffer, PeriodicWave
                                     case 'interface':
                                         return `
-                    let some_${simple_slug}_js = options_js.get::<&str, JsObject>("${m.name}")?;
+                    let some_${simple_slug}_js = options_js.get::<&str, JsUnknown>("${m.name}")?;
                     let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
-                        let ${simple_slug}_napi = ctx.env.unwrap::<${d.napiName(idl)}>(&${simple_slug}_js)?;
-                        Some(${simple_slug}_napi.unwrap().clone())
+                        // nullable options
+                        match ${simple_slug}_js.get_type()? {
+                            ValueType::Object => {
+                                let ${simple_slug}_js = ${simple_slug}_js.coerce_to_object()?;
+                                let ${simple_slug}_napi = ctx.env.unwrap::<${d.napiName(idl)}>(&${simple_slug}_js)?;
+                                Some(${simple_slug}_napi.unwrap().clone())
+                            },
+                            ValueType::Null => None,
+                            _ => unreachable!(),
+                        }
                     } else {
                         None
                     };
