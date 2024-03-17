@@ -19,6 +19,10 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
   class ${d.name(d.node)} extends AudioNode {`
 }
     constructor(context, options) {
+      // keep a handle to the original object, if we need to manipulate the
+      // options before passing them to NAPI
+      const originalOptions = Object.assign({}, options);
+
       ${(function() {
         // handle argument 2: options
         const options = d.constructor(d.node).arguments[1];
@@ -91,11 +95,13 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
           // at this point all type checks have been done, so it is safe to just manipulate the options
           const optionName = d.name(member);
           const type = d.memberType(member);
-          // for audio buffer, we need to keep the wrapper around
           if (type === 'AudioBuffer') {
             return `
+      // keep the wrapper AudioBuffer wrapperaround
+      this[kAudioBuffer] = null;
+
       if (options && '${optionName}' in options) {
-        this[kAudioBuffer] = options.${optionName};
+        this[kAudioBuffer] = originalOptions.${optionName};
       }
             `;
           }
@@ -119,11 +125,7 @@ ${d.attributes(d.node).map(attr => {
     case 'AudioBuffer': {
       return `
     get ${d.name(attr)}() {
-      if (this[kAudioBuffer]) {
-        return this[kAudioBuffer];
-      } else {
-        return null;
-      }
+      return this[kAudioBuffer];
     }
       `;
       break;

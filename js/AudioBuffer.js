@@ -6,15 +6,15 @@ const kAudioBuffer = Symbol('node-web-audio-api:audio-buffer');
 module.exports.AudioBuffer = (NativeAudioBuffer) => {
   class AudioBuffer {
     constructor(options) {
+      if (typeof options !== 'object') {
+        throw new TypeError("Failed to construct 'AudioBuffer': argument 1 is not of type 'AudioBufferOptions'");
+      }
+
       if (kNativeAudioBuffer in options) {
         // internal constructor for `startRendering` and `decodeAudioData` cases
         this[kNativeAudioBuffer] = options[kNativeAudioBuffer];
       } else {
         // regular public constructor
-        if (typeof options !== 'object') {
-          throw new TypeError("Failed to construct 'AudioBuffer': argument 1 is not of type 'AudioBufferOptions'");
-        }
-
         try {
           this[kNativeAudioBuffer] = new NativeAudioBuffer(options);
         } catch (err) {

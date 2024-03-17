@@ -33,6 +33,10 @@ module.exports = (NativeConvolverNode) => {
 
   class ConvolverNode extends AudioNode {
     constructor(context, options) {
+      // keep a handle to the original object, if we need to manipulate the
+      // options before passing them to NAPI
+      const originalOptions = Object.assign({}, options);
+
       
       if (options !== undefined) {
         if (typeof options !== 'object') {
@@ -57,8 +61,11 @@ module.exports = (NativeConvolverNode) => {
       super(context, options);
 
       
+      // keep the wrapper AudioBuffer wrapperaround
+      this[kAudioBuffer] = null;
+
       if (options && 'buffer' in options) {
-        this[kAudioBuffer] = options.buffer;
+        this[kAudioBuffer] = originalOptions.buffer;
       }
             
 
@@ -70,11 +77,7 @@ module.exports = (NativeConvolverNode) => {
     // getters
 
     get buffer() {
-      if (this[kAudioBuffer]) {
-        return this[kAudioBuffer];
-      } else {
-        return null;
-      }
+      return this[kAudioBuffer];
     }
       
     get normalize() {

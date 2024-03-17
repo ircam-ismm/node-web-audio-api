@@ -23,6 +23,15 @@ import { AudioBuffer, AudioBufferSourceNode, AnalyserNode, AudioContext, Convolv
 const SAMPLERATE = 8000;
 const LENGTH = 128;
 
-const context = new OfflineAudioContext(1, LENGTH, SAMPLERATE);
+const context = new AudioContext({ sampleRate: 1 });
 
-const node3 = new ConvolverNode(context, {"buffer":null,"disableNormalization":false})
+// const _ = context.createBuffer(1, 1, context.sampleRate);
+// console.log(_);
+const buffer = new AudioBuffer({ length: 12, sampleRate: context.sampleRate });
+
+let node;
+try {
+  node = new ConvolverNode(context, { buffer: null });
+} catch (err) {}
+
+console.log(node.buffer);

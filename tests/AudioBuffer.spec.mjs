@@ -9,6 +9,9 @@ import {
   OfflineAudioContext
 } from '../index.mjs';
 
+// access private property
+import kNativeAudioBuffer from '../'
+
 describe('# AudioBuffer', () => {
 
   describe(`## audioContext.createBuffer(numChannels, length, sampleRate)`, () => {

@@ -34,6 +34,10 @@ module.exports = (NativeConstantSourceNode) => {
 
   class ConstantSourceNode extends AudioScheduledSourceNode {
     constructor(context, options) {
+      // keep a handle to the original object, if we need to manipulate the
+      // options before passing them to NAPI
+      const originalOptions = Object.assign({}, options);
+
       
       if (options !== undefined) {
         if (typeof options !== 'object') {
