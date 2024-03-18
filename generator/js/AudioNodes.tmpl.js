@@ -96,7 +96,7 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
           const type = d.memberType(member);
           if (type === 'AudioBuffer') {
             return `
-      // keep the wrapper AudioBuffer wrapperaround
+      // keep the wrapped AudioBuffer around
       this[kAudioBuffer] = null;
 
       if (options && '${optionName}' in options) {
