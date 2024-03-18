@@ -17,7 +17,9 @@
 // -------------------------------------------------------------------------- //
 // -------------------------------------------------------------------------- //
 
-const { throwSanitizedError } = require('./lib/errors.js');
+const {
+  throwSanitizedError,
+} = require('./lib/errors.js');
 
 const kNativeAudioParam = Symbol('node-web-audio-api:audio-param');
 
@@ -127,6 +129,3 @@ class AudioParam {
 
 module.exports.kNativeAudioParam = kNativeAudioParam;
 module.exports.AudioParam = AudioParam;
-
-
-  

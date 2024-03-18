@@ -1,13 +1,13 @@
-// eslint-disable-next-line no-unused-vars
+/* eslint-disable no-unused-vars */
 const { throwSanitizedError } = require('./lib/errors.js');
-// eslint-disable-next-line no-unused-vars
 const { AudioParam } = require('./AudioParam.js');
+const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
+/* eslint-enable no-unused-vars */
+
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 ${d.parent(d.node) === 'AudioScheduledSourceNode' ?
 `const AudioScheduledSourceNodeMixin = require('./AudioScheduledSourceNode.mixin.js');`: ``}
-
-const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
 
 module.exports = (Native${d.name(d.node)}) => {
   const EventTarget = EventTargetMixin(Native${d.name(d.node)}, ['ended']);
@@ -21,17 +21,17 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
     constructor(context, options) {
       // keep a handle to the original object, if we need to manipulate the
       // options before passing them to NAPI
-      const originalOptions = Object.assign({}, options);
+      const parsedOptions = Object.assign({}, options);
 
       ${(function() {
         // handle argument 2: options
-        const options = d.constructor(d.node).arguments[1];
-        const optionsType = d.memberType(options);
+        const optionsArg = d.constructor(d.node).arguments[1];
+        const optionsType = d.memberType(optionsArg);
         const optionsIdl = d.findInTree(optionsType);
         let checkOptions = `
       if (options !== undefined) {
         if (typeof options !== 'object') {
-          throw new TypeError("Failed to construct '${d.name(d.node)}': argument 2 is not of type '${optionsType}'")
+          throw new TypeError("Failed to construct '${d.name(d.node)}': argument 2 is not of type '${optionsType}'");
         }
         `;
 
@@ -48,7 +48,7 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
           if (required) {
           checkMember += `
         if (options && !('${optionName}' in options)) {
-          throw new Error("Failed to read the '${optionName}'' property from ${optionsType}: Required member is undefined.")
+          throw new Error("Failed to read the '${optionName}'' property from ${optionsType}: Required member is undefined.");
         }
           `
           }
@@ -63,9 +63,8 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
               throw new TypeError("Failed to set the 'buffer' property on 'AudioBufferSourceNode': Failed to convert value to 'AudioBuffer'");
             }
 
-            // unwrap napi audio buffer, clone the options object as it might be reused
-            options = Object.assign({}, options);
-            options.${optionName} = options.${optionName}[kNativeAudioBuffer];
+            // unwrap napi audio buffer
+            parsedOptions.${optionName} = options.${optionName}[kNativeAudioBuffer];
           }
         }
               `;
@@ -83,7 +82,7 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
         return checkOptions;
       }())}
 
-      super(context, options);
+      super(context, parsedOptions);
 
       ${(function() {
         // handle special options cases
@@ -101,7 +100,7 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
       this[kAudioBuffer] = null;
 
       if (options && '${optionName}' in options) {
-        this[kAudioBuffer] = originalOptions.${optionName};
+        this[kAudioBuffer] = options.${optionName};
       }
             `;
           }
@@ -119,8 +118,10 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
       }).join('')}
     }
 
-    // getters
 ${d.attributes(d.node).map(attr => {
+  // ------------------------------------------------------
+  // Getters
+  // ------------------------------------------------------
   switch (d.memberType(attr)) {
     case 'AudioBuffer': {
       return `
@@ -140,8 +141,11 @@ ${d.attributes(d.node).map(attr => {
     }
   }
 }).join('')}
-    // setters
+
 ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
+  // ------------------------------------------------------
+  // Setters
+  // ------------------------------------------------------
   switch (d.memberType(attr)) {
     case 'AudioBuffer': {
       return `
@@ -179,8 +183,10 @@ ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
   }
 }).join('')}
 
-    // methods
 ${d.methods(d.node, false)
+  // ------------------------------------------------------
+  // Methods
+  // ------------------------------------------------------
   .reduce((acc, method) => {
     // dedup method names
     if (!acc.find(i => d.name(i) === d.name(method))) {

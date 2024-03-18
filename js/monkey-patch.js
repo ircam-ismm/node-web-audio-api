@@ -70,6 +70,3 @@ module.exports = function monkeyPatch(nativeBinding) {
 
   return nativeBinding;
 };
-
-
-  

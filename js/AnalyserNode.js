@@ -17,15 +17,21 @@
 // -------------------------------------------------------------------------- //
 // -------------------------------------------------------------------------- //
 
-// eslint-disable-next-line no-unused-vars
-const { throwSanitizedError } = require('./lib/errors.js');
-// eslint-disable-next-line no-unused-vars
-const { AudioParam } = require('./AudioParam.js');
+/* eslint-disable no-unused-vars */
+const {
+  throwSanitizedError,
+} = require('./lib/errors.js');
+const {
+  AudioParam,
+} = require('./AudioParam.js');
+const {
+  kNativeAudioBuffer,
+  kAudioBuffer,
+} = require('./AudioBuffer.js');
+/* eslint-enable no-unused-vars */
+
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
-
-
-const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
 
 module.exports = (NativeAnalyserNode) => {
   const EventTarget = EventTargetMixin(NativeAnalyserNode, ['ended']);
@@ -35,49 +41,38 @@ module.exports = (NativeAnalyserNode) => {
     constructor(context, options) {
       // keep a handle to the original object, if we need to manipulate the
       // options before passing them to NAPI
-      const originalOptions = Object.assign({}, options);
+      const parsedOptions = Object.assign({}, options);
 
-      
       if (options !== undefined) {
         if (typeof options !== 'object') {
-          throw new TypeError("Failed to construct 'AnalyserNode': argument 2 is not of type 'AnalyserOptions'")
+          throw new TypeError('Failed to construct \'AnalyserNode\': argument 2 is not of type \'AnalyserOptions\'');
         }
-        
+
       }
-        
 
-      super(context, options);
+      super(context, parsedOptions);
 
-      
-
-      
-
-      
     }
-
-    // getters
 
     get fftSize() {
       return super.fftSize;
     }
-      
+
     get frequencyBinCount() {
       return super.frequencyBinCount;
     }
-      
+
     get minDecibels() {
       return super.minDecibels;
     }
-      
+
     get maxDecibels() {
       return super.maxDecibels;
     }
-      
+
     get smoothingTimeConstant() {
       return super.smoothingTimeConstant;
     }
-      
-    // setters
 
     set fftSize(value) {
       try {
@@ -86,7 +81,7 @@ module.exports = (NativeAnalyserNode) => {
         throwSanitizedError(err);
       }
     }
-      
+
     set minDecibels(value) {
       try {
         super.minDecibels = value;
@@ -94,7 +89,7 @@ module.exports = (NativeAnalyserNode) => {
         throwSanitizedError(err);
       }
     }
-      
+
     set maxDecibels(value) {
       try {
         super.maxDecibels = value;
@@ -102,7 +97,7 @@ module.exports = (NativeAnalyserNode) => {
         throwSanitizedError(err);
       }
     }
-      
+
     set smoothingTimeConstant(value) {
       try {
         super.smoothingTimeConstant = value;
@@ -110,9 +105,6 @@ module.exports = (NativeAnalyserNode) => {
         throwSanitizedError(err);
       }
     }
-      
-
-    // methods
 
     getFloatFrequencyData(...args) {
       try {
@@ -150,6 +142,3 @@ module.exports = (NativeAnalyserNode) => {
 
   return AnalyserNode;
 };
-
-
-  

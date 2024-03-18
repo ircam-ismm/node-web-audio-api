@@ -17,15 +17,22 @@
 // -------------------------------------------------------------------------- //
 // -------------------------------------------------------------------------- //
 
-// eslint-disable-next-line no-unused-vars
-const { throwSanitizedError } = require('./lib/errors.js');
-// eslint-disable-next-line no-unused-vars
-const { AudioParam } = require('./AudioParam.js');
+/* eslint-disable no-unused-vars */
+const {
+  throwSanitizedError,
+} = require('./lib/errors.js');
+const {
+  AudioParam,
+} = require('./AudioParam.js');
+const {
+  kNativeAudioBuffer,
+  kAudioBuffer,
+} = require('./AudioBuffer.js');
+/* eslint-enable no-unused-vars */
+
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 const AudioScheduledSourceNodeMixin = require('./AudioScheduledSourceNode.mixin.js');
-
-const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
 
 module.exports = (NativeAudioBufferSourceNode) => {
   const EventTarget = EventTargetMixin(NativeAudioBufferSourceNode, ['ended']);
@@ -36,76 +43,65 @@ module.exports = (NativeAudioBufferSourceNode) => {
     constructor(context, options) {
       // keep a handle to the original object, if we need to manipulate the
       // options before passing them to NAPI
-      const originalOptions = Object.assign({}, options);
+      const parsedOptions = Object.assign({}, options);
 
-      
       if (options !== undefined) {
         if (typeof options !== 'object') {
-          throw new TypeError("Failed to construct 'AudioBufferSourceNode': argument 2 is not of type 'AudioBufferSourceOptions'")
+          throw new TypeError('Failed to construct \'AudioBufferSourceNode\': argument 2 is not of type \'AudioBufferSourceOptions\'');
         }
-        
+
         if ('buffer' in options) {
           if (options.buffer !== null) {
             if (!(kNativeAudioBuffer in options.buffer)) {
-              throw new TypeError("Failed to set the 'buffer' property on 'AudioBufferSourceNode': Failed to convert value to 'AudioBuffer'");
+              throw new TypeError('Failed to set the \'buffer\' property on \'AudioBufferSourceNode\': Failed to convert value to \'AudioBuffer\'');
             }
 
-            // unwrap napi audio buffer, clone the options object as it might be reused
-            options = Object.assign({}, options);
-            options.buffer = options.buffer[kNativeAudioBuffer];
+            // unwrap napi audio buffer
+            parsedOptions.buffer = options.buffer[kNativeAudioBuffer];
           }
         }
-              
+
       }
-        
 
-      super(context, options);
+      super(context, parsedOptions);
 
-      
       // keep the wrapper AudioBuffer wrapperaround
       this[kAudioBuffer] = null;
 
       if (options && 'buffer' in options) {
-        this[kAudioBuffer] = originalOptions.buffer;
+        this[kAudioBuffer] = options.buffer;
       }
-            
 
-      
       // EventTargetMixin constructor has been called so EventTargetMixin[kDispatchEvent]
       // is bound to this, then we can safely finalize event target initialization
       super.__initEventTarget__();
 
-      
       this.playbackRate = new AudioParam(this.playbackRate);
       this.detune = new AudioParam(this.detune);
     }
 
-    // getters
-
     get buffer() {
       return this[kAudioBuffer];
     }
-      
+
     get loop() {
       return super.loop;
     }
-      
+
     get loopStart() {
       return super.loopStart;
     }
-      
+
     get loopEnd() {
       return super.loopEnd;
     }
-      
-    // setters
 
     // @todo - should be able to set to null afterward
     set buffer(value) {
       if (value === null) {
         return;
       } else if (!(kNativeAudioBuffer in value)) {
-        throw new TypeError("Failed to set the 'buffer' property on 'AudioBufferSourceNode': Failed to convert value to 'AudioBuffer'");
+        throw new TypeError('Failed to set the \'buffer\' property on \'AudioBufferSourceNode\': Failed to convert value to \'AudioBuffer\'');
       }
 
       try {
@@ -116,7 +112,7 @@ module.exports = (NativeAudioBufferSourceNode) => {
 
       this[kAudioBuffer] = value;
     }
-      
+
     set loop(value) {
       try {
         super.loop = value;
@@ -124,7 +120,7 @@ module.exports = (NativeAudioBufferSourceNode) => {
         throwSanitizedError(err);
       }
     }
-      
+
     set loopStart(value) {
       try {
         super.loopStart = value;
@@ -132,7 +128,7 @@ module.exports = (NativeAudioBufferSourceNode) => {
         throwSanitizedError(err);
       }
     }
-      
+
     set loopEnd(value) {
       try {
         super.loopEnd = value;
@@ -140,14 +136,8 @@ module.exports = (NativeAudioBufferSourceNode) => {
         throwSanitizedError(err);
       }
     }
-      
-
-    // methods
 
   }
 
   return AudioBufferSourceNode;
 };
-
-
-  

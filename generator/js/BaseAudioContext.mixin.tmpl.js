@@ -4,7 +4,9 @@ const { kNativeAudioBuffer } = require('./AudioBuffer.js');
 
 module.exports = (superclass, bindings) => {
   const {
+    /* eslint-disable no-unused-vars */
 ${d.nodes.map(n => `    ${d.name(n)},`).join('\n')}
+    /* eslint-enable no-unused-vars */
     AudioBuffer,
     PeriodicWave,
   } = bindings;

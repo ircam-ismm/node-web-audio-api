@@ -17,12 +17,19 @@
 // -------------------------------------------------------------------------- //
 // -------------------------------------------------------------------------- //
 
-const { AudioDestinationNode } = require('./AudioDestinationNode.js');
-const { isFunction } = require('./lib/utils.js');
-const { kNativeAudioBuffer } = require('./AudioBuffer.js');
+const {
+  AudioDestinationNode,
+} = require('./AudioDestinationNode.js');
+const {
+  isFunction,
+} = require('./lib/utils.js');
+const {
+  kNativeAudioBuffer,
+} = require('./AudioBuffer.js');
 
 module.exports = (superclass, bindings) => {
   const {
+    /* eslint-disable no-unused-vars */
     AnalyserNode,
     AudioBufferSourceNode,
     BiquadFilterNode,
@@ -39,6 +46,7 @@ module.exports = (superclass, bindings) => {
     PannerNode,
     StereoPannerNode,
     WaveShaperNode,
+    /* eslint-enable no-unused-vars */
     AudioBuffer,
     PeriodicWave,
   } = bindings;
@@ -61,7 +69,9 @@ module.exports = (superclass, bindings) => {
 
       try {
         const nativeAudioBuffer = super.decodeAudioData(audioData);
-        const audioBuffer = new AudioBuffer({ [kNativeAudioBuffer]: nativeAudioBuffer });
+        const audioBuffer = new AudioBuffer({
+          [kNativeAudioBuffer]: nativeAudioBuffer,
+        });
 
         if (isFunction(decodeSuccessCallback)) {
           decodeSuccessCallback(audioBuffer);
@@ -78,11 +88,18 @@ module.exports = (superclass, bindings) => {
     }
 
     createBuffer(numberOfChannels, length, sampleRate) {
-      return new AudioBuffer({ numberOfChannels, length, sampleRate });
+      return new AudioBuffer({
+        numberOfChannels,
+        length,
+        sampleRate,
+      });
     }
 
     createPeriodicWave(real, imag) {
-      return new PeriodicWave(this, { real, imag });
+      return new PeriodicWave(this, {
+        real,
+        imag,
+      });
     }
 
     // --------------------------------------------------------------------
@@ -101,12 +118,16 @@ module.exports = (superclass, bindings) => {
     }
 
     createChannelMerger(numberOfInputs) {
-      const options = { numberOfInputs };
+      const options = {
+        numberOfInputs,
+      };
       return new ChannelMergerNode(this, options);
     }
 
     createChannelSplitter(numberOfOutputs) {
-      const options = { numberOfOutputs };
+      const options = {
+        numberOfOutputs,
+      };
       return new ChannelSplitterNode(this, options);
     }
 
@@ -119,7 +140,9 @@ module.exports = (superclass, bindings) => {
     }
 
     createDelay(maxDelayTime) {
-      const options = { maxDelayTime };
+      const options = {
+        maxDelayTime,
+      };
       return new DelayNode(this, options);
     }
 
@@ -132,10 +155,12 @@ module.exports = (superclass, bindings) => {
     }
 
     createIIRFilter(feedforward, feedback) {
-      const options = { feedforward, feedback };
+      const options = {
+        feedforward,
+        feedback,
+      };
       return new IIRFilterNode(this, options);
     }
-
 
     createOscillator() {
       return new OscillatorNode(this);
@@ -157,5 +182,3 @@ module.exports = (superclass, bindings) => {
 
   return BaseAudioContext;
 };
-
-  

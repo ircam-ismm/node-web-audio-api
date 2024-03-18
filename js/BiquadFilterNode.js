@@ -17,15 +17,21 @@
 // -------------------------------------------------------------------------- //
 // -------------------------------------------------------------------------- //
 
-// eslint-disable-next-line no-unused-vars
-const { throwSanitizedError } = require('./lib/errors.js');
-// eslint-disable-next-line no-unused-vars
-const { AudioParam } = require('./AudioParam.js');
+/* eslint-disable no-unused-vars */
+const {
+  throwSanitizedError,
+} = require('./lib/errors.js');
+const {
+  AudioParam,
+} = require('./AudioParam.js');
+const {
+  kNativeAudioBuffer,
+  kAudioBuffer,
+} = require('./AudioBuffer.js');
+/* eslint-enable no-unused-vars */
+
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
-
-
-const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
 
 module.exports = (NativeBiquadFilterNode) => {
   const EventTarget = EventTargetMixin(NativeBiquadFilterNode, ['ended']);
@@ -35,37 +41,26 @@ module.exports = (NativeBiquadFilterNode) => {
     constructor(context, options) {
       // keep a handle to the original object, if we need to manipulate the
       // options before passing them to NAPI
-      const originalOptions = Object.assign({}, options);
+      const parsedOptions = Object.assign({}, options);
 
-      
       if (options !== undefined) {
         if (typeof options !== 'object') {
-          throw new TypeError("Failed to construct 'BiquadFilterNode': argument 2 is not of type 'BiquadFilterOptions'")
+          throw new TypeError('Failed to construct \'BiquadFilterNode\': argument 2 is not of type \'BiquadFilterOptions\'');
         }
-        
+
       }
-        
 
-      super(context, options);
+      super(context, parsedOptions);
 
-      
-
-      
-
-      
       this.frequency = new AudioParam(this.frequency);
       this.detune = new AudioParam(this.detune);
       this.Q = new AudioParam(this.Q);
       this.gain = new AudioParam(this.gain);
     }
 
-    // getters
-
     get type() {
       return super.type;
     }
-      
-    // setters
 
     set type(value) {
       try {
@@ -74,9 +69,6 @@ module.exports = (NativeBiquadFilterNode) => {
         throwSanitizedError(err);
       }
     }
-      
-
-    // methods
 
     getFrequencyResponse(...args) {
       try {
@@ -90,6 +82,3 @@ module.exports = (NativeBiquadFilterNode) => {
 
   return BiquadFilterNode;
 };
-
-
-  
