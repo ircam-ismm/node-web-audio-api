@@ -17,7 +17,9 @@
 // -------------------------------------------------------------------------- //
 // -------------------------------------------------------------------------- //
 
-const { throwSanitizedError } = require('./lib/errors.js');
+const {
+  throwSanitizedError,
+} = require('./lib/errors.js');
 
 module.exports = (superclass) => {
   class AudioScheduledSourceNode extends superclass {
@@ -41,7 +43,7 @@ module.exports = (superclass) => {
     }
 
     // methods - start / stop
-    
+
     start(...args) {
       try {
         return super.start(...args);
@@ -62,6 +64,3 @@ module.exports = (superclass) => {
 
   return AudioScheduledSourceNode;
 };
-
-
-  

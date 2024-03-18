@@ -17,10 +17,18 @@
 // -------------------------------------------------------------------------- //
 // -------------------------------------------------------------------------- //
 
-const { throwSanitizedError } = require('./lib/errors.js');
+const {
+  throwSanitizedError,
+} = require('./lib/errors.js');
 
-const { AudioParam, kNativeAudioParam } = require('./AudioParam.js');
-const { AudioDestinationNode, kNativeAudioDestinationNode } = require('./AudioDestinationNode.js');
+const {
+  AudioParam,
+  kNativeAudioParam,
+} = require('./AudioParam.js');
+const {
+  AudioDestinationNode,
+  kNativeAudioDestinationNode,
+} = require('./AudioDestinationNode.js');
 
 module.exports = (superclass) => {
   class AudioNode extends superclass {
@@ -87,7 +95,7 @@ module.exports = (superclass) => {
     }
 
     // methods - connect / disconnect
-    
+
     connect(...args) {
       // unwrap raw audio params from facade
       if (args[0] instanceof AudioParam) {
@@ -128,5 +136,3 @@ module.exports = (superclass) => {
 
   return AudioNode;
 };
-
-  
