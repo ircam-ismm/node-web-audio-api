@@ -9,7 +9,7 @@ const AudioNodeMixin = require('./AudioNode.mixin.js');
 ${d.parent(d.node) === 'AudioScheduledSourceNode' ?
 `const AudioScheduledSourceNodeMixin = require('./AudioScheduledSourceNode.mixin.js');`: ``}
 
-module.exports = (Native${d.name(d.node)}) => {
+module.exports = (Native${d.name(d.node)}, nativeBinding) => {
   const EventTarget = EventTargetMixin(Native${d.name(d.node)}, ['ended']);
   const AudioNode = AudioNodeMixin(EventTarget);
 ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
@@ -19,6 +19,40 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
   class ${d.name(d.node)} extends AudioNode {`
 }
     constructor(context, options) {
+      ${(function() {
+        // handle argument length compared to required arguments
+        const numRequired = d.constructor(d.node).arguments
+          .reduce((acc, value) => acc += (value.optional ? 0 : 1), 0);
+
+        return `
+      if (arguments.length < ${numRequired}) {
+        throw new TypeError(\`Failed to construct '${d.name(d.node)}': ${numRequired} argument required, but only \${arguments.length}\ present.\`);
+      }
+        `;
+      }())}
+
+      ${(function() {
+        // handle audio context
+        const arg = d.constructor(d.node).arguments[0];
+        const argType = d.memberType(arg);
+        const argIdl = d.findInTree(argType);
+
+        // BaseAudioContext is not exposed and is created dynamically so we
+        // need this workaround
+        if (argType === 'BaseAudioContext') {
+          return `
+      if (!(context instanceof nativeBinding.AudioContext) && !(context instanceof nativeBinding.OfflineAudioContext)) {
+        throw new TypeError(\`Failed to construct '${d.name(d.node)}': argument 1 is not of type ${argType}\`);
+      }
+          `;
+        } else {
+          return `
+      if (!(context instanceof nativeBinding.${argType})) {
+        throw new TypeError(\`Failed to construct '${d.name(d.node)}': argument 1 is not of type ${argType}\`);
+      }
+          `;
+        }
+      }())}
       // keep a handle to the original object, if we need to manipulate the
       // options before passing them to NAPI
       const parsedOptions = Object.assign({}, options);
@@ -29,10 +63,9 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
         const optionsType = d.memberType(optionsArg);
         const optionsIdl = d.findInTree(optionsType);
         let checkOptions = `
-      if (options !== undefined) {
-        if (typeof options !== 'object') {
-          throw new TypeError("Failed to construct '${d.name(d.node)}': argument 2 is not of type '${optionsType}'");
-        }
+      if (options && typeof options !== 'object') {
+        throw new TypeError("Failed to construct '${d.name(d.node)}': argument 2 is not of type '${optionsType}'");
+      }
         `;
 
         checkOptions += optionsIdl.members.map(member => {
@@ -47,9 +80,9 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
 
           if (required) {
           checkMember += `
-        if (options && !('${optionName}' in options)) {
-          throw new Error("Failed to read the '${optionName}'' property from ${optionsType}: Required member is undefined.");
-        }
+      if (options && !('${optionName}' in options)) {
+        throw new TypeError("Failed to read the '${optionName}'' property from ${optionsType}: Required member is undefined.");
+      }
           `
           }
 
@@ -57,16 +90,16 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
           switch (type) {
             case 'AudioBuffer': {
               checkMember += `
-        if ('${optionName}' in options) {
-          if (options.${optionName} !== null) {
-            if (!(kNativeAudioBuffer in options.${optionName})) {
-              throw new TypeError("Failed to set the 'buffer' property on 'AudioBufferSourceNode': Failed to convert value to 'AudioBuffer'");
-            }
-
-            // unwrap napi audio buffer
-            parsedOptions.${optionName} = options.${optionName}[kNativeAudioBuffer];
+      if (options && '${optionName}' in options) {
+        if (options.${optionName} !== null) {
+          if (!(kNativeAudioBuffer in options.${optionName})) {
+            throw new TypeError("Failed to set the 'buffer' property on 'AudioBufferSourceNode': Failed to convert value to 'AudioBuffer'");
           }
+
+          // unwrap napi audio buffer
+          parsedOptions.${optionName} = options.${optionName}[kNativeAudioBuffer];
         }
+      }
               `;
               break;
             }
@@ -74,10 +107,6 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
 
           return checkMember;
         }).join('');
-
-        checkOptions += `
-      }
-        `;
 
         return checkOptions;
       }())}

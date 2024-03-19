@@ -34,38 +34,44 @@ const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 const AudioScheduledSourceNodeMixin = require('./AudioScheduledSourceNode.mixin.js');
 
-module.exports = (NativeAudioBufferSourceNode) => {
+module.exports = (NativeAudioBufferSourceNode, nativeBinding) => {
   const EventTarget = EventTargetMixin(NativeAudioBufferSourceNode, ['ended']);
   const AudioNode = AudioNodeMixin(EventTarget);
   const AudioScheduledSourceNode = AudioScheduledSourceNodeMixin(AudioNode);
 
   class AudioBufferSourceNode extends AudioScheduledSourceNode {
     constructor(context, options) {
+
+      if (arguments.length < 1) {
+        throw new TypeError(`Failed to construct 'AudioBufferSourceNode': 1 argument required, but only ${arguments.length} present.`);
+      }
+
+      if (!(context instanceof nativeBinding.AudioContext) && !(context instanceof nativeBinding.OfflineAudioContext)) {
+        throw new TypeError(`Failed to construct 'AudioBufferSourceNode': argument 1 is not of type BaseAudioContext`);
+      }
+
       // keep a handle to the original object, if we need to manipulate the
       // options before passing them to NAPI
       const parsedOptions = Object.assign({}, options);
 
-      if (options !== undefined) {
-        if (typeof options !== 'object') {
-          throw new TypeError('Failed to construct \'AudioBufferSourceNode\': argument 2 is not of type \'AudioBufferSourceOptions\'');
-        }
+      if (options && typeof options !== 'object') {
+        throw new TypeError('Failed to construct \'AudioBufferSourceNode\': argument 2 is not of type \'AudioBufferSourceOptions\'');
+      }
 
-        if ('buffer' in options) {
-          if (options.buffer !== null) {
-            if (!(kNativeAudioBuffer in options.buffer)) {
-              throw new TypeError('Failed to set the \'buffer\' property on \'AudioBufferSourceNode\': Failed to convert value to \'AudioBuffer\'');
-            }
-
-            // unwrap napi audio buffer
-            parsedOptions.buffer = options.buffer[kNativeAudioBuffer];
+      if (options && 'buffer' in options) {
+        if (options.buffer !== null) {
+          if (!(kNativeAudioBuffer in options.buffer)) {
+            throw new TypeError('Failed to set the \'buffer\' property on \'AudioBufferSourceNode\': Failed to convert value to \'AudioBuffer\'');
           }
-        }
 
+          // unwrap napi audio buffer
+          parsedOptions.buffer = options.buffer[kNativeAudioBuffer];
+        }
       }
 
       super(context, parsedOptions);
 
-      // keep the wrapper AudioBuffer wrapperaround
+      // keep the wrapped AudioBuffer around
       this[kAudioBuffer] = null;
 
       if (options && 'buffer' in options) {

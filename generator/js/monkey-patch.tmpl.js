@@ -4,7 +4,7 @@ module.exports = function monkeyPatch(nativeBinding) {
   // --------------------------------------------------------------------------
 ${d.nodes.map((node) => {
   return `
-  nativeBinding.${d.name(node)} = require('./${d.name(node)}.js')(nativeBinding.${d.name(node)});`
+  nativeBinding.${d.name(node)} = require('./${d.name(node)}.js')(nativeBinding.${d.name(node)}, nativeBinding);`
 }).join('')}
 
   nativeBinding.PeriodicWave = require('./PeriodicWave.js')(nativeBinding.PeriodicWave);
