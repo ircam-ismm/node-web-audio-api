@@ -140,7 +140,7 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
               // properly check it. Just pass as is to NAPI for now
               // Note that the option is required
               checkMember += `
-            parsedOptions.${optionName} = options.${optionName};
+      parsedOptions.${optionName} = options.${optionName};
               `;
               break;
             }
