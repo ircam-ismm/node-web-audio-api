@@ -51,7 +51,12 @@ module.exports = function(bindings) {
 
     // online context only AudioNodes
     createMediaStreamSource(mediaStream) {
-      const options = { mediaStream };
+      const options = {};
+
+      if (mediaStream !== undefined) {
+        options.mediaStream = mediaStream;
+      }
+
       return new MediaStreamAudioSourceNode(this, options);
     }
   }

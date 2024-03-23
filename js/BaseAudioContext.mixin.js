@@ -88,18 +88,35 @@ module.exports = (superclass, bindings) => {
     }
 
     createBuffer(numberOfChannels, length, sampleRate) {
-      return new AudioBuffer({
-        numberOfChannels,
-        length,
-        sampleRate,
-      });
+      const options = {};
+
+      if (numberOfChannels !== undefined) {
+        options.numberOfChannels = numberOfChannels;
+      }
+
+      if (length !== undefined) {
+        options.length = length;
+      }
+
+      if (sampleRate !== undefined) {
+        options.sampleRate = sampleRate;
+      }
+
+      return new AudioBuffer(options);
     }
 
     createPeriodicWave(real, imag) {
-      return new PeriodicWave(this, {
-        real,
-        imag,
-      });
+      const options = {};
+
+      if (real !== undefined) {
+        options.real = real;
+      }
+
+      if (imag !== undefined) {
+        options.imag = imag;
+      }
+
+      return new PeriodicWave(this, options);
     }
 
     // --------------------------------------------------------------------
@@ -118,16 +135,22 @@ module.exports = (superclass, bindings) => {
     }
 
     createChannelMerger(numberOfInputs) {
-      const options = {
-        numberOfInputs,
-      };
+      const options = {};
+
+      if (numberOfInputs !== undefined) {
+        options.numberOfInputs = numberOfInputs;
+      }
+
       return new ChannelMergerNode(this, options);
     }
 
     createChannelSplitter(numberOfOutputs) {
-      const options = {
-        numberOfOutputs,
-      };
+      const options = {};
+
+      if (numberOfOutputs !== undefined) {
+        options.numberOfOutputs = numberOfOutputs;
+      }
+
       return new ChannelSplitterNode(this, options);
     }
 
@@ -140,9 +163,12 @@ module.exports = (superclass, bindings) => {
     }
 
     createDelay(maxDelayTime) {
-      const options = {
-        maxDelayTime,
-      };
+      const options = {};
+
+      if (maxDelayTime !== undefined) {
+        options.maxDelayTime = maxDelayTime;
+      }
+
       return new DelayNode(this, options);
     }
 
@@ -155,10 +181,16 @@ module.exports = (superclass, bindings) => {
     }
 
     createIIRFilter(feedforward, feedback) {
-      const options = {
-        feedforward,
-        feedback,
-      };
+      const options = {};
+
+      if (feedforward !== undefined) {
+        options.feedforward = feedforward;
+      }
+
+      if (feedback !== undefined) {
+        options.feedback = feedback;
+      }
+
       return new IIRFilterNode(this, options);
     }
 
