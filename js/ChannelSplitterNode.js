@@ -18,6 +18,10 @@
 // -------------------------------------------------------------------------- //
 
 /* eslint-disable no-unused-vars */
+const conversions = require('webidl-conversions');
+const {
+  toSanitizedSequence,
+} = require('./lib/cast.js');
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
@@ -41,19 +45,26 @@ module.exports = (NativeChannelSplitterNode, nativeBinding) => {
     constructor(context, options) {
 
       if (arguments.length < 1) {
-        throw new TypeError(`Failed to construct 'ChannelSplitterNode': 1 argument required, but only ${arguments.length} present.`);
+        throw new TypeError(`Failed to construct 'ChannelSplitterNode': 1 argument required, but only ${arguments.length} present`);
       }
 
       if (!(context instanceof nativeBinding.AudioContext) && !(context instanceof nativeBinding.OfflineAudioContext)) {
         throw new TypeError(`Failed to construct 'ChannelSplitterNode': argument 1 is not of type BaseAudioContext`);
       }
 
-      // keep a handle to the original object, if we need to manipulate the
-      // options before passing them to NAPI
+      // parsed version of the option to be passed to NAPI
       const parsedOptions = Object.assign({}, options);
 
       if (options && typeof options !== 'object') {
         throw new TypeError('Failed to construct \'ChannelSplitterNode\': argument 2 is not of type \'ChannelSplitterOptions\'');
+      }
+
+      if (options && 'numberOfOutputs' in options) {
+        parsedOptions.numberOfOutputs = conversions['unsigned long'](options.numberOfOutputs, {
+          context: `Failed to construct 'ChannelSplitterNode': Failed to read the 'numberOfOutputs' property from ChannelSplitterOptions: The provided value (${options.numberOfOutputs}})`,
+        });
+      } else {
+        parsedOptions.numberOfOutputs = 6;
       }
 
       super(context, parsedOptions);

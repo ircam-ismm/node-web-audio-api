@@ -18,6 +18,10 @@
 // -------------------------------------------------------------------------- //
 
 /* eslint-disable no-unused-vars */
+const conversions = require('webidl-conversions');
+const {
+  toSanitizedSequence,
+} = require('./lib/cast.js');
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
@@ -41,19 +45,26 @@ module.exports = (NativeGainNode, nativeBinding) => {
     constructor(context, options) {
 
       if (arguments.length < 1) {
-        throw new TypeError(`Failed to construct 'GainNode': 1 argument required, but only ${arguments.length} present.`);
+        throw new TypeError(`Failed to construct 'GainNode': 1 argument required, but only ${arguments.length} present`);
       }
 
       if (!(context instanceof nativeBinding.AudioContext) && !(context instanceof nativeBinding.OfflineAudioContext)) {
         throw new TypeError(`Failed to construct 'GainNode': argument 1 is not of type BaseAudioContext`);
       }
 
-      // keep a handle to the original object, if we need to manipulate the
-      // options before passing them to NAPI
+      // parsed version of the option to be passed to NAPI
       const parsedOptions = Object.assign({}, options);
 
       if (options && typeof options !== 'object') {
         throw new TypeError('Failed to construct \'GainNode\': argument 2 is not of type \'GainOptions\'');
+      }
+
+      if (options && 'gain' in options) {
+        parsedOptions.gain = conversions['float'](options.gain, {
+          context: `Failed to construct 'GainNode': Failed to read the 'gain' property from GainOptions: The provided value (${options.gain}})`,
+        });
+      } else {
+        parsedOptions.gain = 1.0;
       }
 
       super(context, parsedOptions);

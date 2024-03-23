@@ -101,152 +101,100 @@ impl NapiAnalyserNode {
 #[js_function(2)]
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
-    // first argument should be an AudioContext
+
     let js_audio_context = ctx.get::<JsObject>(0)?;
+
+    // parse options
+    let js_options = ctx.get::<JsObject>(1)?;
+
+    let fft_size = js_options
+        .get::<&str, JsNumber>("fftSize")?
+        .unwrap()
+        .get_double()? as usize;
+
+    let max_decibels = js_options
+        .get::<&str, JsNumber>("maxDecibels")?
+        .unwrap()
+        .get_double()?;
+
+    let min_decibels = js_options
+        .get::<&str, JsNumber>("minDecibels")?
+        .unwrap()
+        .get_double()?;
+
+    let smoothing_time_constant = js_options
+        .get::<&str, JsNumber>("smoothingTimeConstant")?
+        .unwrap()
+        .get_double()?;
+
+    let node_defaults = AnalyserOptions::default();
+    let channel_config_defaults = node_defaults.channel_config;
+
+    let some_channel_count_js = js_options.get::<&str, JsObject>("channelCount")?;
+    let channel_count = if let Some(channel_count_js) = some_channel_count_js {
+        channel_count_js.coerce_to_number()?.get_double()? as usize
+    } else {
+        channel_config_defaults.count
+    };
+
+    let some_channel_count_mode_js = js_options.get::<&str, JsObject>("channelCountMode")?;
+    let channel_count_mode = if let Some(channel_count_mode_js) = some_channel_count_mode_js {
+        let channel_count_mode_str = channel_count_mode_js
+            .coerce_to_string()?
+            .into_utf8()?
+            .into_owned()?;
+
+        match channel_count_mode_str.as_str() {
+            "max" => ChannelCountMode::Max,
+            "clamped-max" => ChannelCountMode::ClampedMax,
+            "explicit" => ChannelCountMode::Explicit,
+            _ => panic!("TypeError - Failed to read the 'channelCountMode' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelCountMode", channel_count_mode_str.as_str()),
+        }
+    } else {
+        channel_config_defaults.count_mode
+    };
+
+    let some_channel_interpretation_js =
+        js_options.get::<&str, JsObject>("channelInterpretation")?;
+    let channel_interpretation = if let Some(channel_interpretation_js) =
+        some_channel_interpretation_js
+    {
+        let channel_interpretation_str = channel_interpretation_js
+            .coerce_to_string()?
+            .into_utf8()?
+            .into_owned()?;
+
+        match channel_interpretation_str.as_str() {
+            "speakers" => ChannelInterpretation::Speakers,
+            "discrete" => ChannelInterpretation::Discrete,
+            _ => panic!("TypeError - Failed to read the 'channelInterpretation' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", channel_interpretation_str.as_str()),
+        }
+    } else {
+        channel_config_defaults.interpretation
+    };
+
+    let options = AnalyserOptions {
+        fft_size,
+        max_decibels,
+        min_decibels,
+        smoothing_time_constant,
+        channel_config: ChannelConfigOptions {
+            count: channel_count,
+            count_mode: channel_count_mode,
+            interpretation: channel_interpretation,
+        },
+    };
+    // } else {
+    //
+    //         Default::default()
+    //
+    // };
 
     let audio_context_name =
         js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
     let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
     let audio_context_str = &audio_context_utf8_name[..];
-    // check that
-    // let audio_context_utf8_name = if let Ok(result) = js_audio_context.has_named_property("Symbol.toStringTag") {
-    //     if result {
-    //         let audio_context_name = js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
-    //         let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
-    //         let audio_context_str = &audio_context_utf8_name[..];
 
-    //         if audio_context_str != "AudioContext" && audio_context_str != "OfflineAudioContext" {
-    //             let msg = "TypeError - Failed to construct 'AnalyserNode': argument 1 is not of type BaseAudioContext";
-    //             return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-    //         }
-
-    //         audio_context_utf8_name
-    //     } else {
-    //         let msg = "TypeError - Failed to construct 'AnalyserNode': argument 1 is not of type BaseAudioContext";
-    //         return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-    //     }
-    // } else {
-    //     // This swallowed somehow, .e.g const node = new GainNode(null); throws
-    //     // TypeError Cannot convert undefined or null to object
-    //     // To be investigated...
-    //     let msg = "TypeError - Failed to construct 'AnalyserNode': argument 1 is not of type BaseAudioContext";
-    //     return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-    // };
-
-    js_this.define_properties(&[
-        Property::new("context")?
-            .with_value(&js_audio_context)
-            .with_property_attributes(PropertyAttributes::Enumerable),
-        // this must be put on the instance and not in the prototype to be reachable
-        Property::new("Symbol.toStringTag")?
-            .with_value(&ctx.env.create_string("AnalyserNode")?)
-            .with_property_attributes(PropertyAttributes::Static),
-    ])?;
-
-    // parse options
-    let options = if let Ok(either_options) = ctx.try_get::<JsObject>(1) {
-        match either_options {
-            Either::A(options_js) => {
-                let some_fft_size_js = options_js.get::<&str, JsObject>("fftSize")?;
-                let fft_size = if let Some(fft_size_js) = some_fft_size_js {
-                    fft_size_js.coerce_to_number()?.get_double()? as usize
-                } else {
-                    2048
-                };
-
-                let some_max_decibels_js = options_js.get::<&str, JsObject>("maxDecibels")?;
-                let max_decibels = if let Some(max_decibels_js) = some_max_decibels_js {
-                    max_decibels_js.coerce_to_number()?.get_double()?
-                } else {
-                    -30.
-                };
-
-                let some_min_decibels_js = options_js.get::<&str, JsObject>("minDecibels")?;
-                let min_decibels = if let Some(min_decibels_js) = some_min_decibels_js {
-                    min_decibels_js.coerce_to_number()?.get_double()?
-                } else {
-                    -100.
-                };
-
-                let some_smoothing_time_constant_js =
-                    options_js.get::<&str, JsObject>("smoothingTimeConstant")?;
-                let smoothing_time_constant =
-                    if let Some(smoothing_time_constant_js) = some_smoothing_time_constant_js {
-                        smoothing_time_constant_js
-                            .coerce_to_number()?
-                            .get_double()?
-                    } else {
-                        0.8
-                    };
-
-                let node_defaults = AnalyserOptions::default();
-                let channel_config_defaults = node_defaults.channel_config;
-
-                let some_channel_count_js = options_js.get::<&str, JsObject>("channelCount")?;
-                let channel_count = if let Some(channel_count_js) = some_channel_count_js {
-                    channel_count_js.coerce_to_number()?.get_double()? as usize
-                } else {
-                    channel_config_defaults.count
-                };
-
-                let some_channel_count_mode_js =
-                    options_js.get::<&str, JsObject>("channelCountMode")?;
-                let channel_count_mode = if let Some(channel_count_mode_js) =
-                    some_channel_count_mode_js
-                {
-                    let channel_count_mode_str = channel_count_mode_js
-                        .coerce_to_string()?
-                        .into_utf8()?
-                        .into_owned()?;
-
-                    match channel_count_mode_str.as_str() {
-                        "max" => ChannelCountMode::Max,
-                        "clamped-max" => ChannelCountMode::ClampedMax,
-                        "explicit" => ChannelCountMode::Explicit,
-                        _ => panic!("TypeError - Failed to read the 'channelCountMode' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelCountMode", channel_count_mode_str.as_str()),
-                    }
-                } else {
-                    channel_config_defaults.count_mode
-                };
-
-                let some_channel_interpretation_js =
-                    options_js.get::<&str, JsObject>("channelInterpretation")?;
-                let channel_interpretation = if let Some(channel_interpretation_js) =
-                    some_channel_interpretation_js
-                {
-                    let channel_interpretation_str = channel_interpretation_js
-                        .coerce_to_string()?
-                        .into_utf8()?
-                        .into_owned()?;
-
-                    match channel_interpretation_str.as_str() {
-                        "speakers" => ChannelInterpretation::Speakers,
-                        "discrete" => ChannelInterpretation::Discrete,
-                        _ => panic!("TypeError - Failed to read the 'channelInterpretation' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", channel_interpretation_str.as_str()),
-                    }
-                } else {
-                    channel_config_defaults.interpretation
-                };
-
-                AnalyserOptions {
-                    fft_size,
-                    max_decibels,
-                    min_decibels,
-                    smoothing_time_constant,
-                    channel_config: ChannelConfigOptions {
-                        count: channel_count,
-                        count_mode: channel_count_mode,
-                        interpretation: channel_interpretation,
-                    },
-                }
-            }
-            Either::B(_) => Default::default(),
-        }
-    } else {
-        Default::default()
-    };
-
-    let audio_context_str = &audio_context_utf8_name[..];
     // create native node
     let native_node = match audio_context_str {
         "AudioContext" => {
@@ -263,6 +211,16 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         }
         &_ => unreachable!(),
     };
+
+    js_this.define_properties(&[
+        Property::new("context")?
+            .with_value(&js_audio_context)
+            .with_property_attributes(PropertyAttributes::Enumerable),
+        // this must be put on the instance and not in the prototype to be reachable
+        Property::new("Symbol.toStringTag")?
+            .with_value(&ctx.env.create_string("AnalyserNode")?)
+            .with_property_attributes(PropertyAttributes::Static),
+    ])?;
 
     // finalize instance creation
     let napi_node = NapiAnalyserNode(native_node);

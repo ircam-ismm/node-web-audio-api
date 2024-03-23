@@ -72,6 +72,7 @@
   },
   "dependencies": {
     "@napi-rs/cli": "^2.14.3",
-    "@node-rs/helper": "^1.3.3"
+    "@node-rs/helper": "^1.3.3",
+    "webidl-conversions": "^7.0.0"
   }
 }

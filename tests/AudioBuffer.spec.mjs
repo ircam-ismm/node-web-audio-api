@@ -9,9 +9,6 @@ import {
   OfflineAudioContext
 } from '../index.mjs';
 
-// access private property
-import kNativeAudioBuffer from '../'
-
 describe('# AudioBuffer', () => {
 
   describe(`## audioContext.createBuffer(numChannels, length, sampleRate)`, () => {
@@ -159,7 +156,7 @@ describe('# AudioBuffer', () => {
   });
 
   describe(`buffer in options`, () => {
-    it.only(`AudioBufferSourceNode`, async () => {
+    it(`AudioBufferSourceNode`, async () => {
       const audioContext = new AudioContext();
 
       const pathname = path.join('examples', 'samples', 'sample.wav');
@@ -179,30 +176,30 @@ describe('# AudioBuffer', () => {
       await audioContext.close();
     });
 
-    // it.only(`ConvolverNode`, async () => {
-    //   const audioContext = new AudioContext();
+    it(`ConvolverNode`, async () => {
+      const audioContext = new AudioContext();
 
-    //   const pathname = path.join('examples', 'samples', 'sample.wav');
-    //   const buffer = fs.readFileSync(pathname).buffer;
-    //   const audioBuffer = await audioContext.decodeAudioData(buffer);
+      const pathname = path.join('examples', 'samples', 'sample.wav');
+      const buffer = fs.readFileSync(pathname).buffer;
+      const audioBuffer = await audioContext.decodeAudioData(buffer);
 
-    //   const convolver = audioContext.createConvolver();
-    //   convolver.buffer = audioBuffer;
-    //   convolver.connect(audioContext.destination);
+      const convolver = audioContext.createConvolver();
+      convolver.buffer = audioBuffer;
+      convolver.connect(audioContext.destination);
 
-    //   const src = audioContext.createBufferSource();
-    //    // should retrieve native audio buffer to native buffer source node
-    //   src.buffer = audioBuffer;
-    //   src.connect(convolver);
+      const src = audioContext.createBufferSource();
+       // should retrieve native audio buffer to native buffer source node
+      src.buffer = audioBuffer;
+      src.connect(convolver);
 
-    //   assert.deepEqual(src.buffer, audioBuffer);
+      assert.deepEqual(src.buffer, audioBuffer);
 
-    //   src.start(audioContext.currentTime);
-    //   src.stop(audioContext.currentTime + 0.1);
+      src.start(audioContext.currentTime);
+      src.stop(audioContext.currentTime + 0.1);
 
-    //   await new Promise(resolve => setTimeout(resolve, 200));
-    //   await audioContext.close();
-    // });
+      await new Promise(resolve => setTimeout(resolve, 200));
+      await audioContext.close();
+    });
   });
 });
 

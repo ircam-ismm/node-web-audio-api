@@ -1,4 +1,4 @@
-import { AudioBuffer, AudioBufferSourceNode, AnalyserNode, AudioContext, ConvolverNode, DelayNode, GainNode, OfflineAudioContext, StereoPannerNode, PeriodicWave, MediaStreamAudioSourceNode, mediaDevices } from '../index.mjs';
+import { AudioBuffer, AudioBufferSourceNode, AnalyserNode, AudioContext, ConvolverNode, DelayNode, GainNode, IIRFilterNode, OfflineAudioContext, StereoPannerNode, PeriodicWave, MediaStreamAudioSourceNode, WaveShaperNode, mediaDevices } from '../index.mjs';
 
 
 // // const mediaStream = await mediaDevices.getUserMedia({ audio: true });
@@ -23,6 +23,12 @@ import { AudioBuffer, AudioBufferSourceNode, AnalyserNode, AudioContext, Convolv
 // const SAMPLERATE = 8000;
 // const LENGTH = 128;
 
-// const context = new AudioContext({ sampleRate: 48000 });
-const gain = new GainNode(null);
+const context = new AudioContext({ sampleRate: 48000 });
+// const buffer = new AudioBuffer(1, 100, 48000);
+
+const node0 = new IIRFilterNode(context, {"feedforward":[1],"feedback":[1,-0.9]})
+
+// const a = new AudioBuffer
+
+// const gain = new GainNode(null);
 

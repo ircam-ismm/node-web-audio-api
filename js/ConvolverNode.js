@@ -18,6 +18,10 @@
 // -------------------------------------------------------------------------- //
 
 /* eslint-disable no-unused-vars */
+const conversions = require('webidl-conversions');
+const {
+  toSanitizedSequence,
+} = require('./lib/cast.js');
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
@@ -41,15 +45,14 @@ module.exports = (NativeConvolverNode, nativeBinding) => {
     constructor(context, options) {
 
       if (arguments.length < 1) {
-        throw new TypeError(`Failed to construct 'ConvolverNode': 1 argument required, but only ${arguments.length} present.`);
+        throw new TypeError(`Failed to construct 'ConvolverNode': 1 argument required, but only ${arguments.length} present`);
       }
 
       if (!(context instanceof nativeBinding.AudioContext) && !(context instanceof nativeBinding.OfflineAudioContext)) {
         throw new TypeError(`Failed to construct 'ConvolverNode': argument 1 is not of type BaseAudioContext`);
       }
 
-      // keep a handle to the original object, if we need to manipulate the
-      // options before passing them to NAPI
+      // parsed version of the option to be passed to NAPI
       const parsedOptions = Object.assign({}, options);
 
       if (options && typeof options !== 'object') {
@@ -58,13 +61,24 @@ module.exports = (NativeConvolverNode, nativeBinding) => {
 
       if (options && 'buffer' in options) {
         if (options.buffer !== null) {
-          if (!(kNativeAudioBuffer in options.buffer)) {
-            throw new TypeError('Failed to set the \'buffer\' property on \'AudioBufferSourceNode\': Failed to convert value to \'AudioBuffer\'');
+          // if (!(kNativeAudioBuffer in options.buffer)) {
+          if (!(options.buffer instanceof nativeBinding.AudioBuffer)) {
+            throw new TypeError(' `Failed to construct \'ConvolverNode\': Failed to read the \'buffer\' property from ConvolverOptions: The provided value cannot be converted to \'AudioBuffer\'');
           }
 
           // unwrap napi audio buffer
           parsedOptions.buffer = options.buffer[kNativeAudioBuffer];
         }
+      } else {
+        parsedOptions.buffer = null;
+      }
+
+      if (options && 'disableNormalization' in options) {
+        parsedOptions.disableNormalization = conversions['boolean'](options.disableNormalization, {
+          context: `Failed to construct 'ConvolverNode': Failed to read the 'disableNormalization' property from ConvolverOptions: The provided value (${options.disableNormalization}})`,
+        });
+      } else {
+        parsedOptions.disableNormalization = false;
       }
 
       super(context, parsedOptions);
