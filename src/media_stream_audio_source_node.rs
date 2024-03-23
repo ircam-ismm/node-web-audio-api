@@ -83,13 +83,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let media_stream = media_stream_napi.unwrap();
 
     let options = MediaStreamAudioSourceOptions { media_stream };
-    // } else {
-    //
-    //         return Err(napi::Error::from_reason(
-    //             "TypeError - Options are mandatory for node MediaStreamAudioSourceNode".to_string(),
-    //         ));
-    //
-    // };
 
     let audio_context_name =
         js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;

@@ -92,11 +92,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         .get_double()? as f32;
 
     let options = ConstantSourceOptions { offset };
-    // } else {
-    //
-    //         Default::default()
-    //
-    // };
 
     let audio_context_name =
         js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;

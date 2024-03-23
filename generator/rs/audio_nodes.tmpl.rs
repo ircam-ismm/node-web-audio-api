@@ -88,14 +88,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let js_audio_context = ctx.get::<JsObject>(0)?;
 
     ${(function() {
-    // ${d.constructor(d.node).arguments.map((argument, index) => {
-        // ----------------------------------------------
-        // parse options
-        // ----------------------------------------------
-        // if (index == 0) { // index 0 is always AudioContext
-        //     return;
-        // }
-
         const optionsArg = d.constructor(d.node).arguments[1];
         const optionsType = d.memberType(optionsArg);
         const optionsIdl = d.findInTree(optionsType);
@@ -114,7 +106,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             // only AudioBuffer is actually nullable
             const nullable = member.idlType.nullable;
             const simple_slug = d.slug(m);
-            const slug = d.slug(m, true); // append _ to protected
+            const slug = d.slug(m, true); // append _ to protect from protected keywords
 
             switch (type) {
                 case 'boolean': {
@@ -210,6 +202,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                     break;
                 }
             }
+        // end options mamber
         }).join('')}
 
     ${d.parent(optionsIdl) === 'AudioNodeOptions' ? `
@@ -265,18 +258,8 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             interpretation: channel_interpretation,
         },` : ``}
     };
-    // } else {
-    //     ${optionsIdl.members.reduce((acc, current) => acc || current.required, false) ? `
-    //         return Err(napi::Error::from_reason(
-    //             "TypeError - Options are mandatory for node ${d.name(d.node)}".to_string(),
-    //         ));
-    //     ` : `
-    //         Default::default()
-    //     `}
-    // };
 
-        `; // end options
-    // }).join('')}
+        `; // end options parsing
     }())}
 
     let audio_context_name = js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;

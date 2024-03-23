@@ -159,11 +159,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             interpretation: channel_interpretation,
         },
     };
-    // } else {
-    //
-    //         Default::default()
-    //
-    // };
 
     let audio_context_name =
         js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;

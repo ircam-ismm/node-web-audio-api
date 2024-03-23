@@ -147,13 +147,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             interpretation: channel_interpretation,
         },
     };
-    // } else {
-    //
-    //         return Err(napi::Error::from_reason(
-    //             "TypeError - Options are mandatory for node IIRFilterNode".to_string(),
-    //         ));
-    //
-    // };
 
     let audio_context_name =
         js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
