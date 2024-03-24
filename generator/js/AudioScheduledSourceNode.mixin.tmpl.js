@@ -1,47 +1,47 @@
 const { throwSanitizedError } = require('./lib/errors.js');
+const { isFunction } = require('./lib/utils.js');
+const { kNapiObj } = require('./lib/symbols.js');
 
-module.exports = (superclass) => {
-  class ${d.name(d.node)} extends superclass {
-    constructor(...args) {
-      super(...args);
-    }
-    // getters
-${d.attributes(d.node).map(attr => {
-  return `
-    get ${d.name(attr)}() {
-      return super.${d.name(attr)};
-    }
-`}).join('')}
-    // setters
-${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
-  return `
-    set ${d.name(attr)}(value) {
-      try {
-        super.${d.name(attr)} = value;
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-`}).join('')}
-    // methods - start / stop
-    ${d.methods(d.node, false).reduce((acc, method) => {
-      // dedup method names
-      if (!acc.find(i => d.name(i) === d.name(method))) {
-        acc.push(method)
-      }
-      return acc;
-    }, []).map(method => {
-  return `
-    ${d.name(method)}(...args) {
-      try {
-        return super.${d.name(method)}(...args);
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-`}).join('')}
+const AudioNode = require('./AudioNode.mixin.js');
+
+class AudioScheduledSourceNode extends AudioNode {
+  constructor(context, napiObj) {
+    super(context, napiObj);
   }
+${d.attributes(d.node).map(attr => {
+  // onended events
+  return `
+  get ${d.name(attr)}() {
+    return this._${d.name(attr)} || null;
+  }
+  `}).join('')}
 
-  return ${d.name(d.node)};
-};
+${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
+  // onended events
+  return `
+  set ${d.name(attr)}(value) {
+    if (isFunction(value) || value === null) {
+      this._${d.name(attr)} = value;
+    }
+  }
+  `}).join('')}
 
+${d.methods(d.node, false).reduce((acc, method) => {
+    // dedup method names
+    if (!acc.find(i => d.name(i) === d.name(method))) {
+      acc.push(method)
+    }
+    return acc;
+  }, []).map(method => {
+    return `
+  ${d.name(method)}(...args) {
+    try {
+      return this[kNapiObj].${d.name(method)}(...args);
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+  }
+  `}).join('')}
+}
+
+module.exports = AudioScheduledSourceNode;

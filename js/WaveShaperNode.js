@@ -25,6 +25,7 @@ const {
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
+
 const {
   AudioParam,
 } = require('./AudioParam.js');
@@ -32,15 +33,14 @@ const {
   kNativeAudioBuffer,
   kAudioBuffer,
 } = require('./AudioBuffer.js');
+const {
+  kNapiObj,
+} = require('./lib/symbols.js');
 /* eslint-enable no-unused-vars */
 
-const EventTargetMixin = require('./EventTarget.mixin.js');
-const AudioNodeMixin = require('./AudioNode.mixin.js');
+const AudioNode = require('./AudioNode.mixin.js');
 
-module.exports = (NativeWaveShaperNode, nativeBinding) => {
-  const EventTarget = EventTargetMixin(NativeWaveShaperNode, ['ended']);
-  const AudioNode = AudioNodeMixin(EventTarget);
-
+module.exports = (jsExport, nativeBinding) => {
   class WaveShaperNode extends AudioNode {
     constructor(context, options) {
 
@@ -48,7 +48,7 @@ module.exports = (NativeWaveShaperNode, nativeBinding) => {
         throw new TypeError(`Failed to construct 'WaveShaperNode': 1 argument required, but only ${arguments.length} present`);
       }
 
-      if (!(context instanceof nativeBinding.AudioContext) && !(context instanceof nativeBinding.OfflineAudioContext)) {
+      if (!(context instanceof jsExport.AudioContext) && !(context instanceof jsExport.OfflineAudioContext)) {
         throw new TypeError(`Failed to construct 'WaveShaperNode': argument 1 is not of type BaseAudioContext`);
       }
 
@@ -79,21 +79,29 @@ module.exports = (NativeWaveShaperNode, nativeBinding) => {
         parsedOptions.oversample = 'none';
       }
 
-      super(context, parsedOptions);
+      let napiObj;
+
+      try {
+        napiObj = new nativeBinding.WaveShaperNode(context[kNapiObj], parsedOptions);
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+
+      super(context, napiObj);
 
     }
 
     get curve() {
-      return super.curve;
+      return this[kNapiObj].curve;
     }
 
     get oversample() {
-      return super.oversample;
+      return this[kNapiObj].oversample;
     }
 
     set curve(value) {
       try {
-        super.curve = value;
+        this[kNapiObj].curve = value;
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -101,7 +109,7 @@ module.exports = (NativeWaveShaperNode, nativeBinding) => {
 
     set oversample(value) {
       try {
-        super.oversample = value;
+        this[kNapiObj].oversample = value;
       } catch (err) {
         throwSanitizedError(err);
       }

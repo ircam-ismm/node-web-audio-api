@@ -3,24 +3,16 @@
 const conversions = require("webidl-conversions");
 const { toSanitizedSequence } = require('./lib/cast.js');
 const { throwSanitizedError } = require('./lib/errors.js');
+
 const { AudioParam } = require('./AudioParam.js');
 const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
+const { kNapiObj } = require('./lib/symbols.js');
 /* eslint-enable no-unused-vars */
 
-const EventTargetMixin = require('./EventTarget.mixin.js');
-const AudioNodeMixin = require('./AudioNode.mixin.js');
-${d.parent(d.node) === 'AudioScheduledSourceNode' ?
-`const AudioScheduledSourceNodeMixin = require('./AudioScheduledSourceNode.mixin.js');`: ``}
+const ${d.parent(d.node)} = require('./${d.parent(d.node)}.mixin.js');
 
-module.exports = (Native${d.name(d.node)}, nativeBinding) => {
-  const EventTarget = EventTargetMixin(Native${d.name(d.node)}, ['ended']);
-  const AudioNode = AudioNodeMixin(EventTarget);
-${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
-  const AudioScheduledSourceNode = AudioScheduledSourceNodeMixin(AudioNode);
-
-  class ${d.name(d.node)} extends AudioScheduledSourceNode {` : `
-  class ${d.name(d.node)} extends AudioNode {`
-}
+module.exports = (jsExport, nativeBinding) => {
+  class ${d.name(d.node)} extends ${d.parent(d.node)} {
     constructor(context, options) {
       ${(function() {
         // handle argument length compared to required arguments
@@ -44,13 +36,13 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
         // need this workaround
         if (argType === 'BaseAudioContext') {
           return `
-      if (!(context instanceof nativeBinding.AudioContext) && !(context instanceof nativeBinding.OfflineAudioContext)) {
+      if (!(context instanceof jsExport.AudioContext) && !(context instanceof jsExport.OfflineAudioContext)) {
         throw new TypeError(\`Failed to construct '${d.name(d.node)}': argument 1 is not of type ${argType}\`);
       }
           `;
         } else {
           return `
-      if (!(context instanceof nativeBinding.${argType})) {
+      if (!(context instanceof jsExport.${argType})) {
         throw new TypeError(\`Failed to construct '${d.name(d.node)}': argument 1 is not of type ${argType}\`);
       }
           `;
@@ -147,7 +139,7 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
             case 'PeriodicWave': {
               checkMember += `
       if (options && '${optionName}' in options) {
-        if (!(options.${optionName} instanceof nativeBinding.PeriodicWave)) {
+        if (!(options.${optionName} instanceof jsExport.PeriodicWave)) {
           throw new TypeError(\`Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value '\${options.${optionName}}' is not an instance of ${type}\`);
         }
 
@@ -164,7 +156,7 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
       if (options && '${optionName}' in options) {
         if (options.${optionName} !== null) {
           // if (!(kNativeAudioBuffer in options.${optionName})) {
-          if (!(options.${optionName} instanceof nativeBinding.AudioBuffer)) {
+          if (!(options.${optionName} instanceof jsExport.AudioBuffer)) {
             throw new TypeError(" \`Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value cannot be converted to 'AudioBuffer'");
           }
 
@@ -216,7 +208,15 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
         return checkOptions;
       }())}
 
-      super(context, parsedOptions);
+      let napiObj;
+
+      try {
+        napiObj = new nativeBinding.${d.name(d.node)}(context[kNapiObj], parsedOptions);
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+
+      super(context, napiObj);
 
       ${(function() {
         // handle special options cases
@@ -244,11 +244,11 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
       ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `
       // EventTargetMixin constructor has been called so EventTargetMixin[kDispatchEvent]
       // is bound to this, then we can safely finalize event target initialization
-      super.__initEventTarget__();` : ``}
+      this[kNapiObj].__initEventTarget__();` : ``}
 
       ${d.audioParams(d.node).map(param => {
         return `
-      this.${d.name(param)} = new AudioParam(this.${d.name(param)});`;
+      this.${d.name(param)} = new AudioParam(this[kNapiObj].${d.name(param)});`;
       }).join('')}
     }
 
@@ -268,7 +268,7 @@ ${d.attributes(d.node).map(attr => {
     default: {
       return `
     get ${d.name(attr)}() {
-      return super.${d.name(attr)};
+      return this[kNapiObj].${d.name(attr)};
     }
       `;
       break;
@@ -292,7 +292,7 @@ ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
       }
 
       try {
-        super.${d.name(attr)} = value[kNativeAudioBuffer];
+        this[kNapiObj].${d.name(attr)} = value[kNativeAudioBuffer];
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -306,7 +306,7 @@ ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
       return `
     set ${d.name(attr)}(value) {
       try {
-        super.${d.name(attr)} = value;
+        this[kNapiObj].${d.name(attr)} = value;
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -318,9 +318,6 @@ ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
 }).join('')}
 
 ${d.methods(d.node, false)
-  // ------------------------------------------------------
-  // Methods
-  // ------------------------------------------------------
   .reduce((acc, method) => {
     // dedup method names
     if (!acc.find(i => d.name(i) === d.name(method))) {
@@ -334,7 +331,7 @@ ${d.methods(d.node, false)
     return `
     ${d.name(method)}(...args) {
       try {
-        return super.${d.name(method)}(...args);
+        return this[kNapiObj].${d.name(method)}(...args);
       } catch (err) {
         throwSanitizedError(err);
       }

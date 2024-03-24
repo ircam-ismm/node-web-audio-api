@@ -1,21 +1,50 @@
-const { AudioDestinationNode } = require('./AudioDestinationNode.js');
 const { isFunction } = require('./lib/utils.js');
+const { kNapiObj } = require('./lib/symbols.js');
 const { kNativeAudioBuffer } = require('./AudioBuffer.js');
 
-module.exports = (superclass, bindings) => {
-  const {
-    /* eslint-disable no-unused-vars */
-${d.nodes.map(n => `    ${d.name(n)},`).join('\n')}
-    /* eslint-enable no-unused-vars */
-    AudioBuffer,
-    PeriodicWave,
-  } = bindings;
+const EventTarget = require('./EventTarget.mixin.js');
 
-  class BaseAudioContext extends superclass {
-    constructor(...args) {
-      super(...args);
+module.exports = (jsExport /*, nativeBinding */) => {
+  class BaseAudioContext extends EventTarget {
+    constructor(napiObj) {
+      super(napiObj);
 
-      this.destination = new AudioDestinationNode(this.destination);
+      this[kNapiObj] = napiObj;
+
+      const destination = new jsExport.AudioDestinationNode(this[kNapiObj].destination);
+      Object.defineProperty(this, 'destination', {
+        value: destination,
+        writable: false,
+      });
+    }
+
+    get sampleRate() {
+      return this[kNapiObj].sampleRate;
+    }
+
+    get currentTime() {
+      return this[kNapiObj].currentTime;
+    }
+
+    get listener() {
+      return this[kNapiObj].listener;
+    }
+
+    get state() {
+      return this[kNapiObj].state;
+    }
+
+    // renderQuantumSize
+    // audioWorklet
+
+    get onstatechange() {
+      return this._statechange || null;
+    }
+
+    set onstatechange(value) {
+      if (isFunction(value) || value === null) {
+        this._statechange = value;
+      }
     }
 
     // This is not exactly what the spec says, but if we reject the promise
@@ -28,8 +57,8 @@ ${d.nodes.map(n => `    ${d.name(n)},`).join('\n')}
       }
 
       try {
-        const nativeAudioBuffer = super.decodeAudioData(audioData);
-        const audioBuffer = new AudioBuffer({ [kNativeAudioBuffer]: nativeAudioBuffer });
+        const nativeAudioBuffer = this[kNapiObj].decodeAudioData(audioData);
+        const audioBuffer = new jsExport.AudioBuffer({ [kNativeAudioBuffer]: nativeAudioBuffer });
 
         if (isFunction(decodeSuccessCallback)) {
           decodeSuccessCallback(audioBuffer);
@@ -60,7 +89,7 @@ ${d.nodes.map(n => `    ${d.name(n)},`).join('\n')}
         options.sampleRate = sampleRate;
       }
 
-      return new AudioBuffer(options);
+      return new jsExport.AudioBuffer(options);
     }
 
     createPeriodicWave(real, imag) {
@@ -74,7 +103,7 @@ ${d.nodes.map(n => `    ${d.name(n)},`).join('\n')}
         options.imag = imag;
       }
 
-      return new PeriodicWave(this, options);
+      return new jsExport.PeriodicWave(this, options);
     }
 
     // --------------------------------------------------------------------
@@ -104,9 +133,9 @@ ${args.length > 0 ? `\
         `;
       }).join('')};
 
-      return new ${d.name(n)}(this, options);\
+      return new jsExport.${d.name(n)}(this, options);\
 ` : `\
-      return new ${d.name(n)}(this);\
+      return new jsExport.${d.name(n)}(this);\
 `}
     }
 `

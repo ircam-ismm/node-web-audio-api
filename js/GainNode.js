@@ -25,6 +25,7 @@ const {
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
+
 const {
   AudioParam,
 } = require('./AudioParam.js');
@@ -32,15 +33,14 @@ const {
   kNativeAudioBuffer,
   kAudioBuffer,
 } = require('./AudioBuffer.js');
+const {
+  kNapiObj,
+} = require('./lib/symbols.js');
 /* eslint-enable no-unused-vars */
 
-const EventTargetMixin = require('./EventTarget.mixin.js');
-const AudioNodeMixin = require('./AudioNode.mixin.js');
+const AudioNode = require('./AudioNode.mixin.js');
 
-module.exports = (NativeGainNode, nativeBinding) => {
-  const EventTarget = EventTargetMixin(NativeGainNode, ['ended']);
-  const AudioNode = AudioNodeMixin(EventTarget);
-
+module.exports = (jsExport, nativeBinding) => {
   class GainNode extends AudioNode {
     constructor(context, options) {
 
@@ -48,7 +48,7 @@ module.exports = (NativeGainNode, nativeBinding) => {
         throw new TypeError(`Failed to construct 'GainNode': 1 argument required, but only ${arguments.length} present`);
       }
 
-      if (!(context instanceof nativeBinding.AudioContext) && !(context instanceof nativeBinding.OfflineAudioContext)) {
+      if (!(context instanceof jsExport.AudioContext) && !(context instanceof jsExport.OfflineAudioContext)) {
         throw new TypeError(`Failed to construct 'GainNode': argument 1 is not of type BaseAudioContext`);
       }
 
@@ -67,9 +67,17 @@ module.exports = (NativeGainNode, nativeBinding) => {
         parsedOptions.gain = 1.0;
       }
 
-      super(context, parsedOptions);
+      let napiObj;
 
-      this.gain = new AudioParam(this.gain);
+      try {
+        napiObj = new nativeBinding.GainNode(context[kNapiObj], parsedOptions);
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+
+      super(context, napiObj);
+
+      this.gain = new AudioParam(this[kNapiObj].gain);
     }
 
   }

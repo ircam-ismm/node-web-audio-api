@@ -20,47 +20,46 @@
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
+const {
+  isFunction,
+} = require('./lib/utils.js');
+const {
+  kNapiObj,
+} = require('./lib/symbols.js');
 
-module.exports = (superclass) => {
-  class AudioScheduledSourceNode extends superclass {
-    constructor(...args) {
-      super(...args);
-    }
-    // getters
+const AudioNode = require('./AudioNode.mixin.js');
 
-    get onended() {
-      return super.onended;
-    }
-
-    // setters
-
-    set onended(value) {
-      try {
-        super.onended = value;
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
-    // methods - start / stop
-
-    start(...args) {
-      try {
-        return super.start(...args);
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
-    stop(...args) {
-      try {
-        return super.stop(...args);
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
+class AudioScheduledSourceNode extends AudioNode {
+  constructor(context, napiObj) {
+    super(context, napiObj);
   }
 
-  return AudioScheduledSourceNode;
-};
+  get onended() {
+    return this._onended || null;
+  }
+
+  set onended(value) {
+    if (isFunction(value) || value === null) {
+      this._onended = value;
+    }
+  }
+
+  start(...args) {
+    try {
+      return this[kNapiObj].start(...args);
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+  }
+
+  stop(...args) {
+    try {
+      return this[kNapiObj].stop(...args);
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+  }
+
+}
+
+module.exports = AudioScheduledSourceNode;

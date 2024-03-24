@@ -25,6 +25,7 @@ const {
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
+
 const {
   AudioParam,
 } = require('./AudioParam.js');
@@ -32,15 +33,14 @@ const {
   kNativeAudioBuffer,
   kAudioBuffer,
 } = require('./AudioBuffer.js');
+const {
+  kNapiObj,
+} = require('./lib/symbols.js');
 /* eslint-enable no-unused-vars */
 
-const EventTargetMixin = require('./EventTarget.mixin.js');
-const AudioNodeMixin = require('./AudioNode.mixin.js');
+const AudioNode = require('./AudioNode.mixin.js');
 
-module.exports = (NativeDelayNode, nativeBinding) => {
-  const EventTarget = EventTargetMixin(NativeDelayNode, ['ended']);
-  const AudioNode = AudioNodeMixin(EventTarget);
-
+module.exports = (jsExport, nativeBinding) => {
   class DelayNode extends AudioNode {
     constructor(context, options) {
 
@@ -48,7 +48,7 @@ module.exports = (NativeDelayNode, nativeBinding) => {
         throw new TypeError(`Failed to construct 'DelayNode': 1 argument required, but only ${arguments.length} present`);
       }
 
-      if (!(context instanceof nativeBinding.AudioContext) && !(context instanceof nativeBinding.OfflineAudioContext)) {
+      if (!(context instanceof jsExport.AudioContext) && !(context instanceof jsExport.OfflineAudioContext)) {
         throw new TypeError(`Failed to construct 'DelayNode': argument 1 is not of type BaseAudioContext`);
       }
 
@@ -75,9 +75,17 @@ module.exports = (NativeDelayNode, nativeBinding) => {
         parsedOptions.delayTime = 0;
       }
 
-      super(context, parsedOptions);
+      let napiObj;
 
-      this.delayTime = new AudioParam(this.delayTime);
+      try {
+        napiObj = new nativeBinding.DelayNode(context[kNapiObj], parsedOptions);
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+
+      super(context, napiObj);
+
+      this.delayTime = new AudioParam(this[kNapiObj].delayTime);
     }
 
   }

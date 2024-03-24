@@ -1,66 +1,105 @@
 const { throwSanitizedError } = require('./lib/errors.js');
+const { kNapiObj } = require('./lib/symbols.js');
 
+const EventTarget = require('./EventTarget.mixin.js');
 const { AudioParam, kNativeAudioParam } = require('./AudioParam.js');
 const { AudioDestinationNode, kNativeAudioDestinationNode } = require('./AudioDestinationNode.js');
 
-module.exports = (superclass) => {
-  class ${d.name(d.node)} extends superclass {
-    /* eslint-disable constructor-super */
-    constructor(...args) {
-      try {
-        super(...args);
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-    /* eslint-enable constructor-super */
+class AudioNode extends EventTarget {
+  constructor(context, napiObj) {
+    super(napiObj);
 
-    // getters
-${d.attributes(d.node).map(attr => {
-  return `
-    get ${d.name(attr)}() {
-      return super.${d.name(attr)};
-    }
-`}).join('')}
-    // setters
-${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
-  return `
-    set ${d.name(attr)}(value) {
-      try {
-        super.${d.name(attr)} = value;
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-`}).join('')}
-    // methods - connect / disconnect
-    ${d.methods(d.node, false).reduce((acc, method) => {
-      // dedup method names
-      if (!acc.find(i => d.name(i) === d.name(method))) {
-        acc.push(method)
-      }
-      return acc;
-    }, []).map(method => {
-  return `
-    ${d.name(method)}(...args) {
-      // unwrap raw audio params from facade
-      if (args[0] instanceof AudioParam) {
-        args[0] = args[0][kNativeAudioParam];
-      }
+    Object.defineProperty(this, 'context', {
+      value: context,
+      writable: false
+    });
 
-      // unwrap raw audio destination from facade
-      if (args[0] instanceof AudioDestinationNode) {
-        args[0] = args[0][kNativeAudioDestinationNode];
-      }
-
-      try {
-        return super.${d.name(method)}(...args);
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-`}).join('')}
+    this[kNapiObj] = napiObj;
   }
 
-  return ${d.name(d.node)};
-};
+${d.attributes(d.node).filter(attr => d.name(attr) !== 'context').map(attr => {
+return `
+  get ${d.name(attr)}() {
+    return this[kNapiObj].${d.name(attr)};
+  }
+`}).join('')}
+
+${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
+return `
+  set ${d.name(attr)}(value) {
+    try {
+      this[kNapiObj].${d.name(attr)} = value;
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+  }
+`}).join('')}
+
+  // ------------------------------------------------------
+  // connect / disconnect
+  // ------------------------------------------------------
+
+  // @todo
+  // AudioNode connect (AudioNode destinationNode,
+  //                    optional unsigned long output = 0,
+  //                    optional unsigned long input = 0);
+  // undefined connect (AudioParam destinationParam, optional unsigned long output = 0);
+
+  connect(...args) {
+    const jsDest = args[0];
+
+    // note that audio listener params are not wrapped
+    if (args[0] instanceof AudioParam) {
+      args[0] = args[0][kNativeAudioParam];
+    }
+
+    if (args[0] instanceof AudioDestinationNode) {
+      args[0] = args[0][kNativeAudioDestinationNode];
+    }
+
+    if (args[0] instanceof AudioNode) {
+      args[0] = args[0][kNapiObj];
+    }
+
+    try {
+      this[kNapiObj].connect(...args);
+      return jsDest;
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+  }
+
+  // @todo
+  // undefined disconnect ();
+  // undefined disconnect (unsigned long output);
+  // undefined disconnect (AudioNode destinationNode);
+  // undefined disconnect (AudioNode destinationNode, unsigned long output);
+  // undefined disconnect (AudioNode destinationNode,
+  //                       unsigned long output,
+  //                       unsigned long input);
+  // undefined disconnect (AudioParam destinationParam);
+  // undefined disconnect (AudioParam destinationParam, unsigned long output);
+
+  disconnect(...args) {
+    if (args[0] instanceof AudioParam) {
+      args[0] = args[0][kNativeAudioParam];
+    }
+
+    if (args[0] instanceof AudioDestinationNode) {
+      args[0] = args[0][kNativeAudioDestinationNode];
+    }
+
+    if (args[0] instanceof AudioNode) {
+      args[0] = args[0][kNapiObj];
+    }
+
+    try {
+      this[kNapiObj].disconnect(...args);
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+  }
+
+}
+
+module.exports = AudioNode;

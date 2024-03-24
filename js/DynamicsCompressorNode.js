@@ -25,6 +25,7 @@ const {
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
+
 const {
   AudioParam,
 } = require('./AudioParam.js');
@@ -32,15 +33,14 @@ const {
   kNativeAudioBuffer,
   kAudioBuffer,
 } = require('./AudioBuffer.js');
+const {
+  kNapiObj,
+} = require('./lib/symbols.js');
 /* eslint-enable no-unused-vars */
 
-const EventTargetMixin = require('./EventTarget.mixin.js');
-const AudioNodeMixin = require('./AudioNode.mixin.js');
+const AudioNode = require('./AudioNode.mixin.js');
 
-module.exports = (NativeDynamicsCompressorNode, nativeBinding) => {
-  const EventTarget = EventTargetMixin(NativeDynamicsCompressorNode, ['ended']);
-  const AudioNode = AudioNodeMixin(EventTarget);
-
+module.exports = (jsExport, nativeBinding) => {
   class DynamicsCompressorNode extends AudioNode {
     constructor(context, options) {
 
@@ -48,7 +48,7 @@ module.exports = (NativeDynamicsCompressorNode, nativeBinding) => {
         throw new TypeError(`Failed to construct 'DynamicsCompressorNode': 1 argument required, but only ${arguments.length} present`);
       }
 
-      if (!(context instanceof nativeBinding.AudioContext) && !(context instanceof nativeBinding.OfflineAudioContext)) {
+      if (!(context instanceof jsExport.AudioContext) && !(context instanceof jsExport.OfflineAudioContext)) {
         throw new TypeError(`Failed to construct 'DynamicsCompressorNode': argument 1 is not of type BaseAudioContext`);
       }
 
@@ -99,17 +99,25 @@ module.exports = (NativeDynamicsCompressorNode, nativeBinding) => {
         parsedOptions.threshold = -24;
       }
 
-      super(context, parsedOptions);
+      let napiObj;
 
-      this.threshold = new AudioParam(this.threshold);
-      this.knee = new AudioParam(this.knee);
-      this.ratio = new AudioParam(this.ratio);
-      this.attack = new AudioParam(this.attack);
-      this.release = new AudioParam(this.release);
+      try {
+        napiObj = new nativeBinding.DynamicsCompressorNode(context[kNapiObj], parsedOptions);
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+
+      super(context, napiObj);
+
+      this.threshold = new AudioParam(this[kNapiObj].threshold);
+      this.knee = new AudioParam(this[kNapiObj].knee);
+      this.ratio = new AudioParam(this[kNapiObj].ratio);
+      this.attack = new AudioParam(this[kNapiObj].attack);
+      this.release = new AudioParam(this[kNapiObj].release);
     }
 
     get reduction() {
-      return super.reduction;
+      return this[kNapiObj].reduction;
     }
 
   }

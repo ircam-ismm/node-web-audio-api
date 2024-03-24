@@ -20,7 +20,11 @@
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
+const {
+  kNapiObj,
+} = require('./lib/symbols.js');
 
+const EventTarget = require('./EventTarget.mixin.js');
 const {
   AudioParam,
   kNativeAudioParam,
@@ -30,109 +34,127 @@ const {
   kNativeAudioDestinationNode,
 } = require('./AudioDestinationNode.js');
 
-module.exports = (superclass) => {
-  class AudioNode extends superclass {
-    /* eslint-disable constructor-super */
-    constructor(...args) {
-      try {
-        super(...args);
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-    /* eslint-enable constructor-super */
+class AudioNode extends EventTarget {
+  constructor(context, napiObj) {
+    super(napiObj);
 
-    // getters
+    Object.defineProperty(this, 'context', {
+      value: context,
+      writable: false,
+    });
 
-    get context() {
-      return super.context;
-    }
-
-    get numberOfInputs() {
-      return super.numberOfInputs;
-    }
-
-    get numberOfOutputs() {
-      return super.numberOfOutputs;
-    }
-
-    get channelCount() {
-      return super.channelCount;
-    }
-
-    get channelCountMode() {
-      return super.channelCountMode;
-    }
-
-    get channelInterpretation() {
-      return super.channelInterpretation;
-    }
-
-    // setters
-
-    set channelCount(value) {
-      try {
-        super.channelCount = value;
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
-    set channelCountMode(value) {
-      try {
-        super.channelCountMode = value;
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
-    set channelInterpretation(value) {
-      try {
-        super.channelInterpretation = value;
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
-    // methods - connect / disconnect
-
-    connect(...args) {
-      // unwrap raw audio params from facade
-      if (args[0] instanceof AudioParam) {
-        args[0] = args[0][kNativeAudioParam];
-      }
-
-      // unwrap raw audio destination from facade
-      if (args[0] instanceof AudioDestinationNode) {
-        args[0] = args[0][kNativeAudioDestinationNode];
-      }
-
-      try {
-        return super.connect(...args);
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
-    disconnect(...args) {
-      // unwrap raw audio params from facade
-      if (args[0] instanceof AudioParam) {
-        args[0] = args[0][kNativeAudioParam];
-      }
-
-      // unwrap raw audio destination from facade
-      if (args[0] instanceof AudioDestinationNode) {
-        args[0] = args[0][kNativeAudioDestinationNode];
-      }
-
-      try {
-        return super.disconnect(...args);
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
+    this[kNapiObj] = napiObj;
   }
 
-  return AudioNode;
-};
+  get numberOfInputs() {
+    return this[kNapiObj].numberOfInputs;
+  }
+
+  get numberOfOutputs() {
+    return this[kNapiObj].numberOfOutputs;
+  }
+
+  get channelCount() {
+    return this[kNapiObj].channelCount;
+  }
+
+  get channelCountMode() {
+    return this[kNapiObj].channelCountMode;
+  }
+
+  get channelInterpretation() {
+    return this[kNapiObj].channelInterpretation;
+  }
+
+  set channelCount(value) {
+    try {
+      this[kNapiObj].channelCount = value;
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+  }
+
+  set channelCountMode(value) {
+    try {
+      this[kNapiObj].channelCountMode = value;
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+  }
+
+  set channelInterpretation(value) {
+    try {
+      this[kNapiObj].channelInterpretation = value;
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+  }
+
+  // ------------------------------------------------------
+  // connect / disconnect
+  // ------------------------------------------------------
+
+  // @todo
+  // AudioNode connect (AudioNode destinationNode,
+  //                    optional unsigned long output = 0,
+  //                    optional unsigned long input = 0);
+  // undefined connect (AudioParam destinationParam, optional unsigned long output = 0);
+
+  connect(...args) {
+    const jsDest = args[0];
+
+    // note that audio listener params are not wrapped
+    if (args[0] instanceof AudioParam) {
+      args[0] = args[0][kNativeAudioParam];
+    }
+
+    if (args[0] instanceof AudioDestinationNode) {
+      args[0] = args[0][kNativeAudioDestinationNode];
+    }
+
+    if (args[0] instanceof AudioNode) {
+      args[0] = args[0][kNapiObj];
+    }
+
+    try {
+      this[kNapiObj].connect(...args);
+      return jsDest;
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+  }
+
+  // @todo
+  // undefined disconnect ();
+  // undefined disconnect (unsigned long output);
+  // undefined disconnect (AudioNode destinationNode);
+  // undefined disconnect (AudioNode destinationNode, unsigned long output);
+  // undefined disconnect (AudioNode destinationNode,
+  //                       unsigned long output,
+  //                       unsigned long input);
+  // undefined disconnect (AudioParam destinationParam);
+  // undefined disconnect (AudioParam destinationParam, unsigned long output);
+
+  disconnect(...args) {
+    if (args[0] instanceof AudioParam) {
+      args[0] = args[0][kNativeAudioParam];
+    }
+
+    if (args[0] instanceof AudioDestinationNode) {
+      args[0] = args[0][kNativeAudioDestinationNode];
+    }
+
+    if (args[0] instanceof AudioNode) {
+      args[0] = args[0][kNapiObj];
+    }
+
+    try {
+      this[kNapiObj].disconnect(...args);
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+  }
+
+}
+
+module.exports = AudioNode;

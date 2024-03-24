@@ -25,6 +25,7 @@ const {
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
+
 const {
   AudioParam,
 } = require('./AudioParam.js');
@@ -32,15 +33,14 @@ const {
   kNativeAudioBuffer,
   kAudioBuffer,
 } = require('./AudioBuffer.js');
+const {
+  kNapiObj,
+} = require('./lib/symbols.js');
 /* eslint-enable no-unused-vars */
 
-const EventTargetMixin = require('./EventTarget.mixin.js');
-const AudioNodeMixin = require('./AudioNode.mixin.js');
+const AudioNode = require('./AudioNode.mixin.js');
 
-module.exports = (NativeStereoPannerNode, nativeBinding) => {
-  const EventTarget = EventTargetMixin(NativeStereoPannerNode, ['ended']);
-  const AudioNode = AudioNodeMixin(EventTarget);
-
+module.exports = (jsExport, nativeBinding) => {
   class StereoPannerNode extends AudioNode {
     constructor(context, options) {
 
@@ -48,7 +48,7 @@ module.exports = (NativeStereoPannerNode, nativeBinding) => {
         throw new TypeError(`Failed to construct 'StereoPannerNode': 1 argument required, but only ${arguments.length} present`);
       }
 
-      if (!(context instanceof nativeBinding.AudioContext) && !(context instanceof nativeBinding.OfflineAudioContext)) {
+      if (!(context instanceof jsExport.AudioContext) && !(context instanceof jsExport.OfflineAudioContext)) {
         throw new TypeError(`Failed to construct 'StereoPannerNode': argument 1 is not of type BaseAudioContext`);
       }
 
@@ -67,9 +67,17 @@ module.exports = (NativeStereoPannerNode, nativeBinding) => {
         parsedOptions.pan = 0;
       }
 
-      super(context, parsedOptions);
+      let napiObj;
 
-      this.pan = new AudioParam(this.pan);
+      try {
+        napiObj = new nativeBinding.StereoPannerNode(context[kNapiObj], parsedOptions);
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+
+      super(context, napiObj);
+
+      this.pan = new AudioParam(this[kNapiObj].pan);
     }
 
   }

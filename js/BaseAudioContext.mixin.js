@@ -18,44 +18,58 @@
 // -------------------------------------------------------------------------- //
 
 const {
-  AudioDestinationNode,
-} = require('./AudioDestinationNode.js');
-const {
   isFunction,
 } = require('./lib/utils.js');
+const {
+  kNapiObj,
+} = require('./lib/symbols.js');
 const {
   kNativeAudioBuffer,
 } = require('./AudioBuffer.js');
 
-module.exports = (superclass, bindings) => {
-  const {
-    /* eslint-disable no-unused-vars */
-    AnalyserNode,
-    AudioBufferSourceNode,
-    BiquadFilterNode,
-    ChannelMergerNode,
-    ChannelSplitterNode,
-    ConstantSourceNode,
-    ConvolverNode,
-    DelayNode,
-    DynamicsCompressorNode,
-    GainNode,
-    IIRFilterNode,
-    MediaStreamAudioSourceNode,
-    OscillatorNode,
-    PannerNode,
-    StereoPannerNode,
-    WaveShaperNode,
-    /* eslint-enable no-unused-vars */
-    AudioBuffer,
-    PeriodicWave,
-  } = bindings;
+const EventTarget = require('./EventTarget.mixin.js');
 
-  class BaseAudioContext extends superclass {
-    constructor(...args) {
-      super(...args);
+module.exports = (jsExport /*, nativeBinding */ ) => {
+  class BaseAudioContext extends EventTarget {
+    constructor(napiObj) {
+      super(napiObj);
 
-      this.destination = new AudioDestinationNode(this.destination);
+      this[kNapiObj] = napiObj;
+
+      const destination = new jsExport.AudioDestinationNode(this[kNapiObj].destination);
+      Object.defineProperty(this, 'destination', {
+        value: destination,
+        writable: false,
+      });
+    }
+
+    get sampleRate() {
+      return this[kNapiObj].sampleRate;
+    }
+
+    get currentTime() {
+      return this[kNapiObj].currentTime;
+    }
+
+    get listener() {
+      return this[kNapiObj].listener;
+    }
+
+    get state() {
+      return this[kNapiObj].state;
+    }
+
+    // renderQuantumSize
+    // audioWorklet
+
+    get onstatechange() {
+      return this._statechange || null;
+    }
+
+    set onstatechange(value) {
+      if (isFunction(value) || value === null) {
+        this._statechange = value;
+      }
     }
 
     // This is not exactly what the spec says, but if we reject the promise
@@ -68,8 +82,8 @@ module.exports = (superclass, bindings) => {
       }
 
       try {
-        const nativeAudioBuffer = super.decodeAudioData(audioData);
-        const audioBuffer = new AudioBuffer({
+        const nativeAudioBuffer = this[kNapiObj].decodeAudioData(audioData);
+        const audioBuffer = new jsExport.AudioBuffer({
           [kNativeAudioBuffer]: nativeAudioBuffer,
         });
 
@@ -102,7 +116,7 @@ module.exports = (superclass, bindings) => {
         options.sampleRate = sampleRate;
       }
 
-      return new AudioBuffer(options);
+      return new jsExport.AudioBuffer(options);
     }
 
     createPeriodicWave(real, imag) {
@@ -116,22 +130,22 @@ module.exports = (superclass, bindings) => {
         options.imag = imag;
       }
 
-      return new PeriodicWave(this, options);
+      return new jsExport.PeriodicWave(this, options);
     }
 
     // --------------------------------------------------------------------
     // Factory Methods (use the patched AudioNodes)
     // --------------------------------------------------------------------
     createAnalyser() {
-      return new AnalyserNode(this);
+      return new jsExport.AnalyserNode(this);
     }
 
     createBufferSource() {
-      return new AudioBufferSourceNode(this);
+      return new jsExport.AudioBufferSourceNode(this);
     }
 
     createBiquadFilter() {
-      return new BiquadFilterNode(this);
+      return new jsExport.BiquadFilterNode(this);
     }
 
     createChannelMerger(numberOfInputs) {
@@ -141,7 +155,7 @@ module.exports = (superclass, bindings) => {
         options.numberOfInputs = numberOfInputs;
       }
 
-      return new ChannelMergerNode(this, options);
+      return new jsExport.ChannelMergerNode(this, options);
     }
 
     createChannelSplitter(numberOfOutputs) {
@@ -151,15 +165,15 @@ module.exports = (superclass, bindings) => {
         options.numberOfOutputs = numberOfOutputs;
       }
 
-      return new ChannelSplitterNode(this, options);
+      return new jsExport.ChannelSplitterNode(this, options);
     }
 
     createConstantSource() {
-      return new ConstantSourceNode(this);
+      return new jsExport.ConstantSourceNode(this);
     }
 
     createConvolver() {
-      return new ConvolverNode(this);
+      return new jsExport.ConvolverNode(this);
     }
 
     createDelay(maxDelayTime) {
@@ -169,15 +183,15 @@ module.exports = (superclass, bindings) => {
         options.maxDelayTime = maxDelayTime;
       }
 
-      return new DelayNode(this, options);
+      return new jsExport.DelayNode(this, options);
     }
 
     createDynamicsCompressor() {
-      return new DynamicsCompressorNode(this);
+      return new jsExport.DynamicsCompressorNode(this);
     }
 
     createGain() {
-      return new GainNode(this);
+      return new jsExport.GainNode(this);
     }
 
     createIIRFilter(feedforward, feedback) {
@@ -191,23 +205,23 @@ module.exports = (superclass, bindings) => {
         options.feedback = feedback;
       }
 
-      return new IIRFilterNode(this, options);
+      return new jsExport.IIRFilterNode(this, options);
     }
 
     createOscillator() {
-      return new OscillatorNode(this);
+      return new jsExport.OscillatorNode(this);
     }
 
     createPanner() {
-      return new PannerNode(this);
+      return new jsExport.PannerNode(this);
     }
 
     createStereoPanner() {
-      return new StereoPannerNode(this);
+      return new jsExport.StereoPannerNode(this);
     }
 
     createWaveShaper() {
-      return new WaveShaperNode(this);
+      return new jsExport.WaveShaperNode(this);
     }
 
   }
