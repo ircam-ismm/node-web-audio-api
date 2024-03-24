@@ -73,82 +73,22 @@ impl NapiMediaStreamAudioSourceNode {
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
-    if ctx.length < 1 {
-        let msg = "TypeError - Failed to construct 'MediaStreamAudioSourceNode': 1 argument required, but only 0 present.";
-        return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-    }
-
-    // first argument should be an AudioContext
     let js_audio_context = ctx.get::<JsObject>(0)?;
 
-    // check that
-    let audio_context_utf8_name = if let Ok(result) =
-        js_audio_context.has_named_property("Symbol.toStringTag")
-    {
-        if result {
-            let audio_context_name =
-                js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
-            let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
-            let audio_context_str = &audio_context_utf8_name[..];
-
-            if audio_context_str != "AudioContext" && audio_context_str != "OfflineAudioContext" {
-                let msg = "TypeError - Failed to construct 'MediaStreamAudioSourceNode': argument 1 is not of type BaseAudioContext";
-                return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-            }
-
-            audio_context_utf8_name
-        } else {
-            let msg = "TypeError - Failed to construct 'MediaStreamAudioSourceNode': argument 1 is not of type BaseAudioContext";
-            return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-        }
-    } else {
-        // This swallowed somehow, .e.g const node = new GainNode(null); throws
-        // TypeError Cannot convert undefined or null to object
-        // To be investigated...
-        let msg = "TypeError - Failed to construct 'MediaStreamAudioSourceNode': argument 1 is not of type BaseAudioContext";
-        return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-    };
-
-    js_this.define_properties(&[
-        Property::new("context")?
-            .with_value(&js_audio_context)
-            .with_property_attributes(PropertyAttributes::Enumerable),
-        // this must be put on the instance and not in the prototype to be reachable
-        Property::new("Symbol.toStringTag")?
-            .with_value(&ctx.env.create_string("MediaStreamAudioSourceNode")?)
-            .with_property_attributes(PropertyAttributes::Static),
-    ])?;
-
     // parse options
-    let options = if let Ok(either_options) = ctx.try_get::<JsObject>(1) {
-        match either_options {
-            Either::A(options_js) => {
-                let some_media_stream_js = options_js.get::<&str, JsObject>("mediaStream")?;
-                let media_stream = if let Some(media_stream_js) = some_media_stream_js {
-                    let media_stream_napi = ctx.env.unwrap::<NapiMediaStream>(&media_stream_js)?;
-                    media_stream_napi.unwrap()
-                } else {
-                    return Err(napi::Error::from_reason(
-                        "Parameter mediaStream is required".to_string(),
-                    ));
-                };
+    let js_options = ctx.get::<JsObject>(1)?;
 
-                MediaStreamAudioSourceOptions { media_stream }
-            }
-            Either::B(_) => {
-                return Err(napi::Error::from_reason(
-                    "TypeError - Options are mandatory for node MediaStreamAudioSourceNode"
-                        .to_string(),
-                ));
-            }
-        }
-    } else {
-        return Err(napi::Error::from_reason(
-            "TypeError - Options are mandatory for node MediaStreamAudioSourceNode".to_string(),
-        ));
-    };
+    let media_stream_js = js_options.get::<&str, JsObject>("mediaStream")?.unwrap();
+    let media_stream_napi = ctx.env.unwrap::<NapiMediaStream>(&media_stream_js)?;
+    let media_stream = media_stream_napi.unwrap();
 
+    let options = MediaStreamAudioSourceOptions { media_stream };
+
+    let audio_context_name =
+        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
+    let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
     let audio_context_str = &audio_context_utf8_name[..];
+
     // create native node
     let native_node = match audio_context_str {
         "AudioContext" => {
@@ -165,6 +105,16 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         }
         &_ => unreachable!(),
     };
+
+    js_this.define_properties(&[
+        Property::new("context")?
+            .with_value(&js_audio_context)
+            .with_property_attributes(PropertyAttributes::Enumerable),
+        // this must be put on the instance and not in the prototype to be reachable
+        Property::new("Symbol.toStringTag")?
+            .with_value(&ctx.env.create_string("MediaStreamAudioSourceNode")?)
+            .with_property_attributes(PropertyAttributes::Static),
+    ])?;
 
     // finalize instance creation
     let napi_node = NapiMediaStreamAudioSourceNode(native_node);

@@ -18,6 +18,10 @@
 // -------------------------------------------------------------------------- //
 
 /* eslint-disable no-unused-vars */
+const conversions = require('webidl-conversions');
+const {
+  toSanitizedSequence,
+} = require('./lib/cast.js');
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
@@ -33,21 +37,58 @@ const {
 const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 
-module.exports = (NativeAnalyserNode) => {
+module.exports = (NativeAnalyserNode, nativeBinding) => {
   const EventTarget = EventTargetMixin(NativeAnalyserNode, ['ended']);
   const AudioNode = AudioNodeMixin(EventTarget);
 
   class AnalyserNode extends AudioNode {
     constructor(context, options) {
-      // keep a handle to the original object, if we need to manipulate the
-      // options before passing them to NAPI
+
+      if (arguments.length < 1) {
+        throw new TypeError(`Failed to construct 'AnalyserNode': 1 argument required, but only ${arguments.length} present`);
+      }
+
+      if (!(context instanceof nativeBinding.AudioContext) && !(context instanceof nativeBinding.OfflineAudioContext)) {
+        throw new TypeError(`Failed to construct 'AnalyserNode': argument 1 is not of type BaseAudioContext`);
+      }
+
+      // parsed version of the option to be passed to NAPI
       const parsedOptions = Object.assign({}, options);
 
-      if (options !== undefined) {
-        if (typeof options !== 'object') {
-          throw new TypeError('Failed to construct \'AnalyserNode\': argument 2 is not of type \'AnalyserOptions\'');
-        }
+      if (options && typeof options !== 'object') {
+        throw new TypeError('Failed to construct \'AnalyserNode\': argument 2 is not of type \'AnalyserOptions\'');
+      }
 
+      if (options && 'fftSize' in options) {
+        parsedOptions.fftSize = conversions['unsigned long'](options.fftSize, {
+          context: `Failed to construct 'AnalyserNode': Failed to read the 'fftSize' property from AnalyserOptions: The provided value (${options.fftSize}})`,
+        });
+      } else {
+        parsedOptions.fftSize = 2048;
+      }
+
+      if (options && 'maxDecibels' in options) {
+        parsedOptions.maxDecibels = conversions['double'](options.maxDecibels, {
+          context: `Failed to construct 'AnalyserNode': Failed to read the 'maxDecibels' property from AnalyserOptions: The provided value (${options.maxDecibels}})`,
+        });
+      } else {
+        parsedOptions.maxDecibels = -30;
+      }
+
+      if (options && 'minDecibels' in options) {
+        parsedOptions.minDecibels = conversions['double'](options.minDecibels, {
+          context: `Failed to construct 'AnalyserNode': Failed to read the 'minDecibels' property from AnalyserOptions: The provided value (${options.minDecibels}})`,
+        });
+      } else {
+        parsedOptions.minDecibels = -100;
+      }
+
+      if (options && 'smoothingTimeConstant' in options) {
+        parsedOptions.smoothingTimeConstant = conversions['double'](options.smoothingTimeConstant, {
+          context: `Failed to construct 'AnalyserNode': Failed to read the 'smoothingTimeConstant' property from AnalyserOptions: The provided value (${options.smoothingTimeConstant}})`,
+        });
+      } else {
+        parsedOptions.smoothingTimeConstant = 0.8;
       }
 
       super(context, parsedOptions);

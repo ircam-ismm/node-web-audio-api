@@ -22,22 +22,22 @@ module.exports = function monkeyPatch(nativeBinding) {
   // Monkey Patch Web Audio API
   // --------------------------------------------------------------------------
 
-  nativeBinding.AnalyserNode = require('./AnalyserNode.js')(nativeBinding.AnalyserNode);
-  nativeBinding.AudioBufferSourceNode = require('./AudioBufferSourceNode.js')(nativeBinding.AudioBufferSourceNode);
-  nativeBinding.BiquadFilterNode = require('./BiquadFilterNode.js')(nativeBinding.BiquadFilterNode);
-  nativeBinding.ChannelMergerNode = require('./ChannelMergerNode.js')(nativeBinding.ChannelMergerNode);
-  nativeBinding.ChannelSplitterNode = require('./ChannelSplitterNode.js')(nativeBinding.ChannelSplitterNode);
-  nativeBinding.ConstantSourceNode = require('./ConstantSourceNode.js')(nativeBinding.ConstantSourceNode);
-  nativeBinding.ConvolverNode = require('./ConvolverNode.js')(nativeBinding.ConvolverNode);
-  nativeBinding.DelayNode = require('./DelayNode.js')(nativeBinding.DelayNode);
-  nativeBinding.DynamicsCompressorNode = require('./DynamicsCompressorNode.js')(nativeBinding.DynamicsCompressorNode);
-  nativeBinding.GainNode = require('./GainNode.js')(nativeBinding.GainNode);
-  nativeBinding.IIRFilterNode = require('./IIRFilterNode.js')(nativeBinding.IIRFilterNode);
-  nativeBinding.MediaStreamAudioSourceNode = require('./MediaStreamAudioSourceNode.js')(nativeBinding.MediaStreamAudioSourceNode);
-  nativeBinding.OscillatorNode = require('./OscillatorNode.js')(nativeBinding.OscillatorNode);
-  nativeBinding.PannerNode = require('./PannerNode.js')(nativeBinding.PannerNode);
-  nativeBinding.StereoPannerNode = require('./StereoPannerNode.js')(nativeBinding.StereoPannerNode);
-  nativeBinding.WaveShaperNode = require('./WaveShaperNode.js')(nativeBinding.WaveShaperNode);
+  nativeBinding.AnalyserNode = require('./AnalyserNode.js')(nativeBinding.AnalyserNode, nativeBinding);
+  nativeBinding.AudioBufferSourceNode = require('./AudioBufferSourceNode.js')(nativeBinding.AudioBufferSourceNode, nativeBinding);
+  nativeBinding.BiquadFilterNode = require('./BiquadFilterNode.js')(nativeBinding.BiquadFilterNode, nativeBinding);
+  nativeBinding.ChannelMergerNode = require('./ChannelMergerNode.js')(nativeBinding.ChannelMergerNode, nativeBinding);
+  nativeBinding.ChannelSplitterNode = require('./ChannelSplitterNode.js')(nativeBinding.ChannelSplitterNode, nativeBinding);
+  nativeBinding.ConstantSourceNode = require('./ConstantSourceNode.js')(nativeBinding.ConstantSourceNode, nativeBinding);
+  nativeBinding.ConvolverNode = require('./ConvolverNode.js')(nativeBinding.ConvolverNode, nativeBinding);
+  nativeBinding.DelayNode = require('./DelayNode.js')(nativeBinding.DelayNode, nativeBinding);
+  nativeBinding.DynamicsCompressorNode = require('./DynamicsCompressorNode.js')(nativeBinding.DynamicsCompressorNode, nativeBinding);
+  nativeBinding.GainNode = require('./GainNode.js')(nativeBinding.GainNode, nativeBinding);
+  nativeBinding.IIRFilterNode = require('./IIRFilterNode.js')(nativeBinding.IIRFilterNode, nativeBinding);
+  nativeBinding.MediaStreamAudioSourceNode = require('./MediaStreamAudioSourceNode.js')(nativeBinding.MediaStreamAudioSourceNode, nativeBinding);
+  nativeBinding.OscillatorNode = require('./OscillatorNode.js')(nativeBinding.OscillatorNode, nativeBinding);
+  nativeBinding.PannerNode = require('./PannerNode.js')(nativeBinding.PannerNode, nativeBinding);
+  nativeBinding.StereoPannerNode = require('./StereoPannerNode.js')(nativeBinding.StereoPannerNode, nativeBinding);
+  nativeBinding.WaveShaperNode = require('./WaveShaperNode.js')(nativeBinding.WaveShaperNode, nativeBinding);
 
   nativeBinding.PeriodicWave = require('./PeriodicWave.js')(nativeBinding.PeriodicWave);
   nativeBinding.AudioBuffer = require('./AudioBuffer.js').AudioBuffer(nativeBinding.AudioBuffer);

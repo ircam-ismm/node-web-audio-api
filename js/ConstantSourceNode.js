@@ -18,6 +18,10 @@
 // -------------------------------------------------------------------------- //
 
 /* eslint-disable no-unused-vars */
+const conversions = require('webidl-conversions');
+const {
+  toSanitizedSequence,
+} = require('./lib/cast.js');
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
@@ -34,22 +38,35 @@ const EventTargetMixin = require('./EventTarget.mixin.js');
 const AudioNodeMixin = require('./AudioNode.mixin.js');
 const AudioScheduledSourceNodeMixin = require('./AudioScheduledSourceNode.mixin.js');
 
-module.exports = (NativeConstantSourceNode) => {
+module.exports = (NativeConstantSourceNode, nativeBinding) => {
   const EventTarget = EventTargetMixin(NativeConstantSourceNode, ['ended']);
   const AudioNode = AudioNodeMixin(EventTarget);
   const AudioScheduledSourceNode = AudioScheduledSourceNodeMixin(AudioNode);
 
   class ConstantSourceNode extends AudioScheduledSourceNode {
     constructor(context, options) {
-      // keep a handle to the original object, if we need to manipulate the
-      // options before passing them to NAPI
+
+      if (arguments.length < 1) {
+        throw new TypeError(`Failed to construct 'ConstantSourceNode': 1 argument required, but only ${arguments.length} present`);
+      }
+
+      if (!(context instanceof nativeBinding.AudioContext) && !(context instanceof nativeBinding.OfflineAudioContext)) {
+        throw new TypeError(`Failed to construct 'ConstantSourceNode': argument 1 is not of type BaseAudioContext`);
+      }
+
+      // parsed version of the option to be passed to NAPI
       const parsedOptions = Object.assign({}, options);
 
-      if (options !== undefined) {
-        if (typeof options !== 'object') {
-          throw new TypeError('Failed to construct \'ConstantSourceNode\': argument 2 is not of type \'ConstantSourceOptions\'');
-        }
+      if (options && typeof options !== 'object') {
+        throw new TypeError('Failed to construct \'ConstantSourceNode\': argument 2 is not of type \'ConstantSourceOptions\'');
+      }
 
+      if (options && 'offset' in options) {
+        parsedOptions.offset = conversions['float'](options.offset, {
+          context: `Failed to construct 'ConstantSourceNode': Failed to read the 'offset' property from ConstantSourceOptions: The provided value (${options.offset}})`,
+        });
+      } else {
+        parsedOptions.offset = 1;
       }
 
       super(context, parsedOptions);

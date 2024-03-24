@@ -69,6 +69,9 @@ const utils = {
   log(idl) {
     console.log(JSON.stringify(idl, null, 2));
   },
+  debug(value) {
+    console.log(JSON.stringify(value, null, 2));
+  },
 
   findInTree(name) {
     return tree.find(l => l.name === name);
@@ -184,10 +187,6 @@ const utils = {
 
     return camelcase(idl.name, { pascalCase: true, preserveConsecutiveUppercase: true });
   },
-
-  debug(value) {
-    console.log(JSON.stringify(value, null, 2));
-  }
 };
 
 let audioNodes = [];

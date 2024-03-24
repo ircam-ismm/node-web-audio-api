@@ -40,6 +40,7 @@ const setup = window => {
 
   // expose media devices API
   window.navigator.mediaDevices = nodeWebAudioAPI.mediaDevices;
+  // window.MediaStream = nodeWebAudioAPI.mediaDevices.MediaStream;
 
   // seems required (weirdly...), cf. `the-audiobuffer-interface/audiobuffer.html`
   window.Float32Array = Float32Array;

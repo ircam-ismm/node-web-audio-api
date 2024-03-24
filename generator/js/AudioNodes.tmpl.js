@@ -1,4 +1,7 @@
+
 /* eslint-disable no-unused-vars */
+const conversions = require("webidl-conversions");
+const { toSanitizedSequence } = require('./lib/cast.js');
 const { throwSanitizedError } = require('./lib/errors.js');
 const { AudioParam } = require('./AudioParam.js');
 const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
@@ -9,7 +12,7 @@ const AudioNodeMixin = require('./AudioNode.mixin.js');
 ${d.parent(d.node) === 'AudioScheduledSourceNode' ?
 `const AudioScheduledSourceNodeMixin = require('./AudioScheduledSourceNode.mixin.js');`: ``}
 
-module.exports = (Native${d.name(d.node)}) => {
+module.exports = (Native${d.name(d.node)}, nativeBinding) => {
   const EventTarget = EventTargetMixin(Native${d.name(d.node)}, ['ended']);
   const AudioNode = AudioNodeMixin(EventTarget);
 ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
@@ -19,8 +22,41 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
   class ${d.name(d.node)} extends AudioNode {`
 }
     constructor(context, options) {
-      // keep a handle to the original object, if we need to manipulate the
-      // options before passing them to NAPI
+      ${(function() {
+        // handle argument length compared to required arguments
+        const numRequired = d.constructor(d.node).arguments
+          .reduce((acc, value) => acc += (value.optional ? 0 : 1), 0);
+
+        return `
+      if (arguments.length < ${numRequired}) {
+        throw new TypeError(\`Failed to construct '${d.name(d.node)}': ${numRequired} argument required, but only \${arguments.length}\ present\`);
+      }
+        `;
+      }())}
+
+      ${(function() {
+        // handle audio context
+        const arg = d.constructor(d.node).arguments[0];
+        const argType = d.memberType(arg);
+        const argIdl = d.findInTree(argType);
+
+        // BaseAudioContext is not exposed and is created dynamically so we
+        // need this workaround
+        if (argType === 'BaseAudioContext') {
+          return `
+      if (!(context instanceof nativeBinding.AudioContext) && !(context instanceof nativeBinding.OfflineAudioContext)) {
+        throw new TypeError(\`Failed to construct '${d.name(d.node)}': argument 1 is not of type ${argType}\`);
+      }
+          `;
+        } else {
+          return `
+      if (!(context instanceof nativeBinding.${argType})) {
+        throw new TypeError(\`Failed to construct '${d.name(d.node)}': argument 1 is not of type ${argType}\`);
+      }
+          `;
+        }
+      }())}
+      // parsed version of the option to be passed to NAPI
       const parsedOptions = Object.assign({}, options);
 
       ${(function() {
@@ -29,55 +65,153 @@ ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `\
         const optionsType = d.memberType(optionsArg);
         const optionsIdl = d.findInTree(optionsType);
         let checkOptions = `
-      if (options !== undefined) {
-        if (typeof options !== 'object') {
-          throw new TypeError("Failed to construct '${d.name(d.node)}': argument 2 is not of type '${optionsType}'");
-        }
+      if (options && typeof options !== 'object') {
+        throw new TypeError("Failed to construct '${d.name(d.node)}': argument 2 is not of type '${optionsType}'");
+      }
         `;
 
         checkOptions += optionsIdl.members.map(member => {
-          // @todo - improve checks
-          // cf. https://github.com/jsdom/webidl-conversions
           const optionName = d.name(member);
           const type = d.memberType(member);
           const required = member.required;
-          const nullable = member.idlType.nullable;
           const defaultValue = member.default; // null or object
+          // only AudioBuffer is actually nullable
+          const nullable = member.idlType.nullable;
           let checkMember = '';
 
           if (required) {
           checkMember += `
-        if (options && !('${optionName}' in options)) {
-          throw new Error("Failed to read the '${optionName}'' property from ${optionsType}: Required member is undefined.");
-        }
+      // required options
+      if (typeof options !== 'object' || (options && !('${optionName}' in options))) {
+        throw new TypeError("Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}'' property from ${optionsType}: Required member is undefined");
+      }
           `
           }
 
-          // d.debug(member);
           switch (type) {
+            case 'boolean':
+            case 'float':
+            case 'double':
+            case 'unsigned long': {
+              checkMember += `
+      if (options && '${optionName}' in options) {
+        parsedOptions.${optionName} = conversions['${type}'](options.${optionName}, {
+          context: \`Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value (\${options.${optionName}}})\`,
+        });
+      } else {
+        parsedOptions.${optionName} = ${defaultValue.value};
+      }
+              `;
+              break;
+            }
+            // enum
+            case 'BiquadFilterType':
+            case 'OscillatorType':
+            case 'PanningModelType':
+            case 'DistanceModelType':
+            case 'OverSampleType': {
+              const typeIdl = d.findInTree(type);
+              // check assumptions on parsing
+              if (typeIdl.type !== 'enum') {
+                throw new Error('should not be parsed as enum value');
+              }
+
+              if (defaultValue.type !== 'string') {
+                throw new Error(`${type} default value is not a string`);
+              }
+
+              const values = JSON.stringify(typeIdl.values.map(e => e.value))
+
+              checkMember += `
+      if (options && '${optionName}' in options) {
+        if (!${values}.includes(options.${optionName})) {
+          throw new TypeError(\`Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value '\${options.${optionName}}' is not a valid enum value of type ${type}\`);
+        }
+
+        parsedOptions.${optionName} = options.${optionName};
+      } else {
+        parsedOptions.${optionName} = '${defaultValue.value}';
+      }
+              `;
+              break;
+            }
+            case 'MediaStream': {
+              // @todo - MediaStream is not properly wrapped yet so we cannot
+              // properly check it. Just pass as is to NAPI for now
+              // Note that the option is required
+              checkMember += `
+      parsedOptions.${optionName} = options.${optionName};
+              `;
+              break;
+            }
+            case 'PeriodicWave': {
+              checkMember += `
+      if (options && '${optionName}' in options) {
+        if (!(options.${optionName} instanceof nativeBinding.PeriodicWave)) {
+          throw new TypeError(\`Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value '\${options.${optionName}}' is not an instance of ${type}\`);
+        }
+
+        parsedOptions.${optionName} = options.${optionName};
+      } else {
+        parsedOptions.${optionName} = ${defaultValue};
+      }
+              `;
+              break;
+            }
+            // audio buffer requires special handling because of its wrapper
             case 'AudioBuffer': {
               checkMember += `
-        if ('${optionName}' in options) {
-          if (options.${optionName} !== null) {
-            if (!(kNativeAudioBuffer in options.${optionName})) {
-              throw new TypeError("Failed to set the 'buffer' property on 'AudioBufferSourceNode': Failed to convert value to 'AudioBuffer'");
-            }
-
-            // unwrap napi audio buffer
-            parsedOptions.${optionName} = options.${optionName}[kNativeAudioBuffer];
+      if (options && '${optionName}' in options) {
+        if (options.${optionName} !== null) {
+          // if (!(kNativeAudioBuffer in options.${optionName})) {
+          if (!(options.${optionName} instanceof nativeBinding.AudioBuffer)) {
+            throw new TypeError(" \`Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value cannot be converted to 'AudioBuffer'");
           }
+
+          // unwrap napi audio buffer
+          parsedOptions.${optionName} = options.${optionName}[kNativeAudioBuffer];
         }
+      } else {
+        parsedOptions.${optionName} = ${defaultValue};
+      }
               `;
+              break;
+            }
+            default: {
+              // make sure we handle all other types
+              if (member.idlType.type !== 'dictionary-type' || member.idlType.generic !== 'sequence') {
+                throw new Error(`${type} is not of a dictionary-type sequence`);
+              }
+
+              let targetType;
+
+              if (member.idlType.idlType[0].idlType === 'float') {
+                targetType = 'Float32Array';
+              } else if (member.idlType.idlType[0].idlType === 'double') {
+                targetType = 'Float64Array';
+              } else {
+                throw new Error(`${type}: Unhandled sequence of ${member.idlType.idlType[0].idlType}`);
+              }
+
+              // if the value is required, it should have failed earlier
+              checkMember += `
+      if (options && '${optionName}' in options) {
+        try {
+          parsedOptions.${optionName} = toSanitizedSequence(options.${optionName}, ${targetType});
+        } catch (err) {
+          throw new TypeError(" \`Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value \${err.message}");
+        }
+      } else {
+        parsedOptions.${optionName} = ${defaultValue};
+      }
+              `;
+
               break;
             }
           }
 
           return checkMember;
         }).join('');
-
-        checkOptions += `
-      }
-        `;
 
         return checkOptions;
       }())}

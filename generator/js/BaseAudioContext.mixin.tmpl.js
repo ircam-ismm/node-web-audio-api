@@ -46,11 +46,35 @@ ${d.nodes.map(n => `    ${d.name(n)},`).join('\n')}
     }
 
     createBuffer(numberOfChannels, length, sampleRate) {
-      return new AudioBuffer({ numberOfChannels, length, sampleRate });
+      const options = {};
+
+      if (numberOfChannels !== undefined) {
+        options.numberOfChannels = numberOfChannels;
+      }
+
+      if (length !== undefined) {
+        options.length = length;
+      }
+
+      if (sampleRate !== undefined) {
+        options.sampleRate = sampleRate;
+      }
+
+      return new AudioBuffer(options);
     }
 
     createPeriodicWave(real, imag) {
-      return new PeriodicWave(this, { real, imag });
+      const options = {};
+
+      if (real !== undefined) {
+        options.real = real;
+      }
+
+      if (imag !== undefined) {
+        options.imag = imag;
+      }
+
+      return new PeriodicWave(this, options);
     }
 
     // --------------------------------------------------------------------
@@ -70,7 +94,16 @@ ${d.nodes.map(n => {
 return `\
     ${d.factoryName(n)}(${args.map(arg => arg.name).join(', ')}) {
 ${args.length > 0 ? `\
-      const options = { ${args.map(arg => arg.name).join(', ')} };
+      const options = {};
+
+      ${args.map(arg => {
+        return `
+      if (${arg.name} !== undefined) {
+        options.${arg.name} = ${arg.name};
+      }
+        `;
+      }).join('')};
+
       return new ${d.name(n)}(this, options);\
 ` : `\
       return new ${d.name(n)}(this);\
