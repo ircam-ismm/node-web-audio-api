@@ -74,7 +74,7 @@ module.exports = (jsExport, nativeBinding) => {
         try {
           parsedOptions.feedforward = toSanitizedSequence(options.feedforward, Float64Array);
         } catch (err) {
-          throw new TypeError(' `Failed to construct \'IIRFilterNode\': Failed to read the \'feedforward\' property from IIRFilterOptions: The provided value ${err.message}');
+          throw new TypeError(`Failed to construct 'IIRFilterNode': Failed to read the 'feedforward' property from IIRFilterOptions: The provided value ${err.message}`);
         }
       } else {
         parsedOptions.feedforward = null;
@@ -89,7 +89,7 @@ module.exports = (jsExport, nativeBinding) => {
         try {
           parsedOptions.feedback = toSanitizedSequence(options.feedback, Float64Array);
         } catch (err) {
-          throw new TypeError(' `Failed to construct \'IIRFilterNode\': Failed to read the \'feedback\' property from IIRFilterOptions: The provided value ${err.message}');
+          throw new TypeError(`Failed to construct 'IIRFilterNode': Failed to read the 'feedback' property from IIRFilterOptions: The provided value ${err.message}`);
         }
       } else {
         parsedOptions.feedback = null;

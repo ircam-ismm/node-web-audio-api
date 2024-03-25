@@ -69,7 +69,7 @@ module.exports = (jsExport, nativeBinding) => {
         try {
           parsedOptions.curve = toSanitizedSequence(options.curve, Float32Array);
         } catch (err) {
-          throw new TypeError(' `Failed to construct \'WaveShaperNode\': Failed to read the \'curve\' property from WaveShaperOptions: The provided value ${err.message}');
+          throw new TypeError(`Failed to construct 'WaveShaperNode': Failed to read the 'curve' property from WaveShaperOptions: The provided value ${err.message}`);
         }
       } else {
         parsedOptions.curve = null;

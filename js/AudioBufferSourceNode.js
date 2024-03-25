@@ -69,7 +69,7 @@ module.exports = (jsExport, nativeBinding) => {
         if (options.buffer !== null) {
           // if (!(kNativeAudioBuffer in options.buffer)) {
           if (!(options.buffer instanceof jsExport.AudioBuffer)) {
-            throw new TypeError(' `Failed to construct \'AudioBufferSourceNode\': Failed to read the \'buffer\' property from AudioBufferSourceOptions: The provided value cannot be converted to \'AudioBuffer\'');
+            throw new TypeError('Failed to construct \'AudioBufferSourceNode\': Failed to read the \'buffer\' property from AudioBufferSourceOptions: The provided value cannot be converted to \'AudioBuffer\'');
           }
 
           // unwrap napi audio buffer

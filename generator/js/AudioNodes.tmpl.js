@@ -159,7 +159,7 @@ module.exports = (jsExport, nativeBinding) => {
         if (options.${optionName} !== null) {
           // if (!(kNativeAudioBuffer in options.${optionName})) {
           if (!(options.${optionName} instanceof jsExport.AudioBuffer)) {
-            throw new TypeError(" \`Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value cannot be converted to 'AudioBuffer'");
+            throw new TypeError("Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value cannot be converted to 'AudioBuffer'");
           }
 
           // unwrap napi audio buffer
@@ -193,7 +193,7 @@ module.exports = (jsExport, nativeBinding) => {
         try {
           parsedOptions.${optionName} = toSanitizedSequence(options.${optionName}, ${targetType});
         } catch (err) {
-          throw new TypeError(" \`Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value \${err.message}");
+          throw new TypeError(\`Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value \${err.message}\`);
         }
       } else {
         parsedOptions.${optionName} = ${defaultValue};
