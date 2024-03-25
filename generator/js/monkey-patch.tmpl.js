@@ -15,9 +15,9 @@ ${d.nodes.map((node) => {
 
   jsExport.PeriodicWave = require('./PeriodicWave.js')(nativeBinding.PeriodicWave);
   jsExport.AudioBuffer = require('./AudioBuffer.js').AudioBuffer(nativeBinding.AudioBuffer);
-
-  // @todo - make the constructor private
   jsExport.AudioParam = require('./AudioParam.js').AudioParam;
+  console.log('coucou');
+  jsExport.AudioListener = require('./AudioListener.js');
 
   // --------------------------------------------------------------------------
   // Promisify MediaDevices API

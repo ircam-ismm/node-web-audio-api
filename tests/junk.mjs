@@ -1,4 +1,4 @@
-import { AudioBuffer, AudioBufferSourceNode, AnalyserNode, AudioContext, ChannelMergerNode, ChannelSplitterNode, ConstantSourceNode, ConvolverNode, DelayNode, GainNode, IIRFilterNode, OfflineAudioContext, OscillatorNode, PannerNode, StereoPannerNode, PeriodicWave, MediaStreamAudioSourceNode, WaveShaperNode, mediaDevices } from '../index.mjs';
+import { AudioBuffer, AudioBufferSourceNode, AnalyserNode, AudioContext, AudioListener, ChannelMergerNode, ChannelSplitterNode, ConstantSourceNode, ConvolverNode, DelayNode, GainNode, IIRFilterNode, OfflineAudioContext, OscillatorNode, PannerNode, StereoPannerNode, PeriodicWave, MediaStreamAudioSourceNode, WaveShaperNode, mediaDevices } from '../index.mjs';
 
 const RENDER_QUANTUM_FRAMES = 128;
 
@@ -17,6 +17,8 @@ async function testListenerParams(should, options) {
     sampleRate: sampleRate,
     length: testDuration * sampleRate
   });
+
+  console.log('coucou', context.listener instanceof AudioListener);
 
   // Create a stereo source out of two mono sources
   let src0 = new ConstantSourceNode(context, {offset: 1});

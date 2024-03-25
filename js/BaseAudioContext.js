@@ -28,6 +28,8 @@ const {
 } = require('./AudioBuffer.js');
 
 const EventTarget = require('./EventTarget.js');
+const AudioListener = require('./AudioListener.js');
+const kAudioListener = Symbol('node-web-audio-api:audio-listener');
 
 module.exports = (jsExport /*, nativeBinding */ ) => {
   class BaseAudioContext extends EventTarget {
@@ -35,6 +37,8 @@ module.exports = (jsExport /*, nativeBinding */ ) => {
       super(napiObj);
 
       this[kNapiObj] = napiObj;
+      // AudioListener is lazily instantiated
+      this[kAudioListener] = null;
 
       const destination = new jsExport.AudioDestinationNode(this, napiObj.destination);
       Object.defineProperty(this, 'destination', {
@@ -52,7 +56,11 @@ module.exports = (jsExport /*, nativeBinding */ ) => {
     }
 
     get listener() {
-      return this[kNapiObj].listener;
+      if (this[kAudioListener] === null) {
+        this[kAudioListener] = new AudioListener(this[kNapiObj].listener);
+      }
+
+      return this[kAudioListener];
     }
 
     get state() {
