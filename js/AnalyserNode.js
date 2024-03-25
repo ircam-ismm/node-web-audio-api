@@ -54,7 +54,7 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError(`Failed to construct 'AnalyserNode': 1 argument required, but only ${arguments.length} present`);
       }
 
-      if (!(context instanceof jsExport.AudioContext) && !(context instanceof jsExport.OfflineAudioContext)) {
+      if (!(context instanceof jsExport.BaseAudioContext)) {
         throw new TypeError(`Failed to construct 'AnalyserNode': argument 1 is not of type BaseAudioContext`);
       }
 
