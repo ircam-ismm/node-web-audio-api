@@ -61,9 +61,7 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
     }
 
     async startRendering() {
-      // init event target lazoly.
-      // EventTargetMixin has been called so EventTargetMixin[kDispatchEvent] is
-      // bound to this, then we can safely finalize event target initialization
+      // Lazily register event callback on rust side
       this[kNapiObj].__initEventTarget__();
 
       const nativeAudioBuffer = await this[kNapiObj].startRendering();

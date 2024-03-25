@@ -38,7 +38,7 @@ const {
 } = require('./lib/symbols.js');
 /* eslint-enable no-unused-vars */
 
-const AudioScheduledSourceNode = require('./AudioScheduledSourceNode.mixin.js');
+const AudioScheduledSourceNode = require('./AudioScheduledSourceNode.js');
 
 module.exports = (jsExport, nativeBinding) => {
   class AudioBufferSourceNode extends AudioScheduledSourceNode {
@@ -130,8 +130,9 @@ module.exports = (jsExport, nativeBinding) => {
         this[kAudioBuffer] = options.buffer;
       }
 
-      // EventTargetMixin constructor has been called so EventTargetMixin[kDispatchEvent]
-      // is bound to this, then we can safely finalize event target initialization
+      // EventTarget constructor has been called so EventTarget[kDispatchEvent]
+      // is bound to this[kNapiObj], we can safely finalize event registration
+      // on Rust side
       this[kNapiObj].__initEventTarget__();
 
       this.playbackRate = new AudioParam(this[kNapiObj].playbackRate);

@@ -26,7 +26,6 @@ const kKeepAwakeId = Symbol('keepAwakeId');
 
 module.exports = function(jsExport, nativeBinding) {
   class AudioContext extends jsExport.BaseAudioContext {
-  // class AudioContext extends NativeAudioContext {
     constructor(options = {}) {
       let napiObj;
 
@@ -38,10 +37,12 @@ module.exports = function(jsExport, nativeBinding) {
 
       super(napiObj);
 
-      // EventTarget ctor has been called so EventTarget[kDispatchEvent] is
-      // bound to napiObj, then we can safely finalize event target initialization
+      // EventTarget constructor has been called so EventTarget[kDispatchEvent]
+      // is bound to this[kNapiObj], we can safely finalize event registration
+      // on Rust side. We do it right now as AudioContext is resumed by default.
       napiObj.__initEventTarget__();
 
+      // @todo - check if this is still required
       // prevent garbage collection and process exit
       const id = contextId++;
       // store in process to prevent garbage collection

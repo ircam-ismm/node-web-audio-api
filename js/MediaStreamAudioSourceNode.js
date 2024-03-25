@@ -38,7 +38,7 @@ const {
 } = require('./lib/symbols.js');
 /* eslint-enable no-unused-vars */
 
-const AudioNode = require('./AudioNode.mixin.js');
+const AudioNode = require('./AudioNode.js');
 
 module.exports = (jsExport, nativeBinding) => {
   class MediaStreamAudioSourceNode extends AudioNode {
