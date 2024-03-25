@@ -1,7 +1,6 @@
 const { throwSanitizedError } = require('./lib/errors.js');
 const { kNapiObj } = require('./lib/symbols.js');
 
-const EventTarget = require('./EventTarget.js');
 const { AudioParam, kNativeAudioParam } = require('./AudioParam.js');
 
 class AudioNode extends EventTarget {

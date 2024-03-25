@@ -1,6 +1,6 @@
 const { throwSanitizedError } = require('./lib/errors.js');
-const { isFunction } = require('./lib/utils.js');
 const { kNapiObj } = require('./lib/symbols.js');
+const { bridgeEventTarget } = require('./lib/events.js');
 
 let contextId = 0;
 
@@ -37,10 +37,8 @@ module.exports = function(jsExport, nativeBinding) {
 
       super(napiObj);
 
-      // EventTarget constructor has been called so EventTarget[kDispatchEvent]
-      // is bound to this[kNapiObj], we can safely finalize event registration
-      // on Rust side. We do it right now as AudioContext is resumed by default.
-      napiObj.__initEventTarget__();
+      // Bridge Rust native event to Node EventTarget
+      bridgeEventTarget(this);
 
       // @todo - check if this is still required
       // prevent garbage collection and process exit

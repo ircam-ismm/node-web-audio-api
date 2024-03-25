@@ -47,7 +47,6 @@ module.exports = function monkeyPatch(nativeBinding) {
   jsExport.PeriodicWave = require('./PeriodicWave.js')(nativeBinding.PeriodicWave);
   jsExport.AudioBuffer = require('./AudioBuffer.js').AudioBuffer(nativeBinding.AudioBuffer);
   jsExport.AudioParam = require('./AudioParam.js').AudioParam;
-  console.log('coucou');
   jsExport.AudioListener = require('./AudioListener.js');
 
   // --------------------------------------------------------------------------

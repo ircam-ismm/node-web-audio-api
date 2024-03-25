@@ -2,11 +2,13 @@
 /* eslint-disable no-unused-vars */
 const conversions = require("webidl-conversions");
 const { toSanitizedSequence } = require('./lib/cast.js');
+const { isFunction } = require('./lib/utils.js');
 const { throwSanitizedError } = require('./lib/errors.js');
 
 const { AudioParam } = require('./AudioParam.js');
 const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
 const { kNapiObj } = require('./lib/symbols.js');
+const { bridgeEventTarget } = require('./lib/events.js');
 /* eslint-enable no-unused-vars */
 
 const ${d.parent(d.node)} = require('./${d.parent(d.node)}.js');
@@ -242,10 +244,8 @@ module.exports = (jsExport, nativeBinding) => {
       }())}
 
       ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `
-      // EventTarget constructor has been called so EventTarget[kDispatchEvent]
-      // is bound to this[kNapiObj], we can safely finalize event registration
-      // on Rust side
-      this[kNapiObj].__initEventTarget__();` : ``}
+      // Bridge Rust native event to Node EventTarget
+      bridgeEventTarget(this);` : ``}
 
       ${d.audioParams(d.node).map(param => {
         return `

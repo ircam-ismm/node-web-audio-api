@@ -27,7 +27,6 @@ const {
   kNativeAudioBuffer,
 } = require('./AudioBuffer.js');
 
-const EventTarget = require('./EventTarget.js');
 const AudioListener = require('./AudioListener.js');
 const kAudioListener = Symbol('node-web-audio-api:audio-listener');
 

@@ -24,7 +24,6 @@ const {
   kNapiObj,
 } = require('./lib/symbols.js');
 
-const EventTarget = require('./EventTarget.js');
 const {
   AudioParam,
   kNativeAudioParam,

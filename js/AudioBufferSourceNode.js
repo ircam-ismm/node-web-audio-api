@@ -23,6 +23,9 @@ const {
   toSanitizedSequence,
 } = require('./lib/cast.js');
 const {
+  isFunction,
+} = require('./lib/utils.js');
+const {
   throwSanitizedError,
 } = require('./lib/errors.js');
 
@@ -36,6 +39,9 @@ const {
 const {
   kNapiObj,
 } = require('./lib/symbols.js');
+const {
+  bridgeEventTarget,
+} = require('./lib/events.js');
 /* eslint-enable no-unused-vars */
 
 const AudioScheduledSourceNode = require('./AudioScheduledSourceNode.js');
@@ -130,10 +136,8 @@ module.exports = (jsExport, nativeBinding) => {
         this[kAudioBuffer] = options.buffer;
       }
 
-      // EventTarget constructor has been called so EventTarget[kDispatchEvent]
-      // is bound to this[kNapiObj], we can safely finalize event registration
-      // on Rust side
-      this[kNapiObj].__initEventTarget__();
+      // Bridge Rust native event to Node EventTarget
+      bridgeEventTarget(this);
 
       this.playbackRate = new AudioParam(this[kNapiObj].playbackRate);
       this.detune = new AudioParam(this[kNapiObj].detune);

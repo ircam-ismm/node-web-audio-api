@@ -1,7 +1,9 @@
 const { nameCodeMap, DOMException } = require('./lib/errors.js');
 const { isFunction, isPlainObject, isPositiveInt, isPositiveNumber } = require('./lib/utils.js');
-const { kNativeAudioBuffer } = require('./AudioBuffer.js');
 const { kNapiObj } = require('./lib/symbols.js');
+const { bridgeEventTarget } = require('./lib/events.js');
+
+const { kNativeAudioBuffer } = require('./AudioBuffer.js');
 
 // constructor(OfflineAudioContextOptions contextOptions);
 // constructor(unsigned long numberOfChannels, unsigned long length, float sampleRate);
@@ -62,19 +64,22 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
 
     async startRendering() {
       // Lazily register event callback on rust side
-      this[kNapiObj].__initEventTarget__();
+      bridgeEventTarget(this);
 
       const nativeAudioBuffer = await this[kNapiObj].startRendering();
       const audioBuffer = new jsExport.AudioBuffer({ [kNativeAudioBuffer]: nativeAudioBuffer });
 
-      // We dispatch the complete envet manually to simplify the sharing of the
+      // We dispatch the complete event manually to simplify the sharing of the
       // `AudioBuffer` instance. This also simplifies code on the rust side as
       // we don't need to deal with the `OfflineAudioCompletionEvent` type.
       const event = new Event('complete');
       event.renderedBuffer = audioBuffer;
 
-      // push in macro task queue
-      setTimeout(() => this.dispatchEvent(event), 0);
+      if (isFunction(this[`oncomplete`])) {
+        this[`oncomplete`](event);
+      }
+
+      this.dispatchEvent(event);
 
       return audioBuffer;
     }

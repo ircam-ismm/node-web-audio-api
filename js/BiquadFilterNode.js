@@ -23,6 +23,9 @@ const {
   toSanitizedSequence,
 } = require('./lib/cast.js');
 const {
+  isFunction,
+} = require('./lib/utils.js');
+const {
   throwSanitizedError,
 } = require('./lib/errors.js');
 
@@ -36,6 +39,9 @@ const {
 const {
   kNapiObj,
 } = require('./lib/symbols.js');
+const {
+  bridgeEventTarget,
+} = require('./lib/events.js');
 /* eslint-enable no-unused-vars */
 
 const AudioNode = require('./AudioNode.js');
