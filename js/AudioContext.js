@@ -1,4 +1,5 @@
 const { throwSanitizedError } = require('./lib/errors.js');
+const { isFunction } = require('./lib/utils.js');
 const { kNapiObj } = require('./lib/symbols.js');
 const { bridgeEventTarget } = require('./lib/events.js');
 
