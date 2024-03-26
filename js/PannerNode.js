@@ -23,8 +23,12 @@ const {
   toSanitizedSequence,
 } = require('./lib/cast.js');
 const {
+  isFunction,
+} = require('./lib/utils.js');
+const {
   throwSanitizedError,
 } = require('./lib/errors.js');
+
 const {
   AudioParam,
 } = require('./AudioParam.js');
@@ -32,15 +36,17 @@ const {
   kNativeAudioBuffer,
   kAudioBuffer,
 } = require('./AudioBuffer.js');
+const {
+  kNapiObj,
+} = require('./lib/symbols.js');
+const {
+  bridgeEventTarget,
+} = require('./lib/events.js');
 /* eslint-enable no-unused-vars */
 
-const EventTargetMixin = require('./EventTarget.mixin.js');
-const AudioNodeMixin = require('./AudioNode.mixin.js');
+const AudioNode = require('./AudioNode.js');
 
-module.exports = (NativePannerNode, nativeBinding) => {
-  const EventTarget = EventTargetMixin(NativePannerNode, ['ended']);
-  const AudioNode = AudioNodeMixin(EventTarget);
-
+module.exports = (jsExport, nativeBinding) => {
   class PannerNode extends AudioNode {
     constructor(context, options) {
 
@@ -48,7 +54,7 @@ module.exports = (NativePannerNode, nativeBinding) => {
         throw new TypeError(`Failed to construct 'PannerNode': 1 argument required, but only ${arguments.length} present`);
       }
 
-      if (!(context instanceof nativeBinding.AudioContext) && !(context instanceof nativeBinding.OfflineAudioContext)) {
+      if (!(context instanceof jsExport.BaseAudioContext)) {
         throw new TypeError(`Failed to construct 'PannerNode': argument 1 is not of type BaseAudioContext`);
       }
 
@@ -175,51 +181,59 @@ module.exports = (NativePannerNode, nativeBinding) => {
         parsedOptions.coneOuterGain = 0;
       }
 
-      super(context, parsedOptions);
+      let napiObj;
 
-      this.positionX = new AudioParam(this.positionX);
-      this.positionY = new AudioParam(this.positionY);
-      this.positionZ = new AudioParam(this.positionZ);
-      this.orientationX = new AudioParam(this.orientationX);
-      this.orientationY = new AudioParam(this.orientationY);
-      this.orientationZ = new AudioParam(this.orientationZ);
+      try {
+        napiObj = new nativeBinding.PannerNode(context[kNapiObj], parsedOptions);
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+
+      super(context, napiObj);
+
+      this.positionX = new AudioParam(this[kNapiObj].positionX);
+      this.positionY = new AudioParam(this[kNapiObj].positionY);
+      this.positionZ = new AudioParam(this[kNapiObj].positionZ);
+      this.orientationX = new AudioParam(this[kNapiObj].orientationX);
+      this.orientationY = new AudioParam(this[kNapiObj].orientationY);
+      this.orientationZ = new AudioParam(this[kNapiObj].orientationZ);
     }
 
     get panningModel() {
-      return super.panningModel;
+      return this[kNapiObj].panningModel;
     }
 
     get distanceModel() {
-      return super.distanceModel;
+      return this[kNapiObj].distanceModel;
     }
 
     get refDistance() {
-      return super.refDistance;
+      return this[kNapiObj].refDistance;
     }
 
     get maxDistance() {
-      return super.maxDistance;
+      return this[kNapiObj].maxDistance;
     }
 
     get rolloffFactor() {
-      return super.rolloffFactor;
+      return this[kNapiObj].rolloffFactor;
     }
 
     get coneInnerAngle() {
-      return super.coneInnerAngle;
+      return this[kNapiObj].coneInnerAngle;
     }
 
     get coneOuterAngle() {
-      return super.coneOuterAngle;
+      return this[kNapiObj].coneOuterAngle;
     }
 
     get coneOuterGain() {
-      return super.coneOuterGain;
+      return this[kNapiObj].coneOuterGain;
     }
 
     set panningModel(value) {
       try {
-        super.panningModel = value;
+        this[kNapiObj].panningModel = value;
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -227,7 +241,7 @@ module.exports = (NativePannerNode, nativeBinding) => {
 
     set distanceModel(value) {
       try {
-        super.distanceModel = value;
+        this[kNapiObj].distanceModel = value;
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -235,7 +249,7 @@ module.exports = (NativePannerNode, nativeBinding) => {
 
     set refDistance(value) {
       try {
-        super.refDistance = value;
+        this[kNapiObj].refDistance = value;
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -243,7 +257,7 @@ module.exports = (NativePannerNode, nativeBinding) => {
 
     set maxDistance(value) {
       try {
-        super.maxDistance = value;
+        this[kNapiObj].maxDistance = value;
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -251,7 +265,7 @@ module.exports = (NativePannerNode, nativeBinding) => {
 
     set rolloffFactor(value) {
       try {
-        super.rolloffFactor = value;
+        this[kNapiObj].rolloffFactor = value;
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -259,7 +273,7 @@ module.exports = (NativePannerNode, nativeBinding) => {
 
     set coneInnerAngle(value) {
       try {
-        super.coneInnerAngle = value;
+        this[kNapiObj].coneInnerAngle = value;
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -267,7 +281,7 @@ module.exports = (NativePannerNode, nativeBinding) => {
 
     set coneOuterAngle(value) {
       try {
-        super.coneOuterAngle = value;
+        this[kNapiObj].coneOuterAngle = value;
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -275,7 +289,7 @@ module.exports = (NativePannerNode, nativeBinding) => {
 
     set coneOuterGain(value) {
       try {
-        super.coneOuterGain = value;
+        this[kNapiObj].coneOuterGain = value;
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -283,7 +297,7 @@ module.exports = (NativePannerNode, nativeBinding) => {
 
     setPosition(...args) {
       try {
-        return super.setPosition(...args);
+        return this[kNapiObj].setPosition(...args);
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -291,7 +305,7 @@ module.exports = (NativePannerNode, nativeBinding) => {
 
     setOrientation(...args) {
       try {
-        return super.setOrientation(...args);
+        return this[kNapiObj].setOrientation(...args);
       } catch (err) {
         throwSanitizedError(err);
       }

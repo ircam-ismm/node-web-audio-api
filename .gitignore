@@ -137,3 +137,4 @@ dummy.mjs
 TODOS.md
 
 all-check.sh
+tests/junk.mjs

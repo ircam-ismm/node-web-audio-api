@@ -1,17 +1,20 @@
 const { nameCodeMap, DOMException } = require('./lib/errors.js');
-const { isPlainObject, isPositiveInt, isPositiveNumber } = require('./lib/utils.js');
+const { isFunction, isPlainObject, isPositiveInt, isPositiveNumber } = require('./lib/utils.js');
+const { kNapiObj } = require('./lib/symbols.js');
+const { bridgeEventTarget } = require('./lib/events.js');
+
 const { kNativeAudioBuffer } = require('./AudioBuffer.js');
 
-module.exports = function patchOfflineAudioContext(bindings) {
-  const AudioBuffer = bindings.AudioBuffer;
+// constructor(OfflineAudioContextOptions contextOptions);
+// constructor(unsigned long numberOfChannels, unsigned long length, float sampleRate);
+// Promise<AudioBuffer> startRendering();
+// Promise<undefined> resume();
+// Promise<undefined> suspend(double suspendTime);
+// readonly attribute unsigned long length;
+// attribute EventHandler oncomplete;
 
-  // @todo - EventTarget
-  // - https://github.com/orottier/web-audio-api-rs/issues/411
-  // - https://github.com/orottier/web-audio-api-rs/issues/416
-  const EventTarget = require('./EventTarget.mixin.js')(bindings.OfflineAudioContext, ['statechange']);
-  const BaseAudioContext = require('./BaseAudioContext.mixin.js')(EventTarget, bindings);
-
-  class OfflineAudioContext extends BaseAudioContext {
+module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
+  class OfflineAudioContext extends jsExport.BaseAudioContext {
     constructor(...args) {
       // handle initialisation with either an options object or a sequence of parameters
       // https://webaudio.github.io/web-audio-api/#dom-offlineaudiocontext-constructor-contextoptions-contextoptions
@@ -34,25 +37,59 @@ module.exports = function patchOfflineAudioContext(bindings) {
         throw new TypeError(`Invalid value for sampleRate: ${sampleRate}`);
       }
 
-      super(numberOfChannels, length, sampleRate);
+      let napiObj;
 
-      // EventTargetMixin has been called so EventTargetMixin[kDispatchEvent] is
-      // bound to this, then we can safely finalize event target initialization
-      super.__initEventTarget__();
+      try {
+        napiObj = new nativeBinding.OfflineAudioContext(numberOfChannels, length, sampleRate);
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+
+      super(napiObj);
+    }
+
+    get length() {
+      return this[kNapiObj].length;
+    }
+
+    get oncomplete() {
+      return this._complete || null;
+    }
+
+    set oncomplete(value) {
+      if (isFunction(value) || value === null) {
+        this._complete = value;
+      }
     }
 
     async startRendering() {
-      const nativeAudioBuffer = await super.startRendering();
-      const audioBuffer = new AudioBuffer({ [kNativeAudioBuffer]: nativeAudioBuffer });
+      // Lazily register event callback on rust side
+      bridgeEventTarget(this);
 
-      // We dispatch the complete envet manually to simplify the sharing of the
+      const nativeAudioBuffer = await this[kNapiObj].startRendering();
+      const audioBuffer = new jsExport.AudioBuffer({ [kNativeAudioBuffer]: nativeAudioBuffer });
+
+      // We dispatch the complete event manually to simplify the sharing of the
       // `AudioBuffer` instance. This also simplifies code on the rust side as
       // we don't need to deal with the `OfflineAudioCompletionEvent` type.
       const event = new Event('complete');
       event.renderedBuffer = audioBuffer;
+
+      if (isFunction(this[`oncomplete`])) {
+        this[`oncomplete`](event);
+      }
+
       this.dispatchEvent(event);
 
       return audioBuffer;
+    }
+
+    async resume() {
+      await this[kNapiObj].resume();
+    }
+
+    async suspend(suspendTime) {
+      await this[kNapiObj].suspend(suspendTime);
     }
   }
 
