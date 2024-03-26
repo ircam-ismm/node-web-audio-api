@@ -21,50 +21,8 @@ impl NapiPeriodicWave {
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
-    if ctx.length < 1 {
-        let msg =
-            "TypeError - Failed to construct 'PeriodicWave': 1 argument required, but only 0 present.";
-        return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-    }
-
-    // first argument should be an AudioContext
     let js_audio_context = ctx.get::<JsObject>(0)?;
-
-    // check that
-    let audio_context_utf8_name = if let Ok(result) =
-        js_audio_context.has_named_property("Symbol.toStringTag")
-    {
-        if result {
-            let audio_context_name =
-                js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
-            let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
-            let audio_context_str = &audio_context_utf8_name[..];
-
-            if audio_context_str != "AudioContext" && audio_context_str != "OfflineAudioContext" {
-                let msg = "TypeError - Failed to construct 'PeriodicWave': argument 1 is not of type BaseAudioContext";
-                return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-            }
-
-            audio_context_utf8_name
-        } else {
-            let msg = "TypeError - Failed to construct 'PeriodicWave': argument 1 is not of type BaseAudioContext";
-            return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-        }
-    } else {
-        // This swallowed somehow, .e.g const node = new PeriodicWave(null); throws
-        // TypeError Cannot convert undefined or null to object
-        // To be investigated...
-        let msg = "TypeError - Failed to construct 'PeriodicWave': argument 1 is not of type BaseAudioContext";
-        return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-    };
-
-    js_this.define_properties(&[
-        // this must be put on the instance and not in the prototype to be reachable
-        Property::new("Symbol.toStringTag")?
-            .with_value(&ctx.env.create_string("PeriodicWave")?)
-            .with_property_attributes(PropertyAttributes::Static),
-    ])?;
-
+    // parse options
     let options = match ctx.try_get::<JsObject>(1)? {
         Either::A(options_js) => {
             let real = if let Some(real_js) = options_js.get::<&str, JsTypedArray>("real")? {
@@ -100,6 +58,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         Either::B(_) => PeriodicWaveOptions::default(),
     };
 
+    let audio_context_name =
+        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
+    let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
     let audio_context_str = &audio_context_utf8_name[..];
     // create native node
     let periodic_wave = match audio_context_str {
@@ -118,8 +79,14 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         &_ => unreachable!(),
     };
 
-    let napi_periodic_wave = NapiPeriodicWave(periodic_wave);
+    js_this.define_properties(&[
+        // @todo - review
+        Property::new("Symbol.toStringTag")?
+            .with_value(&ctx.env.create_string("PeriodicWave")?)
+            .with_property_attributes(PropertyAttributes::Static),
+    ])?;
 
+    let napi_periodic_wave = NapiPeriodicWave(periodic_wave);
     ctx.env.wrap(&mut js_this, napi_periodic_wave)?;
 
     ctx.env.get_undefined()

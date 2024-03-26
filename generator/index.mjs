@@ -11,7 +11,8 @@ import beautify from 'js-beautify/js/index.js';
 import { ESLint } from 'eslint';
 
 let supportedNodes = [
-  // 'AudioDestinationNode', // crashes because has no ctor defined in IDL
+  // - template are crashing because it has no ctor defined in IDL (to be fixed)
+  // 'AudioDestinationNode',
   `AnalyserNode`,
   `AudioBufferSourceNode`,
   `BiquadFilterNode`,
@@ -328,7 +329,7 @@ async function beautifyAndLint(pathname, code) {
 }
 
 {
-  const src = 'BaseAudioContext.mixin';
+  const src = 'BaseAudioContext';
   const pathname = path.join(jsOutput, `${src}.js`);
   console.log(`> generating file: ${path.relative(process.cwd(), pathname)}`);
 
@@ -363,10 +364,10 @@ async function beautifyAndLint(pathname, code) {
 
 ['AudioNode', 'AudioScheduledSourceNode'].forEach((name, index) => {
   const nodeIdl = findInTree(name);
-  const pathname = path.join(jsOutput, `${name}.mixin.js`);
+  const pathname = path.join(jsOutput, `${name}.js`);
   console.log(`> generating file: ${path.relative(process.cwd(), pathname)}`);
 
-  const codeTmpl = fs.readFileSync(path.join(jsTemplates, `${name}.mixin.tmpl.js`), 'utf8');
+  const codeTmpl = fs.readFileSync(path.join(jsTemplates, `${name}.tmpl.js`), 'utf8');
   const tmpl = compile(codeTmpl);
 
   const code = tmpl({
@@ -378,8 +379,8 @@ async function beautifyAndLint(pathname, code) {
   beautifyAndLint(pathname, generatedPrefix(code));
 });
 
-audioNodes.forEach((nodeIdl, index) => {
-  // const nodeIdl = findInTree(name);
+supportedNodes.forEach((name, index) => {
+  const nodeIdl = findInTree(name);
   const pathname = path.join(jsOutput, `${utils.name(nodeIdl)}.js`);
   console.log(`> generating file: ${path.relative(process.cwd(), pathname)}`);
 

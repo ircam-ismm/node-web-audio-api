@@ -23,8 +23,12 @@ const {
   toSanitizedSequence,
 } = require('./lib/cast.js');
 const {
+  isFunction,
+} = require('./lib/utils.js');
+const {
   throwSanitizedError,
 } = require('./lib/errors.js');
+
 const {
   AudioParam,
 } = require('./AudioParam.js');
@@ -32,15 +36,17 @@ const {
   kNativeAudioBuffer,
   kAudioBuffer,
 } = require('./AudioBuffer.js');
+const {
+  kNapiObj,
+} = require('./lib/symbols.js');
+const {
+  bridgeEventTarget,
+} = require('./lib/events.js');
 /* eslint-enable no-unused-vars */
 
-const EventTargetMixin = require('./EventTarget.mixin.js');
-const AudioNodeMixin = require('./AudioNode.mixin.js');
+const AudioNode = require('./AudioNode.js');
 
-module.exports = (NativeConvolverNode, nativeBinding) => {
-  const EventTarget = EventTargetMixin(NativeConvolverNode, ['ended']);
-  const AudioNode = AudioNodeMixin(EventTarget);
-
+module.exports = (jsExport, nativeBinding) => {
   class ConvolverNode extends AudioNode {
     constructor(context, options) {
 
@@ -48,7 +54,7 @@ module.exports = (NativeConvolverNode, nativeBinding) => {
         throw new TypeError(`Failed to construct 'ConvolverNode': 1 argument required, but only ${arguments.length} present`);
       }
 
-      if (!(context instanceof nativeBinding.AudioContext) && !(context instanceof nativeBinding.OfflineAudioContext)) {
+      if (!(context instanceof jsExport.BaseAudioContext)) {
         throw new TypeError(`Failed to construct 'ConvolverNode': argument 1 is not of type BaseAudioContext`);
       }
 
@@ -62,8 +68,8 @@ module.exports = (NativeConvolverNode, nativeBinding) => {
       if (options && 'buffer' in options) {
         if (options.buffer !== null) {
           // if (!(kNativeAudioBuffer in options.buffer)) {
-          if (!(options.buffer instanceof nativeBinding.AudioBuffer)) {
-            throw new TypeError(' `Failed to construct \'ConvolverNode\': Failed to read the \'buffer\' property from ConvolverOptions: The provided value cannot be converted to \'AudioBuffer\'');
+          if (!(options.buffer instanceof jsExport.AudioBuffer)) {
+            throw new TypeError('Failed to construct \'ConvolverNode\': Failed to read the \'buffer\' property from ConvolverOptions: The provided value cannot be converted to \'AudioBuffer\'');
           }
 
           // unwrap napi audio buffer
@@ -81,7 +87,15 @@ module.exports = (NativeConvolverNode, nativeBinding) => {
         parsedOptions.disableNormalization = false;
       }
 
-      super(context, parsedOptions);
+      let napiObj;
+
+      try {
+        napiObj = new nativeBinding.ConvolverNode(context[kNapiObj], parsedOptions);
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+
+      super(context, napiObj);
 
       // keep the wrapped AudioBuffer around
       this[kAudioBuffer] = null;
@@ -97,7 +111,7 @@ module.exports = (NativeConvolverNode, nativeBinding) => {
     }
 
     get normalize() {
-      return super.normalize;
+      return this[kNapiObj].normalize;
     }
 
     // @todo - should be able to set to null afterward
@@ -109,7 +123,7 @@ module.exports = (NativeConvolverNode, nativeBinding) => {
       }
 
       try {
-        super.buffer = value[kNativeAudioBuffer];
+        this[kNapiObj].buffer = value[kNativeAudioBuffer];
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -119,7 +133,7 @@ module.exports = (NativeConvolverNode, nativeBinding) => {
 
     set normalize(value) {
       try {
-        super.normalize = value;
+        this[kNapiObj].normalize = value;
       } catch (err) {
         throwSanitizedError(err);
       }

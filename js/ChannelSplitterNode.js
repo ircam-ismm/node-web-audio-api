@@ -23,8 +23,12 @@ const {
   toSanitizedSequence,
 } = require('./lib/cast.js');
 const {
+  isFunction,
+} = require('./lib/utils.js');
+const {
   throwSanitizedError,
 } = require('./lib/errors.js');
+
 const {
   AudioParam,
 } = require('./AudioParam.js');
@@ -32,15 +36,17 @@ const {
   kNativeAudioBuffer,
   kAudioBuffer,
 } = require('./AudioBuffer.js');
+const {
+  kNapiObj,
+} = require('./lib/symbols.js');
+const {
+  bridgeEventTarget,
+} = require('./lib/events.js');
 /* eslint-enable no-unused-vars */
 
-const EventTargetMixin = require('./EventTarget.mixin.js');
-const AudioNodeMixin = require('./AudioNode.mixin.js');
+const AudioNode = require('./AudioNode.js');
 
-module.exports = (NativeChannelSplitterNode, nativeBinding) => {
-  const EventTarget = EventTargetMixin(NativeChannelSplitterNode, ['ended']);
-  const AudioNode = AudioNodeMixin(EventTarget);
-
+module.exports = (jsExport, nativeBinding) => {
   class ChannelSplitterNode extends AudioNode {
     constructor(context, options) {
 
@@ -48,7 +54,7 @@ module.exports = (NativeChannelSplitterNode, nativeBinding) => {
         throw new TypeError(`Failed to construct 'ChannelSplitterNode': 1 argument required, but only ${arguments.length} present`);
       }
 
-      if (!(context instanceof nativeBinding.AudioContext) && !(context instanceof nativeBinding.OfflineAudioContext)) {
+      if (!(context instanceof jsExport.BaseAudioContext)) {
         throw new TypeError(`Failed to construct 'ChannelSplitterNode': argument 1 is not of type BaseAudioContext`);
       }
 
@@ -67,7 +73,15 @@ module.exports = (NativeChannelSplitterNode, nativeBinding) => {
         parsedOptions.numberOfOutputs = 6;
       }
 
-      super(context, parsedOptions);
+      let napiObj;
+
+      try {
+        napiObj = new nativeBinding.ChannelSplitterNode(context[kNapiObj], parsedOptions);
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+
+      super(context, napiObj);
 
     }
 
