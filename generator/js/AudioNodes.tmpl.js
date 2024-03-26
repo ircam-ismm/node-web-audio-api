@@ -32,17 +32,7 @@ module.exports = (jsExport, nativeBinding) => {
         // handle audio context
         const arg = d.constructor(d.node).arguments[0];
         const argType = d.memberType(arg);
-        const argIdl = d.findInTree(argType);
 
-      //   // BaseAudioContext is not exposed and is created dynamically so we
-      //   // need this workaround
-      //   if (argType === 'BaseAudioContext') {
-      //     return `
-      // if (!(context instanceof jsExport.AudioContext) && !(context instanceof jsExport.OfflineAudioContext)) {
-      //   throw new TypeError(\`Failed to construct '${d.name(d.node)}': argument 1 is not of type ${argType}\`);
-      // }
-      //     `;
-      //   } else {
           return `
       if (!(context instanceof jsExport.${argType})) {
         throw new TypeError(\`Failed to construct '${d.name(d.node)}': argument 1 is not of type ${argType}\`);
