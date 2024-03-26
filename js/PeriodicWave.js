@@ -1,3 +1,5 @@
+const conversions = require('webidl-conversions');
+
 const { throwSanitizedError } = require('./lib/errors.js');
 const { toSanitizedSequence } = require('./lib/cast.js');
 const { kNapiObj } = require('./lib/symbols.js');
@@ -29,6 +31,15 @@ module.exports = (jsExport, nativeBinding) => {
         } catch (err) {
           throw new TypeError(`Failed to construct 'PeriodicWave': Failed to read the 'imag' property from PeriodicWaveOptions: The provided value ${err.message}`);
         }
+      }
+
+      // disableNormalization = false
+      if (options && 'disableNormalization' in options) {
+        parsedOptions.disableNormalization = conversions['boolean'](options.disableNormalization, {
+          context: `Failed to construct 'PeriodicWave': Failed to read the 'imag' property from PeriodicWaveOptions: The provided value`,
+        });
+      } else {
+        parsedOptions.disableNormalization
       }
 
       try {
