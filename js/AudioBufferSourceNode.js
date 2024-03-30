@@ -23,8 +23,12 @@ const {
   toSanitizedSequence,
 } = require('./lib/cast.js');
 const {
+  isFunction,
+} = require('./lib/utils.js');
+const {
   throwSanitizedError,
 } = require('./lib/errors.js');
+
 const {
   AudioParam,
 } = require('./AudioParam.js');
@@ -32,17 +36,17 @@ const {
   kNativeAudioBuffer,
   kAudioBuffer,
 } = require('./AudioBuffer.js');
+const {
+  kNapiObj,
+} = require('./lib/symbols.js');
+const {
+  bridgeEventTarget,
+} = require('./lib/events.js');
 /* eslint-enable no-unused-vars */
 
-const EventTargetMixin = require('./EventTarget.mixin.js');
-const AudioNodeMixin = require('./AudioNode.mixin.js');
-const AudioScheduledSourceNodeMixin = require('./AudioScheduledSourceNode.mixin.js');
+const AudioScheduledSourceNode = require('./AudioScheduledSourceNode.js');
 
-module.exports = (NativeAudioBufferSourceNode, nativeBinding) => {
-  const EventTarget = EventTargetMixin(NativeAudioBufferSourceNode, ['ended']);
-  const AudioNode = AudioNodeMixin(EventTarget);
-  const AudioScheduledSourceNode = AudioScheduledSourceNodeMixin(AudioNode);
-
+module.exports = (jsExport, nativeBinding) => {
   class AudioBufferSourceNode extends AudioScheduledSourceNode {
     constructor(context, options) {
 
@@ -50,7 +54,7 @@ module.exports = (NativeAudioBufferSourceNode, nativeBinding) => {
         throw new TypeError(`Failed to construct 'AudioBufferSourceNode': 1 argument required, but only ${arguments.length} present`);
       }
 
-      if (!(context instanceof nativeBinding.AudioContext) && !(context instanceof nativeBinding.OfflineAudioContext)) {
+      if (!(context instanceof jsExport.BaseAudioContext)) {
         throw new TypeError(`Failed to construct 'AudioBufferSourceNode': argument 1 is not of type BaseAudioContext`);
       }
 
@@ -64,8 +68,8 @@ module.exports = (NativeAudioBufferSourceNode, nativeBinding) => {
       if (options && 'buffer' in options) {
         if (options.buffer !== null) {
           // if (!(kNativeAudioBuffer in options.buffer)) {
-          if (!(options.buffer instanceof nativeBinding.AudioBuffer)) {
-            throw new TypeError(' `Failed to construct \'AudioBufferSourceNode\': Failed to read the \'buffer\' property from AudioBufferSourceOptions: The provided value cannot be converted to \'AudioBuffer\'');
+          if (!(options.buffer instanceof jsExport.AudioBuffer)) {
+            throw new TypeError('Failed to construct \'AudioBufferSourceNode\': Failed to read the \'buffer\' property from AudioBufferSourceOptions: The provided value cannot be converted to \'AudioBuffer\'');
           }
 
           // unwrap napi audio buffer
@@ -115,7 +119,15 @@ module.exports = (NativeAudioBufferSourceNode, nativeBinding) => {
         parsedOptions.playbackRate = 1;
       }
 
-      super(context, parsedOptions);
+      let napiObj;
+
+      try {
+        napiObj = new nativeBinding.AudioBufferSourceNode(context[kNapiObj], parsedOptions);
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+
+      super(context, napiObj);
 
       // keep the wrapped AudioBuffer around
       this[kAudioBuffer] = null;
@@ -124,12 +136,11 @@ module.exports = (NativeAudioBufferSourceNode, nativeBinding) => {
         this[kAudioBuffer] = options.buffer;
       }
 
-      // EventTargetMixin constructor has been called so EventTargetMixin[kDispatchEvent]
-      // is bound to this, then we can safely finalize event target initialization
-      super.__initEventTarget__();
+      // Bridge Rust native event to Node EventTarget
+      bridgeEventTarget(this);
 
-      this.playbackRate = new AudioParam(this.playbackRate);
-      this.detune = new AudioParam(this.detune);
+      this.playbackRate = new AudioParam(this[kNapiObj].playbackRate);
+      this.detune = new AudioParam(this[kNapiObj].detune);
     }
 
     get buffer() {
@@ -137,15 +148,15 @@ module.exports = (NativeAudioBufferSourceNode, nativeBinding) => {
     }
 
     get loop() {
-      return super.loop;
+      return this[kNapiObj].loop;
     }
 
     get loopStart() {
-      return super.loopStart;
+      return this[kNapiObj].loopStart;
     }
 
     get loopEnd() {
-      return super.loopEnd;
+      return this[kNapiObj].loopEnd;
     }
 
     // @todo - should be able to set to null afterward
@@ -157,7 +168,7 @@ module.exports = (NativeAudioBufferSourceNode, nativeBinding) => {
       }
 
       try {
-        super.buffer = value[kNativeAudioBuffer];
+        this[kNapiObj].buffer = value[kNativeAudioBuffer];
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -167,7 +178,7 @@ module.exports = (NativeAudioBufferSourceNode, nativeBinding) => {
 
     set loop(value) {
       try {
-        super.loop = value;
+        this[kNapiObj].loop = value;
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -175,7 +186,7 @@ module.exports = (NativeAudioBufferSourceNode, nativeBinding) => {
 
     set loopStart(value) {
       try {
-        super.loopStart = value;
+        this[kNapiObj].loopStart = value;
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -183,7 +194,7 @@ module.exports = (NativeAudioBufferSourceNode, nativeBinding) => {
 
     set loopEnd(value) {
       try {
-        super.loopEnd = value;
+        this[kNapiObj].loopEnd = value;
       } catch (err) {
         throwSanitizedError(err);
       }

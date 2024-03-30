@@ -23,8 +23,12 @@ const {
   toSanitizedSequence,
 } = require('./lib/cast.js');
 const {
+  isFunction,
+} = require('./lib/utils.js');
+const {
   throwSanitizedError,
 } = require('./lib/errors.js');
+
 const {
   AudioParam,
 } = require('./AudioParam.js');
@@ -32,17 +36,17 @@ const {
   kNativeAudioBuffer,
   kAudioBuffer,
 } = require('./AudioBuffer.js');
+const {
+  kNapiObj,
+} = require('./lib/symbols.js');
+const {
+  bridgeEventTarget,
+} = require('./lib/events.js');
 /* eslint-enable no-unused-vars */
 
-const EventTargetMixin = require('./EventTarget.mixin.js');
-const AudioNodeMixin = require('./AudioNode.mixin.js');
-const AudioScheduledSourceNodeMixin = require('./AudioScheduledSourceNode.mixin.js');
+const AudioScheduledSourceNode = require('./AudioScheduledSourceNode.js');
 
-module.exports = (NativeOscillatorNode, nativeBinding) => {
-  const EventTarget = EventTargetMixin(NativeOscillatorNode, ['ended']);
-  const AudioNode = AudioNodeMixin(EventTarget);
-  const AudioScheduledSourceNode = AudioScheduledSourceNodeMixin(AudioNode);
-
+module.exports = (jsExport, nativeBinding) => {
   class OscillatorNode extends AudioScheduledSourceNode {
     constructor(context, options) {
 
@@ -50,7 +54,7 @@ module.exports = (NativeOscillatorNode, nativeBinding) => {
         throw new TypeError(`Failed to construct 'OscillatorNode': 1 argument required, but only ${arguments.length} present`);
       }
 
-      if (!(context instanceof nativeBinding.AudioContext) && !(context instanceof nativeBinding.OfflineAudioContext)) {
+      if (!(context instanceof jsExport.BaseAudioContext)) {
         throw new TypeError(`Failed to construct 'OscillatorNode': argument 1 is not of type BaseAudioContext`);
       }
 
@@ -88,7 +92,7 @@ module.exports = (NativeOscillatorNode, nativeBinding) => {
       }
 
       if (options && 'periodicWave' in options) {
-        if (!(options.periodicWave instanceof nativeBinding.PeriodicWave)) {
+        if (!(options.periodicWave instanceof jsExport.PeriodicWave)) {
           throw new TypeError(`Failed to construct 'OscillatorNode': Failed to read the 'periodicWave' property from OscillatorOptions: The provided value '${options.periodicWave}' is not an instance of PeriodicWave`);
         }
 
@@ -97,23 +101,30 @@ module.exports = (NativeOscillatorNode, nativeBinding) => {
         parsedOptions.periodicWave = null;
       }
 
-      super(context, parsedOptions);
+      let napiObj;
 
-      // EventTargetMixin constructor has been called so EventTargetMixin[kDispatchEvent]
-      // is bound to this, then we can safely finalize event target initialization
-      super.__initEventTarget__();
+      try {
+        napiObj = new nativeBinding.OscillatorNode(context[kNapiObj], parsedOptions);
+      } catch (err) {
+        throwSanitizedError(err);
+      }
 
-      this.frequency = new AudioParam(this.frequency);
-      this.detune = new AudioParam(this.detune);
+      super(context, napiObj);
+
+      // Bridge Rust native event to Node EventTarget
+      bridgeEventTarget(this);
+
+      this.frequency = new AudioParam(this[kNapiObj].frequency);
+      this.detune = new AudioParam(this[kNapiObj].detune);
     }
 
     get type() {
-      return super.type;
+      return this[kNapiObj].type;
     }
 
     set type(value) {
       try {
-        super.type = value;
+        this[kNapiObj].type = value;
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -121,7 +132,7 @@ module.exports = (NativeOscillatorNode, nativeBinding) => {
 
     setPeriodicWave(...args) {
       try {
-        return super.setPeriodicWave(...args);
+        return this[kNapiObj].setPeriodicWave(...args);
       } catch (err) {
         throwSanitizedError(err);
       }

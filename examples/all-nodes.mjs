@@ -24,8 +24,8 @@ import {
   mediaDevices,
 } from '../index.mjs';
 
-const audioContext = new OfflineAudioContext(1, 1, 48000);
-// const audioContext = new AudioContext();
+// const audioContext = new OfflineAudioContext(1, 1, 48000);
+const audioContext = new AudioContext();
 
 console.log('## factory methods');
 console.log('');

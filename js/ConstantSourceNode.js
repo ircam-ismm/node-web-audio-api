@@ -23,8 +23,12 @@ const {
   toSanitizedSequence,
 } = require('./lib/cast.js');
 const {
+  isFunction,
+} = require('./lib/utils.js');
+const {
   throwSanitizedError,
 } = require('./lib/errors.js');
+
 const {
   AudioParam,
 } = require('./AudioParam.js');
@@ -32,17 +36,17 @@ const {
   kNativeAudioBuffer,
   kAudioBuffer,
 } = require('./AudioBuffer.js');
+const {
+  kNapiObj,
+} = require('./lib/symbols.js');
+const {
+  bridgeEventTarget,
+} = require('./lib/events.js');
 /* eslint-enable no-unused-vars */
 
-const EventTargetMixin = require('./EventTarget.mixin.js');
-const AudioNodeMixin = require('./AudioNode.mixin.js');
-const AudioScheduledSourceNodeMixin = require('./AudioScheduledSourceNode.mixin.js');
+const AudioScheduledSourceNode = require('./AudioScheduledSourceNode.js');
 
-module.exports = (NativeConstantSourceNode, nativeBinding) => {
-  const EventTarget = EventTargetMixin(NativeConstantSourceNode, ['ended']);
-  const AudioNode = AudioNodeMixin(EventTarget);
-  const AudioScheduledSourceNode = AudioScheduledSourceNodeMixin(AudioNode);
-
+module.exports = (jsExport, nativeBinding) => {
   class ConstantSourceNode extends AudioScheduledSourceNode {
     constructor(context, options) {
 
@@ -50,7 +54,7 @@ module.exports = (NativeConstantSourceNode, nativeBinding) => {
         throw new TypeError(`Failed to construct 'ConstantSourceNode': 1 argument required, but only ${arguments.length} present`);
       }
 
-      if (!(context instanceof nativeBinding.AudioContext) && !(context instanceof nativeBinding.OfflineAudioContext)) {
+      if (!(context instanceof jsExport.BaseAudioContext)) {
         throw new TypeError(`Failed to construct 'ConstantSourceNode': argument 1 is not of type BaseAudioContext`);
       }
 
@@ -69,13 +73,20 @@ module.exports = (NativeConstantSourceNode, nativeBinding) => {
         parsedOptions.offset = 1;
       }
 
-      super(context, parsedOptions);
+      let napiObj;
 
-      // EventTargetMixin constructor has been called so EventTargetMixin[kDispatchEvent]
-      // is bound to this, then we can safely finalize event target initialization
-      super.__initEventTarget__();
+      try {
+        napiObj = new nativeBinding.ConstantSourceNode(context[kNapiObj], parsedOptions);
+      } catch (err) {
+        throwSanitizedError(err);
+      }
 
-      this.offset = new AudioParam(this.offset);
+      super(context, napiObj);
+
+      // Bridge Rust native event to Node EventTarget
+      bridgeEventTarget(this);
+
+      this.offset = new AudioParam(this[kNapiObj].offset);
     }
 
   }

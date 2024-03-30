@@ -23,8 +23,12 @@ const {
   toSanitizedSequence,
 } = require('./lib/cast.js');
 const {
+  isFunction,
+} = require('./lib/utils.js');
+const {
   throwSanitizedError,
 } = require('./lib/errors.js');
+
 const {
   AudioParam,
 } = require('./AudioParam.js');
@@ -32,15 +36,17 @@ const {
   kNativeAudioBuffer,
   kAudioBuffer,
 } = require('./AudioBuffer.js');
+const {
+  kNapiObj,
+} = require('./lib/symbols.js');
+const {
+  bridgeEventTarget,
+} = require('./lib/events.js');
 /* eslint-enable no-unused-vars */
 
-const EventTargetMixin = require('./EventTarget.mixin.js');
-const AudioNodeMixin = require('./AudioNode.mixin.js');
+const AudioNode = require('./AudioNode.js');
 
-module.exports = (NativeAnalyserNode, nativeBinding) => {
-  const EventTarget = EventTargetMixin(NativeAnalyserNode, ['ended']);
-  const AudioNode = AudioNodeMixin(EventTarget);
-
+module.exports = (jsExport, nativeBinding) => {
   class AnalyserNode extends AudioNode {
     constructor(context, options) {
 
@@ -48,7 +54,7 @@ module.exports = (NativeAnalyserNode, nativeBinding) => {
         throw new TypeError(`Failed to construct 'AnalyserNode': 1 argument required, but only ${arguments.length} present`);
       }
 
-      if (!(context instanceof nativeBinding.AudioContext) && !(context instanceof nativeBinding.OfflineAudioContext)) {
+      if (!(context instanceof jsExport.BaseAudioContext)) {
         throw new TypeError(`Failed to construct 'AnalyserNode': argument 1 is not of type BaseAudioContext`);
       }
 
@@ -91,33 +97,41 @@ module.exports = (NativeAnalyserNode, nativeBinding) => {
         parsedOptions.smoothingTimeConstant = 0.8;
       }
 
-      super(context, parsedOptions);
+      let napiObj;
+
+      try {
+        napiObj = new nativeBinding.AnalyserNode(context[kNapiObj], parsedOptions);
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+
+      super(context, napiObj);
 
     }
 
     get fftSize() {
-      return super.fftSize;
+      return this[kNapiObj].fftSize;
     }
 
     get frequencyBinCount() {
-      return super.frequencyBinCount;
+      return this[kNapiObj].frequencyBinCount;
     }
 
     get minDecibels() {
-      return super.minDecibels;
+      return this[kNapiObj].minDecibels;
     }
 
     get maxDecibels() {
-      return super.maxDecibels;
+      return this[kNapiObj].maxDecibels;
     }
 
     get smoothingTimeConstant() {
-      return super.smoothingTimeConstant;
+      return this[kNapiObj].smoothingTimeConstant;
     }
 
     set fftSize(value) {
       try {
-        super.fftSize = value;
+        this[kNapiObj].fftSize = value;
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -125,7 +139,7 @@ module.exports = (NativeAnalyserNode, nativeBinding) => {
 
     set minDecibels(value) {
       try {
-        super.minDecibels = value;
+        this[kNapiObj].minDecibels = value;
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -133,7 +147,7 @@ module.exports = (NativeAnalyserNode, nativeBinding) => {
 
     set maxDecibels(value) {
       try {
-        super.maxDecibels = value;
+        this[kNapiObj].maxDecibels = value;
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -141,7 +155,7 @@ module.exports = (NativeAnalyserNode, nativeBinding) => {
 
     set smoothingTimeConstant(value) {
       try {
-        super.smoothingTimeConstant = value;
+        this[kNapiObj].smoothingTimeConstant = value;
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -149,7 +163,7 @@ module.exports = (NativeAnalyserNode, nativeBinding) => {
 
     getFloatFrequencyData(...args) {
       try {
-        return super.getFloatFrequencyData(...args);
+        return this[kNapiObj].getFloatFrequencyData(...args);
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -157,7 +171,7 @@ module.exports = (NativeAnalyserNode, nativeBinding) => {
 
     getByteFrequencyData(...args) {
       try {
-        return super.getByteFrequencyData(...args);
+        return this[kNapiObj].getByteFrequencyData(...args);
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -165,7 +179,7 @@ module.exports = (NativeAnalyserNode, nativeBinding) => {
 
     getFloatTimeDomainData(...args) {
       try {
-        return super.getFloatTimeDomainData(...args);
+        return this[kNapiObj].getFloatTimeDomainData(...args);
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -173,7 +187,7 @@ module.exports = (NativeAnalyserNode, nativeBinding) => {
 
     getByteTimeDomainData(...args) {
       try {
-        return super.getByteTimeDomainData(...args);
+        return this[kNapiObj].getByteTimeDomainData(...args);
       } catch (err) {
         throwSanitizedError(err);
       }

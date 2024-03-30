@@ -23,8 +23,12 @@ const {
   toSanitizedSequence,
 } = require('./lib/cast.js');
 const {
+  isFunction,
+} = require('./lib/utils.js');
+const {
   throwSanitizedError,
 } = require('./lib/errors.js');
+
 const {
   AudioParam,
 } = require('./AudioParam.js');
@@ -32,15 +36,17 @@ const {
   kNativeAudioBuffer,
   kAudioBuffer,
 } = require('./AudioBuffer.js');
+const {
+  kNapiObj,
+} = require('./lib/symbols.js');
+const {
+  bridgeEventTarget,
+} = require('./lib/events.js');
 /* eslint-enable no-unused-vars */
 
-const EventTargetMixin = require('./EventTarget.mixin.js');
-const AudioNodeMixin = require('./AudioNode.mixin.js');
+const AudioNode = require('./AudioNode.js');
 
-module.exports = (NativeMediaStreamAudioSourceNode, nativeBinding) => {
-  const EventTarget = EventTargetMixin(NativeMediaStreamAudioSourceNode, ['ended']);
-  const AudioNode = AudioNodeMixin(EventTarget);
-
+module.exports = (jsExport, nativeBinding) => {
   class MediaStreamAudioSourceNode extends AudioNode {
     constructor(context, options) {
 
@@ -48,7 +54,7 @@ module.exports = (NativeMediaStreamAudioSourceNode, nativeBinding) => {
         throw new TypeError(`Failed to construct 'MediaStreamAudioSourceNode': 2 argument required, but only ${arguments.length} present`);
       }
 
-      if (!(context instanceof nativeBinding.AudioContext)) {
+      if (!(context instanceof jsExport.AudioContext)) {
         throw new TypeError(`Failed to construct 'MediaStreamAudioSourceNode': argument 1 is not of type AudioContext`);
       }
 
@@ -66,12 +72,20 @@ module.exports = (NativeMediaStreamAudioSourceNode, nativeBinding) => {
 
       parsedOptions.mediaStream = options.mediaStream;
 
-      super(context, parsedOptions);
+      let napiObj;
+
+      try {
+        napiObj = new nativeBinding.MediaStreamAudioSourceNode(context[kNapiObj], parsedOptions);
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+
+      super(context, napiObj);
 
     }
 
     get mediaStream() {
-      return super.mediaStream;
+      return this[kNapiObj].mediaStream;
     }
 
   }
