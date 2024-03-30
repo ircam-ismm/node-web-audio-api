@@ -14,7 +14,7 @@ ${d.nodes.map((node) => {
   jsExport.AudioNode = require('./AudioNode.js');
   jsExport.AudioDestinationNode = require('./AudioDestinationNode.js');
 
-  jsExport.PeriodicWave = require('./PeriodicWave.js')(nativeBinding.PeriodicWave);
+  jsExport.PeriodicWave = require('./PeriodicWave.js')(jsExport, nativeBinding);
   jsExport.AudioBuffer = require('./AudioBuffer.js').AudioBuffer(nativeBinding.AudioBuffer);
   jsExport.AudioParam = require('./AudioParam.js').AudioParam;
   jsExport.AudioListener = require('./AudioListener.js');
