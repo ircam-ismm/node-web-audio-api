@@ -14,6 +14,7 @@ export const {
   AudioParam,
   AudioListener,
 
+  AudioNode,
   AudioDestinationNode,
   // generated supported nodes
 ${d.nodes.map(n => `  ${d.name(n)},`).join('\n')}
