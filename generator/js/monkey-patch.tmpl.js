@@ -11,6 +11,7 @@ ${d.nodes.map((node) => {
   return `
   jsExport.${d.name(node)} = require('./${d.name(node)}.js')(jsExport, nativeBinding);`
 }).join('')}
+  jsExport.AudioNode = require('./AudioNode.js');
   jsExport.AudioDestinationNode = require('./AudioDestinationNode.js');
 
   jsExport.PeriodicWave = require('./PeriodicWave.js')(nativeBinding.PeriodicWave);

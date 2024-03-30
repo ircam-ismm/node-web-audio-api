@@ -35,6 +35,7 @@ export const {
   AudioParam,
   AudioListener,
 
+  AudioNode,
   AudioDestinationNode,
   // generated supported nodes
   AnalyserNode,
