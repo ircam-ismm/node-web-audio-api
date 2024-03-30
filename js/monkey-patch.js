@@ -42,6 +42,7 @@ module.exports = function monkeyPatch(nativeBinding) {
   jsExport.PannerNode = require('./PannerNode.js')(jsExport, nativeBinding);
   jsExport.StereoPannerNode = require('./StereoPannerNode.js')(jsExport, nativeBinding);
   jsExport.WaveShaperNode = require('./WaveShaperNode.js')(jsExport, nativeBinding);
+  jsExport.AudioNode = require('./AudioNode.js');
   jsExport.AudioDestinationNode = require('./AudioDestinationNode.js');
 
   jsExport.PeriodicWave = require('./PeriodicWave.js')(nativeBinding.PeriodicWave);
