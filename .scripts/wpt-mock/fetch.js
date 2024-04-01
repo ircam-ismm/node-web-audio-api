@@ -1,5 +1,4 @@
-// require in node_modules/wpt_runner/testharness/idlharness.js,  cf `fetch_spec`
-
+// required in node_modules/wpt_runner/testharness/idlharness.js, cf `fetch_spec`
 const fs = require('node:fs');
 const path = require('node:path');
 
