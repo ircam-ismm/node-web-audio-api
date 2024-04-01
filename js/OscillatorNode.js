@@ -101,6 +101,14 @@ module.exports = (jsExport, nativeBinding) => {
         parsedOptions.periodicWave = null;
       }
 
+      if (parsedOptions.type === 'custom' && parsedOptions.periodicWave === null) {
+        throw new DOMException('Failed to construct \'OscillatorNode\': A PeriodicWave must be specified if the type is set to \'custom\'', 'InvalidStateError');
+      }
+
+      if (parsedOptions.periodicWave !== null) {
+        parsedOptions.type = 'custom';
+      }
+
       let napiObj;
 
       try {

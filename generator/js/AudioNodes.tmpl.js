@@ -197,6 +197,21 @@ module.exports = (jsExport, nativeBinding) => {
           return checkMember;
         }).join('');
 
+        // handle spacial cases
+        if (d.name(d.node) === 'OscillatorNode') {
+          // https://webaudio.github.io/web-audio-api/#dom-oscillatoroptions-type
+          checkOptions += `
+      if (parsedOptions.type === 'custom' && parsedOptions.periodicWave === null) {
+        throw new DOMException("Failed to construct 'OscillatorNode': A PeriodicWave must be specified if the type is set to 'custom'", 'InvalidStateError');
+      }
+
+      if (parsedOptions.periodicWave !== null) {
+        parsedOptions.type = 'custom';
+      }
+
+          `;
+        }
+
         return checkOptions;
       }())}
 
