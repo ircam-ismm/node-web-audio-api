@@ -7,6 +7,7 @@ import * as nodeWebAudioAPI from '../index.mjs';
 
 // mocks
 import createXMLHttpRequest from './wpt-mock/XMLHttpRequest.js';
+import createFetch from './wpt-mock/fetch.js';
 import { DOMException } from '../js/lib/errors.js';
 
 program
@@ -31,6 +32,7 @@ function indent(string, times) {
 // -------------------------------------------------------
 // WPT Runner configuration options
 // -------------------------------------------------------
+const wptRootPath = path.join('wpt');
 const testsPath = path.join('wpt','webaudio');
 const rootURL = 'webaudio';
 
@@ -47,6 +49,7 @@ const setup = window => {
 
   // e.g. 'resources/audiobuffersource-multi-channels-expected.wav'
   window.XMLHttpRequest = createXMLHttpRequest(testsPath);
+  window.fetch = createFetch(wptRootPath);
   // window.requestAnimationFrame = func => setInterval(func, 16);
   // errors
   window.TypeError = TypeError;
