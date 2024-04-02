@@ -107,9 +107,18 @@ return `
 }
 
 Object.defineProperties(AudioNode.prototype, {
+  [Symbol.toStringTag]: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 'AudioNode',
+  },
+
   ${d.attributes(d.node).map(attr => {
     return `${d.name(attr)}: kEnumerableProperty,`;
   }).join('')}
+
   connect: kEnumerableProperty,
   disconnect: kEnumerableProperty,
 });

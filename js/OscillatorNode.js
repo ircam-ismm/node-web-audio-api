@@ -170,6 +170,14 @@ module.exports = (jsExport, nativeBinding) => {
   }
 
   Object.defineProperties(OscillatorNode.prototype, {
+    [Symbol.toStringTag]: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 'OscillatorNode',
+    },
+
     frequency: kEnumerableProperty,
     detune: kEnumerableProperty,
 

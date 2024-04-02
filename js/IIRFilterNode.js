@@ -124,6 +124,13 @@ module.exports = (jsExport, nativeBinding) => {
   }
 
   Object.defineProperties(IIRFilterNode.prototype, {
+    [Symbol.toStringTag]: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 'IIRFilterNode',
+    },
 
     getFrequencyResponse: kEnumerableProperty,
   });

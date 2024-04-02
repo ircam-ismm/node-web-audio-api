@@ -152,6 +152,13 @@ module.exports = (jsExport, nativeBinding) => {
   }
 
   Object.defineProperties(ConvolverNode.prototype, {
+    [Symbol.toStringTag]: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 'ConvolverNode',
+    },
 
     buffer: kEnumerableProperty,
     normalize: kEnumerableProperty,

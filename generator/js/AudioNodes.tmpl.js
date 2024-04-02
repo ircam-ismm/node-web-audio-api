@@ -373,6 +373,14 @@ ${d.methods(d.node, false)
 ${(function() {
   return `
   Object.defineProperties(${d.name(d.node)}.prototype, {
+    [Symbol.toStringTag]: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: '${d.name(d.node)}',
+    },
+
     ${d.audioParams(d.node).map(param => {
       return `${d.name(param)}: kEnumerableProperty,`;
     }).join('')}

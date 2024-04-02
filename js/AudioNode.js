@@ -169,12 +169,21 @@ class AudioNode extends EventTarget {
 }
 
 Object.defineProperties(AudioNode.prototype, {
+  [Symbol.toStringTag]: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 'AudioNode',
+  },
+
   context: kEnumerableProperty,
   numberOfInputs: kEnumerableProperty,
   numberOfOutputs: kEnumerableProperty,
   channelCount: kEnumerableProperty,
   channelCountMode: kEnumerableProperty,
   channelInterpretation: kEnumerableProperty,
+
   connect: kEnumerableProperty,
   disconnect: kEnumerableProperty,
 });

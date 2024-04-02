@@ -157,6 +157,14 @@ module.exports = (jsExport, nativeBinding) => {
   }
 
   Object.defineProperties(DynamicsCompressorNode.prototype, {
+    [Symbol.toStringTag]: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 'DynamicsCompressorNode',
+    },
+
     threshold: kEnumerableProperty,
     knee: kEnumerableProperty,
     ratio: kEnumerableProperty,

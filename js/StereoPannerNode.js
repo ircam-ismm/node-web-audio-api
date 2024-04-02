@@ -97,6 +97,14 @@ module.exports = (jsExport, nativeBinding) => {
   }
 
   Object.defineProperties(StereoPannerNode.prototype, {
+    [Symbol.toStringTag]: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 'StereoPannerNode',
+    },
+
     pan: kEnumerableProperty,
 
   });

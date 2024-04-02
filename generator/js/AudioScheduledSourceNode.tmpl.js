@@ -53,9 +53,18 @@ ${d.methods(d.node, false).reduce((acc, method) => {
 }
 
 Object.defineProperties(AudioNode.prototype, {
+  [Symbol.toStringTag]: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 'AudioScheduledSourceNode',
+  },
+
   ${d.attributes(d.node).map(attr => {
     return `${d.name(attr)}: kEnumerableProperty,`;
   }).join('')}
+
   start: kEnumerableProperty,
   stop: kEnumerableProperty,
 });

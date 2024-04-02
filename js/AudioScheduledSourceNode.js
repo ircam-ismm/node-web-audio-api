@@ -76,7 +76,16 @@ class AudioScheduledSourceNode extends AudioNode {
 }
 
 Object.defineProperties(AudioNode.prototype, {
+  [Symbol.toStringTag]: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 'AudioScheduledSourceNode',
+  },
+
   onended: kEnumerableProperty,
+
   start: kEnumerableProperty,
   stop: kEnumerableProperty,
 });

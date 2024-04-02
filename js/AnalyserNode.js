@@ -230,6 +230,13 @@ module.exports = (jsExport, nativeBinding) => {
   }
 
   Object.defineProperties(AnalyserNode.prototype, {
+    [Symbol.toStringTag]: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 'AnalyserNode',
+    },
 
     fftSize: kEnumerableProperty,
     frequencyBinCount: kEnumerableProperty,
