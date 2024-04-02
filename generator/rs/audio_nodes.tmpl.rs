@@ -208,17 +208,17 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     ${d.parent(optionsIdl) === 'AudioNodeOptions' ? `
         ${optionsIdl.members.reduce((acc, current) => acc || current.required, false) ? `
     // can't create default from ${optionsType}
-    let channel_config_defaults = ChannelConfigOptions::default();
+    let audio_node_options_default = AudioNodeOptions::default();
         ` : `
     let node_defaults = ${optionsType}::default();
-    let channel_config_defaults = node_defaults.channel_config;
+    let audio_node_options_default = node_defaults.audio_node_options;
         `}
 
     let some_channel_count_js = js_options.get::<&str, JsObject>("channelCount")?;
     let channel_count = if let Some(channel_count_js) = some_channel_count_js {
         channel_count_js.coerce_to_number()?.get_double()? as usize
     } else {
-        channel_config_defaults.count
+        audio_node_options_default.channel_count
     };
 
     let some_channel_count_mode_js = js_options.get::<&str, JsObject>("channelCountMode")?;
@@ -232,7 +232,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             _ => panic!("TypeError - Failed to read the 'channelCountMode' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelCountMode", channel_count_mode_str.as_str()),
         }
     } else {
-        channel_config_defaults.count_mode
+        audio_node_options_default.channel_count_mode
     };
 
     let some_channel_interpretation_js = js_options.get::<&str, JsObject>("channelInterpretation")?;
@@ -245,17 +245,17 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             _ => panic!("TypeError - Failed to read the 'channelInterpretation' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", channel_interpretation_str.as_str()),
         }
     } else {
-        channel_config_defaults.interpretation
+        audio_node_options_default.channel_interpretation
     };
     ` : ``}
 
     let options = ${optionsType} {
         ${optionsIdl.members.map(m => d.slug(m, true)).join(', ')},
         ${d.parent(optionsIdl) === 'AudioNodeOptions' ?
-        `channel_config: ChannelConfigOptions {
-            count: channel_count,
-            count_mode: channel_count_mode,
-            interpretation: channel_interpretation,
+        `audio_node_options: AudioNodeOptions {
+            channel_count: channel_count,
+            channel_count_mode: channel_count_mode,
+            channel_interpretation: channel_interpretation,
         },` : ``}
     };
 
