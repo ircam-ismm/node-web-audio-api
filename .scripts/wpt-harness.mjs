@@ -5,6 +5,8 @@ import { program } from 'commander';
 
 import * as nodeWebAudioAPI from '../index.mjs';
 // console.log(nodeWebAudioAPI);
+const desc = Object.getOwnPropertyDescriptor(nodeWebAudioAPI, 'PannerNode');
+console.log(desc);
 
 // mocks
 import createXMLHttpRequest from './wpt-mock/XMLHttpRequest.js';
@@ -39,7 +41,21 @@ const rootURL = 'webaudio';
 
 // monkey patch `window` with our web audio API
 const setup = window => {
-  Object.assign(window, nodeWebAudioAPI);
+  // This is meant to make some idlharness tests pass:
+  // cf. wpt-runnner/testharness/idlharness.js line 1466-1472
+  // These tests, which assess the descriptor of the classes according to window,
+  // are of little importance to us but we ensure the rest of the tests are passing
+  for (let key in nodeWebAudioAPI) {
+    if (key !== 'default' && key !== 'mediaDevices') {
+      Object.defineProperty(window, key, {
+        __proto__: null,
+        writable: true,
+        enumerable: false,
+        configurable: true,
+        value: nodeWebAudioAPI[key],
+      });
+    }
+  }
 
   // expose media devices API
   window.navigator.mediaDevices = nodeWebAudioAPI.mediaDevices;

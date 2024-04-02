@@ -176,6 +176,16 @@ module.exports = (jsExport, nativeBinding) => {
 
   }
 
+  Object.defineProperties(BiquadFilterNode, {
+    length: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 1,
+    },
+  });
+
   Object.defineProperties(BiquadFilterNode.prototype, {
     [Symbol.toStringTag]: {
       __proto__: null,
@@ -193,6 +203,14 @@ module.exports = (jsExport, nativeBinding) => {
     type: kEnumerableProperty,
 
     getFrequencyResponse: kEnumerableProperty,
+  });
+
+  Object.defineProperty(BiquadFilterNode.prototype.getFrequencyResponse, 'length', {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 3,
   });
 
   return BiquadFilterNode;

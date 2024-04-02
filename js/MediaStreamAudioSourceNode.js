@@ -92,6 +92,16 @@ module.exports = (jsExport, nativeBinding) => {
 
   }
 
+  Object.defineProperties(MediaStreamAudioSourceNode, {
+    length: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 2,
+    },
+  });
+
   Object.defineProperties(MediaStreamAudioSourceNode.prototype, {
     [Symbol.toStringTag]: {
       __proto__: null,

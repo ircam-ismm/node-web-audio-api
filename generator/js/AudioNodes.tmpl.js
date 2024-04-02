@@ -371,7 +371,21 @@ ${d.methods(d.node, false)
   }
 
 ${(function() {
+  // length defines the minimum required number of argument of the constructor
+  // "The value of the Function object’s “length” property is
+  // a Number determined as follows:
+  // "Return the length of the shortest argument list of the entries in S."
   return `
+  Object.defineProperties(${d.name(d.node)}, {
+    length: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: ${d.constructor(d.node).arguments.reduce((acc, value) => acc += (value.optional ? 0 : 1), 0)}
+    },
+  });
+
   Object.defineProperties(${d.name(d.node)}.prototype, {
     [Symbol.toStringTag]: {
       __proto__: null,
@@ -402,7 +416,31 @@ ${(function() {
       .map(method => {
         return `${d.name(method)}: kEnumerableProperty,`;
       }).join('')}
-  });`;
+  });
+
+  ${d.methods(d.node, false)
+    .reduce((acc, method) => {
+      // dedup method names
+      if (!acc.find(i => d.name(i) === d.name(method))) {
+        acc.push(method)
+      }
+      return acc;
+    }, [])
+    // filter AudioScheduledSourceNode methods to prevent re-throwing errors
+    .filter(method => d.name(method) !== 'start' && d.name(method) !== 'stop')
+    .map(method => {
+      d.debug(method);
+      return `
+  Object.defineProperty(${d.name(d.node)}.prototype.${d.name(method)}, 'length', {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: ${method.arguments.reduce((acc, value) => acc += (value.optional ? 0 : 1), 0)}
+  });
+      `
+    }).join('')}
+  `;
 }())}
 
   return ${d.name(d.node)};

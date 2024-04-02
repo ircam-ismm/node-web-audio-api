@@ -386,6 +386,16 @@ module.exports = (jsExport, nativeBinding) => {
 
   }
 
+  Object.defineProperties(PannerNode, {
+    length: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 1,
+    },
+  });
+
   Object.defineProperties(PannerNode.prototype, {
     [Symbol.toStringTag]: {
       __proto__: null,
@@ -413,6 +423,22 @@ module.exports = (jsExport, nativeBinding) => {
 
     setPosition: kEnumerableProperty,
     setOrientation: kEnumerableProperty,
+  });
+
+  Object.defineProperty(PannerNode.prototype.setPosition, 'length', {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 3,
+  });
+
+  Object.defineProperty(PannerNode.prototype.setOrientation, 'length', {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 3,
   });
 
   return PannerNode;

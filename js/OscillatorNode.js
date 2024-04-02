@@ -169,6 +169,16 @@ module.exports = (jsExport, nativeBinding) => {
 
   }
 
+  Object.defineProperties(OscillatorNode, {
+    length: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 1,
+    },
+  });
+
   Object.defineProperties(OscillatorNode.prototype, {
     [Symbol.toStringTag]: {
       __proto__: null,
@@ -184,6 +194,14 @@ module.exports = (jsExport, nativeBinding) => {
     type: kEnumerableProperty,
 
     setPeriodicWave: kEnumerableProperty,
+  });
+
+  Object.defineProperty(OscillatorNode.prototype.setPeriodicWave, 'length', {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 1,
   });
 
   return OscillatorNode;

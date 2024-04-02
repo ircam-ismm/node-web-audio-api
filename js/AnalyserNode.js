@@ -229,6 +229,16 @@ module.exports = (jsExport, nativeBinding) => {
 
   }
 
+  Object.defineProperties(AnalyserNode, {
+    length: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 1,
+    },
+  });
+
   Object.defineProperties(AnalyserNode.prototype, {
     [Symbol.toStringTag]: {
       __proto__: null,
@@ -248,6 +258,38 @@ module.exports = (jsExport, nativeBinding) => {
     getByteFrequencyData: kEnumerableProperty,
     getFloatTimeDomainData: kEnumerableProperty,
     getByteTimeDomainData: kEnumerableProperty,
+  });
+
+  Object.defineProperty(AnalyserNode.prototype.getFloatFrequencyData, 'length', {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 1,
+  });
+
+  Object.defineProperty(AnalyserNode.prototype.getByteFrequencyData, 'length', {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 1,
+  });
+
+  Object.defineProperty(AnalyserNode.prototype.getFloatTimeDomainData, 'length', {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 1,
+  });
+
+  Object.defineProperty(AnalyserNode.prototype.getByteTimeDomainData, 'length', {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 1,
   });
 
   return AnalyserNode;
