@@ -24,6 +24,7 @@ const {
 } = require('./lib/cast.js');
 const {
   isFunction,
+  kEnumerableProperty,
 } = require('./lib/utils.js');
 const {
   throwSanitizedError,
@@ -48,6 +49,7 @@ const AudioNode = require('./AudioNode.js');
 
 module.exports = (jsExport, nativeBinding) => {
   class AnalyserNode extends AudioNode {
+
     constructor(context, options) {
 
       if (arguments.length < 1) {
@@ -130,6 +132,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     set fftSize(value) {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
       try {
         this[kNapiObj].fftSize = value;
       } catch (err) {
@@ -138,6 +144,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     set minDecibels(value) {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
       try {
         this[kNapiObj].minDecibels = value;
       } catch (err) {
@@ -146,6 +156,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     set maxDecibels(value) {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
       try {
         this[kNapiObj].maxDecibels = value;
       } catch (err) {
@@ -154,6 +168,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     set smoothingTimeConstant(value) {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
       try {
         this[kNapiObj].smoothingTimeConstant = value;
       } catch (err) {
@@ -162,6 +180,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     getFloatFrequencyData(...args) {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
       try {
         return this[kNapiObj].getFloatFrequencyData(...args);
       } catch (err) {
@@ -170,6 +192,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     getByteFrequencyData(...args) {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
       try {
         return this[kNapiObj].getByteFrequencyData(...args);
       } catch (err) {
@@ -178,6 +204,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     getFloatTimeDomainData(...args) {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
       try {
         return this[kNapiObj].getFloatTimeDomainData(...args);
       } catch (err) {
@@ -186,6 +216,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     getByteTimeDomainData(...args) {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
       try {
         return this[kNapiObj].getByteTimeDomainData(...args);
       } catch (err) {
@@ -194,6 +228,20 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
   }
+
+  Object.defineProperties(AnalyserNode.prototype, {
+
+    fftSize: kEnumerableProperty,
+    frequencyBinCount: kEnumerableProperty,
+    minDecibels: kEnumerableProperty,
+    maxDecibels: kEnumerableProperty,
+    smoothingTimeConstant: kEnumerableProperty,
+
+    getFloatFrequencyData: kEnumerableProperty,
+    getByteFrequencyData: kEnumerableProperty,
+    getFloatTimeDomainData: kEnumerableProperty,
+    getByteTimeDomainData: kEnumerableProperty,
+  });
 
   return AnalyserNode;
 };

@@ -24,6 +24,7 @@ const {
 } = require('./lib/cast.js');
 const {
   isFunction,
+  kEnumerableProperty,
 } = require('./lib/utils.js');
 const {
   throwSanitizedError,
@@ -48,6 +49,7 @@ const AudioNode = require('./AudioNode.js');
 
 module.exports = (jsExport, nativeBinding) => {
   class IIRFilterNode extends AudioNode {
+
     constructor(context, options) {
 
       if (arguments.length < 2) {
@@ -108,6 +110,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     getFrequencyResponse(...args) {
+      if (!(this instanceof IIRFilterNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'IIRFilterNode\'');
+      }
+
       try {
         return this[kNapiObj].getFrequencyResponse(...args);
       } catch (err) {
@@ -116,6 +122,11 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
   }
+
+  Object.defineProperties(IIRFilterNode.prototype, {
+
+    getFrequencyResponse: kEnumerableProperty,
+  });
 
   return IIRFilterNode;
 };

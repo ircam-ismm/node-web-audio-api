@@ -24,6 +24,7 @@ const {
 } = require('./lib/cast.js');
 const {
   isFunction,
+  kEnumerableProperty,
 } = require('./lib/utils.js');
 const {
   throwSanitizedError,
@@ -48,6 +49,13 @@ const AudioNode = require('./AudioNode.js');
 
 module.exports = (jsExport, nativeBinding) => {
   class DynamicsCompressorNode extends AudioNode {
+
+    #threshold = null;
+    #knee = null;
+    #ratio = null;
+    #attack = null;
+    #release = null;
+
     constructor(context, options) {
 
       if (arguments.length < 1) {
@@ -115,11 +123,31 @@ module.exports = (jsExport, nativeBinding) => {
 
       super(context, napiObj);
 
-      this.threshold = new AudioParam(this[kNapiObj].threshold);
-      this.knee = new AudioParam(this[kNapiObj].knee);
-      this.ratio = new AudioParam(this[kNapiObj].ratio);
-      this.attack = new AudioParam(this[kNapiObj].attack);
-      this.release = new AudioParam(this[kNapiObj].release);
+      this.#threshold = new AudioParam(this[kNapiObj].threshold);
+      this.#knee = new AudioParam(this[kNapiObj].knee);
+      this.#ratio = new AudioParam(this[kNapiObj].ratio);
+      this.#attack = new AudioParam(this[kNapiObj].attack);
+      this.#release = new AudioParam(this[kNapiObj].release);
+    }
+
+    get threshold() {
+      return this.#threshold;
+    }
+
+    get knee() {
+      return this.#knee;
+    }
+
+    get ratio() {
+      return this.#ratio;
+    }
+
+    get attack() {
+      return this.#attack;
+    }
+
+    get release() {
+      return this.#release;
     }
 
     get reduction() {
@@ -127,6 +155,17 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
   }
+
+  Object.defineProperties(DynamicsCompressorNode.prototype, {
+    threshold: kEnumerableProperty,
+    knee: kEnumerableProperty,
+    ratio: kEnumerableProperty,
+    attack: kEnumerableProperty,
+    release: kEnumerableProperty,
+
+    reduction: kEnumerableProperty,
+
+  });
 
   return DynamicsCompressorNode;
 };

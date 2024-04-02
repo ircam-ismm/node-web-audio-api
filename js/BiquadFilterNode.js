@@ -24,6 +24,7 @@ const {
 } = require('./lib/cast.js');
 const {
   isFunction,
+  kEnumerableProperty,
 } = require('./lib/utils.js');
 const {
   throwSanitizedError,
@@ -48,6 +49,12 @@ const AudioNode = require('./AudioNode.js');
 
 module.exports = (jsExport, nativeBinding) => {
   class BiquadFilterNode extends AudioNode {
+
+    #frequency = null;
+    #detune = null;
+    #Q = null;
+    #gain = null;
+
     constructor(context, options) {
 
       if (arguments.length < 1) {
@@ -117,10 +124,26 @@ module.exports = (jsExport, nativeBinding) => {
 
       super(context, napiObj);
 
-      this.frequency = new AudioParam(this[kNapiObj].frequency);
-      this.detune = new AudioParam(this[kNapiObj].detune);
-      this.Q = new AudioParam(this[kNapiObj].Q);
-      this.gain = new AudioParam(this[kNapiObj].gain);
+      this.#frequency = new AudioParam(this[kNapiObj].frequency);
+      this.#detune = new AudioParam(this[kNapiObj].detune);
+      this.#Q = new AudioParam(this[kNapiObj].Q);
+      this.#gain = new AudioParam(this[kNapiObj].gain);
+    }
+
+    get frequency() {
+      return this.#frequency;
+    }
+
+    get detune() {
+      return this.#detune;
+    }
+
+    get Q() {
+      return this.#Q;
+    }
+
+    get gain() {
+      return this.#gain;
     }
 
     get type() {
@@ -128,6 +151,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     set type(value) {
+      if (!(this instanceof BiquadFilterNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BiquadFilterNode\'');
+      }
+
       try {
         this[kNapiObj].type = value;
       } catch (err) {
@@ -136,6 +163,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     getFrequencyResponse(...args) {
+      if (!(this instanceof BiquadFilterNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BiquadFilterNode\'');
+      }
+
       try {
         return this[kNapiObj].getFrequencyResponse(...args);
       } catch (err) {
@@ -144,6 +175,17 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
   }
+
+  Object.defineProperties(BiquadFilterNode.prototype, {
+    frequency: kEnumerableProperty,
+    detune: kEnumerableProperty,
+    Q: kEnumerableProperty,
+    gain: kEnumerableProperty,
+
+    type: kEnumerableProperty,
+
+    getFrequencyResponse: kEnumerableProperty,
+  });
 
   return BiquadFilterNode;
 };

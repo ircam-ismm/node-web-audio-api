@@ -24,6 +24,7 @@ const {
 } = require('./lib/cast.js');
 const {
   isFunction,
+  kEnumerableProperty,
 } = require('./lib/utils.js');
 const {
   throwSanitizedError,
@@ -48,6 +49,7 @@ const AudioNode = require('./AudioNode.js');
 
 module.exports = (jsExport, nativeBinding) => {
   class MediaStreamAudioSourceNode extends AudioNode {
+
     constructor(context, options) {
 
       if (arguments.length < 2) {
@@ -89,6 +91,12 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
   }
+
+  Object.defineProperties(MediaStreamAudioSourceNode.prototype, {
+
+    mediaStream: kEnumerableProperty,
+
+  });
 
   return MediaStreamAudioSourceNode;
 };

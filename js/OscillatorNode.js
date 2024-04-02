@@ -24,6 +24,7 @@ const {
 } = require('./lib/cast.js');
 const {
   isFunction,
+  kEnumerableProperty,
 } = require('./lib/utils.js');
 const {
   throwSanitizedError,
@@ -48,6 +49,10 @@ const AudioScheduledSourceNode = require('./AudioScheduledSourceNode.js');
 
 module.exports = (jsExport, nativeBinding) => {
   class OscillatorNode extends AudioScheduledSourceNode {
+
+    #frequency = null;
+    #detune = null;
+
     constructor(context, options) {
 
       if (arguments.length < 1) {
@@ -122,8 +127,16 @@ module.exports = (jsExport, nativeBinding) => {
       // Bridge Rust native event to Node EventTarget
       bridgeEventTarget(this);
 
-      this.frequency = new AudioParam(this[kNapiObj].frequency);
-      this.detune = new AudioParam(this[kNapiObj].detune);
+      this.#frequency = new AudioParam(this[kNapiObj].frequency);
+      this.#detune = new AudioParam(this[kNapiObj].detune);
+    }
+
+    get frequency() {
+      return this.#frequency;
+    }
+
+    get detune() {
+      return this.#detune;
     }
 
     get type() {
@@ -131,6 +144,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     set type(value) {
+      if (!(this instanceof OscillatorNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'OscillatorNode\'');
+      }
+
       try {
         this[kNapiObj].type = value;
       } catch (err) {
@@ -139,6 +156,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     setPeriodicWave(...args) {
+      if (!(this instanceof OscillatorNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'OscillatorNode\'');
+      }
+
       try {
         return this[kNapiObj].setPeriodicWave(...args);
       } catch (err) {
@@ -147,6 +168,15 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
   }
+
+  Object.defineProperties(OscillatorNode.prototype, {
+    frequency: kEnumerableProperty,
+    detune: kEnumerableProperty,
+
+    type: kEnumerableProperty,
+
+    setPeriodicWave: kEnumerableProperty,
+  });
 
   return OscillatorNode;
 };

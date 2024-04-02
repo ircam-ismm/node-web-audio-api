@@ -22,6 +22,7 @@ const {
 } = require('./lib/errors.js');
 const {
   isFunction,
+  kEnumerableProperty,
 } = require('./lib/utils.js');
 const {
   kNapiObj,
@@ -39,12 +40,20 @@ class AudioScheduledSourceNode extends AudioNode {
   }
 
   set onended(value) {
+    if (!(this instanceof AudioScheduledSourceNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioScheduledSourceNode\'');
+    }
+
     if (isFunction(value) || value === null) {
       this._onended = value;
     }
   }
 
   start(...args) {
+    if (!(this instanceof AudioScheduledSourceNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioScheduledSourceNode\'');
+    }
+
     try {
       return this[kNapiObj].start(...args);
     } catch (err) {
@@ -53,6 +62,10 @@ class AudioScheduledSourceNode extends AudioNode {
   }
 
   stop(...args) {
+    if (!(this instanceof AudioScheduledSourceNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioScheduledSourceNode\'');
+    }
+
     try {
       return this[kNapiObj].stop(...args);
     } catch (err) {
@@ -61,5 +74,11 @@ class AudioScheduledSourceNode extends AudioNode {
   }
 
 }
+
+Object.defineProperties(AudioNode.prototype, {
+  onended: kEnumerableProperty,
+  start: kEnumerableProperty,
+  stop: kEnumerableProperty,
+});
 
 module.exports = AudioScheduledSourceNode;

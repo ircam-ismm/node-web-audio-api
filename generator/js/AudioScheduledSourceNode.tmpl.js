@@ -1,5 +1,5 @@
 const { throwSanitizedError } = require('./lib/errors.js');
-const { isFunction } = require('./lib/utils.js');
+const { isFunction, kEnumerableProperty } = require('./lib/utils.js');
 const { kNapiObj } = require('./lib/symbols.js');
 
 const AudioNode = require('./AudioNode.js');
@@ -20,6 +20,10 @@ ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
   // onended events
   return `
   set ${d.name(attr)}(value) {
+    if (!(this instanceof AudioScheduledSourceNode)) {
+      throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioScheduledSourceNode'");
+    }
+
     if (isFunction(value) || value === null) {
       this._${d.name(attr)} = value;
     }
@@ -35,6 +39,10 @@ ${d.methods(d.node, false).reduce((acc, method) => {
   }, []).map(method => {
     return `
   ${d.name(method)}(...args) {
+    if (!(this instanceof AudioScheduledSourceNode)) {
+      throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioScheduledSourceNode'");
+    }
+
     try {
       return this[kNapiObj].${d.name(method)}(...args);
     } catch (err) {
@@ -43,5 +51,13 @@ ${d.methods(d.node, false).reduce((acc, method) => {
   }
   `}).join('')}
 }
+
+Object.defineProperties(AudioNode.prototype, {
+  ${d.attributes(d.node).map(attr => {
+    return `${d.name(attr)}: kEnumerableProperty,`;
+  }).join('')}
+  start: kEnumerableProperty,
+  stop: kEnumerableProperty,
+});
 
 module.exports = AudioScheduledSourceNode;

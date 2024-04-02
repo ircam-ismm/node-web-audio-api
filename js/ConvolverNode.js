@@ -24,6 +24,7 @@ const {
 } = require('./lib/cast.js');
 const {
   isFunction,
+  kEnumerableProperty,
 } = require('./lib/utils.js');
 const {
   throwSanitizedError,
@@ -48,6 +49,7 @@ const AudioNode = require('./AudioNode.js');
 
 module.exports = (jsExport, nativeBinding) => {
   class ConvolverNode extends AudioNode {
+
     constructor(context, options) {
 
       if (arguments.length < 1) {
@@ -116,6 +118,10 @@ module.exports = (jsExport, nativeBinding) => {
 
     // @todo - should be able to set to null afterward
     set buffer(value) {
+      if (!(this instanceof ConvolverNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'ConvolverNode\'');
+      }
+
       if (value === null) {
         return;
       } else if (!(kNativeAudioBuffer in value)) {
@@ -132,6 +138,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     set normalize(value) {
+      if (!(this instanceof ConvolverNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'ConvolverNode\'');
+      }
+
       try {
         this[kNapiObj].normalize = value;
       } catch (err) {
@@ -140,6 +150,13 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
   }
+
+  Object.defineProperties(ConvolverNode.prototype, {
+
+    buffer: kEnumerableProperty,
+    normalize: kEnumerableProperty,
+
+  });
 
   return ConvolverNode;
 };

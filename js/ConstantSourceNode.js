@@ -24,6 +24,7 @@ const {
 } = require('./lib/cast.js');
 const {
   isFunction,
+  kEnumerableProperty,
 } = require('./lib/utils.js');
 const {
   throwSanitizedError,
@@ -48,6 +49,9 @@ const AudioScheduledSourceNode = require('./AudioScheduledSourceNode.js');
 
 module.exports = (jsExport, nativeBinding) => {
   class ConstantSourceNode extends AudioScheduledSourceNode {
+
+    #offset = null;
+
     constructor(context, options) {
 
       if (arguments.length < 1) {
@@ -86,10 +90,19 @@ module.exports = (jsExport, nativeBinding) => {
       // Bridge Rust native event to Node EventTarget
       bridgeEventTarget(this);
 
-      this.offset = new AudioParam(this[kNapiObj].offset);
+      this.#offset = new AudioParam(this[kNapiObj].offset);
+    }
+
+    get offset() {
+      return this.#offset;
     }
 
   }
+
+  Object.defineProperties(ConstantSourceNode.prototype, {
+    offset: kEnumerableProperty,
+
+  });
 
   return ConstantSourceNode;
 };

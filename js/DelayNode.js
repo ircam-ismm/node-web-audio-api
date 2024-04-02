@@ -24,6 +24,7 @@ const {
 } = require('./lib/cast.js');
 const {
   isFunction,
+  kEnumerableProperty,
 } = require('./lib/utils.js');
 const {
   throwSanitizedError,
@@ -48,6 +49,9 @@ const AudioNode = require('./AudioNode.js');
 
 module.exports = (jsExport, nativeBinding) => {
   class DelayNode extends AudioNode {
+
+    #delayTime = null;
+
     constructor(context, options) {
 
       if (arguments.length < 1) {
@@ -91,10 +95,19 @@ module.exports = (jsExport, nativeBinding) => {
 
       super(context, napiObj);
 
-      this.delayTime = new AudioParam(this[kNapiObj].delayTime);
+      this.#delayTime = new AudioParam(this[kNapiObj].delayTime);
+    }
+
+    get delayTime() {
+      return this.#delayTime;
     }
 
   }
+
+  Object.defineProperties(DelayNode.prototype, {
+    delayTime: kEnumerableProperty,
+
+  });
 
   return DelayNode;
 };

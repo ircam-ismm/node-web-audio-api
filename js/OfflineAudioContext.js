@@ -30,11 +30,11 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
       const [numberOfChannels, length, sampleRate] = args;
 
       if (!isPositiveInt(numberOfChannels)) {
-        throw new TypeError(`Invalid value for numberOfChannels: ${numberOfChannels}`);
+        throw new TypeError(`Failed to construct 'OfflineAudioContext': Invalid value for numberOfChannels: ${numberOfChannels}`);
       } else if (!isPositiveInt(length)) {
-        throw new TypeError(`Invalid value for length: ${length}`);
+        throw new TypeError(`Failed to construct 'OfflineAudioContext': Invalid value for length: ${length}`);
       } else if (!isPositiveNumber(sampleRate)) {
-        throw new TypeError(`Invalid value for sampleRate: ${sampleRate}`);
+        throw new TypeError(`Failed to construct 'OfflineAudioContext': Invalid value for sampleRate: ${sampleRate}`);
       }
 
       let napiObj;

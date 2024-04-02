@@ -23,6 +23,9 @@ const {
 const {
   kNapiObj,
 } = require('./lib/symbols.js');
+const {
+  kEnumerableProperty,
+} = require('./lib/utils.js');
 
 const {
   AudioParam,
@@ -30,15 +33,17 @@ const {
 } = require('./AudioParam.js');
 
 class AudioNode extends EventTarget {
+  #context = null;
+
   constructor(context, napiObj) {
     super(napiObj);
 
-    Object.defineProperty(this, 'context', {
-      value: context,
-      writable: false,
-    });
-
+    this.#context = context;
     this[kNapiObj] = napiObj;
+  }
+
+  get context() {
+    return this.#context;
   }
 
   get numberOfInputs() {
@@ -62,6 +67,10 @@ class AudioNode extends EventTarget {
   }
 
   set channelCount(value) {
+    if (!(this instanceof AudioNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioNode\'');
+    }
+
     try {
       this[kNapiObj].channelCount = value;
     } catch (err) {
@@ -70,6 +79,10 @@ class AudioNode extends EventTarget {
   }
 
   set channelCountMode(value) {
+    if (!(this instanceof AudioNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioNode\'');
+    }
+
     try {
       this[kNapiObj].channelCountMode = value;
     } catch (err) {
@@ -78,6 +91,10 @@ class AudioNode extends EventTarget {
   }
 
   set channelInterpretation(value) {
+    if (!(this instanceof AudioNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioNode\'');
+    }
+
     try {
       this[kNapiObj].channelInterpretation = value;
     } catch (err) {
@@ -96,6 +113,10 @@ class AudioNode extends EventTarget {
   // undefined connect (AudioParam destinationParam, optional unsigned long output = 0);
 
   connect(...args) {
+    if (!(this instanceof AudioNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioNode\'');
+    }
+
     const jsDest = args[0];
 
     // note that audio listener params are not wrapped
@@ -127,6 +148,10 @@ class AudioNode extends EventTarget {
   // undefined disconnect (AudioParam destinationParam, unsigned long output);
 
   disconnect(...args) {
+    if (!(this instanceof AudioNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioNode\'');
+    }
+
     if (args[0] instanceof AudioParam) {
       args[0] = args[0][kNativeAudioParam];
     }
@@ -141,7 +166,17 @@ class AudioNode extends EventTarget {
       throwSanitizedError(err);
     }
   }
-
 }
+
+Object.defineProperties(AudioNode.prototype, {
+  context: kEnumerableProperty,
+  numberOfInputs: kEnumerableProperty,
+  numberOfOutputs: kEnumerableProperty,
+  channelCount: kEnumerableProperty,
+  channelCountMode: kEnumerableProperty,
+  channelInterpretation: kEnumerableProperty,
+  connect: kEnumerableProperty,
+  disconnect: kEnumerableProperty,
+});
 
 module.exports = AudioNode;

@@ -2,7 +2,7 @@
 /* eslint-disable no-unused-vars */
 const conversions = require("webidl-conversions");
 const { toSanitizedSequence } = require('./lib/cast.js');
-const { isFunction } = require('./lib/utils.js');
+const { isFunction, kEnumerableProperty } = require('./lib/utils.js');
 const { throwSanitizedError } = require('./lib/errors.js');
 
 const { AudioParam } = require('./AudioParam.js');
@@ -15,6 +15,11 @@ const ${d.parent(d.node)} = require('./${d.parent(d.node)}.js');
 
 module.exports = (jsExport, nativeBinding) => {
   class ${d.name(d.node)} extends ${d.parent(d.node)} {
+    ${d.audioParams(d.node).map(param => {
+      return `
+    #${d.name(param)} = null`;
+    }).join('')}
+
     constructor(context, options) {
       ${(function() {
         // handle argument length compared to required arguments
@@ -254,9 +259,17 @@ module.exports = (jsExport, nativeBinding) => {
 
       ${d.audioParams(d.node).map(param => {
         return `
-      this.${d.name(param)} = new AudioParam(this[kNapiObj].${d.name(param)});`;
+      this.#${d.name(param)} = new AudioParam(this[kNapiObj].${d.name(param)});`;
       }).join('')}
     }
+
+${d.audioParams(d.node).map(param => {
+  return `
+  get ${d.name(param)}() {
+    return this.#${d.name(param)};
+  }
+  `;
+}).join('')}
 
 ${d.attributes(d.node).map(attr => {
   // ------------------------------------------------------
@@ -291,6 +304,10 @@ ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
       return `
     // @todo - should be able to set to null afterward
     set ${d.name(attr)}(value) {
+      if (!(this instanceof ${d.name(d.node)})) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
+      }
+
       if (value === null) {
         return;
       } else if (!(kNativeAudioBuffer in value)) {
@@ -311,6 +328,10 @@ ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
     default: {
       return `
     set ${d.name(attr)}(value) {
+      if (!(this instanceof ${d.name(d.node)})) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
+      }
+
       try {
         this[kNapiObj].${d.name(attr)} = value;
       } catch (err) {
@@ -336,6 +357,10 @@ ${d.methods(d.node, false)
   .map(method => {
     return `
     ${d.name(method)}(...args) {
+      if (!(this instanceof ${d.name(d.node)})) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
+      }
+
       try {
         return this[kNapiObj].${d.name(method)}(...args);
       } catch (err) {
@@ -344,6 +369,33 @@ ${d.methods(d.node, false)
     }
 `}).join('')}
   }
+
+${(function() {
+  return `
+  Object.defineProperties(${d.name(d.node)}.prototype, {
+    ${d.audioParams(d.node).map(param => {
+      return `${d.name(param)}: kEnumerableProperty,`;
+    }).join('')}
+
+    ${d.attributes(d.node).map(attr => {
+      return `${d.name(attr)}: kEnumerableProperty,`;
+    }).join('')}
+
+    ${d.methods(d.node, false)
+      .reduce((acc, method) => {
+        // dedup method names
+        if (!acc.find(i => d.name(i) === d.name(method))) {
+          acc.push(method)
+        }
+        return acc;
+      }, [])
+      // filter AudioScheduledSourceNode methods to prevent re-throwing errors
+      .filter(method => d.name(method) !== 'start' && d.name(method) !== 'stop')
+      .map(method => {
+        return `${d.name(method)}: kEnumerableProperty,`;
+      }).join('')}
+  });`;
+}())}
 
   return ${d.name(d.node)};
 };

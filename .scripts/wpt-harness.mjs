@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import { program } from 'commander';
 
 import * as nodeWebAudioAPI from '../index.mjs';
+// console.log(nodeWebAudioAPI);
 
 // mocks
 import createXMLHttpRequest from './wpt-mock/XMLHttpRequest.js';

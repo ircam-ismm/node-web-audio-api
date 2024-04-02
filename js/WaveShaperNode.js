@@ -24,6 +24,7 @@ const {
 } = require('./lib/cast.js');
 const {
   isFunction,
+  kEnumerableProperty,
 } = require('./lib/utils.js');
 const {
   throwSanitizedError,
@@ -48,6 +49,7 @@ const AudioNode = require('./AudioNode.js');
 
 module.exports = (jsExport, nativeBinding) => {
   class WaveShaperNode extends AudioNode {
+
     constructor(context, options) {
 
       if (arguments.length < 1) {
@@ -106,6 +108,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     set curve(value) {
+      if (!(this instanceof WaveShaperNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'WaveShaperNode\'');
+      }
+
       try {
         this[kNapiObj].curve = value;
       } catch (err) {
@@ -114,6 +120,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     set oversample(value) {
+      if (!(this instanceof WaveShaperNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'WaveShaperNode\'');
+      }
+
       try {
         this[kNapiObj].oversample = value;
       } catch (err) {
@@ -122,6 +132,13 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
   }
+
+  Object.defineProperties(WaveShaperNode.prototype, {
+
+    curve: kEnumerableProperty,
+    oversample: kEnumerableProperty,
+
+  });
 
   return WaveShaperNode;
 };
