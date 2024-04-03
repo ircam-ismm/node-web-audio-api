@@ -24,14 +24,13 @@ const {
 } = require('./lib/cast.js');
 const {
   isFunction,
+  kEnumerableProperty,
 } = require('./lib/utils.js');
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
 
-const {
-  AudioParam,
-} = require('./AudioParam.js');
+const AudioParam = require('./AudioParam.js');
 const {
   kNativeAudioBuffer,
   kAudioBuffer,
@@ -48,6 +47,10 @@ const AudioScheduledSourceNode = require('./AudioScheduledSourceNode.js');
 
 module.exports = (jsExport, nativeBinding) => {
   class OscillatorNode extends AudioScheduledSourceNode {
+
+    #frequency = null;
+    #detune = null;
+
     constructor(context, options) {
 
       if (arguments.length < 1) {
@@ -96,7 +99,7 @@ module.exports = (jsExport, nativeBinding) => {
           throw new TypeError(`Failed to construct 'OscillatorNode': Failed to read the 'periodicWave' property from OscillatorOptions: The provided value '${options.periodicWave}' is not an instance of PeriodicWave`);
         }
 
-        parsedOptions.periodicWave = options.periodicWave;
+        parsedOptions.periodicWave = options.periodicWave[kNapiObj];
       } else {
         parsedOptions.periodicWave = null;
       }
@@ -122,8 +125,16 @@ module.exports = (jsExport, nativeBinding) => {
       // Bridge Rust native event to Node EventTarget
       bridgeEventTarget(this);
 
-      this.frequency = new AudioParam(this[kNapiObj].frequency);
-      this.detune = new AudioParam(this[kNapiObj].detune);
+      this.#frequency = new AudioParam(this[kNapiObj].frequency);
+      this.#detune = new AudioParam(this[kNapiObj].detune);
+    }
+
+    get frequency() {
+      return this.#frequency;
+    }
+
+    get detune() {
+      return this.#detune;
     }
 
     get type() {
@@ -131,6 +142,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     set type(value) {
+      if (!(this instanceof OscillatorNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'OscillatorNode\'');
+      }
+
       try {
         this[kNapiObj].type = value;
       } catch (err) {
@@ -139,6 +154,16 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     setPeriodicWave(...args) {
+      if (!(this instanceof OscillatorNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'OscillatorNode\'');
+      }
+
+      if (arguments.length < 1) {
+        throw new TypeError(`Failed to execute 'setPeriodicWave' on 'OscillatorNode': 1 argument required, but only ${arguments.length} present`);
+      }
+
+      args[0] = args[0][kNapiObj];
+
       try {
         return this[kNapiObj].setPeriodicWave(...args);
       } catch (err) {
@@ -147,6 +172,41 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
   }
+
+  Object.defineProperties(OscillatorNode, {
+    length: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 1,
+    },
+  });
+
+  Object.defineProperties(OscillatorNode.prototype, {
+    [Symbol.toStringTag]: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 'OscillatorNode',
+    },
+
+    frequency: kEnumerableProperty,
+    detune: kEnumerableProperty,
+
+    type: kEnumerableProperty,
+
+    setPeriodicWave: kEnumerableProperty,
+  });
+
+  Object.defineProperty(OscillatorNode.prototype.setPeriodicWave, 'length', {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 1,
+  });
 
   return OscillatorNode;
 };

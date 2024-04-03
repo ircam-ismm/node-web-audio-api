@@ -2,10 +2,10 @@
 /* eslint-disable no-unused-vars */
 const conversions = require("webidl-conversions");
 const { toSanitizedSequence } = require('./lib/cast.js');
-const { isFunction } = require('./lib/utils.js');
+const { isFunction, kEnumerableProperty } = require('./lib/utils.js');
 const { throwSanitizedError } = require('./lib/errors.js');
 
-const { AudioParam } = require('./AudioParam.js');
+const AudioParam = require('./AudioParam.js');
 const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
 const { kNapiObj } = require('./lib/symbols.js');
 const { bridgeEventTarget } = require('./lib/events.js');
@@ -15,11 +15,15 @@ const ${d.parent(d.node)} = require('./${d.parent(d.node)}.js');
 
 module.exports = (jsExport, nativeBinding) => {
   class ${d.name(d.node)} extends ${d.parent(d.node)} {
+    ${d.audioParams(d.node).map(param => {
+      return `
+    #${d.name(param)} = null`;
+    }).join('')}
+
     constructor(context, options) {
       ${(function() {
         // handle argument length compared to required arguments
-        const numRequired = d.constructor(d.node).arguments
-          .reduce((acc, value) => acc += (value.optional ? 0 : 1), 0);
+        const numRequired = d.minRequiredArgs(d.constructor(d.node))
 
         return `
       if (arguments.length < ${numRequired}) {
@@ -135,7 +139,7 @@ module.exports = (jsExport, nativeBinding) => {
           throw new TypeError(\`Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value '\${options.${optionName}}' is not an instance of ${type}\`);
         }
 
-        parsedOptions.${optionName} = options.${optionName};
+        parsedOptions.${optionName} = options.${optionName}[kNapiObj];
       } else {
         parsedOptions.${optionName} = ${defaultValue};
       }
@@ -254,9 +258,17 @@ module.exports = (jsExport, nativeBinding) => {
 
       ${d.audioParams(d.node).map(param => {
         return `
-      this.${d.name(param)} = new AudioParam(this[kNapiObj].${d.name(param)});`;
+      this.#${d.name(param)} = new AudioParam(this[kNapiObj].${d.name(param)});`;
       }).join('')}
     }
+
+${d.audioParams(d.node).map(param => {
+  return `
+  get ${d.name(param)}() {
+    return this.#${d.name(param)};
+  }
+  `;
+}).join('')}
 
 ${d.attributes(d.node).map(attr => {
   // ------------------------------------------------------
@@ -291,6 +303,10 @@ ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
       return `
     // @todo - should be able to set to null afterward
     set ${d.name(attr)}(value) {
+      if (!(this instanceof ${d.name(d.node)})) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
+      }
+
       if (value === null) {
         return;
       } else if (!(kNativeAudioBuffer in value)) {
@@ -311,6 +327,10 @@ ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
     default: {
       return `
     set ${d.name(attr)}(value) {
+      if (!(this instanceof ${d.name(d.node)})) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
+      }
+
       try {
         this[kNapiObj].${d.name(attr)} = value;
       } catch (err) {
@@ -334,8 +354,23 @@ ${d.methods(d.node, false)
   // filter AudioScheduledSourceNode methods to prevent re-throwing errors
   .filter(method => d.name(method) !== 'start' && d.name(method) !== 'stop')
   .map(method => {
+    const numRequired = d.minRequiredArgs(method);
+
     return `
     ${d.name(method)}(...args) {
+      if (!(this instanceof ${d.name(d.node)})) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
+      }
+
+      if (arguments.length < ${numRequired}) {
+        throw new TypeError(\`Failed to execute '${d.name(method)}' on '${d.name(d.node)}': ${numRequired} argument required, but only \${arguments.length}\ present\`);
+      }
+
+      ${method.arguments[0].idlType.idlType === 'PeriodicWave'
+        ? `args[0] = args[0][kNapiObj];`
+        : ``
+      }
+
       try {
         return this[kNapiObj].${d.name(method)}(...args);
       } catch (err) {
@@ -344,6 +379,78 @@ ${d.methods(d.node, false)
     }
 `}).join('')}
   }
+
+${(function() {
+  // length defines the minimum required number of argument of the constructor
+  // "The value of the Function object’s “length” property is
+  // a Number determined as follows:
+  // "Return the length of the shortest argument list of the entries in S."
+  return `
+  Object.defineProperties(${d.name(d.node)}, {
+    length: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: ${d.minRequiredArgs(d.constructor(d.node))}
+    },
+  });
+
+  Object.defineProperties(${d.name(d.node)}.prototype, {
+    [Symbol.toStringTag]: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: '${d.name(d.node)}',
+    },
+
+    ${d.audioParams(d.node).map(param => {
+      return `${d.name(param)}: kEnumerableProperty,`;
+    }).join('')}
+
+    ${d.attributes(d.node).map(attr => {
+      return `${d.name(attr)}: kEnumerableProperty,`;
+    }).join('')}
+
+    ${d.methods(d.node, false)
+      .reduce((acc, method) => {
+        // dedup method names
+        if (!acc.find(i => d.name(i) === d.name(method))) {
+          acc.push(method)
+        }
+        return acc;
+      }, [])
+      // filter AudioScheduledSourceNode methods to prevent re-throwing errors
+      .filter(method => d.name(method) !== 'start' && d.name(method) !== 'stop')
+      .map(method => {
+        return `${d.name(method)}: kEnumerableProperty,`;
+      }).join('')}
+  });
+
+  ${d.methods(d.node, false)
+    .reduce((acc, method) => {
+      // dedup method names
+      if (!acc.find(i => d.name(i) === d.name(method))) {
+        acc.push(method)
+      }
+      return acc;
+    }, [])
+    // filter AudioScheduledSourceNode methods to prevent re-throwing errors
+    .filter(method => d.name(method) !== 'start' && d.name(method) !== 'stop')
+    .map(method => {
+      return `
+  Object.defineProperty(${d.name(d.node)}.prototype.${d.name(method)}, 'length', {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: ${d.minRequiredArgs(method)}
+  });
+      `
+    }).join('')}
+  `;
+}())}
 
   return ${d.name(d.node)};
 };

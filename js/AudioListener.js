@@ -1,8 +1,10 @@
 const conversions = require("webidl-conversions");
-const { throwSanitizedError } = require('./lib/errors.js');
 
+const { throwSanitizedError } = require('./lib/errors.js');
+const { kEnumerableProperty } = require('./lib/utils.js');
 const { kNapiObj } = require('./lib/symbols.js');
-const { AudioParam } = require('./AudioParam.js');
+
+const AudioParam = require('./AudioParam.js');
 
 // interface AudioListener {
 //     readonly attribute AudioParam positionX;
@@ -18,6 +20,16 @@ const { AudioParam } = require('./AudioParam.js');
 //     undefined setOrientation (float x, float y, float z, float xUp, float yUp, float zUp);
 // };
 class AudioListener {
+  #positionX = null;
+  #positionY = null;
+  #positionZ = null;
+  #forwardX = null;
+  #forwardY = null;
+  #forwardZ = null;
+  #upX = null;
+  #upY = null;
+  #upZ = null;
+
   constructor(napiObj) {
     // Make constructor "private"
     // @todo - this is not very solid, but does the job for now
@@ -27,62 +39,58 @@ class AudioListener {
 
     this[kNapiObj] = napiObj;
 
-    const positionX = new AudioParam(napiObj.positionX)
-    Object.defineProperty(this, 'positionX', {
-       value: positionX,
-       writable: false,
-    });
+    this.#positionX = new AudioParam(napiObj.positionX);
+    this.#positionY = new AudioParam(napiObj.positionY);
+    this.#positionZ = new AudioParam(napiObj.positionZ);
+    this.#forwardX = new AudioParam(napiObj.forwardX);
+    this.#forwardY = new AudioParam(napiObj.forwardY);
+    this.#forwardZ = new AudioParam(napiObj.forwardZ);
+    this.#upX = new AudioParam(napiObj.upX);
+    this.#upY = new AudioParam(napiObj.upY);
+    this.#upZ = new AudioParam(napiObj.upZ);
+  }
 
-    const positionY = new AudioParam(napiObj.positionY)
-    Object.defineProperty(this, 'positionY', {
-       value: positionY,
-       writable: false,
-    });
+  get positionX() {
+    return this.#positionX;
+  }
 
-    const positionZ = new AudioParam(napiObj.positionZ)
-    Object.defineProperty(this, 'positionZ', {
-       value: positionZ,
-       writable: false,
-    });
+  get positionY() {
+    return this.#positionY;
+  }
 
-    const forwardX = new AudioParam(napiObj.forwardX)
-    Object.defineProperty(this, 'forwardX', {
-       value: forwardX,
-       writable: false,
-    });
+  get positionZ() {
+    return this.#positionZ;
+  }
 
-    const forwardY = new AudioParam(napiObj.forwardY)
-    Object.defineProperty(this, 'forwardY', {
-       value: forwardY,
-       writable: false,
-    });
+  get forwardX() {
+    return this.#forwardX;
+  }
 
-    const forwardZ = new AudioParam(napiObj.forwardZ)
-    Object.defineProperty(this, 'forwardZ', {
-       value: forwardZ,
-       writable: false,
-    });
+  get forwardY() {
+    return this.#forwardY;
+  }
 
-    const upX = new AudioParam(napiObj.upX)
-    Object.defineProperty(this, 'upX', {
-       value: upX,
-       writable: false,
-    });
+  get forwardZ() {
+    return this.#forwardZ;
+  }
 
-    const upY = new AudioParam(napiObj.upY)
-    Object.defineProperty(this, 'upY', {
-       value: upY,
-       writable: false,
-    });
+  get upX() {
+    return this.#upX;
+  }
 
-    const upZ = new AudioParam(napiObj.upZ)
-    Object.defineProperty(this, 'upZ', {
-       value: upZ,
-       writable: false,
-    });
+  get upY() {
+    return this.#upY;
+  }
+
+  get upZ() {
+    return this.#upZ;
   }
 
   setPosition(x, y, z) {
+    if (!(this instanceof AudioListener)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioListener\'');
+    }
+
     if (arguments.length < 3) {
       throw new TypeError(`Failed to execute 'setPosition' on 'AudioListener': 3 arguments required, but only 0 present.`);
     }
@@ -107,6 +115,10 @@ class AudioListener {
   }
 
   setOrientation(x, y, z, xUp, yUp, zUp) {
+    if (!(this instanceof AudioListener)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioListener\'');
+    }
+
     if (arguments.length < 6) {
       throw new TypeError(`Failed to execute 'setOrientation' on 'AudioListener': 6 arguments required, but only 0 present.`);
     }
@@ -142,5 +154,37 @@ class AudioListener {
     }
   }
 }
+
+Object.defineProperties(AudioListener, {
+  length: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 0,
+  },
+});
+
+Object.defineProperties(AudioListener.prototype, {
+  [Symbol.toStringTag]: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 'AudioListener',
+  },
+
+  positionX: kEnumerableProperty,
+  positionY: kEnumerableProperty,
+  positionZ: kEnumerableProperty,
+  forwardX: kEnumerableProperty,
+  forwardY: kEnumerableProperty,
+  forwardZ: kEnumerableProperty,
+  upX: kEnumerableProperty,
+  upY: kEnumerableProperty,
+  upZ: kEnumerableProperty,
+  setPosition: kEnumerableProperty,
+  setOrientation: kEnumerableProperty,
+});
 
 module.exports = AudioListener;

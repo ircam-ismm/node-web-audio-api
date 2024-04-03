@@ -24,14 +24,13 @@ const {
 } = require('./lib/cast.js');
 const {
   isFunction,
+  kEnumerableProperty,
 } = require('./lib/utils.js');
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
 
-const {
-  AudioParam,
-} = require('./AudioParam.js');
+const AudioParam = require('./AudioParam.js');
 const {
   kNativeAudioBuffer,
   kAudioBuffer,
@@ -48,6 +47,14 @@ const AudioNode = require('./AudioNode.js');
 
 module.exports = (jsExport, nativeBinding) => {
   class PannerNode extends AudioNode {
+
+    #positionX = null;
+    #positionY = null;
+    #positionZ = null;
+    #orientationX = null;
+    #orientationY = null;
+    #orientationZ = null;
+
     constructor(context, options) {
 
       if (arguments.length < 1) {
@@ -191,12 +198,36 @@ module.exports = (jsExport, nativeBinding) => {
 
       super(context, napiObj);
 
-      this.positionX = new AudioParam(this[kNapiObj].positionX);
-      this.positionY = new AudioParam(this[kNapiObj].positionY);
-      this.positionZ = new AudioParam(this[kNapiObj].positionZ);
-      this.orientationX = new AudioParam(this[kNapiObj].orientationX);
-      this.orientationY = new AudioParam(this[kNapiObj].orientationY);
-      this.orientationZ = new AudioParam(this[kNapiObj].orientationZ);
+      this.#positionX = new AudioParam(this[kNapiObj].positionX);
+      this.#positionY = new AudioParam(this[kNapiObj].positionY);
+      this.#positionZ = new AudioParam(this[kNapiObj].positionZ);
+      this.#orientationX = new AudioParam(this[kNapiObj].orientationX);
+      this.#orientationY = new AudioParam(this[kNapiObj].orientationY);
+      this.#orientationZ = new AudioParam(this[kNapiObj].orientationZ);
+    }
+
+    get positionX() {
+      return this.#positionX;
+    }
+
+    get positionY() {
+      return this.#positionY;
+    }
+
+    get positionZ() {
+      return this.#positionZ;
+    }
+
+    get orientationX() {
+      return this.#orientationX;
+    }
+
+    get orientationY() {
+      return this.#orientationY;
+    }
+
+    get orientationZ() {
+      return this.#orientationZ;
     }
 
     get panningModel() {
@@ -232,6 +263,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     set panningModel(value) {
+      if (!(this instanceof PannerNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
+      }
+
       try {
         this[kNapiObj].panningModel = value;
       } catch (err) {
@@ -240,6 +275,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     set distanceModel(value) {
+      if (!(this instanceof PannerNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
+      }
+
       try {
         this[kNapiObj].distanceModel = value;
       } catch (err) {
@@ -248,6 +287,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     set refDistance(value) {
+      if (!(this instanceof PannerNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
+      }
+
       try {
         this[kNapiObj].refDistance = value;
       } catch (err) {
@@ -256,6 +299,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     set maxDistance(value) {
+      if (!(this instanceof PannerNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
+      }
+
       try {
         this[kNapiObj].maxDistance = value;
       } catch (err) {
@@ -264,6 +311,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     set rolloffFactor(value) {
+      if (!(this instanceof PannerNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
+      }
+
       try {
         this[kNapiObj].rolloffFactor = value;
       } catch (err) {
@@ -272,6 +323,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     set coneInnerAngle(value) {
+      if (!(this instanceof PannerNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
+      }
+
       try {
         this[kNapiObj].coneInnerAngle = value;
       } catch (err) {
@@ -280,6 +335,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     set coneOuterAngle(value) {
+      if (!(this instanceof PannerNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
+      }
+
       try {
         this[kNapiObj].coneOuterAngle = value;
       } catch (err) {
@@ -288,6 +347,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     set coneOuterGain(value) {
+      if (!(this instanceof PannerNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
+      }
+
       try {
         this[kNapiObj].coneOuterGain = value;
       } catch (err) {
@@ -296,6 +359,14 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     setPosition(...args) {
+      if (!(this instanceof PannerNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
+      }
+
+      if (arguments.length < 3) {
+        throw new TypeError(`Failed to execute 'setPosition' on 'PannerNode': 3 argument required, but only ${arguments.length} present`);
+      }
+
       try {
         return this[kNapiObj].setPosition(...args);
       } catch (err) {
@@ -304,6 +375,14 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     setOrientation(...args) {
+      if (!(this instanceof PannerNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
+      }
+
+      if (arguments.length < 3) {
+        throw new TypeError(`Failed to execute 'setOrientation' on 'PannerNode': 3 argument required, but only ${arguments.length} present`);
+      }
+
       try {
         return this[kNapiObj].setOrientation(...args);
       } catch (err) {
@@ -312,6 +391,61 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
   }
+
+  Object.defineProperties(PannerNode, {
+    length: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 1,
+    },
+  });
+
+  Object.defineProperties(PannerNode.prototype, {
+    [Symbol.toStringTag]: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 'PannerNode',
+    },
+
+    positionX: kEnumerableProperty,
+    positionY: kEnumerableProperty,
+    positionZ: kEnumerableProperty,
+    orientationX: kEnumerableProperty,
+    orientationY: kEnumerableProperty,
+    orientationZ: kEnumerableProperty,
+
+    panningModel: kEnumerableProperty,
+    distanceModel: kEnumerableProperty,
+    refDistance: kEnumerableProperty,
+    maxDistance: kEnumerableProperty,
+    rolloffFactor: kEnumerableProperty,
+    coneInnerAngle: kEnumerableProperty,
+    coneOuterAngle: kEnumerableProperty,
+    coneOuterGain: kEnumerableProperty,
+
+    setPosition: kEnumerableProperty,
+    setOrientation: kEnumerableProperty,
+  });
+
+  Object.defineProperty(PannerNode.prototype.setPosition, 'length', {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 3,
+  });
+
+  Object.defineProperty(PannerNode.prototype.setOrientation, 'length', {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 3,
+  });
 
   return PannerNode;
 };

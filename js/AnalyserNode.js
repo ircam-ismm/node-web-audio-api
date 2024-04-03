@@ -24,14 +24,13 @@ const {
 } = require('./lib/cast.js');
 const {
   isFunction,
+  kEnumerableProperty,
 } = require('./lib/utils.js');
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
 
-const {
-  AudioParam,
-} = require('./AudioParam.js');
+const AudioParam = require('./AudioParam.js');
 const {
   kNativeAudioBuffer,
   kAudioBuffer,
@@ -48,6 +47,7 @@ const AudioNode = require('./AudioNode.js');
 
 module.exports = (jsExport, nativeBinding) => {
   class AnalyserNode extends AudioNode {
+
     constructor(context, options) {
 
       if (arguments.length < 1) {
@@ -130,6 +130,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     set fftSize(value) {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
       try {
         this[kNapiObj].fftSize = value;
       } catch (err) {
@@ -138,6 +142,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     set minDecibels(value) {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
       try {
         this[kNapiObj].minDecibels = value;
       } catch (err) {
@@ -146,6 +154,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     set maxDecibels(value) {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
       try {
         this[kNapiObj].maxDecibels = value;
       } catch (err) {
@@ -154,6 +166,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     set smoothingTimeConstant(value) {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
       try {
         this[kNapiObj].smoothingTimeConstant = value;
       } catch (err) {
@@ -162,6 +178,14 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     getFloatFrequencyData(...args) {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
+      if (arguments.length < 1) {
+        throw new TypeError(`Failed to execute 'getFloatFrequencyData' on 'AnalyserNode': 1 argument required, but only ${arguments.length} present`);
+      }
+
       try {
         return this[kNapiObj].getFloatFrequencyData(...args);
       } catch (err) {
@@ -170,6 +194,14 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     getByteFrequencyData(...args) {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
+      if (arguments.length < 1) {
+        throw new TypeError(`Failed to execute 'getByteFrequencyData' on 'AnalyserNode': 1 argument required, but only ${arguments.length} present`);
+      }
+
       try {
         return this[kNapiObj].getByteFrequencyData(...args);
       } catch (err) {
@@ -178,6 +210,14 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     getFloatTimeDomainData(...args) {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
+      if (arguments.length < 1) {
+        throw new TypeError(`Failed to execute 'getFloatTimeDomainData' on 'AnalyserNode': 1 argument required, but only ${arguments.length} present`);
+      }
+
       try {
         return this[kNapiObj].getFloatTimeDomainData(...args);
       } catch (err) {
@@ -186,6 +226,14 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     getByteTimeDomainData(...args) {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
+      if (arguments.length < 1) {
+        throw new TypeError(`Failed to execute 'getByteTimeDomainData' on 'AnalyserNode': 1 argument required, but only ${arguments.length} present`);
+      }
+
       try {
         return this[kNapiObj].getByteTimeDomainData(...args);
       } catch (err) {
@@ -194,6 +242,69 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
   }
+
+  Object.defineProperties(AnalyserNode, {
+    length: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 1,
+    },
+  });
+
+  Object.defineProperties(AnalyserNode.prototype, {
+    [Symbol.toStringTag]: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 'AnalyserNode',
+    },
+
+    fftSize: kEnumerableProperty,
+    frequencyBinCount: kEnumerableProperty,
+    minDecibels: kEnumerableProperty,
+    maxDecibels: kEnumerableProperty,
+    smoothingTimeConstant: kEnumerableProperty,
+
+    getFloatFrequencyData: kEnumerableProperty,
+    getByteFrequencyData: kEnumerableProperty,
+    getFloatTimeDomainData: kEnumerableProperty,
+    getByteTimeDomainData: kEnumerableProperty,
+  });
+
+  Object.defineProperty(AnalyserNode.prototype.getFloatFrequencyData, 'length', {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 1,
+  });
+
+  Object.defineProperty(AnalyserNode.prototype.getByteFrequencyData, 'length', {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 1,
+  });
+
+  Object.defineProperty(AnalyserNode.prototype.getFloatTimeDomainData, 'length', {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 1,
+  });
+
+  Object.defineProperty(AnalyserNode.prototype.getByteTimeDomainData, 'length', {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 1,
+  });
 
   return AnalyserNode;
 };

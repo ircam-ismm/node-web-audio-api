@@ -1,24 +1,33 @@
-const { isFunction } = require('./lib/utils.js');
+const { isFunction, kEnumerableProperty } = require('./lib/utils.js');
 const { kNapiObj } = require('./lib/symbols.js');
 const { kNativeAudioBuffer } = require('./AudioBuffer.js');
 
 const AudioListener = require('./AudioListener.js')
-const kAudioListener = Symbol('node-web-audio-api:audio-listener');
 
 module.exports = (jsExport /*, nativeBinding */) => {
   class BaseAudioContext extends EventTarget {
+    #listener = null;
+    #destination = null;
+
     constructor(napiObj) {
       super(napiObj);
 
       this[kNapiObj] = napiObj;
-      // AudioListener is lazily instantiated
-      this[kAudioListener] = null;
 
-      const destination = new jsExport.AudioDestinationNode(this, napiObj.destination);
-      Object.defineProperty(this, 'destination', {
-        value: destination,
-        writable: false,
-      });
+      this.#listener = null; // lazily instanciated
+      this.#destination = new jsExport.AudioDestinationNode(this, napiObj.destination);
+    }
+
+    get listener() {
+      if (this.#listener === null) {
+        this.#listener = new AudioListener(this[kNapiObj].listener);
+      }
+
+      return this.#listener;
+    }
+
+    get destination() {
+      return this.#destination;
     }
 
     get sampleRate() {
@@ -27,14 +36,6 @@ module.exports = (jsExport /*, nativeBinding */) => {
 
     get currentTime() {
       return this[kNapiObj].currentTime;
-    }
-
-    get listener() {
-      if (this[kAudioListener] === null) {
-        this[kAudioListener] = new AudioListener(this[kNapiObj].listener);
-      }
-
-      return this[kAudioListener];
     }
 
     get state() {
@@ -49,6 +50,10 @@ module.exports = (jsExport /*, nativeBinding */) => {
     }
 
     set onstatechange(value) {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
+      }
+
       if (isFunction(value) || value === null) {
         this._statechange = value;
       }
@@ -59,6 +64,10 @@ module.exports = (jsExport /*, nativeBinding */) => {
     // unexpected manner
     // cf. https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-decodeaudiodata
     decodeAudioData(audioData, decodeSuccessCallback, decodeErrorCallback) {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
+      }
+
       if (!(audioData instanceof ArrayBuffer)) {
         throw new TypeError('Failed to execute "decodeAudioData": parameter 1 is not of type "ArrayBuffer"');
       }
@@ -82,6 +91,10 @@ module.exports = (jsExport /*, nativeBinding */) => {
     }
 
     createBuffer(numberOfChannels, length, sampleRate) {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
+      }
+
       const options = {};
 
       if (numberOfChannels !== undefined) {
@@ -100,6 +113,14 @@ module.exports = (jsExport /*, nativeBinding */) => {
     }
 
     createPeriodicWave(real, imag) {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
+      }
+
+      if (arguments.length < 2) {
+        throw new TypeError(\`Failed to execute 'createPeriodicWave' on 'BaseAudioContext': 2 argument required, but only \${arguments.length} present\`);
+      }
+
       const options = {};
 
       if (real !== undefined) {
@@ -129,6 +150,10 @@ ${d.nodes.map(n => {
 
 return `\
     ${d.factoryName(n)}(${args.map(arg => arg.name).join(', ')}) {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
+      }
+
 ${args.length > 0 ? `\
       const options = {};
 
@@ -148,6 +173,47 @@ ${args.length > 0 ? `\
 `
   }).join('\n')}
   }
+
+  Object.defineProperties(BaseAudioContext, {
+    length: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 0,
+    },
+  });
+
+  Object.defineProperties(BaseAudioContext.prototype, {
+    [Symbol.toStringTag]: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 'BaseAudioContext',
+    },
+
+    ${d.nodes.map(n => {
+      let factoryName = d.factoryName(n);
+      let factoryIdl = d.factoryIdl(factoryName);
+
+      // createMediaStreamSource is online AudioContext only
+      if (factoryIdl === undefined) {
+        return ``;
+      }
+      return `${factoryName}: kEnumerableProperty,`;
+    }).join('')}
+
+    listener: kEnumerableProperty,
+    destination: kEnumerableProperty,
+    sampleRate: kEnumerableProperty,
+    currentTime: kEnumerableProperty,
+    state: kEnumerableProperty,
+    onstatechange: kEnumerableProperty,
+    decodeAudioData: kEnumerableProperty,
+    createBuffer: kEnumerableProperty,
+    createPeriodicWave: kEnumerableProperty,
+  });
 
   return BaseAudioContext;
 };

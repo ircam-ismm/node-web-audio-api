@@ -24,14 +24,13 @@ const {
 } = require('./lib/cast.js');
 const {
   isFunction,
+  kEnumerableProperty,
 } = require('./lib/utils.js');
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
 
-const {
-  AudioParam,
-} = require('./AudioParam.js');
+const AudioParam = require('./AudioParam.js');
 const {
   kNativeAudioBuffer,
   kAudioBuffer,
@@ -48,6 +47,9 @@ const AudioNode = require('./AudioNode.js');
 
 module.exports = (jsExport, nativeBinding) => {
   class StereoPannerNode extends AudioNode {
+
+    #pan = null;
+
     constructor(context, options) {
 
       if (arguments.length < 1) {
@@ -83,10 +85,37 @@ module.exports = (jsExport, nativeBinding) => {
 
       super(context, napiObj);
 
-      this.pan = new AudioParam(this[kNapiObj].pan);
+      this.#pan = new AudioParam(this[kNapiObj].pan);
+    }
+
+    get pan() {
+      return this.#pan;
     }
 
   }
+
+  Object.defineProperties(StereoPannerNode, {
+    length: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 1,
+    },
+  });
+
+  Object.defineProperties(StereoPannerNode.prototype, {
+    [Symbol.toStringTag]: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 'StereoPannerNode',
+    },
+
+    pan: kEnumerableProperty,
+
+  });
 
   return StereoPannerNode;
 };

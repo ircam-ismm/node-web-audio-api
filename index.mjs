@@ -27,16 +27,18 @@ const require = createRequire(import.meta.url);
 
 const nativeModule = require('./index.cjs');
 export const {
+  BaseAudioContext,
   AudioContext,
   OfflineAudioContext,
 
-  PeriodicWave,
-  AudioBuffer,
+  AudioNode,
+  AudioScheduledSourceNode,
   AudioParam,
+  AudioDestinationNode,
   AudioListener,
 
-  AudioNode,
-  AudioDestinationNode,
+  PeriodicWave,
+  AudioBuffer,
   // generated supported nodes
   AnalyserNode,
   AudioBufferSourceNode,

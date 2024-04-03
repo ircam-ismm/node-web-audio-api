@@ -21,10 +21,19 @@ const {
   throwSanitizedError,
 } = require('./lib/errors.js');
 
-const kNativeAudioParam = Symbol('node-web-audio-api:audio-param');
+const {
+  kEnumerableProperty,
+} = require('./lib/utils.js');
+const {
+  kNativeAudioParam,
+} = require('./lib/symbols.js');
 
 class AudioParam {
   constructor(nativeAudioParam) {
+    if (nativeAudioParam['Symbol.toStringTag'] !== 'AudioParam') {
+      throw new TypeError('Illegal constructor');
+    }
+
     this[kNativeAudioParam] = nativeAudioParam;
   }
   // getters
@@ -52,6 +61,10 @@ class AudioParam {
   // setters
 
   set value(value) {
+    if (!(this instanceof AudioParam)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioParam\'');
+    }
+
     try {
       this[kNativeAudioParam].value = value;
     } catch (err) {
@@ -60,6 +73,10 @@ class AudioParam {
   }
 
   set automationRate(value) {
+    if (!(this instanceof AudioParam)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioParam\'');
+    }
+
     try {
       this[kNativeAudioParam].automationRate = value;
     } catch (err) {
@@ -70,6 +87,14 @@ class AudioParam {
   // methods
 
   setValueAtTime(...args) {
+    if (!(this instanceof AudioParam)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioParam\'');
+    }
+
+    if (arguments.length < 2) {
+      throw new TypeError(`Failed to execute 'setValueAtTime' on 'AudioParam': 2 argument required, but only ${arguments.length} present`);
+    }
+
     try {
       return this[kNativeAudioParam].setValueAtTime(...args);
     } catch (err) {
@@ -78,6 +103,14 @@ class AudioParam {
   }
 
   linearRampToValueAtTime(...args) {
+    if (!(this instanceof AudioParam)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioParam\'');
+    }
+
+    if (arguments.length < 2) {
+      throw new TypeError(`Failed to execute 'linearRampToValueAtTime' on 'AudioParam': 2 argument required, but only ${arguments.length} present`);
+    }
+
     try {
       return this[kNativeAudioParam].linearRampToValueAtTime(...args);
     } catch (err) {
@@ -86,6 +119,14 @@ class AudioParam {
   }
 
   exponentialRampToValueAtTime(...args) {
+    if (!(this instanceof AudioParam)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioParam\'');
+    }
+
+    if (arguments.length < 2) {
+      throw new TypeError(`Failed to execute 'exponentialRampToValueAtTime' on 'AudioParam': 2 argument required, but only ${arguments.length} present`);
+    }
+
     try {
       return this[kNativeAudioParam].exponentialRampToValueAtTime(...args);
     } catch (err) {
@@ -94,6 +135,14 @@ class AudioParam {
   }
 
   setTargetAtTime(...args) {
+    if (!(this instanceof AudioParam)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioParam\'');
+    }
+
+    if (arguments.length < 3) {
+      throw new TypeError(`Failed to execute 'setTargetAtTime' on 'AudioParam': 3 argument required, but only ${arguments.length} present`);
+    }
+
     try {
       return this[kNativeAudioParam].setTargetAtTime(...args);
     } catch (err) {
@@ -102,6 +151,14 @@ class AudioParam {
   }
 
   setValueCurveAtTime(...args) {
+    if (!(this instanceof AudioParam)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioParam\'');
+    }
+
+    if (arguments.length < 3) {
+      throw new TypeError(`Failed to execute 'setValueCurveAtTime' on 'AudioParam': 3 argument required, but only ${arguments.length} present`);
+    }
+
     try {
       return this[kNativeAudioParam].setValueCurveAtTime(...args);
     } catch (err) {
@@ -110,6 +167,14 @@ class AudioParam {
   }
 
   cancelScheduledValues(...args) {
+    if (!(this instanceof AudioParam)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioParam\'');
+    }
+
+    if (arguments.length < 1) {
+      throw new TypeError(`Failed to execute 'cancelScheduledValues' on 'AudioParam': 1 argument required, but only ${arguments.length} present`);
+    }
+
     try {
       return this[kNativeAudioParam].cancelScheduledValues(...args);
     } catch (err) {
@@ -118,6 +183,14 @@ class AudioParam {
   }
 
   cancelAndHoldAtTime(...args) {
+    if (!(this instanceof AudioParam)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioParam\'');
+    }
+
+    if (arguments.length < 1) {
+      throw new TypeError(`Failed to execute 'cancelAndHoldAtTime' on 'AudioParam': 1 argument required, but only ${arguments.length} present`);
+    }
+
     try {
       return this[kNativeAudioParam].cancelAndHoldAtTime(...args);
     } catch (err) {
@@ -127,5 +200,39 @@ class AudioParam {
 
 }
 
-module.exports.kNativeAudioParam = kNativeAudioParam;
-module.exports.AudioParam = AudioParam;
+Object.defineProperties(AudioParam, {
+  length: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 0,
+  },
+});
+
+Object.defineProperties(AudioParam.prototype, {
+  [Symbol.toStringTag]: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 'AudioParam',
+  },
+
+  value: kEnumerableProperty,
+  automationRate: kEnumerableProperty,
+  defaultValue: kEnumerableProperty,
+  minValue: kEnumerableProperty,
+  maxValue: kEnumerableProperty,
+
+  setValueAtTime: kEnumerableProperty,
+  linearRampToValueAtTime: kEnumerableProperty,
+  exponentialRampToValueAtTime: kEnumerableProperty,
+  setTargetAtTime: kEnumerableProperty,
+  setValueCurveAtTime: kEnumerableProperty,
+  cancelScheduledValues: kEnumerableProperty,
+  cancelAndHoldAtTime: kEnumerableProperty,
+
+});
+
+module.exports = AudioParam;

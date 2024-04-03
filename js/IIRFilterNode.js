@@ -24,14 +24,13 @@ const {
 } = require('./lib/cast.js');
 const {
   isFunction,
+  kEnumerableProperty,
 } = require('./lib/utils.js');
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
 
-const {
-  AudioParam,
-} = require('./AudioParam.js');
+const AudioParam = require('./AudioParam.js');
 const {
   kNativeAudioBuffer,
   kAudioBuffer,
@@ -48,6 +47,7 @@ const AudioNode = require('./AudioNode.js');
 
 module.exports = (jsExport, nativeBinding) => {
   class IIRFilterNode extends AudioNode {
+
     constructor(context, options) {
 
       if (arguments.length < 2) {
@@ -108,6 +108,14 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     getFrequencyResponse(...args) {
+      if (!(this instanceof IIRFilterNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'IIRFilterNode\'');
+      }
+
+      if (arguments.length < 3) {
+        throw new TypeError(`Failed to execute 'getFrequencyResponse' on 'IIRFilterNode': 3 argument required, but only ${arguments.length} present`);
+      }
+
       try {
         return this[kNapiObj].getFrequencyResponse(...args);
       } catch (err) {
@@ -116,6 +124,36 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
   }
+
+  Object.defineProperties(IIRFilterNode, {
+    length: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 2,
+    },
+  });
+
+  Object.defineProperties(IIRFilterNode.prototype, {
+    [Symbol.toStringTag]: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 'IIRFilterNode',
+    },
+
+    getFrequencyResponse: kEnumerableProperty,
+  });
+
+  Object.defineProperty(IIRFilterNode.prototype.getFrequencyResponse, 'length', {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 3,
+  });
 
   return IIRFilterNode;
 };

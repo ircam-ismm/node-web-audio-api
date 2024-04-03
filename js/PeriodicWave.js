@@ -5,7 +5,7 @@ const { toSanitizedSequence } = require('./lib/cast.js');
 const { kNapiObj } = require('./lib/symbols.js');
 
 module.exports = (jsExport, nativeBinding) => {
-  class PeriodicWave extends nativeBinding.PeriodicWave {
+  class PeriodicWave {
     constructor(context, options) {
       if (arguments.length < 1) {
         throw new TypeError(`Failed to construct 'PeriodicWave': 1 argument required, but only ${arguments.length} present`);
@@ -39,16 +39,36 @@ module.exports = (jsExport, nativeBinding) => {
           context: `Failed to construct 'PeriodicWave': Failed to read the 'imag' property from PeriodicWaveOptions: The provided value`,
         });
       } else {
-        parsedOptions.disableNormalization
+        parsedOptions.disableNormalization;
       }
 
       try {
-        super(context[kNapiObj], parsedOptions);
+        this[kNapiObj] = new nativeBinding.PeriodicWave(context[kNapiObj], parsedOptions);
       } catch (err) {
         throwSanitizedError(err);
       }
     }
   }
+
+  Object.defineProperties(PeriodicWave, {
+    length: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 1,
+    },
+  });
+
+  Object.defineProperties(PeriodicWave.prototype, {
+    [Symbol.toStringTag]: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 'PeriodicWave',
+    },
+  });
 
   return PeriodicWave;
 };
