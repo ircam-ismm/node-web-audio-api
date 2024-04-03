@@ -138,9 +138,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         max_delay_time,
         delay_time,
         audio_node_options: AudioNodeOptions {
-            channel_count: channel_count,
-            channel_count_mode: channel_count_mode,
-            channel_interpretation: channel_interpretation,
+            channel_count,
+            channel_count_mode,
+            channel_interpretation,
         },
     };
 

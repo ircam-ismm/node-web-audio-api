@@ -179,9 +179,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         min_decibels,
         smoothing_time_constant,
         audio_node_options: AudioNodeOptions {
-            channel_count: channel_count,
-            channel_count_mode: channel_count_mode,
-            channel_interpretation: channel_interpretation,
+            channel_count,
+            channel_count_mode,
+            channel_interpretation,
         },
     };
 
