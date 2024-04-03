@@ -139,7 +139,7 @@ module.exports = (jsExport, nativeBinding) => {
           throw new TypeError(\`Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value '\${options.${optionName}}' is not an instance of ${type}\`);
         }
 
-        parsedOptions.${optionName} = options.${optionName};
+        parsedOptions.${optionName} = options.${optionName}[kNapiObj];
       } else {
         parsedOptions.${optionName} = ${defaultValue};
       }
@@ -364,6 +364,11 @@ ${d.methods(d.node, false)
 
       if (arguments.length < ${numRequired}) {
         throw new TypeError(\`Failed to execute '${d.name(method)}' on '${d.name(d.node)}': ${numRequired} argument required, but only \${arguments.length}\ present\`);
+      }
+
+      ${method.arguments[0].idlType.idlType === 'PeriodicWave'
+        ? `args[0] = args[0][kNapiObj];`
+        : ``
       }
 
       try {

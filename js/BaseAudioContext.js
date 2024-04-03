@@ -145,6 +145,10 @@ module.exports = (jsExport /*, nativeBinding */ ) => {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
       }
 
+      if (arguments.length < 2) {
+        throw new TypeError(`Failed to execute 'createPeriodicWave' on 'BaseAudioContext': 2 argument required, but only ${arguments.length} present`);
+      }
+
       const options = {};
 
       if (real !== undefined) {

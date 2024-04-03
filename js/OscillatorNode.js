@@ -99,7 +99,7 @@ module.exports = (jsExport, nativeBinding) => {
           throw new TypeError(`Failed to construct 'OscillatorNode': Failed to read the 'periodicWave' property from OscillatorOptions: The provided value '${options.periodicWave}' is not an instance of PeriodicWave`);
         }
 
-        parsedOptions.periodicWave = options.periodicWave;
+        parsedOptions.periodicWave = options.periodicWave[kNapiObj];
       } else {
         parsedOptions.periodicWave = null;
       }
@@ -161,6 +161,8 @@ module.exports = (jsExport, nativeBinding) => {
       if (arguments.length < 1) {
         throw new TypeError(`Failed to execute 'setPeriodicWave' on 'OscillatorNode': 1 argument required, but only ${arguments.length} present`);
       }
+
+      args[0] = args[0][kNapiObj];
 
       try {
         return this[kNapiObj].setPeriodicWave(...args);

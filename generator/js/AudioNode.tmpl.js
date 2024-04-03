@@ -56,7 +56,7 @@ return `
     }
 
     if (arguments.length < 1) {
-      throw new TypeError("Failed to execute 'connect' on 'AudioNode': 1 argument required, but only \${arguments.length} present");
+      throw new TypeError(\`Failed to execute 'connect' on 'AudioNode': 1 argument required, but only \${arguments.length} present\`);
     }
 
     const jsDest = args[0];
