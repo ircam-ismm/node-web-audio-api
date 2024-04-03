@@ -119,7 +119,7 @@ const utils = {
   },
 
   minRequiredArgs(idl) {
-    return idl.arguments.reduce((acc, value) => acc += (value.optional ? 0 : 1), 0)
+    return idl.arguments.reduce((acc, value) => acc += (value.optional ? 0 : 1), 0);
   },
 
   audioParams(idl) {
