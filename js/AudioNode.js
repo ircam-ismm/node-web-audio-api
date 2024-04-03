@@ -115,6 +115,10 @@ class AudioNode extends EventTarget {
       throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioNode\'');
     }
 
+    if (arguments.length < 1) {
+      throw new TypeError('Failed to execute \'connect\' on \'AudioNode\': 1 argument required, but only ${arguments.length} present');
+    }
+
     const jsDest = args[0];
 
     // note that audio listener params are not wrapped
