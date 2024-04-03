@@ -42,13 +42,15 @@ module.exports = function monkeyPatch(nativeBinding) {
   jsExport.PannerNode = require('./PannerNode.js')(jsExport, nativeBinding);
   jsExport.StereoPannerNode = require('./StereoPannerNode.js')(jsExport, nativeBinding);
   jsExport.WaveShaperNode = require('./WaveShaperNode.js')(jsExport, nativeBinding);
+
   jsExport.AudioNode = require('./AudioNode.js');
+  jsExport.AudioScheduledSourceNode = require('./AudioScheduledSourceNode.js');
+  jsExport.AudioParam = require('./AudioParam.js');
   jsExport.AudioDestinationNode = require('./AudioDestinationNode.js');
+  jsExport.AudioListener = require('./AudioListener.js');
 
   jsExport.PeriodicWave = require('./PeriodicWave.js')(jsExport, nativeBinding);
   jsExport.AudioBuffer = require('./AudioBuffer.js').AudioBuffer(nativeBinding.AudioBuffer);
-  jsExport.AudioParam = require('./AudioParam.js').AudioParam;
-  jsExport.AudioListener = require('./AudioListener.js');
 
   // --------------------------------------------------------------------------
   // Promisify MediaDevices API

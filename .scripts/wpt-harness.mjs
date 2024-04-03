@@ -4,9 +4,6 @@ import chalk from 'chalk';
 import { program } from 'commander';
 
 import * as nodeWebAudioAPI from '../index.mjs';
-// console.log(nodeWebAudioAPI);
-const desc = Object.getOwnPropertyDescriptor(nodeWebAudioAPI, 'PannerNode');
-console.log(desc);
 
 // mocks
 import createXMLHttpRequest from './wpt-mock/XMLHttpRequest.js';
@@ -127,7 +124,7 @@ const reporter = {
   },
   pass: message => {
     numPass += 1;
-    console.log(chalk.dim(indent(chalk.green("√ ") + message, INDENT_SIZE)));
+    // console.log(chalk.dim(indent(chalk.green("√ ") + message, INDENT_SIZE)));
   },
   fail: message => {
     if (/threw "[^\"]*Error" instead of/.test(message)) {

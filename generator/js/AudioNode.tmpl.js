@@ -1,8 +1,10 @@
 const { throwSanitizedError } = require('./lib/errors.js');
-const { kNapiObj } = require('./lib/symbols.js');
+const { kNapiObj, kNativeAudioParam } = require('./lib/symbols.js');
 const { kEnumerableProperty } = require('./lib/utils.js');
 
-const { AudioParam, kNativeAudioParam } = require('./AudioParam.js');
+const AudioParam = require('./AudioParam.js')
+
+console.log(AudioParam, kNativeAudioParam);
 
 class AudioNode extends EventTarget {
   #context = null;
@@ -105,6 +107,16 @@ return `
     }
   }
 }
+
+Object.defineProperties(AudioNode, {
+  length: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 0,
+  },
+});
 
 Object.defineProperties(AudioNode.prototype, {
   [Symbol.toStringTag]: {

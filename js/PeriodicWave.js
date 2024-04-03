@@ -50,6 +50,26 @@ module.exports = (jsExport, nativeBinding) => {
     }
   }
 
+  Object.defineProperties(PeriodicWave, {
+    length: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 1,
+    },
+  });
+
+  Object.defineProperties(PeriodicWave.prototype, {
+    [Symbol.toStringTag]: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 'PeriodicWave',
+    },
+  });
+
   return PeriodicWave;
 };
 

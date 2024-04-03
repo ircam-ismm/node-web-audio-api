@@ -30,9 +30,7 @@ const {
   throwSanitizedError,
 } = require('./lib/errors.js');
 
-const {
-  AudioParam,
-} = require('./AudioParam.js');
+const AudioParam = require('./AudioParam.js');
 const {
   kNativeAudioBuffer,
   kAudioBuffer,
@@ -365,6 +363,10 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
       }
 
+      if (arguments.length < 3) {
+        throw new TypeError(`Failed to execute 'setPosition' on 'PannerNode': 3 argument required, but only ${arguments.length} present`);
+      }
+
       try {
         return this[kNapiObj].setPosition(...args);
       } catch (err) {
@@ -375,6 +377,10 @@ module.exports = (jsExport, nativeBinding) => {
     setOrientation(...args) {
       if (!(this instanceof PannerNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
+      }
+
+      if (arguments.length < 3) {
+        throw new TypeError(`Failed to execute 'setOrientation' on 'PannerNode': 3 argument required, but only ${arguments.length} present`);
       }
 
       try {

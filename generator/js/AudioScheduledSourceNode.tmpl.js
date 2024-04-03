@@ -52,7 +52,17 @@ ${d.methods(d.node, false).reduce((acc, method) => {
   `}).join('')}
 }
 
-Object.defineProperties(AudioNode.prototype, {
+Object.defineProperties(AudioScheduledSourceNode, {
+  length: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 0,
+  },
+});
+
+Object.defineProperties(AudioScheduledSourceNode.prototype, {
   [Symbol.toStringTag]: {
     __proto__: null,
     writable: false,
@@ -67,6 +77,26 @@ Object.defineProperties(AudioNode.prototype, {
 
   start: kEnumerableProperty,
   stop: kEnumerableProperty,
+});
+
+Object.defineProperties(AudioScheduledSourceNode.prototype.start, {
+  length: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 0,
+  },
+});
+
+Object.defineProperties(AudioScheduledSourceNode.prototype.stop, {
+  length: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 0,
+  },
 });
 
 module.exports = AudioScheduledSourceNode;

@@ -1,5 +1,5 @@
 const { throwSanitizedError } = require('./lib/errors.js');
-const { isFunction } = require('./lib/utils.js');
+const { isFunction, kEnumerableProperty } = require('./lib/utils.js');
 const { kNapiObj } = require('./lib/symbols.js');
 const { bridgeEventTarget } = require('./lib/events.js');
 
@@ -84,28 +84,56 @@ module.exports = function(jsExport, nativeBinding) {
     }
 
     set onsinkchange(value) {
+      if (!(this instanceof AudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioContext\'');
+      }
+
       if (isFunction(value) || value === null) {
         this._sinkchange = value;
       }
     }
 
     getOutputTimestamp() {
+      if (!(this instanceof AudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioContext\'');
+      }
+
       throw new Error(`AudioContext::getOutputTimestamp is not yet implemented`);
     }
 
     async resume() {
+      if (!(this instanceof AudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioContext\'');
+      }
+
       await this[kNapiObj].resume();
     }
 
     async suspend() {
+      if (!(this instanceof AudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioContext\'');
+      }
+
       await this[kNapiObj].suspend();
     }
 
     async close() {
+      if (!(this instanceof AudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioContext\'');
+      }
+
       await this[kNapiObj].close();
     }
 
     setSinkId(sinkId) {
+      if (!(this instanceof AudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioContext\'');
+      }
+
+      if (arguments.length < 1) {
+        throw new TypeError(`Failed to execute 'setSinkId' on 'AudioContext': 1 argument required, but only ${arguments.length} present`);
+      }
+
       try {
         this[kNapiObj].setSinkId(sinkId);
         return Promise.resolve(undefined);
@@ -116,6 +144,14 @@ module.exports = function(jsExport, nativeBinding) {
 
     // online context only AudioNodes
     createMediaStreamSource(mediaStream) {
+      if (!(this instanceof AudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioContext\'');
+      }
+
+      if (arguments.length < 1) {
+        throw new TypeError(`Failed to execute 'createMediaStreamSource' on 'AudioContext': 1 argument required, but only ${arguments.length} present`);
+      }
+
       const options = {};
 
       if (mediaStream !== undefined) {
@@ -126,17 +162,64 @@ module.exports = function(jsExport, nativeBinding) {
     }
 
     createMediaElementSource() {
+      if (!(this instanceof AudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioContext\'');
+      }
+
       throw new Error(`AudioContext::createMediaElementSource() is not yet implemented, cf. https://github.com/ircam-ismm/node-web-audio-api/issues/91 for more information`);
     }
 
     createMediaStreamTrackSource() {
+      if (!(this instanceof AudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioContext\'');
+      }
+
       throw new Error(`AudioContext::createMediaStreamTrackSource() is not yet implemented, cf. https://github.com/ircam-ismm/node-web-audio-api/issues/91 for more information`);
     }
 
     createMediaStreamDestination() {
+      if (!(this instanceof AudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioContext\'');
+      }
+
       throw new Error(`AudioContext::createMediaStreamDestination() is not yet implemented, cf. https://github.com/ircam-ismm/node-web-audio-api/issues/91 for more information`);
     }
   }
+
+  Object.defineProperties(AudioContext, {
+    length: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 0,
+    },
+  });
+
+  Object.defineProperties(AudioContext.prototype, {
+    [Symbol.toStringTag]: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 'AudioContext',
+    },
+
+    baseLatency: kEnumerableProperty,
+    outputLatency: kEnumerableProperty,
+    sinkId: kEnumerableProperty,
+    renderCapacity: kEnumerableProperty,
+    onsinkchange: kEnumerableProperty,
+    getOutputTimestamp: kEnumerableProperty,
+    resume: kEnumerableProperty,
+    suspend: kEnumerableProperty,
+    close: kEnumerableProperty,
+    setSinkId: kEnumerableProperty,
+    createMediaStreamSource: kEnumerableProperty,
+    createMediaElementSource: kEnumerableProperty,
+    createMediaStreamTrackSource: kEnumerableProperty,
+    createMediaStreamDestination: kEnumerableProperty,
+  });
 
   return AudioContext;
 };

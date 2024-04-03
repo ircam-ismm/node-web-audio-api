@@ -5,7 +5,7 @@ const { toSanitizedSequence } = require('./lib/cast.js');
 const { isFunction, kEnumerableProperty } = require('./lib/utils.js');
 const { throwSanitizedError } = require('./lib/errors.js');
 
-const { AudioParam } = require('./AudioParam.js');
+const AudioParam = require('./AudioParam.js');
 const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
 const { kNapiObj } = require('./lib/symbols.js');
 const { bridgeEventTarget } = require('./lib/events.js');
@@ -23,8 +23,7 @@ module.exports = (jsExport, nativeBinding) => {
     constructor(context, options) {
       ${(function() {
         // handle argument length compared to required arguments
-        const numRequired = d.constructor(d.node).arguments
-          .reduce((acc, value) => acc += (value.optional ? 0 : 1), 0);
+        const numRequired = d.minRequiredArgs(d.constructor(d.node))
 
         return `
       if (arguments.length < ${numRequired}) {
@@ -355,10 +354,16 @@ ${d.methods(d.node, false)
   // filter AudioScheduledSourceNode methods to prevent re-throwing errors
   .filter(method => d.name(method) !== 'start' && d.name(method) !== 'stop')
   .map(method => {
+    const numRequired = d.minRequiredArgs(method);
+
     return `
     ${d.name(method)}(...args) {
       if (!(this instanceof ${d.name(d.node)})) {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
+      }
+
+      if (arguments.length < ${numRequired}) {
+        throw new TypeError(\`Failed to execute '${d.name(method)}' on '${d.name(d.node)}': ${numRequired} argument required, but only \${arguments.length}\ present\`);
       }
 
       try {
@@ -382,7 +387,7 @@ ${(function() {
       writable: false,
       enumerable: false,
       configurable: true,
-      value: ${d.constructor(d.node).arguments.reduce((acc, value) => acc += (value.optional ? 0 : 1), 0)}
+      value: ${d.minRequiredArgs(d.constructor(d.node))}
     },
   });
 
@@ -429,14 +434,13 @@ ${(function() {
     // filter AudioScheduledSourceNode methods to prevent re-throwing errors
     .filter(method => d.name(method) !== 'start' && d.name(method) !== 'stop')
     .map(method => {
-      d.debug(method);
       return `
   Object.defineProperty(${d.name(d.node)}.prototype.${d.name(method)}, 'length', {
     __proto__: null,
     writable: false,
     enumerable: false,
     configurable: true,
-    value: ${method.arguments.reduce((acc, value) => acc += (value.optional ? 0 : 1), 0)}
+    value: ${d.minRequiredArgs(method)}
   });
       `
     }).join('')}

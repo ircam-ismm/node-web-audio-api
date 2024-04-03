@@ -11,13 +11,15 @@ ${d.nodes.map((node) => {
   return `
   jsExport.${d.name(node)} = require('./${d.name(node)}.js')(jsExport, nativeBinding);`
 }).join('')}
+
   jsExport.AudioNode = require('./AudioNode.js');
+  jsExport.AudioScheduledSourceNode = require('./AudioScheduledSourceNode.js');
+  jsExport.AudioParam = require('./AudioParam.js');
   jsExport.AudioDestinationNode = require('./AudioDestinationNode.js');
+  jsExport.AudioListener = require('./AudioListener.js');
 
   jsExport.PeriodicWave = require('./PeriodicWave.js')(jsExport, nativeBinding);
   jsExport.AudioBuffer = require('./AudioBuffer.js').AudioBuffer(nativeBinding.AudioBuffer);
-  jsExport.AudioParam = require('./AudioParam.js').AudioParam;
-  jsExport.AudioListener = require('./AudioListener.js');
 
   // --------------------------------------------------------------------------
   // Promisify MediaDevices API

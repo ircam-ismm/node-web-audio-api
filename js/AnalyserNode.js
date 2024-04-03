@@ -30,9 +30,7 @@ const {
   throwSanitizedError,
 } = require('./lib/errors.js');
 
-const {
-  AudioParam,
-} = require('./AudioParam.js');
+const AudioParam = require('./AudioParam.js');
 const {
   kNativeAudioBuffer,
   kAudioBuffer,
@@ -184,6 +182,10 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
       }
 
+      if (arguments.length < 1) {
+        throw new TypeError(`Failed to execute 'getFloatFrequencyData' on 'AnalyserNode': 1 argument required, but only ${arguments.length} present`);
+      }
+
       try {
         return this[kNapiObj].getFloatFrequencyData(...args);
       } catch (err) {
@@ -194,6 +196,10 @@ module.exports = (jsExport, nativeBinding) => {
     getByteFrequencyData(...args) {
       if (!(this instanceof AnalyserNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
+      if (arguments.length < 1) {
+        throw new TypeError(`Failed to execute 'getByteFrequencyData' on 'AnalyserNode': 1 argument required, but only ${arguments.length} present`);
       }
 
       try {
@@ -208,6 +214,10 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
       }
 
+      if (arguments.length < 1) {
+        throw new TypeError(`Failed to execute 'getFloatTimeDomainData' on 'AnalyserNode': 1 argument required, but only ${arguments.length} present`);
+      }
+
       try {
         return this[kNapiObj].getFloatTimeDomainData(...args);
       } catch (err) {
@@ -218,6 +228,10 @@ module.exports = (jsExport, nativeBinding) => {
     getByteTimeDomainData(...args) {
       if (!(this instanceof AnalyserNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
+      if (arguments.length < 1) {
+        throw new TypeError(`Failed to execute 'getByteTimeDomainData' on 'AnalyserNode': 1 argument required, but only ${arguments.length} present`);
       }
 
       try {

@@ -30,9 +30,7 @@ const {
   throwSanitizedError,
 } = require('./lib/errors.js');
 
-const {
-  AudioParam,
-} = require('./AudioParam.js');
+const AudioParam = require('./AudioParam.js');
 const {
   kNativeAudioBuffer,
   kAudioBuffer,
@@ -112,6 +110,10 @@ module.exports = (jsExport, nativeBinding) => {
     getFrequencyResponse(...args) {
       if (!(this instanceof IIRFilterNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'IIRFilterNode\'');
+      }
+
+      if (arguments.length < 3) {
+        throw new TypeError(`Failed to execute 'getFrequencyResponse' on 'IIRFilterNode': 3 argument required, but only ${arguments.length} present`);
       }
 
       try {

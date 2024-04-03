@@ -30,9 +30,7 @@ const {
   throwSanitizedError,
 } = require('./lib/errors.js');
 
-const {
-  AudioParam,
-} = require('./AudioParam.js');
+const AudioParam = require('./AudioParam.js');
 const {
   kNativeAudioBuffer,
   kAudioBuffer,
@@ -158,6 +156,10 @@ module.exports = (jsExport, nativeBinding) => {
     setPeriodicWave(...args) {
       if (!(this instanceof OscillatorNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'OscillatorNode\'');
+      }
+
+      if (arguments.length < 1) {
+        throw new TypeError(`Failed to execute 'setPeriodicWave' on 'OscillatorNode': 1 argument required, but only ${arguments.length} present`);
       }
 
       try {
