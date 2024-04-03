@@ -30,8 +30,6 @@ const {
 
 const AudioParam = require('./AudioParam.js');
 
-console.log(AudioParam, kNativeAudioParam);
-
 class AudioNode extends EventTarget {
   #context = null;
 
