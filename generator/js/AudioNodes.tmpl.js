@@ -265,6 +265,10 @@ module.exports = (jsExport, nativeBinding) => {
 ${d.audioParams(d.node).map(param => {
   return `
   get ${d.name(param)}() {
+    if (!(this instanceof ${d.name(d.node)})) {
+      throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
+    }
+
     return this.#${d.name(param)};
   }
   `;
@@ -278,6 +282,10 @@ ${d.attributes(d.node).map(attr => {
     case 'AudioBuffer': {
       return `
     get ${d.name(attr)}() {
+      if (!(this instanceof ${d.name(d.node)})) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
+      }
+
       return this[kAudioBuffer];
     }
       `;
@@ -286,6 +294,10 @@ ${d.attributes(d.node).map(attr => {
     default: {
       return `
     get ${d.name(attr)}() {
+      if (!(this instanceof ${d.name(d.node)})) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
+      }
+
       return this[kNapiObj].${d.name(attr)};
     }
       `;

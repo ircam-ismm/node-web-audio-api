@@ -129,22 +129,42 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     get frequency() {
+      if (!(this instanceof BiquadFilterNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BiquadFilterNode\'');
+      }
+
       return this.#frequency;
     }
 
     get detune() {
+      if (!(this instanceof BiquadFilterNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BiquadFilterNode\'');
+      }
+
       return this.#detune;
     }
 
     get Q() {
+      if (!(this instanceof BiquadFilterNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BiquadFilterNode\'');
+      }
+
       return this.#Q;
     }
 
     get gain() {
+      if (!(this instanceof BiquadFilterNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BiquadFilterNode\'');
+      }
+
       return this.#gain;
     }
 
     get type() {
+      if (!(this instanceof BiquadFilterNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BiquadFilterNode\'');
+      }
+
       return this[kNapiObj].type;
     }
 

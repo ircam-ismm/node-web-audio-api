@@ -97,6 +97,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     get delayTime() {
+      if (!(this instanceof DelayNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'DelayNode\'');
+      }
+
       return this.#delayTime;
     }
 

@@ -89,6 +89,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     get pan() {
+      if (!(this instanceof StereoPannerNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'StereoPannerNode\'');
+      }
+
       return this.#pan;
     }
 

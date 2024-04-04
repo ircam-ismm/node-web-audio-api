@@ -64,22 +64,42 @@ module.exports = function(jsExport, nativeBinding) {
     }
 
     get baseLatency() {
+      if (!(this instanceof AudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioContext\'');
+      }
+
       return this[kNapiObj].baseLatency;
     }
 
     get outputLatency() {
+      if (!(this instanceof AudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioContext\'');
+      }
+
       return this[kNapiObj].outputLatency;
     }
 
     get sinkId() {
+      if (!(this instanceof AudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioContext\'');
+      }
+
       return this[kNapiObj].sinkId;
     }
 
     get renderCapacity() {
+      if (!(this instanceof AudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioContext\'');
+      }
+
       throw new Error(`AudioContext::renderCapacity is not yet implemented`);
     }
 
     get onsinkchange() {
+      if (!(this instanceof AudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioContext\'');
+      }
+
       return this._sinkchange || null;
     }
 

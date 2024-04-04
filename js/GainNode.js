@@ -89,6 +89,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     get gain() {
+      if (!(this instanceof GainNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'GainNode\'');
+      }
+
       return this.#gain;
     }
 

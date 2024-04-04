@@ -85,6 +85,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     get mediaStream() {
+      if (!(this instanceof MediaStreamAudioSourceNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'MediaStreamAudioSourceNode\'');
+      }
+
       return this[kNapiObj].mediaStream;
     }
 

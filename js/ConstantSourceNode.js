@@ -92,6 +92,10 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     get offset() {
+      if (!(this instanceof ConstantSourceNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'ConstantSourceNode\'');
+      }
+
       return this.#offset;
     }
 

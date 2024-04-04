@@ -45,22 +45,42 @@ class AudioNode extends EventTarget {
   }
 
   get numberOfInputs() {
+    if (!(this instanceof AudioNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioNode\'');
+    }
+
     return this[kNapiObj].numberOfInputs;
   }
 
   get numberOfOutputs() {
+    if (!(this instanceof AudioNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioNode\'');
+    }
+
     return this[kNapiObj].numberOfOutputs;
   }
 
   get channelCount() {
+    if (!(this instanceof AudioNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioNode\'');
+    }
+
     return this[kNapiObj].channelCount;
   }
 
   get channelCountMode() {
+    if (!(this instanceof AudioNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioNode\'');
+    }
+
     return this[kNapiObj].channelCountMode;
   }
 
   get channelInterpretation() {
+    if (!(this instanceof AudioNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioNode\'');
+    }
+
     return this[kNapiObj].channelInterpretation;
   }
 

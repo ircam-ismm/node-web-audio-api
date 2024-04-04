@@ -110,22 +110,42 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     get fftSize() {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
       return this[kNapiObj].fftSize;
     }
 
     get frequencyBinCount() {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
       return this[kNapiObj].frequencyBinCount;
     }
 
     get minDecibels() {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
       return this[kNapiObj].minDecibels;
     }
 
     get maxDecibels() {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
       return this[kNapiObj].maxDecibels;
     }
 
     get smoothingTimeConstant() {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
       return this[kNapiObj].smoothingTimeConstant;
     }
 
