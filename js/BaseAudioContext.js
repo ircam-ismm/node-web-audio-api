@@ -113,9 +113,13 @@ module.exports = (jsExport /*, nativeBinding */ ) => {
     // when decodeErrorCallback is present the program will crash in an
     // unexpected manner
     // cf. https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-decodeaudiodata
-    decodeAudioData(audioData, decodeSuccessCallback, decodeErrorCallback) {
+    decodeAudioData(audioData, decodeSuccessCallback = null, decodeErrorCallback = null) {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
+
+      if (arguments.length < 1) {
+        throw new TypeError(`Failed to execute 'decodeAudioData' on 'BaseAudioContext': 1 argument required, but only ${arguments.length} present`);
       }
 
       if (!(audioData instanceof ArrayBuffer)) {
@@ -145,6 +149,10 @@ module.exports = (jsExport /*, nativeBinding */ ) => {
     createBuffer(numberOfChannels, length, sampleRate) {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
+
+      if (arguments.length < 3) {
+        throw new TypeError(`Failed to execute 'createBuffer' on 'BaseAudioContext': 3 argument required, but only ${arguments.length} present`);
       }
 
       const options = {};
