@@ -761,6 +761,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
 }
             `;
             break;
+        // WaveShaperNode::curve
         case 'Float32Array':
             return `
 #[js_function(1)]

@@ -166,6 +166,10 @@ module.exports = (jsExport, nativeBinding) => {
               break;
             }
             default: {
+              d.debug(d.memberType(member))
+              // - IIRFilterNode::feedback
+              // - IIRFilterNode::feedforward
+              // - WaveShaperNode:::curve
               // make sure we handle all other types
               if (member.idlType.type !== 'dictionary-type' || member.idlType.generic !== 'sequence') {
                 throw new Error(`${type} is not of a dictionary-type sequence`);
