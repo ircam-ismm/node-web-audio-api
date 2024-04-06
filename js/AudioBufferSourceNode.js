@@ -147,26 +147,50 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     get playbackRate() {
+      if (!(this instanceof AudioBufferSourceNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
+      }
+
       return this.#playbackRate;
     }
 
     get detune() {
+      if (!(this instanceof AudioBufferSourceNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
+      }
+
       return this.#detune;
     }
 
     get buffer() {
+      if (!(this instanceof AudioBufferSourceNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
+      }
+
       return this[kAudioBuffer];
     }
 
     get loop() {
+      if (!(this instanceof AudioBufferSourceNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
+      }
+
       return this[kNapiObj].loop;
     }
 
     get loopStart() {
+      if (!(this instanceof AudioBufferSourceNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
+      }
+
       return this[kNapiObj].loopStart;
     }
 
     get loopEnd() {
+      if (!(this instanceof AudioBufferSourceNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
+      }
+
       return this[kNapiObj].loopEnd;
     }
 

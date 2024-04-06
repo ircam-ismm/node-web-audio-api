@@ -98,10 +98,18 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     get curve() {
+      if (!(this instanceof WaveShaperNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'WaveShaperNode\'');
+      }
+
       return this[kNapiObj].curve;
     }
 
     get oversample() {
+      if (!(this instanceof WaveShaperNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'WaveShaperNode\'');
+      }
+
       return this[kNapiObj].oversample;
     }
 

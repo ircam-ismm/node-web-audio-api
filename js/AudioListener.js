@@ -51,38 +51,74 @@ class AudioListener {
   }
 
   get positionX() {
+    if (!(this instanceof AudioListener)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioListener\'');
+    }
+
     return this.#positionX;
   }
 
   get positionY() {
+    if (!(this instanceof AudioListener)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioListener\'');
+    }
+
     return this.#positionY;
   }
 
   get positionZ() {
+    if (!(this instanceof AudioListener)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioListener\'');
+    }
+
     return this.#positionZ;
   }
 
   get forwardX() {
+    if (!(this instanceof AudioListener)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioListener\'');
+    }
+
     return this.#forwardX;
   }
 
   get forwardY() {
+    if (!(this instanceof AudioListener)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioListener\'');
+    }
+
     return this.#forwardY;
   }
 
   get forwardZ() {
+    if (!(this instanceof AudioListener)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioListener\'');
+    }
+
     return this.#forwardZ;
   }
 
   get upX() {
+    if (!(this instanceof AudioListener)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioListener\'');
+    }
+
     return this.#upX;
   }
 
   get upY() {
+    if (!(this instanceof AudioListener)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioListener\'');
+    }
+
     return this.#upY;
   }
 
   get upZ() {
+    if (!(this instanceof AudioListener)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioListener\'');
+    }
+
     return this.#upZ;
   }
 

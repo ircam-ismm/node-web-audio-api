@@ -55,10 +55,18 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
     }
 
     get length() {
+      if (!(this instanceof OfflineAudioContext)) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'");
+      }
+
       return this[kNapiObj].length;
     }
 
     get oncomplete() {
+      if (!(this instanceof OfflineAudioContext)) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'");
+      }
+
       return this._complete || null;
     }
 

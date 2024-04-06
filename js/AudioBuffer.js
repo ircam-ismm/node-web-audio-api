@@ -29,18 +29,34 @@ module.exports.AudioBuffer = (NativeAudioBuffer) => {
     }
 
     get sampleRate() {
+      if (!(this instanceof AudioBuffer)) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'");
+      }
+
       return this[kNativeAudioBuffer].sampleRate;
     }
 
     get duration() {
+      if (!(this instanceof AudioBuffer)) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'");
+      }
+
       return this[kNativeAudioBuffer].duration;
     }
 
     get length() {
+      if (!(this instanceof AudioBuffer)) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'");
+      }
+
       return this[kNativeAudioBuffer].length;
     }
 
     get numberOfChannels() {
+      if (!(this instanceof AudioBuffer)) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'");
+      }
+
       return this[kNativeAudioBuffer].numberOfChannels;
     }
 

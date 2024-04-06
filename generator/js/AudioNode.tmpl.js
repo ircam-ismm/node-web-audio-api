@@ -21,6 +21,10 @@ class AudioNode extends EventTarget {
 ${d.attributes(d.node).filter(attr => d.name(attr) !== 'context').map(attr => {
 return `
   get ${d.name(attr)}() {
+    if (!(this instanceof AudioNode)) {
+      throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioNode'");
+    }
+
     return this[kNapiObj].${d.name(attr)};
   }
 `}).join('')}

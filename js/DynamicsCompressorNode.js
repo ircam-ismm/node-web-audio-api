@@ -129,26 +129,50 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     get threshold() {
+      if (!(this instanceof DynamicsCompressorNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'DynamicsCompressorNode\'');
+      }
+
       return this.#threshold;
     }
 
     get knee() {
+      if (!(this instanceof DynamicsCompressorNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'DynamicsCompressorNode\'');
+      }
+
       return this.#knee;
     }
 
     get ratio() {
+      if (!(this instanceof DynamicsCompressorNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'DynamicsCompressorNode\'');
+      }
+
       return this.#ratio;
     }
 
     get attack() {
+      if (!(this instanceof DynamicsCompressorNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'DynamicsCompressorNode\'');
+      }
+
       return this.#attack;
     }
 
     get release() {
+      if (!(this instanceof DynamicsCompressorNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'DynamicsCompressorNode\'');
+      }
+
       return this.#release;
     }
 
     get reduction() {
+      if (!(this instanceof DynamicsCompressorNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'DynamicsCompressorNode\'');
+      }
+
       return this[kNapiObj].reduction;
     }
 

@@ -39,22 +39,42 @@ class AudioParam {
   // getters
 
   get value() {
+    if (!(this instanceof AudioParam)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioParam\'');
+    }
+
     return this[kNativeAudioParam].value;
   }
 
   get automationRate() {
+    if (!(this instanceof AudioParam)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioParam\'');
+    }
+
     return this[kNativeAudioParam].automationRate;
   }
 
   get defaultValue() {
+    if (!(this instanceof AudioParam)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioParam\'');
+    }
+
     return this[kNativeAudioParam].defaultValue;
   }
 
   get minValue() {
+    if (!(this instanceof AudioParam)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioParam\'');
+    }
+
     return this[kNativeAudioParam].minValue;
   }
 
   get maxValue() {
+    if (!(this instanceof AudioParam)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioParam\'');
+    }
+
     return this[kNativeAudioParam].maxValue;
   }
 

@@ -130,14 +130,26 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     get frequency() {
+      if (!(this instanceof OscillatorNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'OscillatorNode\'');
+      }
+
       return this.#frequency;
     }
 
     get detune() {
+      if (!(this instanceof OscillatorNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'OscillatorNode\'');
+      }
+
       return this.#detune;
     }
 
     get type() {
+      if (!(this instanceof OscillatorNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'OscillatorNode\'');
+      }
+
       return this[kNapiObj].type;
     }
 

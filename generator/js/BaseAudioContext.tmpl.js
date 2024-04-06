@@ -19,6 +19,10 @@ module.exports = (jsExport /*, nativeBinding */) => {
     }
 
     get listener() {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
+      }
+
       if (this.#listener === null) {
         this.#listener = new AudioListener(this[kNapiObj].listener);
       }
@@ -27,18 +31,34 @@ module.exports = (jsExport /*, nativeBinding */) => {
     }
 
     get destination() {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
+      }
+
       return this.#destination;
     }
 
     get sampleRate() {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
+      }
+
       return this[kNapiObj].sampleRate;
     }
 
     get currentTime() {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
+      }
+
       return this[kNapiObj].currentTime;
     }
 
     get state() {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
+      }
+
       return this[kNapiObj].state;
     }
 
@@ -46,6 +66,10 @@ module.exports = (jsExport /*, nativeBinding */) => {
     // audioWorklet
 
     get onstatechange() {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
+      }
+
       return this._statechange || null;
     }
 
@@ -63,9 +87,13 @@ module.exports = (jsExport /*, nativeBinding */) => {
     // when decodeErrorCallback is present the program will crash in an
     // unexpected manner
     // cf. https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-decodeaudiodata
-    decodeAudioData(audioData, decodeSuccessCallback, decodeErrorCallback) {
+    decodeAudioData(audioData, decodeSuccessCallback = null, decodeErrorCallback = null) {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
+      }
+
+      if (arguments.length < 1) {
+        throw new TypeError(\`Failed to execute 'decodeAudioData' on 'BaseAudioContext': 1 argument required, but only \${arguments.length} present\`);
       }
 
       if (!(audioData instanceof ArrayBuffer)) {
@@ -93,6 +121,10 @@ module.exports = (jsExport /*, nativeBinding */) => {
     createBuffer(numberOfChannels, length, sampleRate) {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
+      }
+
+      if (arguments.length < 3) {
+        throw new TypeError(\`Failed to execute 'createBuffer' on 'BaseAudioContext': 3 argument required, but only \${arguments.length} present\`);
       }
 
       const options = {};

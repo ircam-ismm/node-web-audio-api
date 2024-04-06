@@ -15,6 +15,10 @@ class AudioParam {
 ${d.attributes(d.node).map(attr => {
   return `
   get ${d.name(attr)}() {
+    if (!(this instanceof AudioParam)) {
+      throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioParam'");
+    }
+
     return this[kNativeAudioParam].${d.name(attr)};
   }
 `}).join('')}

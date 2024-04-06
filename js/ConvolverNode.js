@@ -107,10 +107,18 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     get buffer() {
+      if (!(this instanceof ConvolverNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'ConvolverNode\'');
+      }
+
       return this[kAudioBuffer];
     }
 
     get normalize() {
+      if (!(this instanceof ConvolverNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'ConvolverNode\'');
+      }
+
       return this[kNapiObj].normalize;
     }
 

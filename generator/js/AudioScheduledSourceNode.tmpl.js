@@ -12,6 +12,10 @@ ${d.attributes(d.node).map(attr => {
   // onended events
   return `
   get ${d.name(attr)}() {
+    if (!(this instanceof AudioScheduledSourceNode)) {
+      throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioScheduledSourceNode'");
+    }
+
     return this._${d.name(attr)} || null;
   }
   `}).join('')}

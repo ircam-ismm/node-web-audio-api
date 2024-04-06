@@ -36,6 +36,10 @@ class AudioScheduledSourceNode extends AudioNode {
   }
 
   get onended() {
+    if (!(this instanceof AudioScheduledSourceNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioScheduledSourceNode\'');
+    }
+
     return this._onended || null;
   }
 
