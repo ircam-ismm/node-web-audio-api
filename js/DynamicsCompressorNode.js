@@ -196,13 +196,11 @@ module.exports = (jsExport, nativeBinding) => {
       configurable: true,
       value: 'DynamicsCompressorNode',
     },
-
     threshold: kEnumerableProperty,
     knee: kEnumerableProperty,
     ratio: kEnumerableProperty,
     attack: kEnumerableProperty,
     release: kEnumerableProperty,
-
     reduction: kEnumerableProperty,
 
   });

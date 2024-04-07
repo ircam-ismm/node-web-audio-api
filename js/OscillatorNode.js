@@ -165,7 +165,7 @@ module.exports = (jsExport, nativeBinding) => {
       }
     }
 
-    setPeriodicWave(...args) {
+    setPeriodicWave(periodicWave) {
       if (!(this instanceof OscillatorNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'OscillatorNode\'');
       }
@@ -174,10 +174,14 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError(`Failed to execute 'setPeriodicWave' on 'OscillatorNode': 1 argument required, but only ${arguments.length} present`);
       }
 
-      args[0] = args[0][kNapiObj];
+      if (!(periodicWave instanceof jsExport.PeriodicWave)) {
+        throw new TypeError(`Failed to execute 'setPeriodicWave' on 'OscillatorNode': Parameter 1 is not of type 'PeriodicWave'`);
+      }
+
+      periodicWave = periodicWave[kNapiObj];
 
       try {
-        return this[kNapiObj].setPeriodicWave(...args);
+        return this[kNapiObj].setPeriodicWave(periodicWave);
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -203,21 +207,10 @@ module.exports = (jsExport, nativeBinding) => {
       configurable: true,
       value: 'OscillatorNode',
     },
-
     frequency: kEnumerableProperty,
     detune: kEnumerableProperty,
-
     type: kEnumerableProperty,
-
     setPeriodicWave: kEnumerableProperty,
-  });
-
-  Object.defineProperty(OscillatorNode.prototype.setPeriodicWave, 'length', {
-    __proto__: null,
-    writable: false,
-    enumerable: false,
-    configurable: true,
-    value: 1,
   });
 
   return OscillatorNode;

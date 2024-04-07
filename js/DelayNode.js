@@ -124,7 +124,6 @@ module.exports = (jsExport, nativeBinding) => {
       configurable: true,
       value: 'DelayNode',
     },
-
     delayTime: kEnumerableProperty,
 
   });

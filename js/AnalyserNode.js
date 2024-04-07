@@ -197,7 +197,7 @@ module.exports = (jsExport, nativeBinding) => {
       }
     }
 
-    getFloatFrequencyData(...args) {
+    getFloatFrequencyData(array) {
       if (!(this instanceof AnalyserNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
       }
@@ -206,14 +206,18 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError(`Failed to execute 'getFloatFrequencyData' on 'AnalyserNode': 1 argument required, but only ${arguments.length} present`);
       }
 
+      if (!(array instanceof Float32Array)) {
+        throw new TypeError(`Failed to execute 'getFloatFrequencyData' on 'AnalyserNode': Parameter 1 is not of type 'Float32Array'`);
+      }
+
       try {
-        return this[kNapiObj].getFloatFrequencyData(...args);
+        return this[kNapiObj].getFloatFrequencyData(array);
       } catch (err) {
         throwSanitizedError(err);
       }
     }
 
-    getByteFrequencyData(...args) {
+    getByteFrequencyData(array) {
       if (!(this instanceof AnalyserNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
       }
@@ -222,14 +226,18 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError(`Failed to execute 'getByteFrequencyData' on 'AnalyserNode': 1 argument required, but only ${arguments.length} present`);
       }
 
+      if (!(array instanceof Uint8Array)) {
+        throw new TypeError(`Failed to execute 'getByteFrequencyData' on 'AnalyserNode': Parameter 1 is not of type 'Uint8Array'`);
+      }
+
       try {
-        return this[kNapiObj].getByteFrequencyData(...args);
+        return this[kNapiObj].getByteFrequencyData(array);
       } catch (err) {
         throwSanitizedError(err);
       }
     }
 
-    getFloatTimeDomainData(...args) {
+    getFloatTimeDomainData(array) {
       if (!(this instanceof AnalyserNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
       }
@@ -238,14 +246,18 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError(`Failed to execute 'getFloatTimeDomainData' on 'AnalyserNode': 1 argument required, but only ${arguments.length} present`);
       }
 
+      if (!(array instanceof Float32Array)) {
+        throw new TypeError(`Failed to execute 'getFloatTimeDomainData' on 'AnalyserNode': Parameter 1 is not of type 'Float32Array'`);
+      }
+
       try {
-        return this[kNapiObj].getFloatTimeDomainData(...args);
+        return this[kNapiObj].getFloatTimeDomainData(array);
       } catch (err) {
         throwSanitizedError(err);
       }
     }
 
-    getByteTimeDomainData(...args) {
+    getByteTimeDomainData(array) {
       if (!(this instanceof AnalyserNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
       }
@@ -254,8 +266,12 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError(`Failed to execute 'getByteTimeDomainData' on 'AnalyserNode': 1 argument required, but only ${arguments.length} present`);
       }
 
+      if (!(array instanceof Uint8Array)) {
+        throw new TypeError(`Failed to execute 'getByteTimeDomainData' on 'AnalyserNode': Parameter 1 is not of type 'Uint8Array'`);
+      }
+
       try {
-        return this[kNapiObj].getByteTimeDomainData(...args);
+        return this[kNapiObj].getByteTimeDomainData(array);
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -287,43 +303,10 @@ module.exports = (jsExport, nativeBinding) => {
     minDecibels: kEnumerableProperty,
     maxDecibels: kEnumerableProperty,
     smoothingTimeConstant: kEnumerableProperty,
-
     getFloatFrequencyData: kEnumerableProperty,
     getByteFrequencyData: kEnumerableProperty,
     getFloatTimeDomainData: kEnumerableProperty,
     getByteTimeDomainData: kEnumerableProperty,
-  });
-
-  Object.defineProperty(AnalyserNode.prototype.getFloatFrequencyData, 'length', {
-    __proto__: null,
-    writable: false,
-    enumerable: false,
-    configurable: true,
-    value: 1,
-  });
-
-  Object.defineProperty(AnalyserNode.prototype.getByteFrequencyData, 'length', {
-    __proto__: null,
-    writable: false,
-    enumerable: false,
-    configurable: true,
-    value: 1,
-  });
-
-  Object.defineProperty(AnalyserNode.prototype.getFloatTimeDomainData, 'length', {
-    __proto__: null,
-    writable: false,
-    enumerable: false,
-    configurable: true,
-    value: 1,
-  });
-
-  Object.defineProperty(AnalyserNode.prototype.getByteTimeDomainData, 'length', {
-    __proto__: null,
-    writable: false,
-    enumerable: false,
-    configurable: true,
-    value: 1,
   });
 
   return AnalyserNode;

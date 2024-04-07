@@ -116,7 +116,6 @@ module.exports = (jsExport, nativeBinding) => {
       configurable: true,
       value: 'GainNode',
     },
-
     gain: kEnumerableProperty,
 
   });

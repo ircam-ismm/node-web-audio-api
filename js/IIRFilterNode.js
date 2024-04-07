@@ -107,7 +107,7 @@ module.exports = (jsExport, nativeBinding) => {
 
     }
 
-    getFrequencyResponse(...args) {
+    getFrequencyResponse(frequencyHz, magResponse, phaseResponse) {
       if (!(this instanceof IIRFilterNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'IIRFilterNode\'');
       }
@@ -116,8 +116,20 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError(`Failed to execute 'getFrequencyResponse' on 'IIRFilterNode': 3 argument required, but only ${arguments.length} present`);
       }
 
+      if (!(frequencyHz instanceof Float32Array)) {
+        throw new TypeError(`Failed to execute 'getFrequencyResponse' on 'IIRFilterNode': Parameter 1 is not of type 'Float32Array'`);
+      }
+
+      if (!(magResponse instanceof Float32Array)) {
+        throw new TypeError(`Failed to execute 'getFrequencyResponse' on 'IIRFilterNode': Parameter 2 is not of type 'Float32Array'`);
+      }
+
+      if (!(phaseResponse instanceof Float32Array)) {
+        throw new TypeError(`Failed to execute 'getFrequencyResponse' on 'IIRFilterNode': Parameter 3 is not of type 'Float32Array'`);
+      }
+
       try {
-        return this[kNapiObj].getFrequencyResponse(...args);
+        return this[kNapiObj].getFrequencyResponse(frequencyHz, magResponse, phaseResponse);
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -145,14 +157,6 @@ module.exports = (jsExport, nativeBinding) => {
     },
 
     getFrequencyResponse: kEnumerableProperty,
-  });
-
-  Object.defineProperty(IIRFilterNode.prototype.getFrequencyResponse, 'length', {
-    __proto__: null,
-    writable: false,
-    enumerable: false,
-    configurable: true,
-    value: 3,
   });
 
   return IIRFilterNode;

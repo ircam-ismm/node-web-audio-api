@@ -116,7 +116,6 @@ module.exports = (jsExport, nativeBinding) => {
       configurable: true,
       value: 'StereoPannerNode',
     },
-
     pan: kEnumerableProperty,
 
   });
