@@ -124,6 +124,6 @@ exports.throwSanitizedError = function throwSanitizedError(err) {
     throw error;
   }
 
-  console.warn('[lib/errors.js] Possibly unhandled error type', err.message);
+  console.warn('[lib/errors.js] Unexpected Rust error', err);
   throw err;
 }

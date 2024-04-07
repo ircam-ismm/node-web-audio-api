@@ -116,10 +116,12 @@ class AudioParam {
     }
 
     try {
-      return this[kNativeAudioParam].setValueAtTime(...args);
+      this[kNativeAudioParam].setValueAtTime(...args);
     } catch (err) {
       throwSanitizedError(err);
     }
+
+    return this;
   }
 
   linearRampToValueAtTime(...args) {
@@ -132,10 +134,12 @@ class AudioParam {
     }
 
     try {
-      return this[kNativeAudioParam].linearRampToValueAtTime(...args);
+      this[kNativeAudioParam].linearRampToValueAtTime(...args);
     } catch (err) {
       throwSanitizedError(err);
     }
+
+    return this;
   }
 
   exponentialRampToValueAtTime(...args) {
@@ -148,10 +152,12 @@ class AudioParam {
     }
 
     try {
-      return this[kNativeAudioParam].exponentialRampToValueAtTime(...args);
+      this[kNativeAudioParam].exponentialRampToValueAtTime(...args);
     } catch (err) {
       throwSanitizedError(err);
     }
+
+    return this;
   }
 
   setTargetAtTime(...args) {
@@ -164,10 +170,12 @@ class AudioParam {
     }
 
     try {
-      return this[kNativeAudioParam].setTargetAtTime(...args);
+      this[kNativeAudioParam].setTargetAtTime(...args);
     } catch (err) {
       throwSanitizedError(err);
     }
+
+    return this;
   }
 
   setValueCurveAtTime(...args) {
@@ -180,10 +188,12 @@ class AudioParam {
     }
 
     try {
-      return this[kNativeAudioParam].setValueCurveAtTime(...args);
+      this[kNativeAudioParam].setValueCurveAtTime(...args);
     } catch (err) {
       throwSanitizedError(err);
     }
+
+    return this;
   }
 
   cancelScheduledValues(...args) {
@@ -196,10 +206,12 @@ class AudioParam {
     }
 
     try {
-      return this[kNativeAudioParam].cancelScheduledValues(...args);
+      this[kNativeAudioParam].cancelScheduledValues(...args);
     } catch (err) {
       throwSanitizedError(err);
     }
+
+    return this;
   }
 
   cancelAndHoldAtTime(...args) {
@@ -212,10 +224,12 @@ class AudioParam {
     }
 
     try {
-      return this[kNativeAudioParam].cancelAndHoldAtTime(...args);
+      this[kNativeAudioParam].cancelAndHoldAtTime(...args);
     } catch (err) {
       throwSanitizedError(err);
     }
+
+    return this;
   }
 
 }

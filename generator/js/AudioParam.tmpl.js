@@ -58,10 +58,12 @@ ${d.methods(d.node, false).reduce((acc, method) => {
     }
 
     try {
-      return this[kNativeAudioParam].${d.name(method)}(...args);
+      this[kNativeAudioParam].${d.name(method)}(...args);
     } catch (err) {
       throwSanitizedError(err);
     }
+
+    return this;
   }
 `}).join('')}
 }
