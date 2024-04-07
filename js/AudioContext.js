@@ -1,3 +1,5 @@
+const conversions = require("webidl-conversions");
+
 const { throwSanitizedError } = require('./lib/errors.js');
 const { isFunction, isPlainObject, kEnumerableProperty } = require('./lib/utils.js');
 const { kNapiObj } = require('./lib/symbols.js');
@@ -26,7 +28,10 @@ const kKeepAwakeId = Symbol('keepAwakeId');
 // MediaStreamAudioDestinationNode createMediaStreamDestination ();
 
 module.exports = function(jsExport, nativeBinding) {
+
   class AudioContext extends jsExport.BaseAudioContext {
+    #sinkId = '';
+
     constructor(options = {}) {
       if (!isPlainObject(options)) {
         throw new TypeError(`Failed to construct 'AudioContext': The provided value is not of type 'AudioContextOptions'`);
@@ -88,7 +93,7 @@ module.exports = function(jsExport, nativeBinding) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioContext\'');
       }
 
-      return this[kNapiObj].sinkId;
+      return this.#sinkId;
     }
 
     get renderCapacity() {
@@ -158,11 +163,36 @@ module.exports = function(jsExport, nativeBinding) {
         throw new TypeError(`Failed to execute 'setSinkId' on 'AudioContext': 1 argument required, but only ${arguments.length} present`);
       }
 
+      let targetSinkId = '';
+
+      if (isPlainObject(sinkId)) {
+        if (!('type' in sinkId) || sinkId.type !== 'none') {
+          const err = TypeError(`Failed to execute 'setSinkId' on 'AudioContext': Failed to read the 'type' property from 'AudioSinkOptions': The provided value '${sinkId.type}' is not a valid enum value of type AudioSinkType.`);
+          return Promise.reject(err);
+        }
+
+        targetSinkId = 'none';
+      } else {
+        try {
+          targetSinkId = conversions['DOMString'](sinkId, {
+            context: `Failed to execute 'setSinkId' on 'AudioContext': Failed to read the 'type' property from 'AudioSinkOptions': The provided value '${sinkId.type}'`,
+          });
+        } catch (err) {
+          return Promise.reject(err);
+        }
+      }
+
+      this.#sinkId = sinkId;
+
       try {
-        this[kNapiObj].setSinkId(sinkId);
+        this[kNapiObj].setSinkId(targetSinkId);
         return Promise.resolve(undefined);
       } catch (err) {
-        return Promise.reject(err);
+        try {
+          throwSanitizedError(err);
+        } catch (err) {
+          return Promise.reject(err);
+        }
       }
     }
 
