@@ -58,18 +58,18 @@ const setup = window => {
   window.navigator.mediaDevices = nodeWebAudioAPI.mediaDevices;
   // window.MediaStream = nodeWebAudioAPI.mediaDevices.MediaStream;
 
-  // seems required (weirdly...), cf. `the-audiobuffer-interface/audiobuffer.html`
-  window.Float32Array = Float32Array;
-
   // e.g. 'resources/audiobuffersource-multi-channels-expected.wav'
   window.XMLHttpRequest = createXMLHttpRequest(testsPath);
   window.fetch = createFetch(wptRootPath);
   // window.requestAnimationFrame = func => setInterval(func, 16);
-  // errors
+
+  // populate window with node internals
   window.TypeError = TypeError;
   window.RangeError = RangeError;
   window.Error = Error;
   window.DOMException = DOMException;
+  window.Float32Array = Float32Array;
+  window.EventTarget = EventTarget;
 }
 
 // try catch unhandled error to prevent wpt process from crashing

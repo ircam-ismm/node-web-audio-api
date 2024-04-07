@@ -1,5 +1,5 @@
 const { throwSanitizedError } = require('./lib/errors.js');
-const { isFunction, kEnumerableProperty } = require('./lib/utils.js');
+const { isFunction, isPlainObject, kEnumerableProperty } = require('./lib/utils.js');
 const { kNapiObj } = require('./lib/symbols.js');
 const { bridgeEventTarget } = require('./lib/events.js');
 
@@ -28,6 +28,10 @@ const kKeepAwakeId = Symbol('keepAwakeId');
 module.exports = function(jsExport, nativeBinding) {
   class AudioContext extends jsExport.BaseAudioContext {
     constructor(options = {}) {
+      if (!isPlainObject(options)) {
+        throw new TypeError(`Failed to construct 'AudioContext': The provided value is not of type 'AudioContextOptions'`);
+      }
+
       let napiObj;
 
       try {
