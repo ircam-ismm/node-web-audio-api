@@ -66,7 +66,7 @@ module.exports = (jsExport, nativeBinding) => {
       }
 
       // required options
-      if (typeof options !== 'object' || (options && !('feedforward' in options))) {
+      if (typeof options !== 'object' || (options && options.feedforward === undefined)) {
         throw new TypeError('Failed to construct \'IIRFilterNode\': Failed to read the \'feedforward\'\' property from IIRFilterOptions: Required member is undefined');
       }
 
@@ -81,7 +81,7 @@ module.exports = (jsExport, nativeBinding) => {
       }
 
       // required options
-      if (typeof options !== 'object' || (options && !('feedback' in options))) {
+      if (typeof options !== 'object' || (options && options.feedback === undefined)) {
         throw new TypeError('Failed to construct \'IIRFilterNode\': Failed to read the \'feedback\'\' property from IIRFilterOptions: Required member is undefined');
       }
 

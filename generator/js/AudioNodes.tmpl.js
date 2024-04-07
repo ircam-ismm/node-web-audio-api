@@ -70,7 +70,7 @@ module.exports = (jsExport, nativeBinding) => {
           if (required) {
           checkMember += `
       // required options
-      if (typeof options !== 'object' || (options && !('${optionName}' in options))) {
+      if (typeof options !== 'object' || (options && options.${optionName} === undefined)) {
         throw new TypeError("Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}'' property from ${optionsType}: Required member is undefined");
       }
           `

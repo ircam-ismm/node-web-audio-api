@@ -113,7 +113,7 @@ module.exports = (jsExport /*, nativeBinding */ ) => {
     // when decodeErrorCallback is present the program will crash in an
     // unexpected manner
     // cf. https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-decodeaudiodata
-    decodeAudioData(audioData, decodeSuccessCallback = null, decodeErrorCallback = null) {
+    decodeAudioData(arrayBuffer, decodeSuccessCallback = undefined, decodeErrorCallback = undefined) {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
       }
@@ -122,12 +122,12 @@ module.exports = (jsExport /*, nativeBinding */ ) => {
         throw new TypeError(`Failed to execute 'decodeAudioData' on 'BaseAudioContext': 1 argument required, but only ${arguments.length} present`);
       }
 
-      if (!(audioData instanceof ArrayBuffer)) {
+      if (!(arrayBuffer instanceof ArrayBuffer)) {
         throw new TypeError('Failed to execute "decodeAudioData": parameter 1 is not of type "ArrayBuffer"');
       }
 
       try {
-        const nativeAudioBuffer = this[kNapiObj].decodeAudioData(audioData);
+        const nativeAudioBuffer = this[kNapiObj].decodeAudioData(arrayBuffer);
         const audioBuffer = new jsExport.AudioBuffer({
           [kNativeAudioBuffer]: nativeAudioBuffer,
         });
@@ -202,7 +202,9 @@ module.exports = (jsExport /*, nativeBinding */ ) => {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
       }
 
-      return new jsExport.AnalyserNode(this);
+      const options = {};
+
+      return new jsExport.AnalyserNode(this, options);
     }
 
     createBufferSource() {
@@ -210,7 +212,9 @@ module.exports = (jsExport /*, nativeBinding */ ) => {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
       }
 
-      return new jsExport.AudioBufferSourceNode(this);
+      const options = {};
+
+      return new jsExport.AudioBufferSourceNode(this, options);
     }
 
     createBiquadFilter() {
@@ -218,33 +222,31 @@ module.exports = (jsExport /*, nativeBinding */ ) => {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
       }
 
-      return new jsExport.BiquadFilterNode(this);
+      const options = {};
+
+      return new jsExport.BiquadFilterNode(this, options);
     }
 
-    createChannelMerger(numberOfInputs) {
+    createChannelMerger(numberOfInputs = 6) {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
       }
 
-      const options = {};
-
-      if (numberOfInputs !== undefined) {
-        options.numberOfInputs = numberOfInputs;
-      }
+      const options = {
+        numberOfInputs,
+      };
 
       return new jsExport.ChannelMergerNode(this, options);
     }
 
-    createChannelSplitter(numberOfOutputs) {
+    createChannelSplitter(numberOfOutputs = 6) {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
       }
 
-      const options = {};
-
-      if (numberOfOutputs !== undefined) {
-        options.numberOfOutputs = numberOfOutputs;
-      }
+      const options = {
+        numberOfOutputs,
+      };
 
       return new jsExport.ChannelSplitterNode(this, options);
     }
@@ -254,7 +256,9 @@ module.exports = (jsExport /*, nativeBinding */ ) => {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
       }
 
-      return new jsExport.ConstantSourceNode(this);
+      const options = {};
+
+      return new jsExport.ConstantSourceNode(this, options);
     }
 
     createConvolver() {
@@ -262,19 +266,19 @@ module.exports = (jsExport /*, nativeBinding */ ) => {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
       }
 
-      return new jsExport.ConvolverNode(this);
+      const options = {};
+
+      return new jsExport.ConvolverNode(this, options);
     }
 
-    createDelay(maxDelayTime) {
+    createDelay(maxDelayTime = 1.0) {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
       }
 
-      const options = {};
-
-      if (maxDelayTime !== undefined) {
-        options.maxDelayTime = maxDelayTime;
-      }
+      const options = {
+        maxDelayTime,
+      };
 
       return new jsExport.DelayNode(this, options);
     }
@@ -284,7 +288,9 @@ module.exports = (jsExport /*, nativeBinding */ ) => {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
       }
 
-      return new jsExport.DynamicsCompressorNode(this);
+      const options = {};
+
+      return new jsExport.DynamicsCompressorNode(this, options);
     }
 
     createGain() {
@@ -292,7 +298,9 @@ module.exports = (jsExport /*, nativeBinding */ ) => {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
       }
 
-      return new jsExport.GainNode(this);
+      const options = {};
+
+      return new jsExport.GainNode(this, options);
     }
 
     createIIRFilter(feedforward, feedback) {
@@ -300,15 +308,10 @@ module.exports = (jsExport /*, nativeBinding */ ) => {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
       }
 
-      const options = {};
-
-      if (feedforward !== undefined) {
-        options.feedforward = feedforward;
-      }
-
-      if (feedback !== undefined) {
-        options.feedback = feedback;
-      }
+      const options = {
+        feedforward,
+        feedback,
+      };
 
       return new jsExport.IIRFilterNode(this, options);
     }
@@ -318,7 +321,9 @@ module.exports = (jsExport /*, nativeBinding */ ) => {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
       }
 
-      return new jsExport.OscillatorNode(this);
+      const options = {};
+
+      return new jsExport.OscillatorNode(this, options);
     }
 
     createPanner() {
@@ -326,7 +331,9 @@ module.exports = (jsExport /*, nativeBinding */ ) => {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
       }
 
-      return new jsExport.PannerNode(this);
+      const options = {};
+
+      return new jsExport.PannerNode(this, options);
     }
 
     createStereoPanner() {
@@ -334,7 +341,9 @@ module.exports = (jsExport /*, nativeBinding */ ) => {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
       }
 
-      return new jsExport.StereoPannerNode(this);
+      const options = {};
+
+      return new jsExport.StereoPannerNode(this, options);
     }
 
     createWaveShaper() {
@@ -342,7 +351,9 @@ module.exports = (jsExport /*, nativeBinding */ ) => {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
       }
 
-      return new jsExport.WaveShaperNode(this);
+      const options = {};
+
+      return new jsExport.WaveShaperNode(this, options);
     }
 
   }
