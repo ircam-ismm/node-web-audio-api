@@ -70,6 +70,7 @@ const setup = window => {
   window.DOMException = DOMException;
   window.Float32Array = Float32Array;
   window.EventTarget = EventTarget;
+  window.Promise = Promise;
 }
 
 // try catch unhandled error to prevent wpt process from crashing
