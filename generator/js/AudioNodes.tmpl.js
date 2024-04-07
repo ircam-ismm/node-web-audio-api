@@ -396,7 +396,7 @@ ${d.methods(d.node, false)
       ${name} = conversions['${type}'](${name}, {
         context: \`Failed to execute '${d.name(method)}' on '${d.name(d.node)}': Parameter ${index + 1}\`,
       });
-            `
+            `;
             break;
           }
           case 'Float32Array': {
