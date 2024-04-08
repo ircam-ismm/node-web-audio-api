@@ -414,7 +414,7 @@ module.exports = (jsExport, nativeBinding) => {
       }
     }
 
-    setPosition(...args) {
+    setPosition(x, y, z) {
       if (!(this instanceof PannerNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
       }
@@ -423,14 +423,26 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError(`Failed to execute 'setPosition' on 'PannerNode': 3 argument required, but only ${arguments.length} present`);
       }
 
+      x = conversions['float'](x, {
+        context: `Failed to execute 'setPosition' on 'PannerNode': Parameter 1`,
+      });
+
+      y = conversions['float'](y, {
+        context: `Failed to execute 'setPosition' on 'PannerNode': Parameter 2`,
+      });
+
+      z = conversions['float'](z, {
+        context: `Failed to execute 'setPosition' on 'PannerNode': Parameter 3`,
+      });
+
       try {
-        return this[kNapiObj].setPosition(...args);
+        return this[kNapiObj].setPosition(x, y, z);
       } catch (err) {
         throwSanitizedError(err);
       }
     }
 
-    setOrientation(...args) {
+    setOrientation(x, y, z) {
       if (!(this instanceof PannerNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
       }
@@ -439,8 +451,20 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError(`Failed to execute 'setOrientation' on 'PannerNode': 3 argument required, but only ${arguments.length} present`);
       }
 
+      x = conversions['float'](x, {
+        context: `Failed to execute 'setOrientation' on 'PannerNode': Parameter 1`,
+      });
+
+      y = conversions['float'](y, {
+        context: `Failed to execute 'setOrientation' on 'PannerNode': Parameter 2`,
+      });
+
+      z = conversions['float'](z, {
+        context: `Failed to execute 'setOrientation' on 'PannerNode': Parameter 3`,
+      });
+
       try {
-        return this[kNapiObj].setOrientation(...args);
+        return this[kNapiObj].setOrientation(x, y, z);
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -466,14 +490,12 @@ module.exports = (jsExport, nativeBinding) => {
       configurable: true,
       value: 'PannerNode',
     },
-
     positionX: kEnumerableProperty,
     positionY: kEnumerableProperty,
     positionZ: kEnumerableProperty,
     orientationX: kEnumerableProperty,
     orientationY: kEnumerableProperty,
     orientationZ: kEnumerableProperty,
-
     panningModel: kEnumerableProperty,
     distanceModel: kEnumerableProperty,
     refDistance: kEnumerableProperty,
@@ -482,25 +504,8 @@ module.exports = (jsExport, nativeBinding) => {
     coneInnerAngle: kEnumerableProperty,
     coneOuterAngle: kEnumerableProperty,
     coneOuterGain: kEnumerableProperty,
-
     setPosition: kEnumerableProperty,
     setOrientation: kEnumerableProperty,
-  });
-
-  Object.defineProperty(PannerNode.prototype.setPosition, 'length', {
-    __proto__: null,
-    writable: false,
-    enumerable: false,
-    configurable: true,
-    value: 3,
-  });
-
-  Object.defineProperty(PannerNode.prototype.setOrientation, 'length', {
-    __proto__: null,
-    writable: false,
-    enumerable: false,
-    configurable: true,
-    value: 3,
   });
 
   return PannerNode;

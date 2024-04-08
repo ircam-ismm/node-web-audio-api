@@ -87,6 +87,7 @@ exports.throwSanitizedError = function throwSanitizedError(err) {
   if (originalMessage.startsWith('TypeError')) {
     const msg = originalMessage.replace(/^TypeError - /, '');
     const error = new TypeError(msg);
+    overrideStack(err, error);
 
     throw error;
   } else if (originalMessage.startsWith('RangeError')) {
@@ -110,20 +111,26 @@ exports.throwSanitizedError = function throwSanitizedError(err) {
     overrideStack(err, error);
 
     throw error;
-  } if (originalMessage.startsWith('IndexSizeError')) {
+  } else if (originalMessage.startsWith('IndexSizeError')) {
     const msg = originalMessage.replace(/^IndexSizeError - /, '');
     const error = new DOMException(msg, 'IndexSizeError');
     overrideStack(err, error);
 
     throw error;
-  } if (originalMessage.startsWith('InvalidAccessError')) {
+  } else if (originalMessage.startsWith('InvalidAccessError')) {
     const msg = originalMessage.replace(/^InvalidAccessError - /, '');
     const error = new DOMException(msg, 'InvalidAccessError');
     overrideStack(err, error);
 
     throw error;
+  } else if (originalMessage.startsWith('NotFoundError')) {
+    const msg = originalMessage.replace(/^NotFoundError - /, '');
+    const error = new DOMException(msg, 'NotFoundError');
+    overrideStack(err, error);
+
+    throw error;
   }
 
-  console.warn('[lib/errors.js] Possibly unhandled error type', err.message);
+  console.warn('[lib/errors.js] Unexpected Rust error', err);
   throw err;
 }

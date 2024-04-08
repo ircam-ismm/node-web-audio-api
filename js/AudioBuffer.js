@@ -1,3 +1,5 @@
+const conversions = require("webidl-conversions");
+
 const { throwSanitizedError, DOMException } = require('./lib/errors.js');
 const { kEnumerableProperty } = require('./lib/utils.js');
 
@@ -70,9 +72,18 @@ module.exports.AudioBuffer = (NativeAudioBuffer) => {
       }
 
       // rust implementation uses a usize so this check must be done here
+      // weirdly `conversions['unsigned long'](-1);` returns `4294967295``
       if (channelNumber < 0) {
         throw new DOMException(`Failed to execute 'copyFromChannel' on 'AudioBuffer': channelNumber must equal or greater than 0`, 'IndexSizeError');
       }
+
+      channelNumber = conversions['unsigned long'](channelNumber);
+
+      if (channelNumber < 0) {
+        throw new DOMException(`Failed to execute 'copyFromChannel' on 'AudioBuffer': bufferOffset must equal or greater than 0`, 'IndexSizeError');
+      }
+
+      bufferOffset = conversions['unsigned long'](bufferOffset);
 
       try {
         this[kNativeAudioBuffer].copyFromChannel(destination, channelNumber, bufferOffset);
@@ -91,9 +102,18 @@ module.exports.AudioBuffer = (NativeAudioBuffer) => {
       }
 
       // rust implementation uses a usize so this check must be done here
+      // weirdly `conversions['unsigned long'](-1);` returns `4294967295``
       if (channelNumber < 0) {
         throw new DOMException(`Failed to execute 'copyToChannel' on 'AudioBuffer': channelNumber must equal or greater than 0`, 'IndexSizeError');
       }
+
+      channelNumber = conversions['unsigned long'](channelNumber);
+
+      if (channelNumber < 0) {
+        throw new DOMException(`Failed to execute 'copyToChannel' on 'AudioBuffer': bufferOffset must equal or greater than 0`, 'IndexSizeError');
+      }
+
+      bufferOffset = conversions['unsigned long'](bufferOffset);
 
       try {
         this[kNativeAudioBuffer].copyToChannel(source, channelNumber, bufferOffset);
@@ -106,6 +126,14 @@ module.exports.AudioBuffer = (NativeAudioBuffer) => {
       if (!(this instanceof AudioBuffer)) {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'");
       }
+
+      // rust implementation uses a usize so this check must be done here
+      // weirdly `conversions['unsigned long'](-1);` returns `4294967295``
+      if (channel < 0) {
+        throw new DOMException(`Failed to execute 'getChannelData' on 'AudioBuffer': channel must equal or greater than 0`, 'IndexSizeError');
+      }
+
+      channel = conversions['unsigned long'](channel);
 
       try {
         return this[kNativeAudioBuffer].getChannelData(channel);

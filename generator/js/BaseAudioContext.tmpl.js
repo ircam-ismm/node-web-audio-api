@@ -87,7 +87,7 @@ module.exports = (jsExport /*, nativeBinding */) => {
     // when decodeErrorCallback is present the program will crash in an
     // unexpected manner
     // cf. https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-decodeaudiodata
-    decodeAudioData(audioData, decodeSuccessCallback = null, decodeErrorCallback = null) {
+    decodeAudioData(arrayBuffer, decodeSuccessCallback = undefined, decodeErrorCallback = undefined) {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
       }
@@ -96,12 +96,12 @@ module.exports = (jsExport /*, nativeBinding */) => {
         throw new TypeError(\`Failed to execute 'decodeAudioData' on 'BaseAudioContext': 1 argument required, but only \${arguments.length} present\`);
       }
 
-      if (!(audioData instanceof ArrayBuffer)) {
+      if (!(arrayBuffer instanceof ArrayBuffer)) {
         throw new TypeError('Failed to execute "decodeAudioData": parameter 1 is not of type "ArrayBuffer"');
       }
 
       try {
-        const nativeAudioBuffer = this[kNapiObj].decodeAudioData(audioData);
+        const nativeAudioBuffer = this[kNapiObj].decodeAudioData(arrayBuffer);
         const audioBuffer = new jsExport.AudioBuffer({ [kNativeAudioBuffer]: nativeAudioBuffer });
 
         if (isFunction(decodeSuccessCallback)) {
@@ -179,28 +179,17 @@ ${d.nodes.map(n => {
   }
 
   let args = factoryIdl.arguments;
+  d.debug(args);
 
 return `\
-    ${d.factoryName(n)}(${args.map(arg => arg.name).join(', ')}) {
+    ${d.factoryName(n)}(${args.map(arg => arg.optional ? `${arg.name} = ${arg.default.value}` : arg.name).join(', ')}) {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
       }
 
-${args.length > 0 ? `\
-      const options = {};
+      const options = {${args.map(arg => arg.name).join(', ')}};
 
-      ${args.map(arg => {
-        return `
-      if (${arg.name} !== undefined) {
-        options.${arg.name} = ${arg.name};
-      }
-        `;
-      }).join('')};
-
-      return new jsExport.${d.name(n)}(this, options);\
-` : `\
-      return new jsExport.${d.name(n)}(this);\
-`}
+      return new jsExport.${d.name(n)}(this, options);
     }
 `
   }).join('\n')}

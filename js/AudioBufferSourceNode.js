@@ -271,10 +271,8 @@ module.exports = (jsExport, nativeBinding) => {
       configurable: true,
       value: 'AudioBufferSourceNode',
     },
-
     playbackRate: kEnumerableProperty,
     detune: kEnumerableProperty,
-
     buffer: kEnumerableProperty,
     loop: kEnumerableProperty,
     loopStart: kEnumerableProperty,

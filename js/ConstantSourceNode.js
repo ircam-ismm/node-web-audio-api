@@ -119,7 +119,6 @@ module.exports = (jsExport, nativeBinding) => {
       configurable: true,
       value: 'ConstantSourceNode',
     },
-
     offset: kEnumerableProperty,
 
   });

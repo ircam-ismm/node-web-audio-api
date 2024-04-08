@@ -1,5 +1,7 @@
-const { throwSanitizedError } = require('./lib/errors.js');
+const conversions = require("webidl-conversions");
 
+const { toSanitizedSequence } = require('./lib/cast.js');
+const { throwSanitizedError } = require('./lib/errors.js');
 const { kEnumerableProperty } = require('./lib/utils.js');
 const { kNativeAudioParam } = require('./lib/symbols.js');
 
@@ -24,11 +26,21 @@ ${d.attributes(d.node).map(attr => {
 `}).join('')}
   // setters
 ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
+  // float or AutomationRate
+  const type = attr.idlType.idlType;
+  const castType = type === 'float' ? 'float' : 'string';
+
   return `
   set ${d.name(attr)}(value) {
     if (!(this instanceof AudioParam)) {
       throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioParam'");
     }
+
+    ${type === 'float' ? `
+    value = conversions['${type}'](value, {
+      context: \`Failed to set the '${d.name(attr)}' property on '${d.name(d.node)}': The provided ${type} value\`,
+    });
+    ` : ``}
 
     try {
       this[kNativeAudioParam].${d.name(attr)} = value;
@@ -38,17 +50,23 @@ ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
   }
 `}).join('')}
   // methods
-${d.methods(d.node, false).reduce((acc, method) => {
-  // dedup method names
-  if (!acc.find(i => d.name(i) === d.name(method))) {
-    acc.push(method)
-  }
-  return acc;
-}, []).map(method => {
-  const numRequired = d.minRequiredArgs(method);
+${d.methods(d.node, false)
+  .reduce((acc, method) => {
+    // dedup method names
+    if (!acc.find(i => d.name(i) === d.name(method))) {
+      acc.push(method)
+    }
+    return acc;
+  }, []).map(method => {
+    const numRequired = d.minRequiredArgs(method);
+    const argumentNames = method.arguments.filter(arg => arg.optional === false).map(d.name);
+    // make sure we can assume that all arguments are required
+    if (argumentNames.length !== method.arguments.length) {
+      console.log(`> Warning: optionnal argument for ${d.name(method)}`)
+    }
 
-  return `
-  ${d.name(method)}(...args) {
+    return `
+  ${d.name(method)}(${argumentNames.join(', ')}) {
     if (!(this instanceof AudioParam)) {
       throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioParam'");
     }
@@ -57,13 +75,48 @@ ${d.methods(d.node, false).reduce((acc, method) => {
       throw new TypeError(\`Failed to execute '${d.name(method)}' on '${d.name(d.node)}': ${numRequired} argument required, but only \${arguments.length}\ present\`);
     }
 
+    ${method.arguments.map((argument, index) => {
+      const name = d.name(argument);
+      const type = argument.idlType.idlType;
+
+      switch (type) {
+        case 'float':
+        case 'double': {
+          return `
+    ${name} = conversions['${type}'](${name}, {
+      context: \`Failed to execute '${d.name(method)}' on '${d.name(d.node)}': Parameter ${index + 1}\`,
+    });
+          `;
+          break;
+        }
+        default: {
+          if (argument.idlType.generic === 'sequence' && argument.idlType.idlType[0].idlType === 'float') {
+            return `
     try {
-      return this[kNativeAudioParam].${d.name(method)}(...args);
+      ${name} = toSanitizedSequence(${name}, Float32Array);
+    } catch (err) {
+      throw new TypeError(\`Failed to execute '${d.name(method)}': Parameter ${index + 1} \${err.message}\`);
+    }
+            `;
+          } else {
+            console.log(`> Warning: argument type not handled`);
+            d.debug(argument);
+          }
+          break;
+        }
+      }
+    }).join('')}
+
+    try {
+      this[kNativeAudioParam].${d.name(method)}(${argumentNames.join(', ')});
     } catch (err) {
       throwSanitizedError(err);
     }
+
+    return this;
   }
-`}).join('')}
+    `
+  }).join('')}
 }
 
 Object.defineProperties(AudioParam, {

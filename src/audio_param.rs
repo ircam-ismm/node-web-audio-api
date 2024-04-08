@@ -91,10 +91,7 @@ fn set_automation_rate(ctx: CallContext) -> Result<JsUndefined> {
     let value = match utf8_str.as_str() {
         "a-rate" => AutomationRate::A,
         "k-rate" => AutomationRate::K,
-        _ => panic!(
-            "The provided value '{:?}' is not a valid enum value of type AutomationRate.",
-            utf8_str
-        ),
+        _ => panic!("TypeError - The provided value '{:?}' is not a valid enum value of type AutomationRate.", utf8_str),
     };
     obj.set_automation_rate(value);
 

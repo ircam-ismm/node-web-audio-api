@@ -1,9 +1,9 @@
-const { nameCodeMap, DOMException } = require('./lib/errors.js');
+const { bridgeEventTarget } = require('./lib/events.js');
+const { DOMException, throwSanitizedError } = require('./lib/errors.js');
 const {
   isFunction, isPlainObject, isPositiveInt, isPositiveNumber, kEnumerableProperty
 } = require('./lib/utils.js');
 const { kNapiObj } = require('./lib/symbols.js');
-const { bridgeEventTarget } = require('./lib/events.js');
 
 const { kNativeAudioBuffer } = require('./AudioBuffer.js');
 
@@ -22,14 +22,26 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
         throw new TypeError(`Failed to construct 'OfflineAudioContext': 1 argument required, but only ${arguments.length} present`);
       }
 
-      // handle initialisation with either an options object or a sequence of parameters
       // https://webaudio.github.io/web-audio-api/#dom-offlineaudiocontext-constructor-contextoptions-contextoptions
-      if (isPlainObject(args[0]) && 'length' in args[0] && 'sampleRate' in args[0]
-      ) {
-        let { numberOfChannels, length, sampleRate } = args[0];
-        if (numberOfChannels === undefined) {
-            numberOfChannels = 1;
+      if (arguments.length === 1) {
+        if (!isPlainObject(args[0])) {
+          throw new TypeError(`Failed to construct 'OfflineAudioContext': The provided value is not of type 'OfflineAudioContextOptions'`);
         }
+
+        let { length, sampleRate, numberOfChannels } = args[0];
+
+        if (length === undefined) {
+          throw new TypeError(`Failed to construct 'OfflineAudioContext': Failed to read the 'length' property from 'OfflineAudioContextOptions': Required member is undefined.`);
+        }
+
+        if (sampleRate === undefined) {
+          throw new TypeError(`Failed to construct 'OfflineAudioContext': Failed to read the 'sampleRate' property from 'OfflineAudioContextOptions': Required member is undefined.`);
+        }
+
+        if (numberOfChannels === undefined) {
+          numberOfChannels = 1;
+        }
+
         args = [numberOfChannels, length, sampleRate];
       }
 
@@ -38,7 +50,7 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
       if (!isPositiveInt(numberOfChannels)) {
         throw new TypeError(`Failed to construct 'OfflineAudioContext': Invalid value for numberOfChannels: ${numberOfChannels}`);
       } else if (!isPositiveInt(length)) {
-        throw new TypeError(`Failed to construct 'OfflineAudioContext': Invalid value for length: ${length}`);
+        throw new DOMException(`Failed to construct 'OfflineAudioContext': Invalid value for length: ${length}`, 'NotSupportedError');
       } else if (!isPositiveNumber(sampleRate)) {
         throw new TypeError(`Failed to construct 'OfflineAudioContext': Invalid value for sampleRate: ${sampleRate}`);
       }
@@ -88,7 +100,14 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
       // Lazily register event callback on rust side
       bridgeEventTarget(this);
 
-      const nativeAudioBuffer = await this[kNapiObj].startRendering();
+      let nativeAudioBuffer;
+
+      try {
+        nativeAudioBuffer = await this[kNapiObj].startRendering();
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+
       const audioBuffer = new jsExport.AudioBuffer({ [kNativeAudioBuffer]: nativeAudioBuffer });
 
       // We dispatch the complete event manually to simplify the sharing of the
@@ -111,7 +130,11 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'");
       }
 
-      await this[kNapiObj].resume();
+      try {
+        await this[kNapiObj].resume();
+      } catch (err) {
+        throwSanitizedError(err);
+      }
     }
 
     async suspend(suspendTime) {
@@ -123,7 +146,11 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
         throw new TypeError(`Failed to execute 'suspend' on 'OfflineAudioContext': 1 argument required, but only ${arguments.length} present`);
       }
 
-      await this[kNapiObj].suspend(suspendTime);
+      try {
+        await this[kNapiObj].suspend(suspendTime);
+      } catch (err) {
+        throwSanitizedError(err);
+      }
     }
   }
 

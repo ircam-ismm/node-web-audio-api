@@ -180,7 +180,7 @@ module.exports = (jsExport, nativeBinding) => {
       }
     }
 
-    getFrequencyResponse(...args) {
+    getFrequencyResponse(frequencyHz, magResponse, phaseResponse) {
       if (!(this instanceof BiquadFilterNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BiquadFilterNode\'');
       }
@@ -189,8 +189,20 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError(`Failed to execute 'getFrequencyResponse' on 'BiquadFilterNode': 3 argument required, but only ${arguments.length} present`);
       }
 
+      if (!(frequencyHz instanceof Float32Array)) {
+        throw new TypeError(`Failed to execute 'getFrequencyResponse' on 'BiquadFilterNode': Parameter 1 is not of type 'Float32Array'`);
+      }
+
+      if (!(magResponse instanceof Float32Array)) {
+        throw new TypeError(`Failed to execute 'getFrequencyResponse' on 'BiquadFilterNode': Parameter 2 is not of type 'Float32Array'`);
+      }
+
+      if (!(phaseResponse instanceof Float32Array)) {
+        throw new TypeError(`Failed to execute 'getFrequencyResponse' on 'BiquadFilterNode': Parameter 3 is not of type 'Float32Array'`);
+      }
+
       try {
-        return this[kNapiObj].getFrequencyResponse(...args);
+        return this[kNapiObj].getFrequencyResponse(frequencyHz, magResponse, phaseResponse);
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -216,23 +228,12 @@ module.exports = (jsExport, nativeBinding) => {
       configurable: true,
       value: 'BiquadFilterNode',
     },
-
     frequency: kEnumerableProperty,
     detune: kEnumerableProperty,
     Q: kEnumerableProperty,
     gain: kEnumerableProperty,
-
     type: kEnumerableProperty,
-
     getFrequencyResponse: kEnumerableProperty,
-  });
-
-  Object.defineProperty(BiquadFilterNode.prototype.getFrequencyResponse, 'length', {
-    __proto__: null,
-    writable: false,
-    enumerable: false,
-    configurable: true,
-    value: 3,
   });
 
   return BiquadFilterNode;

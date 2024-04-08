@@ -70,7 +70,7 @@ module.exports = (jsExport, nativeBinding) => {
           if (required) {
           checkMember += `
       // required options
-      if (typeof options !== 'object' || (options && !('${optionName}' in options))) {
+      if (typeof options !== 'object' || (options && options.${optionName} === undefined)) {
         throw new TypeError("Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}'' property from ${optionsType}: Required member is undefined");
       }
           `
@@ -166,7 +166,6 @@ module.exports = (jsExport, nativeBinding) => {
               break;
             }
             default: {
-              d.debug(d.memberType(member))
               // - IIRFilterNode::feedback
               // - IIRFilterNode::feedforward
               // - WaveShaperNode:::curve
@@ -360,8 +359,8 @@ ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
 }).join('')}
 
 ${d.methods(d.node, false)
+  // dedup method names
   .reduce((acc, method) => {
-    // dedup method names
     if (!acc.find(i => d.name(i) === d.name(method))) {
       acc.push(method)
     }
@@ -371,9 +370,14 @@ ${d.methods(d.node, false)
   .filter(method => d.name(method) !== 'start' && d.name(method) !== 'stop')
   .map(method => {
     const numRequired = d.minRequiredArgs(method);
+    const argumentNames = method.arguments.filter(arg => arg.optional === false).map(d.name);
+    // make sure we can assume that all arguments are required
+    if (argumentNames.length !== method.arguments.length) {
+      console.log(`> Warning: optionnal argument for ${d.name(method)}`)
+    }
 
     return `
-    ${d.name(method)}(...args) {
+    ${d.name(method)}(${argumentNames.join(', ')}) {
       if (!(this instanceof ${d.name(d.node)})) {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
       }
@@ -382,13 +386,54 @@ ${d.methods(d.node, false)
         throw new TypeError(\`Failed to execute '${d.name(method)}' on '${d.name(d.node)}': ${numRequired} argument required, but only \${arguments.length}\ present\`);
       }
 
-      ${method.arguments[0].idlType.idlType === 'PeriodicWave'
-        ? `args[0] = args[0][kNapiObj];`
-        : ``
+      ${method.arguments.map((argument, index) => {
+        const name = d.name(argument);
+        const type = argument.idlType.idlType;
+
+        switch (type) {
+          case 'float': {
+            return `
+      ${name} = conversions['${type}'](${name}, {
+        context: \`Failed to execute '${d.name(method)}' on '${d.name(d.node)}': Parameter ${index + 1}\`,
+      });
+            `;
+            break;
+          }
+          case 'Float32Array': {
+            return `
+      if (!(${name} instanceof Float32Array)) {
+        throw new TypeError(\`Failed to execute '${d.name(method)}' on '${d.name(d.node)}': Parameter ${index + 1} is not of type 'Float32Array'\`);
+      }
+            `;
+            break;
+          }
+          case 'Uint8Array': {
+            return `
+      if (!(${name} instanceof Uint8Array)) {
+        throw new TypeError(\`Failed to execute '${d.name(method)}' on '${d.name(d.node)}': Parameter ${index + 1} is not of type 'Uint8Array'\`);
+      }
+            `;
+            break;
+          }
+          case 'PeriodicWave': {
+            return `
+      if (!(${name} instanceof jsExport.PeriodicWave)) {
+        throw new TypeError(\`Failed to execute '${d.name(method)}' on '${d.name(d.node)}': Parameter ${index + 1} is not of type 'PeriodicWave'\`);
       }
 
+      ${name} = ${name}[kNapiObj];
+            `;
+            break;
+          }
+          default: {
+            console.log('unhandle type', type, 'in method', d.name(method));
+            break;
+          }
+        }
+      }).join('')}
+
       try {
-        return this[kNapiObj].${d.name(method)}(...args);
+        return this[kNapiObj].${d.name(method)}(${argumentNames.join(', ')});
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -420,15 +465,12 @@ ${(function() {
       configurable: true,
       value: '${d.name(d.node)}',
     },
-
     ${d.audioParams(d.node).map(param => {
       return `${d.name(param)}: kEnumerableProperty,`;
     }).join('')}
-
     ${d.attributes(d.node).map(attr => {
       return `${d.name(attr)}: kEnumerableProperty,`;
     }).join('')}
-
     ${d.methods(d.node, false)
       .reduce((acc, method) => {
         // dedup method names
@@ -443,28 +485,6 @@ ${(function() {
         return `${d.name(method)}: kEnumerableProperty,`;
       }).join('')}
   });
-
-  ${d.methods(d.node, false)
-    .reduce((acc, method) => {
-      // dedup method names
-      if (!acc.find(i => d.name(i) === d.name(method))) {
-        acc.push(method)
-      }
-      return acc;
-    }, [])
-    // filter AudioScheduledSourceNode methods to prevent re-throwing errors
-    .filter(method => d.name(method) !== 'start' && d.name(method) !== 'stop')
-    .map(method => {
-      return `
-  Object.defineProperty(${d.name(d.node)}.prototype.${d.name(method)}, 'length', {
-    __proto__: null,
-    writable: false,
-    enumerable: false,
-    configurable: true,
-    value: ${d.minRequiredArgs(method)}
-  });
-      `
-    }).join('')}
   `;
 }())}
 
