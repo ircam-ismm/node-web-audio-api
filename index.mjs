@@ -20,17 +20,25 @@
 // re-export index.cjs to support esm import syntax
 // see https://github.com/nodejs/node/issues/40541#issuecomment-951609570
 
-import { createRequire } from 'module';
+import {
+  createRequire,
+} from 'module';
 const require = createRequire(import.meta.url);
 
 const nativeModule = require('./index.cjs');
 export const {
+  BaseAudioContext,
   AudioContext,
   OfflineAudioContext,
+
+  AudioNode,
+  AudioScheduledSourceNode,
   AudioParam,
   AudioDestinationNode,
-  AudioBuffer,
+  AudioListener,
+
   PeriodicWave,
+  AudioBuffer,
   // generated supported nodes
   AnalyserNode,
   AudioBufferSourceNode,
@@ -54,6 +62,3 @@ export const {
 } = nativeModule;
 
 export default nativeModule;
-
-
-  

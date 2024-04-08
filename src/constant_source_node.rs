@@ -81,72 +81,23 @@ impl NapiConstantSourceNode {
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
-    if ctx.length < 1 {
-        let msg = "TypeError - Failed to construct 'ConstantSourceNode': 1 argument required, but only 0 present.";
-        return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-    }
-
-    // first argument should be an AudioContext
     let js_audio_context = ctx.get::<JsObject>(0)?;
 
-    // check that
-    let audio_context_utf8_name = if let Ok(result) =
-        js_audio_context.has_named_property("Symbol.toStringTag")
-    {
-        if result {
-            let audio_context_name =
-                js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
-            let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
-            let audio_context_str = &audio_context_utf8_name[..];
-
-            if audio_context_str != "AudioContext" && audio_context_str != "OfflineAudioContext" {
-                let msg = "TypeError - Failed to construct 'ConstantSourceNode': argument 1 is not of type BaseAudioContext";
-                return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-            }
-
-            audio_context_utf8_name
-        } else {
-            let msg = "TypeError - Failed to construct 'ConstantSourceNode': argument 1 is not of type BaseAudioContext";
-            return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-        }
-    } else {
-        // This swallowed somehow, .e.g const node = new GainNode(null); throws
-        // TypeError Cannot convert undefined or null to object
-        // To be investigated...
-        let msg = "TypeError - Failed to construct 'ConstantSourceNode': argument 1 is not of type BaseAudioContext";
-        return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-    };
-
-    js_this.define_properties(&[
-        Property::new("context")?
-            .with_value(&js_audio_context)
-            .with_property_attributes(PropertyAttributes::Enumerable),
-        // this must be put on the instance and not in the prototype to be reachable
-        Property::new("Symbol.toStringTag")?
-            .with_value(&ctx.env.create_string("ConstantSourceNode")?)
-            .with_property_attributes(PropertyAttributes::Static),
-    ])?;
-
     // parse options
-    let options = if let Ok(either_options) = ctx.try_get::<JsObject>(1) {
-        match either_options {
-            Either::A(options_js) => {
-                let some_offset_js = options_js.get::<&str, JsObject>("offset")?;
-                let offset = if let Some(offset_js) = some_offset_js {
-                    offset_js.coerce_to_number()?.get_double()? as f32
-                } else {
-                    1.
-                };
+    let js_options = ctx.get::<JsObject>(1)?;
 
-                ConstantSourceOptions { offset }
-            }
-            Either::B(_) => Default::default(),
-        }
-    } else {
-        Default::default()
-    };
+    let offset = js_options
+        .get::<&str, JsNumber>("offset")?
+        .unwrap()
+        .get_double()? as f32;
 
+    let options = ConstantSourceOptions { offset };
+
+    let audio_context_name =
+        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
+    let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
     let audio_context_str = &audio_context_utf8_name[..];
+
     // create native node
     let native_node = match audio_context_str {
         "AudioContext" => {
@@ -164,12 +115,21 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         &_ => unreachable!(),
     };
 
-    // AudioParam: ConstantSourceNode::offset
     let native_param = native_node.offset().clone();
     let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("offset", &js_obj)?;
+
+    js_this.define_properties(&[
+        Property::new("context")?
+            .with_value(&js_audio_context)
+            .with_property_attributes(PropertyAttributes::Enumerable),
+        // this must be put on the instance and not in the prototype to be reachable
+        Property::new("Symbol.toStringTag")?
+            .with_value(&ctx.env.create_string("ConstantSourceNode")?)
+            .with_property_attributes(PropertyAttributes::Static),
+    ])?;
 
     // finalize instance creation
     let napi_node = NapiConstantSourceNode(native_node);

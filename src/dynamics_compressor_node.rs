@@ -75,160 +75,100 @@ impl NapiDynamicsCompressorNode {
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
-    if ctx.length < 1 {
-        let msg = "TypeError - Failed to construct 'DynamicsCompressorNode': 1 argument required, but only 0 present.";
-        return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-    }
-
-    // first argument should be an AudioContext
     let js_audio_context = ctx.get::<JsObject>(0)?;
 
-    // check that
-    let audio_context_utf8_name = if let Ok(result) =
-        js_audio_context.has_named_property("Symbol.toStringTag")
-    {
-        if result {
-            let audio_context_name =
-                js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
-            let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
-            let audio_context_str = &audio_context_utf8_name[..];
-
-            if audio_context_str != "AudioContext" && audio_context_str != "OfflineAudioContext" {
-                let msg = "TypeError - Failed to construct 'DynamicsCompressorNode': argument 1 is not of type BaseAudioContext";
-                return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-            }
-
-            audio_context_utf8_name
-        } else {
-            let msg = "TypeError - Failed to construct 'DynamicsCompressorNode': argument 1 is not of type BaseAudioContext";
-            return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-        }
-    } else {
-        // This swallowed somehow, .e.g const node = new GainNode(null); throws
-        // TypeError Cannot convert undefined or null to object
-        // To be investigated...
-        let msg = "TypeError - Failed to construct 'DynamicsCompressorNode': argument 1 is not of type BaseAudioContext";
-        return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-    };
-
-    js_this.define_properties(&[
-        Property::new("context")?
-            .with_value(&js_audio_context)
-            .with_property_attributes(PropertyAttributes::Enumerable),
-        // this must be put on the instance and not in the prototype to be reachable
-        Property::new("Symbol.toStringTag")?
-            .with_value(&ctx.env.create_string("DynamicsCompressorNode")?)
-            .with_property_attributes(PropertyAttributes::Static),
-    ])?;
-
     // parse options
-    let options = if let Ok(either_options) = ctx.try_get::<JsObject>(1) {
-        match either_options {
-            Either::A(options_js) => {
-                let some_attack_js = options_js.get::<&str, JsObject>("attack")?;
-                let attack = if let Some(attack_js) = some_attack_js {
-                    attack_js.coerce_to_number()?.get_double()? as f32
-                } else {
-                    0.003
-                };
+    let js_options = ctx.get::<JsObject>(1)?;
 
-                let some_knee_js = options_js.get::<&str, JsObject>("knee")?;
-                let knee = if let Some(knee_js) = some_knee_js {
-                    knee_js.coerce_to_number()?.get_double()? as f32
-                } else {
-                    30.
-                };
+    let attack = js_options
+        .get::<&str, JsNumber>("attack")?
+        .unwrap()
+        .get_double()? as f32;
 
-                let some_ratio_js = options_js.get::<&str, JsObject>("ratio")?;
-                let ratio = if let Some(ratio_js) = some_ratio_js {
-                    ratio_js.coerce_to_number()?.get_double()? as f32
-                } else {
-                    12.
-                };
+    let knee = js_options
+        .get::<&str, JsNumber>("knee")?
+        .unwrap()
+        .get_double()? as f32;
 
-                let some_release_js = options_js.get::<&str, JsObject>("release")?;
-                let release = if let Some(release_js) = some_release_js {
-                    release_js.coerce_to_number()?.get_double()? as f32
-                } else {
-                    0.25
-                };
+    let ratio = js_options
+        .get::<&str, JsNumber>("ratio")?
+        .unwrap()
+        .get_double()? as f32;
 
-                let some_threshold_js = options_js.get::<&str, JsObject>("threshold")?;
-                let threshold = if let Some(threshold_js) = some_threshold_js {
-                    threshold_js.coerce_to_number()?.get_double()? as f32
-                } else {
-                    -24.
-                };
+    let release = js_options
+        .get::<&str, JsNumber>("release")?
+        .unwrap()
+        .get_double()? as f32;
 
-                let node_defaults = DynamicsCompressorOptions::default();
-                let channel_config_defaults = node_defaults.channel_config;
+    let threshold = js_options
+        .get::<&str, JsNumber>("threshold")?
+        .unwrap()
+        .get_double()? as f32;
 
-                let some_channel_count_js = options_js.get::<&str, JsObject>("channelCount")?;
-                let channel_count = if let Some(channel_count_js) = some_channel_count_js {
-                    channel_count_js.coerce_to_number()?.get_double()? as usize
-                } else {
-                    channel_config_defaults.count
-                };
+    let node_defaults = DynamicsCompressorOptions::default();
+    let audio_node_options_default = node_defaults.audio_node_options;
 
-                let some_channel_count_mode_js =
-                    options_js.get::<&str, JsObject>("channelCountMode")?;
-                let channel_count_mode = if let Some(channel_count_mode_js) =
-                    some_channel_count_mode_js
-                {
-                    let channel_count_mode_str = channel_count_mode_js
-                        .coerce_to_string()?
-                        .into_utf8()?
-                        .into_owned()?;
-
-                    match channel_count_mode_str.as_str() {
-                        "max" => ChannelCountMode::Max,
-                        "clamped-max" => ChannelCountMode::ClampedMax,
-                        "explicit" => ChannelCountMode::Explicit,
-                        _ => panic!("TypeError - Failed to read the 'channelCountMode' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelCountMode", channel_count_mode_str.as_str()),
-                    }
-                } else {
-                    channel_config_defaults.count_mode
-                };
-
-                let some_channel_interpretation_js =
-                    options_js.get::<&str, JsObject>("channelInterpretation")?;
-                let channel_interpretation = if let Some(channel_interpretation_js) =
-                    some_channel_interpretation_js
-                {
-                    let channel_interpretation_str = channel_interpretation_js
-                        .coerce_to_string()?
-                        .into_utf8()?
-                        .into_owned()?;
-
-                    match channel_interpretation_str.as_str() {
-                        "speakers" => ChannelInterpretation::Speakers,
-                        "discrete" => ChannelInterpretation::Discrete,
-                        _ => panic!("TypeError - Failed to read the 'channelInterpretation' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", channel_interpretation_str.as_str()),
-                    }
-                } else {
-                    channel_config_defaults.interpretation
-                };
-
-                DynamicsCompressorOptions {
-                    attack,
-                    knee,
-                    ratio,
-                    release,
-                    threshold,
-                    channel_config: ChannelConfigOptions {
-                        count: channel_count,
-                        count_mode: channel_count_mode,
-                        interpretation: channel_interpretation,
-                    },
-                }
-            }
-            Either::B(_) => Default::default(),
-        }
+    let some_channel_count_js = js_options.get::<&str, JsObject>("channelCount")?;
+    let channel_count = if let Some(channel_count_js) = some_channel_count_js {
+        channel_count_js.coerce_to_number()?.get_double()? as usize
     } else {
-        Default::default()
+        audio_node_options_default.channel_count
     };
 
+    let some_channel_count_mode_js = js_options.get::<&str, JsObject>("channelCountMode")?;
+    let channel_count_mode = if let Some(channel_count_mode_js) = some_channel_count_mode_js {
+        let channel_count_mode_str = channel_count_mode_js
+            .coerce_to_string()?
+            .into_utf8()?
+            .into_owned()?;
+
+        match channel_count_mode_str.as_str() {
+            "max" => ChannelCountMode::Max,
+            "clamped-max" => ChannelCountMode::ClampedMax,
+            "explicit" => ChannelCountMode::Explicit,
+            _ => panic!("TypeError - Failed to read the 'channelCountMode' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelCountMode", channel_count_mode_str.as_str()),
+        }
+    } else {
+        audio_node_options_default.channel_count_mode
+    };
+
+    let some_channel_interpretation_js =
+        js_options.get::<&str, JsObject>("channelInterpretation")?;
+    let channel_interpretation = if let Some(channel_interpretation_js) =
+        some_channel_interpretation_js
+    {
+        let channel_interpretation_str = channel_interpretation_js
+            .coerce_to_string()?
+            .into_utf8()?
+            .into_owned()?;
+
+        match channel_interpretation_str.as_str() {
+            "speakers" => ChannelInterpretation::Speakers,
+            "discrete" => ChannelInterpretation::Discrete,
+            _ => panic!("TypeError - Failed to read the 'channelInterpretation' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", channel_interpretation_str.as_str()),
+        }
+    } else {
+        audio_node_options_default.channel_interpretation
+    };
+
+    let options = DynamicsCompressorOptions {
+        attack,
+        knee,
+        ratio,
+        release,
+        threshold,
+        audio_node_options: AudioNodeOptions {
+            channel_count,
+            channel_count_mode,
+            channel_interpretation,
+        },
+    };
+
+    let audio_context_name =
+        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
+    let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
     let audio_context_str = &audio_context_utf8_name[..];
+
     // create native node
     let native_node = match audio_context_str {
         "AudioContext" => {
@@ -246,40 +186,45 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         &_ => unreachable!(),
     };
 
-    // AudioParam: DynamicsCompressorNode::threshold
     let native_param = native_node.threshold().clone();
     let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("threshold", &js_obj)?;
 
-    // AudioParam: DynamicsCompressorNode::knee
     let native_param = native_node.knee().clone();
     let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("knee", &js_obj)?;
 
-    // AudioParam: DynamicsCompressorNode::ratio
     let native_param = native_node.ratio().clone();
     let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("ratio", &js_obj)?;
 
-    // AudioParam: DynamicsCompressorNode::attack
     let native_param = native_node.attack().clone();
     let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("attack", &js_obj)?;
 
-    // AudioParam: DynamicsCompressorNode::release
     let native_param = native_node.release().clone();
     let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("release", &js_obj)?;
+
+    js_this.define_properties(&[
+        Property::new("context")?
+            .with_value(&js_audio_context)
+            .with_property_attributes(PropertyAttributes::Enumerable),
+        // this must be put on the instance and not in the prototype to be reachable
+        Property::new("Symbol.toStringTag")?
+            .with_value(&ctx.env.create_string("DynamicsCompressorNode")?)
+            .with_property_attributes(PropertyAttributes::Static),
+    ])?;
 
     // finalize instance creation
     let napi_node = NapiDynamicsCompressorNode(native_node);

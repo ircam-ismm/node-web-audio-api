@@ -21,7 +21,6 @@ describe('# AudioBuffer', () => {
       // should accept some delta
       assert.equal(gain.gain.maxValue, 3.4028234663852886e+38);
       assert.equal(gain.gain.minValue, -3.4028234663852886e+38);
-
       assert.equal(gain.gain.value, 1);
     });
   });

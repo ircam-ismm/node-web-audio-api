@@ -17,40 +17,116 @@
 // -------------------------------------------------------------------------- //
 // -------------------------------------------------------------------------- //
 
-// eslint-disable-next-line no-unused-vars
-const { throwSanitizedError } = require('./lib/errors.js');
-// eslint-disable-next-line no-unused-vars
-const { AudioParam } = require('./AudioParam.js');
-const EventTargetMixin = require('./EventTarget.mixin.js');
-const AudioNodeMixin = require('./AudioNode.mixin.js');
+/* eslint-disable no-unused-vars */
+const conversions = require('webidl-conversions');
+const {
+  toSanitizedSequence,
+} = require('./lib/cast.js');
+const {
+  isFunction,
+  kEnumerableProperty,
+} = require('./lib/utils.js');
+const {
+  throwSanitizedError,
+} = require('./lib/errors.js');
 
+const AudioParam = require('./AudioParam.js');
+const {
+  kNativeAudioBuffer,
+  kAudioBuffer,
+} = require('./AudioBuffer.js');
+const {
+  kNapiObj,
+} = require('./lib/symbols.js');
+const {
+  bridgeEventTarget,
+} = require('./lib/events.js');
+/* eslint-enable no-unused-vars */
 
-module.exports = (NativeDelayNode) => {
+const AudioNode = require('./AudioNode.js');
 
-  const EventTarget = EventTargetMixin(NativeDelayNode);
-  const AudioNode = AudioNodeMixin(EventTarget);
-
+module.exports = (jsExport, nativeBinding) => {
   class DelayNode extends AudioNode {
+
+    #delayTime = null;
+
     constructor(context, options) {
-      if (options !== undefined && typeof options !== 'object') {
-        throw new TypeError("Failed to construct 'DelayNode': argument 2 is not of type 'DelayOptions'")
+
+      if (arguments.length < 1) {
+        throw new TypeError(`Failed to construct 'DelayNode': 1 argument required, but only ${arguments.length} present`);
       }
 
-      super(context, options);
+      if (!(context instanceof jsExport.BaseAudioContext)) {
+        throw new TypeError(`Failed to construct 'DelayNode': argument 1 is not of type BaseAudioContext`);
+      }
 
-      this.delayTime = new AudioParam(this.delayTime);
+      // parsed version of the option to be passed to NAPI
+      const parsedOptions = Object.assign({}, options);
+
+      if (options && typeof options !== 'object') {
+        throw new TypeError('Failed to construct \'DelayNode\': argument 2 is not of type \'DelayOptions\'');
+      }
+
+      if (options && 'maxDelayTime' in options) {
+        parsedOptions.maxDelayTime = conversions['double'](options.maxDelayTime, {
+          context: `Failed to construct 'DelayNode': Failed to read the 'maxDelayTime' property from DelayOptions: The provided value (${options.maxDelayTime}})`,
+        });
+      } else {
+        parsedOptions.maxDelayTime = 1;
+      }
+
+      if (options && 'delayTime' in options) {
+        parsedOptions.delayTime = conversions['double'](options.delayTime, {
+          context: `Failed to construct 'DelayNode': Failed to read the 'delayTime' property from DelayOptions: The provided value (${options.delayTime}})`,
+        });
+      } else {
+        parsedOptions.delayTime = 0;
+      }
+
+      let napiObj;
+
+      try {
+        napiObj = new nativeBinding.DelayNode(context[kNapiObj], parsedOptions);
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+
+      super(context, napiObj);
+
+      this.#delayTime = new AudioParam(this[kNapiObj].delayTime);
     }
 
-    // getters
+    get delayTime() {
+      if (!(this instanceof DelayNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'DelayNode\'');
+      }
 
-    // setters
+      return this.#delayTime;
+    }
 
-    // methods
-    
   }
+
+  Object.defineProperties(DelayNode, {
+    length: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 1,
+    },
+  });
+
+  Object.defineProperties(DelayNode.prototype, {
+    [Symbol.toStringTag]: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 'DelayNode',
+    },
+    delayTime: kEnumerableProperty,
+
+  });
 
   return DelayNode;
 };
-
-
-  

@@ -18,6 +18,8 @@ impl NapiAudioDestinationNode {
             &[
                 Property::new("maxChannelCount")?.with_getter(get_max_channel_count),
                 // AudioNode interfacess
+                Property::new("numberOfInputs")?.with_getter(number_of_inputs),
+                Property::new("numberOfOutputs")?.with_getter(number_of_outputs),
                 Property::new("channelCount")?
                     .with_getter(get_channel_count)
                     .with_setter(set_channel_count),
@@ -95,6 +97,28 @@ fn get_max_channel_count(ctx: CallContext) -> Result<JsNumber> {
 // -------------------------------------------------
 // AudioNode Interface
 // -------------------------------------------------
+
+#[js_function]
+fn number_of_inputs(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiAudioDestinationNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let number_of_inputs = node.number_of_inputs() as f64;
+
+    ctx.env.create_double(number_of_inputs)
+}
+
+#[js_function]
+fn number_of_outputs(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiAudioDestinationNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let number_of_outputs = node.number_of_outputs() as f64;
+
+    ctx.env.create_double(number_of_outputs)
+}
 
 #[js_function]
 fn get_channel_count(ctx: CallContext) -> Result<JsNumber> {

@@ -7,8 +7,12 @@ import slugify from '@sindresorhus/slugify';
 import camelcase from 'camelcase';
 import compile from 'template-literal';
 
+import beautify from 'js-beautify/js/index.js';
+import { ESLint } from 'eslint';
+
 let supportedNodes = [
-  // 'AudioDestinationNode', // crashes because has no ctor defined in IDL
+  // - template are crashing because it has no ctor defined in IDL (to be fixed)
+  // 'AudioDestinationNode',
   `AnalyserNode`,
   `AudioBufferSourceNode`,
   `BiquadFilterNode`,
@@ -66,6 +70,9 @@ const utils = {
   log(idl) {
     console.log(JSON.stringify(idl, null, 2));
   },
+  debug(value) {
+    console.log(JSON.stringify(value, null, 2));
+  },
 
   findInTree(name) {
     return tree.find(l => l.name === name);
@@ -109,6 +116,10 @@ const utils = {
     }
 
     return methods;
+  },
+
+  minRequiredArgs(idl) {
+    return idl.arguments.reduce((acc, value) => acc += (value.optional ? 0 : 1), 0);
   },
 
   audioParams(idl) {
@@ -266,6 +277,36 @@ console.log('-------------------------------------------------------------');
 let jsTemplates = path.join(__dirname, 'js');
 let jsOutput = path.join(process.cwd(), 'js');
 
+async function beautifyAndLint(pathname, code) {
+  // beautfiy
+  const beautified = beautify(code, {
+    indent_size: 2,
+    max_preserve_newlines: 2,
+    end_with_newline: true,
+    jslint_happy: true,
+  });
+
+  // lint
+  const eslint = new ESLint({ useEslintrc: true, fix: true });
+  const results = await eslint.lintText(beautified, {
+    filePath: pathname,
+  });
+  const problems = results.reduce((acc, result) => acc + result.errorCount + result.warningCount, 0);
+  const formatter = await eslint.loadFormatter("stylish");
+  const resultText = formatter.format(results);
+
+  if (resultText !== '') {
+    console.log(resultText);
+  }
+
+  await ESLint.outputFixes(results);
+
+  // no fixes done by eslint
+  const output = results[0].output ? results[0].output : beautified;
+
+  fs.writeFileSync(pathname, output);
+}
+
 // create the mjs export file
 {
   console.log('> generating file: index.mjs (esm re-export)');
@@ -276,7 +317,7 @@ let jsOutput = path.join(process.cwd(), 'js');
     ...utils,
   });
 
-  fs.writeFileSync(path.join(process.cwd(), 'index.mjs'), generatedPrefix(code));
+  beautifyAndLint(path.join(process.cwd(), 'index.mjs'), generatedPrefix(code));
 }
 
 {
@@ -288,11 +329,11 @@ let jsOutput = path.join(process.cwd(), 'js');
     ...utils,
   });
 
-  fs.writeFileSync(path.join(jsOutput, 'monkey-patch.js'), generatedPrefix(code));
+  beautifyAndLint(path.join(jsOutput, 'monkey-patch.js'), generatedPrefix(code));
 }
 
 {
-  const src = 'BaseAudioContext.mixin';
+  const src = 'BaseAudioContext';
   const pathname = path.join(jsOutput, `${src}.js`);
   console.log(`> generating file: ${path.relative(process.cwd(), pathname)}`);
 
@@ -304,7 +345,7 @@ let jsOutput = path.join(process.cwd(), 'js');
     ...utils,
   });
 
-  fs.writeFileSync(pathname, generatedPrefix(code));
+  beautifyAndLint(pathname, generatedPrefix(code));
 }
 
 {
@@ -322,15 +363,15 @@ let jsOutput = path.join(process.cwd(), 'js');
     ...utils,
   });
 
-  fs.writeFileSync(pathname, generatedPrefix(code));
+  beautifyAndLint(pathname, generatedPrefix(code));
 }
 
 ['AudioNode', 'AudioScheduledSourceNode'].forEach((name, index) => {
   const nodeIdl = findInTree(name);
-  const pathname = path.join(jsOutput, `${name}.mixin.js`);
+  const pathname = path.join(jsOutput, `${name}.js`);
   console.log(`> generating file: ${path.relative(process.cwd(), pathname)}`);
 
-  const codeTmpl = fs.readFileSync(path.join(jsTemplates, `${name}.mixin.tmpl.js`), 'utf8');
+  const codeTmpl = fs.readFileSync(path.join(jsTemplates, `${name}.tmpl.js`), 'utf8');
   const tmpl = compile(codeTmpl);
 
   const code = tmpl({
@@ -339,11 +380,11 @@ let jsOutput = path.join(process.cwd(), 'js');
     ...utils
   });
 
-  fs.writeFileSync(pathname, generatedPrefix(code));
+  beautifyAndLint(pathname, generatedPrefix(code));
 });
 
-audioNodes.forEach((nodeIdl, index) => {
-  // const nodeIdl = findInTree(name);
+supportedNodes.forEach((name, index) => {
+  const nodeIdl = findInTree(name);
   const pathname = path.join(jsOutput, `${utils.name(nodeIdl)}.js`);
   console.log(`> generating file: ${path.relative(process.cwd(), pathname)}`);
 
@@ -356,7 +397,7 @@ audioNodes.forEach((nodeIdl, index) => {
     ...utils
   });
 
-  fs.writeFileSync(pathname, generatedPrefix(code));
+  beautifyAndLint(pathname, generatedPrefix(code));
 });
 
 console.log('');

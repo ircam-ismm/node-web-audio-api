@@ -17,39 +17,96 @@
 // -------------------------------------------------------------------------- //
 // -------------------------------------------------------------------------- //
 
-// eslint-disable-next-line no-unused-vars
-const { throwSanitizedError } = require('./lib/errors.js');
-// eslint-disable-next-line no-unused-vars
-const { AudioParam } = require('./AudioParam.js');
-const EventTargetMixin = require('./EventTarget.mixin.js');
-const AudioNodeMixin = require('./AudioNode.mixin.js');
+/* eslint-disable no-unused-vars */
+const conversions = require('webidl-conversions');
+const {
+  toSanitizedSequence,
+} = require('./lib/cast.js');
+const {
+  isFunction,
+  kEnumerableProperty,
+} = require('./lib/utils.js');
+const {
+  throwSanitizedError,
+} = require('./lib/errors.js');
 
+const AudioParam = require('./AudioParam.js');
+const {
+  kNativeAudioBuffer,
+  kAudioBuffer,
+} = require('./AudioBuffer.js');
+const {
+  kNapiObj,
+} = require('./lib/symbols.js');
+const {
+  bridgeEventTarget,
+} = require('./lib/events.js');
+/* eslint-enable no-unused-vars */
 
-module.exports = (NativeChannelMergerNode) => {
+const AudioNode = require('./AudioNode.js');
 
-  const EventTarget = EventTargetMixin(NativeChannelMergerNode);
-  const AudioNode = AudioNodeMixin(EventTarget);
-
+module.exports = (jsExport, nativeBinding) => {
   class ChannelMergerNode extends AudioNode {
+
     constructor(context, options) {
-      if (options !== undefined && typeof options !== 'object') {
-        throw new TypeError("Failed to construct 'ChannelMergerNode': argument 2 is not of type 'ChannelMergerOptions'")
+
+      if (arguments.length < 1) {
+        throw new TypeError(`Failed to construct 'ChannelMergerNode': 1 argument required, but only ${arguments.length} present`);
       }
 
-      super(context, options);
+      if (!(context instanceof jsExport.BaseAudioContext)) {
+        throw new TypeError(`Failed to construct 'ChannelMergerNode': argument 1 is not of type BaseAudioContext`);
+      }
+
+      // parsed version of the option to be passed to NAPI
+      const parsedOptions = Object.assign({}, options);
+
+      if (options && typeof options !== 'object') {
+        throw new TypeError('Failed to construct \'ChannelMergerNode\': argument 2 is not of type \'ChannelMergerOptions\'');
+      }
+
+      if (options && 'numberOfInputs' in options) {
+        parsedOptions.numberOfInputs = conversions['unsigned long'](options.numberOfInputs, {
+          context: `Failed to construct 'ChannelMergerNode': Failed to read the 'numberOfInputs' property from ChannelMergerOptions: The provided value (${options.numberOfInputs}})`,
+        });
+      } else {
+        parsedOptions.numberOfInputs = 6;
+      }
+
+      let napiObj;
+
+      try {
+        napiObj = new nativeBinding.ChannelMergerNode(context[kNapiObj], parsedOptions);
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+
+      super(context, napiObj);
 
     }
 
-    // getters
-
-    // setters
-
-    // methods
-    
   }
+
+  Object.defineProperties(ChannelMergerNode, {
+    length: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 1,
+    },
+  });
+
+  Object.defineProperties(ChannelMergerNode.prototype, {
+    [Symbol.toStringTag]: {
+      __proto__: null,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+      value: 'ChannelMergerNode',
+    },
+
+  });
 
   return ChannelMergerNode;
 };
-
-
-  

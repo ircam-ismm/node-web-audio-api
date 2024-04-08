@@ -7,6 +7,7 @@ import * as nodeWebAudioAPI from '../index.mjs';
 
 // mocks
 import createXMLHttpRequest from './wpt-mock/XMLHttpRequest.js';
+import createFetch from './wpt-mock/fetch.js';
 import { DOMException } from '../js/lib/errors.js';
 
 program
@@ -31,27 +32,45 @@ function indent(string, times) {
 // -------------------------------------------------------
 // WPT Runner configuration options
 // -------------------------------------------------------
+const wptRootPath = path.join('wpt');
 const testsPath = path.join('wpt','webaudio');
 const rootURL = 'webaudio';
 
 // monkey patch `window` with our web audio API
 const setup = window => {
-  Object.assign(window, nodeWebAudioAPI);
+  // This is meant to make some idlharness tests pass:
+  // cf. wpt-runnner/testharness/idlharness.js line 1466-1472
+  // These tests, which assess the descriptor of the classes according to window,
+  // are of little importance to us but we ensure the rest of the tests are passing
+  for (let key in nodeWebAudioAPI) {
+    if (key !== 'default' && key !== 'mediaDevices') {
+      Object.defineProperty(window, key, {
+        __proto__: null,
+        writable: true,
+        enumerable: false,
+        configurable: true,
+        value: nodeWebAudioAPI[key],
+      });
+    }
+  }
 
   // expose media devices API
   window.navigator.mediaDevices = nodeWebAudioAPI.mediaDevices;
-
-  // seems required (weirdly...), cf. `the-audiobuffer-interface/audiobuffer.html`
-  window.Float32Array = Float32Array;
+  // window.MediaStream = nodeWebAudioAPI.mediaDevices.MediaStream;
 
   // e.g. 'resources/audiobuffersource-multi-channels-expected.wav'
   window.XMLHttpRequest = createXMLHttpRequest(testsPath);
+  window.fetch = createFetch(wptRootPath);
   // window.requestAnimationFrame = func => setInterval(func, 16);
-  // errors
+
+  // populate window with node internals
   window.TypeError = TypeError;
   window.RangeError = RangeError;
   window.Error = Error;
   window.DOMException = DOMException;
+  window.Float32Array = Float32Array;
+  window.EventTarget = EventTarget;
+  window.Promise = Promise;
 }
 
 // try catch unhandled error to prevent wpt process from crashing
@@ -106,7 +125,7 @@ const reporter = {
   },
   pass: message => {
     numPass += 1;
-    console.log(chalk.dim(indent(chalk.green("√ ") + message, INDENT_SIZE)));
+    // console.log(chalk.dim(indent(chalk.green("√ ") + message, INDENT_SIZE)));
   },
   fail: message => {
     if (/threw "[^\"]*Error" instead of/.test(message)) {

@@ -85,290 +85,187 @@ impl ${d.napiName(d.node)} {
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
-    if ctx.length < 1 {
-        let msg = "TypeError - Failed to construct '${d.name(d.node)}': 1 argument required, but only 0 present.";
-        return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-    }
-
-    // first argument should be an AudioContext
     let js_audio_context = ctx.get::<JsObject>(0)?;
 
-    // check that
-    let audio_context_utf8_name = if let Ok(result) = js_audio_context.has_named_property("Symbol.toStringTag") {
-        if result {
-            let audio_context_name = js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
-            let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
-            let audio_context_str = &audio_context_utf8_name[..];
-
-            if audio_context_str != "AudioContext" && audio_context_str != "OfflineAudioContext" {
-                let msg = "TypeError - Failed to construct '${d.name(d.node)}': argument 1 is not of type BaseAudioContext";
-                return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-            }
-
-            audio_context_utf8_name
-        } else {
-            let msg = "TypeError - Failed to construct '${d.name(d.node)}': argument 1 is not of type BaseAudioContext";
-            return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-        }
-    } else {
-        // This is swallowed somehow, .e.g const node = new GainNode(null); throws
-        // TypeError Cannot convert undefined or null to object
-        // To be investigated...
-        let msg = "TypeError - Failed to construct '${d.name(d.node)}': argument 1 is not of type BaseAudioContext";
-        return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-    };
-
-
-    js_this.define_properties(&[
-        Property::new("context")?
-            .with_value(&js_audio_context)
-            .with_property_attributes(PropertyAttributes::Enumerable),
-        // this must be put on the instance and not in the prototype to be reachable
-        Property::new("Symbol.toStringTag")?
-            .with_value(&ctx.env.create_string("${d.name(d.node)}")?)
-            .with_property_attributes(PropertyAttributes::Static),
-    ])?;
-
-    ${d.constructor(d.node).arguments.map((argument, index) => {
-        // ----------------------------------------------
-        // parse options
-        // ----------------------------------------------
-
-        if (index == 0) { // index 0 is always AudioContext
-            return;
-        }
-
-        if (d.constructor(d.node).arguments.length != 2) {
-            console.log(d.node.name, 'constructor has arguments.length != 2');
-            return ``;
-        }
-
-        const arg = d.constructor(d.node).arguments[1];
-        const argIdlType = d.memberType(arg);
-        const argumentIdl = d.findInTree(argIdlType);
+    ${(function() {
+        const optionsArg = d.constructor(d.node).arguments[1];
+        const optionsType = d.memberType(optionsArg);
+        const optionsIdl = d.findInTree(optionsType);
 
         return `
     // parse options
-    let options = if let Ok(either_options) = ctx.try_get::<JsObject>(${index}) {
-        match either_options {
-            Either::A(options_js) => {
-                ${argumentIdl.members.map(m => {
-                    const simple_slug = d.slug(m);
-                    const slug = d.slug(m, true);
+    let js_options = ctx.get::<JsObject>(1)?;
 
-                    switch (d.memberType(m)) {
+        ${optionsIdl.members.map(m => {
+            const member = m;
 
-                        case 'boolean':
-                            return `
-                let some_${simple_slug}_js = options_js.get::<&str, JsObject>("${m.name}")?;
-                let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
-                    ${simple_slug}_js.coerce_to_bool()?.try_into()?
-                } else {
-                    ${m.required ? `return Err(napi::Error::from_reason(
-                        "Parameter ${d.name(m)} is required".to_string(),
-                    ));` : m.default.value}
-                };
-                            `;
+            const optionName = d.name(member);
+            const type = d.memberType(member);
+            const required = member.required;
+            const defaultValue = member.default; // null or object
+            // only AudioBuffer is actually nullable
+            const nullable = member.idlType.nullable;
+            const simple_slug = d.slug(m);
+            const slug = d.slug(m, true); // append _ to protect from protected keywords
 
-                        case 'unsigned long':
-                            return `
-                let some_${simple_slug}_js = options_js.get::<&str, JsObject>("${m.name}")?;
-                let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
-                    ${simple_slug}_js.coerce_to_number()?.get_double()? as usize
-                } else {
-                    ${m.required ? `return Err(napi::Error::from_reason(
-                        "Parameter ${d.name(m)} is required".to_string(),
-                    ));` : m.default.value}
-                };
-                            `;
-
-                        case 'float':
-                            return `
-                let some_${simple_slug}_js = options_js.get::<&str, JsObject>("${m.name}")?;
-                let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
-                    ${simple_slug}_js.coerce_to_number()?.get_double()? as f32
-                } else {
-                    ${m.required ? `return Err(napi::Error::from_reason(
-                        "Parameter ${d.name(m)} is required".to_string(),
-                    ));` : parseInt(m.default.value) ==  m.default.value ? `${parseInt(m.default.value)}.` : m.default.value}
-
-                };
-                            `;
-
-                        case 'double':
-                            return `
-                let some_${simple_slug}_js = options_js.get::<&str, JsObject>("${m.name}")?;
-                let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
-                    ${simple_slug}_js.coerce_to_number()?.get_double()?
-                } else {
-                    ${m.required ? `return Err(napi::Error::from_reason(
-                        "Parameter ${d.name(m)} is required".to_string(),
-                    ));` : parseInt(m.default.value) ==  m.default.value ? `${parseInt(m.default.value)}.` : m.default.value}
-                };
-                            `;
-                            break;
-
-                        default:
-                            // Handle Float32Arrays and Float64Arrays
-                            // ---------------------------------------------------
-                            if (m.idlType.type === 'dictionary-type' && m.idlType.generic === 'sequence') {
-                                return `
-                let ${simple_slug} = if let Some(${simple_slug}_js) = options_js.get::<&str, JsTypedArray>("${m.name}")? {
-                    let ${simple_slug}_value = ${simple_slug}_js.into_value()?;
-                    let ${simple_slug}: &[${m.idlType.idlType[0].idlType === 'double' ? 'f64' : 'f32'}] = ${simple_slug}_value.as_ref();
-
-                    ${m.required ? `${simple_slug}.to_vec()` : `Some(${simple_slug}.to_vec())`}
-                } else {
-                    ${m.required ? `return Err(napi::Error::from_reason(
-                        "Parameter ${d.name(m)} is required".to_string(),
-                    ));` : `None`}
-                };
-                                `;
-                            }
-
-                            const idl = d.findInTree(d.memberType(m));
-
-                            // Handle type defined in IDL
-                            // note that MediaStream is not defined in IDL
-                            // ---------------------------------------------------
-                            if (idl !== undefined) {
-                                const idlType = d.type(idl);
-
-                                switch (idlType) {
-                                    // type, panningModel, distanceModel, oversample
-                                    case 'enum':
-                                        return `
-                    let some_${simple_slug}_js = options_js.get::<&str, JsString>("${m.name}")?;
-                    let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
-                        let ${simple_slug}_str = ${simple_slug}_js.into_utf8()?.into_owned()?;
-
-                        match ${simple_slug}_str.as_str() {${idl.values.map(v => `
-                            "${v.value}" => ${idl.name}::${d.camelcase(v.value)},`).join('')}
-                            _ => panic!("undefined value for ${idl.name}"),
-                        }
-                    } else {
-                        ${m.required ? `return Err(napi::Error::from_reason(
-                            "Parameter ${d.name(m)} is required".to_string(),
-                        ));` : `${idl.name}::default()`}
-                    };
-                                        `;
-                                        break;
-                                    // AudioBuffer, PeriodicWave
-                                    case 'interface':
-                                        return `
-                    let some_${simple_slug}_js = options_js.get::<&str, JsObject>("${m.name}")?;
-                    let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
-                        let ${simple_slug}_napi = ctx.env.unwrap::<${d.napiName(idl)}>(&${simple_slug}_js)?;
-                        Some(${simple_slug}_napi.unwrap().clone())
-                    } else {
-                        None
-                    };
-                                        `;
-                                    default:
-                                        console.log(`[constructor2] > cannot parse argument ${d.name(idl)} - idlType ${idlType}`);
-                                        break;
-                                }
-                            } else {
-                                // MediaStream
-                                // - not defined in IDL, just use infos from member
-                                const idl = m;
-                                const napiName = `Napi${idl.idlType.idlType}`;
-
-                                return `
-                    let some_${simple_slug}_js = options_js.get::<&str, JsObject>("${m.name}")?;
-                    let ${slug} = if let Some(${simple_slug}_js) = some_${simple_slug}_js {
-                        let ${simple_slug}_napi = ctx.env.unwrap::<${napiName}>(&${simple_slug}_js)?;
-                        ${simple_slug}_napi.unwrap()
-                    } else {
-                        return Err(napi::Error::from_reason(
-                            "Parameter ${d.name(m)} is required".to_string(),
-                        ));
-                    };
-                                `;
-                            }
-
-                            break;
-                    }
-                }).join('')}
-
-                ${d.parent(argumentIdl) === 'AudioNodeOptions' ? `
-                    ${argumentIdl.members.reduce((acc, current) => acc || current.required, false) ? `
-                // can't create default from ${argIdlType}
-                let channel_config_defaults = ChannelConfigOptions::default();
-                    ` : `
-                let node_defaults = ${argIdlType}::default();
-                let channel_config_defaults = node_defaults.channel_config;
-                    `}
-
-                let some_channel_count_js = options_js.get::<&str, JsObject>("channelCount")?;
-                let channel_count = if let Some(channel_count_js) = some_channel_count_js {
-                    channel_count_js.coerce_to_number()?.get_double()? as usize
-                } else {
-                    channel_config_defaults.count
-                };
-
-                let some_channel_count_mode_js = options_js.get::<&str, JsObject>("channelCountMode")?;
-                let channel_count_mode = if let Some(channel_count_mode_js) = some_channel_count_mode_js {
-                    let channel_count_mode_str = channel_count_mode_js.coerce_to_string()?.into_utf8()?.into_owned()?;
-
-                    match channel_count_mode_str.as_str() {
-                        "max" => ChannelCountMode::Max,
-                        "clamped-max" => ChannelCountMode::ClampedMax,
-                        "explicit" => ChannelCountMode::Explicit,
-                        _ => panic!("TypeError - Failed to read the 'channelCountMode' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelCountMode", channel_count_mode_str.as_str()),
-                    }
-                } else {
-                    channel_config_defaults.count_mode
-                };
-
-                let some_channel_interpretation_js = options_js.get::<&str, JsObject>("channelInterpretation")?;
-                let channel_interpretation = if let Some(channel_interpretation_js) = some_channel_interpretation_js {
-                    let channel_interpretation_str = channel_interpretation_js.coerce_to_string()?.into_utf8()?.into_owned()?;
-
-                    match channel_interpretation_str.as_str() {
-                        "speakers" => ChannelInterpretation::Speakers,
-                        "discrete" => ChannelInterpretation::Discrete,
-                        _ => panic!("TypeError - Failed to read the 'channelInterpretation' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", channel_interpretation_str.as_str()),
-                    }
-                } else {
-                    channel_config_defaults.interpretation
-                };
-                ` : ``}
-
-                ${argIdlType} {
-                    ${argumentIdl.members.map(m => d.slug(m, true)).join(', ')},
-                    ${d.parent(argumentIdl) === 'AudioNodeOptions' ?
-                    `channel_config: ChannelConfigOptions {
-                        count: channel_count,
-                        count_mode: channel_count_mode,
-                        interpretation: channel_interpretation,
-                    },` : ``}
+            switch (type) {
+                case 'boolean': {
+                    return `
+    let ${slug} = js_options.get::<&str, JsBoolean>("${m.name}")?.unwrap().try_into()?;
+                    `;
+                    break;
                 }
-            },
-            Either::B(_) => {
-                ${argumentIdl.members.reduce((acc, current) => acc || current.required, false) ? `
-                    return Err(napi::Error::from_reason(
-                        "TypeError - Options are mandatory for node ${d.name(d.node)}".to_string(),
-                    ));
-                ` : `
-                    Default::default()
-                `}
-            }
-        }
+                case 'float': {
+                    return `
+    let ${slug} = js_options.get::<&str, JsNumber>("${m.name}")?.unwrap().get_double()? as f32;
+                    `;
+                    break;
+                }
+                case 'double': {
+                    return `
+    let ${slug} = js_options.get::<&str, JsNumber>("${m.name}")?.unwrap().get_double()?;
+                    `;
+                    break;
+                }
+                case 'unsigned long': {
+                    return `
+    let ${slug} = js_options.get::<&str, JsNumber>("${m.name}")?.unwrap().get_double()? as usize;
+                    `;
+                    break;
+                }
+                case 'BiquadFilterType':
+                case 'OscillatorType':
+                case 'PanningModelType':
+                case 'DistanceModelType':
+                case 'OverSampleType': {
+                    const idl = d.findInTree(d.memberType(member));
+                    return `
+    let ${simple_slug}_js = js_options.get::<&str, JsString>("${m.name}")?.unwrap();
+    let ${simple_slug}_str = ${simple_slug}_js.into_utf8()?.into_owned()?;
+    let ${slug} = match ${simple_slug}_str.as_str() {${idl.values.map(v => `
+        "${v.value}" => ${idl.name}::${d.camelcase(v.value)},`).join('')}
+        _ => unreachable!(),
+    };
+                    `;
+                    break;
+                }
+                // default values are null
+                case 'PeriodicWave':
+                case 'AudioBuffer': {
+                    const idl = d.findInTree(d.memberType(member));
+                    return `
+    let ${simple_slug}_js = js_options.get::<&str, JsUnknown>("${m.name}")?.unwrap();
+    let ${slug} = match ${simple_slug}_js.get_type()? {
+        ValueType::Object => {
+            let ${simple_slug}_js = ${simple_slug}_js.coerce_to_object()?;
+            let ${simple_slug}_napi = ctx.env.unwrap::<${d.napiName(idl)}>(&${simple_slug}_js)?;
+            Some(${simple_slug}_napi.unwrap().clone())
+        },
+        ValueType::Null => None,
+        _ => unreachable!(),
+    };
+                    `;
+                    break;
+                }
+                case 'MediaStream': {
+                    const napiName = `Napi${member.idlType.idlType}`;
+                    return `
+    let ${simple_slug}_js = js_options.get::<&str, JsObject>("${m.name}")?.unwrap();
+    let ${simple_slug}_napi = ctx.env.unwrap::<${napiName}>(&${simple_slug}_js)?;
+    let ${slug} = ${simple_slug}_napi.unwrap();
+                    `;
+                    break;
+                }
+                default: {
+                    // sequences
+                    let targetType = m.idlType.idlType[0].idlType === 'float' ? 'f32' : 'f64';
+                    if (member.required) {
+                        return `
+    let ${simple_slug}_js = js_options.get::<&str, JsTypedArray>("${m.name}")?.unwrap();
+    let ${simple_slug}_value = ${simple_slug}_js.into_value()?;
+    let ${slug}: &[${targetType}] = ${simple_slug}_value.as_ref();
+    let ${slug} = ${slug}.to_vec();
+                        `;
+                    } else {
+                        return `
+    let ${simple_slug}_js = js_options.get::<&str, JsUnknown>("${m.name}")?.unwrap();
+    let ${slug} = if ${simple_slug}_js.get_type()? == ValueType::Null {
+        None
     } else {
-        ${argumentIdl.members.reduce((acc, current) => acc || current.required, false) ? `
-            return Err(napi::Error::from_reason(
-                "TypeError - Options are mandatory for node ${d.name(d.node)}".to_string(),
-            ));
+        let ${simple_slug}_js = js_options.get::<&str, JsTypedArray>("${m.name}")?.unwrap();
+        let ${simple_slug}_value = ${simple_slug}_js.into_value()?;
+        let ${slug}: &[${targetType}] = ${simple_slug}_value.as_ref();
+        Some(${slug}.to_vec())
+    };
+                        `;
+                    }
+                    break;
+                }
+            }
+        // end options mamber
+        }).join('')}
+
+    ${d.parent(optionsIdl) === 'AudioNodeOptions' ? `
+        ${optionsIdl.members.reduce((acc, current) => acc || current.required, false) ? `
+    // can't create default from ${optionsType}
+    let audio_node_options_default = AudioNodeOptions::default();
         ` : `
-            Default::default()
+    let node_defaults = ${optionsType}::default();
+    let audio_node_options_default = node_defaults.audio_node_options;
         `}
+
+    let some_channel_count_js = js_options.get::<&str, JsObject>("channelCount")?;
+    let channel_count = if let Some(channel_count_js) = some_channel_count_js {
+        channel_count_js.coerce_to_number()?.get_double()? as usize
+    } else {
+        audio_node_options_default.channel_count
     };
 
-        `; // end options
-    }).join('')}
+    let some_channel_count_mode_js = js_options.get::<&str, JsObject>("channelCountMode")?;
+    let channel_count_mode = if let Some(channel_count_mode_js) = some_channel_count_mode_js {
+        let channel_count_mode_str = channel_count_mode_js.coerce_to_string()?.into_utf8()?.into_owned()?;
 
+        match channel_count_mode_str.as_str() {
+            "max" => ChannelCountMode::Max,
+            "clamped-max" => ChannelCountMode::ClampedMax,
+            "explicit" => ChannelCountMode::Explicit,
+            _ => panic!("TypeError - Failed to read the 'channelCountMode' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelCountMode", channel_count_mode_str.as_str()),
+        }
+    } else {
+        audio_node_options_default.channel_count_mode
+    };
+
+    let some_channel_interpretation_js = js_options.get::<&str, JsObject>("channelInterpretation")?;
+    let channel_interpretation = if let Some(channel_interpretation_js) = some_channel_interpretation_js {
+        let channel_interpretation_str = channel_interpretation_js.coerce_to_string()?.into_utf8()?.into_owned()?;
+
+        match channel_interpretation_str.as_str() {
+            "speakers" => ChannelInterpretation::Speakers,
+            "discrete" => ChannelInterpretation::Discrete,
+            _ => panic!("TypeError - Failed to read the 'channelInterpretation' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", channel_interpretation_str.as_str()),
+        }
+    } else {
+        audio_node_options_default.channel_interpretation
+    };
+    ` : ``}
+
+    let options = ${optionsType} {
+        ${optionsIdl.members.map(m => d.slug(m, true)).join(', ')},
+        ${d.parent(optionsIdl) === 'AudioNodeOptions' ?
+        `audio_node_options: AudioNodeOptions {
+            channel_count,
+            channel_count_mode,
+            channel_interpretation,
+        },` : ``}
+    };
+
+        `; // end options parsing
+    }())}
+
+    let audio_context_name = js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
+    let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
     let audio_context_str = &audio_context_utf8_name[..];
+
     // create native node
     let native_node = match audio_context_str {
         "AudioContext" => {
@@ -385,8 +282,8 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     };
 
     ${d.audioParams(d.node).map((param) => {
+        // AudioParam: ${d.name(d.node)}::${param.name}
         return `
-    // AudioParam: ${d.name(d.node)}::${param.name}
     let native_param = native_node.${d.slug(param.name)}().clone();
     let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
@@ -394,6 +291,16 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     js_this.set_named_property("${param.name}", &js_obj)?;
         `;
     }).join('')}
+
+    js_this.define_properties(&[
+        Property::new("context")?
+            .with_value(&js_audio_context)
+            .with_property_attributes(PropertyAttributes::Enumerable),
+        // this must be put on the instance and not in the prototype to be reachable
+        Property::new("Symbol.toStringTag")?
+            .with_value(&ctx.env.create_string("${d.name(d.node)}")?)
+            .with_property_attributes(PropertyAttributes::Static),
+    ])?;
 
     // finalize instance creation
     let napi_node = ${d.napiName(d.node)}(native_node);
@@ -851,6 +758,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
 }
             `;
             break;
+        // WaveShaperNode::curve
         case 'Float32Array':
             return `
 #[js_function(1)]
@@ -910,7 +818,8 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
 }
                     `;
                     break
-                case 'interface':
+                case 'interface': // AudioBuffer
+                    console.log(attr);
                     return `
 #[js_function(1)]
 fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {

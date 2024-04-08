@@ -1,6 +1,7 @@
 import { assert } from 'chai';
+import { sleep } from '@ircam/sc-utils';
 
-import { mediaDevices } from '../index.mjs';
+import { mediaDevices, AudioContext, MediaStreamAudioSourceNode } from '../index.mjs';
 
 describe('# mediaDevices.getUserMedia(options)', () => {
   it('should fail if no argument given', async () => {
@@ -12,7 +13,9 @@ describe('# mediaDevices.getUserMedia(options)', () => {
       failed = true;
     }
 
-    if (!failed) { assert.fail(); }
+    if (!failed) {
+      assert.fail('should have failed');
+    }
   });
 
   // @todo - clean error message
@@ -25,7 +28,9 @@ describe('# mediaDevices.getUserMedia(options)', () => {
       failed = true;
     }
 
-    if (!failed) { assert.fail(); }
+    if (!failed) {
+      assert.fail('should have failed');
+    }
   });
 
   it('should fail if options.video', async () => {
@@ -37,22 +42,71 @@ describe('# mediaDevices.getUserMedia(options)', () => {
       failed = true;
     }
 
-    if (!failed) { assert.fail(); }
+    if (!failed) {
+      assert.fail('should have failed');
+    }
   });
 
   it('should not fail if options.audio = true', async () => {
     let failed = false;
+    const audioContext = new AudioContext();
 
     try {
       const stream = await mediaDevices.getUserMedia({ audio: true });
-      // console.log(stream instanceof mediaDevices.MediaStream);
     } catch (err) {
       console.log(err);
       failed = true;
     }
 
-    console.log(failed);
+    await sleep(0.4);
+    await audioContext.close();
 
-    if (failed) { assert.fail('should not have failed'); }
+    if (failed) {
+      assert.fail('should not have failed');
+    }
+  });
+
+  it('should work with MediaStreamAudioSourceNode [1 factory] (make some noise)', async () => {
+    let failed = false;
+    const audioContext = new AudioContext();
+
+    const stream = await mediaDevices.getUserMedia({ audio: true });
+
+    try {
+      const src = audioContext.createMediaStreamSource(stream);
+      src.connect(audioContext.destination);
+    } catch (err) {
+      console.log(err);
+      failed = true;
+    }
+
+    await sleep(0.4);
+    await audioContext.close();
+
+    if (failed) {
+      assert.fail('should not have failed');
+    }
+  });
+
+  it('should work with MediaStreamAudioSourceNode [2 ctor] (make some noise)', async () => {
+    let failed = false;
+    const audioContext = new AudioContext();
+
+    const stream = await mediaDevices.getUserMedia({ audio: true });
+
+    try {
+      const src = new MediaStreamAudioSourceNode(audioContext, { mediaStream: stream });
+      src.connect(audioContext.destination);
+    } catch (err) {
+      console.log(err);
+      failed = true;
+    }
+
+    await sleep(0.4);
+    await audioContext.close();
+
+    if (failed) {
+      assert.fail('should not have failed');
+    }
   });
 });

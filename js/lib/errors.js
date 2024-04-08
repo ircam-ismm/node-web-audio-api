@@ -6,40 +6,40 @@ const internalRe = new RegExp(internalPath);
 
 // from wpt/resources/tesharness.js (line 2226)
 const nameCodeMap = {
-    IndexSizeError: 1,
-    HierarchyRequestError: 3,
-    WrongDocumentError: 4,
-    InvalidCharacterError: 5,
-    NoModificationAllowedError: 7,
-    NotFoundError: 8,
-    NotSupportedError: 9,
-    InUseAttributeError: 10,
-    InvalidStateError: 11,
-    SyntaxError: 12,
-    InvalidModificationError: 13,
-    NamespaceError: 14,
-    InvalidAccessError: 15,
-    TypeMismatchError: 17,
-    SecurityError: 18,
-    NetworkError: 19,
-    AbortError: 20,
-    URLMismatchError: 21,
-    QuotaExceededError: 22,
-    TimeoutError: 23,
-    InvalidNodeTypeError: 24,
-    DataCloneError: 25,
+  IndexSizeError: 1,
+  HierarchyRequestError: 3,
+  WrongDocumentError: 4,
+  InvalidCharacterError: 5,
+  NoModificationAllowedError: 7,
+  NotFoundError: 8,
+  NotSupportedError: 9,
+  InUseAttributeError: 10,
+  InvalidStateError: 11,
+  SyntaxError: 12,
+  InvalidModificationError: 13,
+  NamespaceError: 14,
+  InvalidAccessError: 15,
+  TypeMismatchError: 17,
+  SecurityError: 18,
+  NetworkError: 19,
+  AbortError: 20,
+  URLMismatchError: 21,
+  QuotaExceededError: 22,
+  TimeoutError: 23,
+  InvalidNodeTypeError: 24,
+  DataCloneError: 25,
 
-    EncodingError: 0,
-    NotReadableError: 0,
-    UnknownError: 0,
-    ConstraintError: 0,
-    DataError: 0,
-    TransactionInactiveError: 0,
-    ReadOnlyError: 0,
-    VersionError: 0,
-    OperationError: 0,
-    NotAllowedError: 0,
-    OptOutError: 0
+  EncodingError: 0,
+  NotReadableError: 0,
+  UnknownError: 0,
+  ConstraintError: 0,
+  DataError: 0,
+  TransactionInactiveError: 0,
+  ReadOnlyError: 0,
+  VersionError: 0,
+  OperationError: 0,
+  NotAllowedError: 0,
+  OptOutError: 0,
 };
 
 exports.nameCodeMap = nameCodeMap;
@@ -87,6 +87,7 @@ exports.throwSanitizedError = function throwSanitizedError(err) {
   if (originalMessage.startsWith('TypeError')) {
     const msg = originalMessage.replace(/^TypeError - /, '');
     const error = new TypeError(msg);
+    overrideStack(err, error);
 
     throw error;
   } else if (originalMessage.startsWith('RangeError')) {
@@ -110,20 +111,26 @@ exports.throwSanitizedError = function throwSanitizedError(err) {
     overrideStack(err, error);
 
     throw error;
-  } if (originalMessage.startsWith('IndexSizeError')) {
+  } else if (originalMessage.startsWith('IndexSizeError')) {
     const msg = originalMessage.replace(/^IndexSizeError - /, '');
     const error = new DOMException(msg, 'IndexSizeError');
     overrideStack(err, error);
 
     throw error;
-  } if (originalMessage.startsWith('InvalidAccessError')) {
+  } else if (originalMessage.startsWith('InvalidAccessError')) {
     const msg = originalMessage.replace(/^InvalidAccessError - /, '');
     const error = new DOMException(msg, 'InvalidAccessError');
     overrideStack(err, error);
 
     throw error;
+  } else if (originalMessage.startsWith('NotFoundError')) {
+    const msg = originalMessage.replace(/^NotFoundError - /, '');
+    const error = new DOMException(msg, 'NotFoundError');
+    overrideStack(err, error);
+
+    throw error;
   }
 
-  console.warn('[lib/errors.js] Possibly unhandled error type', err.message);
+  console.warn('[lib/errors.js] Unexpected Rust error', err);
   throw err;
 }
