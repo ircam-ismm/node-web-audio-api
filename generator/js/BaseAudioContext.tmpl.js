@@ -1,4 +1,4 @@
-const { isFunction, kEnumerableProperty } = require('./lib/utils.js');
+const { isFunction, kEnumerableProperty, kHiddenProperty } = require('./lib/utils.js');
 const { kNapiObj } = require('./lib/symbols.js');
 const { kNativeAudioBuffer } = require('./AudioBuffer.js');
 
@@ -12,7 +12,10 @@ module.exports = (jsExport /*, nativeBinding */) => {
     constructor(napiObj) {
       super(napiObj);
 
-      this[kNapiObj] = napiObj;
+      Object.defineProperty(this, kNapiObj, {
+        value: napiObj,
+        ...kHiddenProperty,
+      });
 
       this.#listener = null; // lazily instanciated
       this.#destination = new jsExport.AudioDestinationNode(this, napiObj.destination);
@@ -179,7 +182,6 @@ ${d.nodes.map(n => {
   }
 
   let args = factoryIdl.arguments;
-  d.debug(args);
 
 return `\
     ${d.factoryName(n)}(${args.map(arg => arg.optional ? `${arg.name} = ${arg.default.value}` : arg.name).join(', ')}) {

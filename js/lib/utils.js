@@ -20,3 +20,9 @@ kEnumerableProperty.enumerable = true;
 Object.freeze(kEnumerableProperty);
 
 exports.kEnumerableProperty = kEnumerableProperty;
+
+const kHiddenProperty = { __proto__: null };
+kHiddenProperty.enumerable = false;
+Object.freeze(kHiddenProperty);
+
+exports.kHiddenProperty = kHiddenProperty;

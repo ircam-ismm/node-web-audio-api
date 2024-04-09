@@ -27,6 +27,7 @@ const {
 } = require('./lib/errors.js');
 const {
   kEnumerableProperty,
+  kHiddenProperty,
 } = require('./lib/utils.js');
 const {
   kNativeAudioParam,
@@ -38,7 +39,10 @@ class AudioParam {
       throw new TypeError('Illegal constructor');
     }
 
-    this[kNativeAudioParam] = nativeAudioParam;
+    Object.defineProperty(this, kNativeAudioParam, {
+      value: nativeAudioParam,
+      ...kHiddenProperty,
+    });
   }
   // getters
 

@@ -133,7 +133,12 @@ module.exports = (jsExport, nativeBinding) => {
       super(context, napiObj);
 
       // keep the wrapped AudioBuffer around
-      this[kAudioBuffer] = null;
+      Object.defineProperty(this, kAudioBuffer, {
+        __proto__: null,
+        enumerable: false,
+        writable: true,
+        value: null,
+      });
 
       if (options && 'buffer' in options) {
         this[kAudioBuffer] = options.buffer;
