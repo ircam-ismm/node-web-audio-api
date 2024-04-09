@@ -408,21 +408,15 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
 
     let _ = napi_context.store_thread_safe_listener(tsfn.clone());
 
-    {
-        // statechange event
-        context.set_onstatechange(move |e| {
-            tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
-        });
-    }
+    context.set_onstatechange(move |e| {
+        tsfn.call(Ok(e), ThreadsafeFunctionCallMode::NonBlocking);
+    });
 
-    {
-        // oncomplete event
-        let napi_context = napi_context.clone();
+    let napi_context = napi_context.clone();
 
-        context.set_oncomplete(move |_e| {
-            napi_context.clear_all_thread_safe_listeners();
-        });
-    }
+    context.set_oncomplete(move |_e| {
+        napi_context.clear_all_thread_safe_listeners();
+    });
 
     ctx.env.get_undefined()
 }

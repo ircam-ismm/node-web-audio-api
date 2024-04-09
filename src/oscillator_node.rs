@@ -438,9 +438,6 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
             });
         }
         "OfflineAudioContext" => {
-            // do nothing for now as the listeners are never cleaned up which
-            // prevent the process to close properly
-
             let napi_context = ctx
                 .env
                 .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
