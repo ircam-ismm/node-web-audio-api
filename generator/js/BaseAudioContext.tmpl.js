@@ -179,7 +179,6 @@ ${d.nodes.map(n => {
   }
 
   let args = factoryIdl.arguments;
-  d.debug(args);
 
 return `\
     ${d.factoryName(n)}(${args.map(arg => arg.optional ? `${arg.name} = ${arg.default.value}` : arg.name).join(', ')}) {

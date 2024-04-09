@@ -14,65 +14,35 @@ pub(crate) struct ${d.napiName(d.node)}(${d.name(d.node)});
 
 impl ${d.napiName(d.node)} {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
-        env.define_class(
-            "${d.name(d.node)}",
-            constructor,
-            &[
+        ${(function() {
+            let attributes = d.attributes(d.node)
+                .filter(attr => attr.name !== 'mediaStream')
+                .map(attr => `
+                    Property::new("${attr.name}")?
+                        .with_getter(get_${d.slug(attr)})${attr.readonly === false ? `
+                        .with_setter(set_${d.slug(attr)})` : ``}
+                `);
 
-                // Attributes
-                ${d.attributes(d.node)
-                    .filter(attr => attr.name !== 'mediaStream')
-                    .map(attr => `
-                        Property::new("${attr.name}")?
-                            .with_getter(get_${d.slug(attr)})${attr.readonly === false ? `
-                            .with_setter(set_${d.slug(attr)})` : ``}
-                            .with_property_attributes(PropertyAttributes::Enumerable),
-                        `
-                    ).join('')}
-                // Methods
-                ${d.methods(d.node).map(method => `
-                    Property::new("${method.name}")?
-                        .with_method(${d.slug(method)})
-                        .with_property_attributes(PropertyAttributes::Enumerable),
-                    `
-                ).join('')}
-                // AudioNode interface
-                Property::new("channelCount")?
-                    .with_getter(get_channel_count)
-                    .with_setter(set_channel_count),
-                Property::new("channelCountMode")?
-                    .with_getter(get_channel_count_mode)
-                    .with_setter(set_channel_count_mode),
-                Property::new("channelInterpretation")?
-                    .with_getter(get_channel_interpretation)
-                    .with_setter(set_channel_interpretation),
-                Property::new("numberOfInputs")?
-                    .with_getter(get_number_of_inputs),
-                Property::new("numberOfOutputs")?
-                    .with_getter(get_number_of_outputs),
+            let methods = d.methods(d.node)
+                .map(method => `
+                    Property::new("${method.name}")?.with_method(${d.slug(method)})
+                `);
 
-                Property::new("connect")?
-                    .with_method(connect)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                Property::new("disconnect")?
-                    .with_method(disconnect)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-
-                ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `
+            if (d.parent(d.node) === 'AudioScheduledSourceNode') {
                 // AudioScheduledSourceNode interface
-                Property::new("start")?
-                    .with_method(start)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                Property::new("stop")?.
-                    with_method(stop)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                Property::new("__initEventTarget__")?
-                    .with_method(init_event_target),
-                ` : ``
-                }
+                methods.push(`Property::new("start")?.with_method(start)`);
+                methods.push(`Property::new("stop")?.with_method(stop)`);
+                methods.push(`Property::new("__initEventTarget__")?.with_method(init_event_target)`);
+            }
 
-            ]
-        )
+            let interface = attributes.concat(methods);
+
+            return `
+        let interface = audio_node_interface![${interface.join(',')}];
+            `;
+        }())}
+
+        env.define_class("${d.name(d.node)}", constructor, &interface)
     }
 
     // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
@@ -177,7 +147,10 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                     break;
                 }
                 default: {
-                    // sequences
+                    // sequences:
+                    // - IIRFIlterOptions::feedforward
+                    // - IIRFIlterOptions::feedback
+                    // - WevashaperOptions::curve
                     let targetType = m.idlType.idlType[0].idlType === 'float' ? 'f32' : 'f64';
                     if (member.required) {
                         return `
@@ -309,134 +282,13 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 
-// -------------------------------------------------
-// AudioNode Interface
-// -------------------------------------------------
-#[js_function]
-fn get_channel_count(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let node = napi_node.unwrap();
+audio_node_impl!(${d.napiName(d.node)});
 
-    let channel_count = node.channel_count() as f64;
-
-    ctx.env.create_double(channel_count)
-}
-
-#[js_function(1)]
-fn set_channel_count(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let channel_count = ctx.get::<JsNumber>(0)?.get_double()? as usize;
-    node.set_channel_count(channel_count);
-
-    ctx.env.get_undefined()
-}
-
-#[js_function]
-fn get_channel_count_mode(ctx: CallContext) -> Result<JsString> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = node.channel_count_mode();
-    let value_str = match value {
-        ChannelCountMode::Max => "max",
-        ChannelCountMode::ClampedMax => "clamped-max",
-        ChannelCountMode::Explicit => "explicit",
-    };
-
-    ctx.env.create_string(value_str)
-}
-
-#[js_function(1)]
-fn set_channel_count_mode(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let js_str = ctx.get::<JsString>(0)?;
-    let utf8_str = js_str.into_utf8()?.into_owned()?;
-    let value = match utf8_str.as_str() {
-        "max" => ChannelCountMode::Max,
-        "clamped-max" => ChannelCountMode::ClampedMax,
-        "explicit" => ChannelCountMode::Explicit,
-        _ => panic!("TypeError - The provided value '{:?}' is not a valid enum value of type ChannelCountMode", utf8_str.as_str()),
-    };
-    node.set_channel_count_mode(value);
-
-    ctx.env.get_undefined()
-}
-
-#[js_function]
-fn get_channel_interpretation(ctx: CallContext) -> Result<JsString> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = node.channel_interpretation();
-    let value_str = match value {
-        ChannelInterpretation::Speakers => "speakers",
-        ChannelInterpretation::Discrete => "discrete",
-    };
-
-    ctx.env.create_string(value_str)
-}
-
-#[js_function(1)]
-fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let js_str = ctx.get::<JsString>(0)?;
-    let utf8_str = js_str.into_utf8()?.into_owned()?;
-    let value = match utf8_str.as_str() {
-        "speakers" => ChannelInterpretation::Speakers,
-        "discrete" => ChannelInterpretation::Discrete,
-        _ => panic!("TypeError - The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", utf8_str.as_str()),
-    };
-    node.set_channel_interpretation(value);
-
-    ctx.env.get_undefined()
-}
-
-#[js_function]
-fn get_number_of_inputs(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let number_of_inputs = node.number_of_inputs() as f64;
-
-    ctx.env.create_double(number_of_inputs)
-}
-
-#[js_function]
-fn get_number_of_outputs(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let number_of_outputs = node.number_of_outputs() as f64;
-
-    ctx.env.create_double(number_of_outputs)
-}
-
-
-// -------------------------------------------------
-// connect / disconnect macros
-// -------------------------------------------------
-connect_method!(${d.napiName(d.node)});
-disconnect_method!(${d.napiName(d.node)});
-
+${d.parent(d.node) === 'AudioScheduledSourceNode' ?
+`
 // -------------------------------------------------
 // AudioScheduledSourceNode Interface
 // -------------------------------------------------
-${d.parent(d.node) === 'AudioScheduledSourceNode' ?
-`
     ${d.name(d.node) !== 'AudioBufferSourceNode' ?
 `#[js_function(1)]` :
 `#[js_function(3)]`
@@ -819,7 +671,6 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
                     `;
                     break
                 case 'interface': // AudioBuffer
-                    console.log(attr);
                     return `
 #[js_function(1)]
 fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {

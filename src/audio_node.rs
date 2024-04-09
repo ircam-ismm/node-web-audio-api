@@ -18,8 +18,143 @@
 // -------------------------------------------------------------------------- //
 
 #[macro_export]
-macro_rules! connect_method {
+macro_rules! audio_node_interface {
+    [$($e:expr),*] => {
+        [
+            Property::new("channelCount")?
+                .with_getter(get_channel_count)
+                .with_setter(set_channel_count),
+            Property::new("channelCountMode")?
+                .with_getter(get_channel_count_mode)
+                .with_setter(set_channel_count_mode),
+            Property::new("channelInterpretation")?
+                .with_getter(get_channel_interpretation)
+                .with_setter(set_channel_interpretation),
+            Property::new("numberOfInputs")?.with_getter(get_number_of_inputs),
+            Property::new("numberOfOutputs")?.with_getter(get_number_of_outputs),
+            Property::new("connect")?.with_method(connect),
+            Property::new("disconnect")?.with_method(disconnect),
+            $($e,)*
+        ]
+    }
+}
+
+#[macro_export]
+macro_rules! audio_node_impl {
     ($napi_struct:ident) => {
+        #[js_function]
+        fn get_channel_count(ctx: CallContext) -> Result<JsNumber> {
+            let js_this = ctx.this_unchecked::<JsObject>();
+            let napi_node = ctx.env.unwrap::<$napi_struct>(&js_this)?;
+            let node = napi_node.unwrap();
+
+            let channel_count = node.channel_count() as f64;
+
+            ctx.env.create_double(channel_count)
+        }
+
+        #[js_function(1)]
+        fn set_channel_count(ctx: CallContext) -> Result<JsUndefined> {
+            let js_this = ctx.this_unchecked::<JsObject>();
+            let napi_node = ctx.env.unwrap::<$napi_struct>(&js_this)?;
+            let node = napi_node.unwrap();
+
+            let channel_count = ctx.get::<JsNumber>(0)?.get_double()? as usize;
+            node.set_channel_count(channel_count);
+
+            ctx.env.get_undefined()
+        }
+
+        #[js_function]
+        fn get_channel_count_mode(ctx: CallContext) -> Result<JsString> {
+            let js_this = ctx.this_unchecked::<JsObject>();
+            let napi_node = ctx.env.unwrap::<$napi_struct>(&js_this)?;
+            let node = napi_node.unwrap();
+
+            let value = node.channel_count_mode();
+            let value_str = match value {
+                ChannelCountMode::Max => "max",
+                ChannelCountMode::ClampedMax => "clamped-max",
+                ChannelCountMode::Explicit => "explicit",
+            };
+
+            ctx.env.create_string(value_str)
+        }
+
+        #[js_function(1)]
+        fn set_channel_count_mode(ctx: CallContext) -> Result<JsUndefined> {
+            let js_this = ctx.this_unchecked::<JsObject>();
+            let napi_node = ctx.env.unwrap::<$napi_struct>(&js_this)?;
+            let node = napi_node.unwrap();
+
+            let js_str = ctx.get::<JsString>(0)?;
+            let uf8_str = js_str.into_utf8()?.into_owned()?;
+            let value = match uf8_str.as_str() {
+                "max" => ChannelCountMode::Max,
+                "clamped-max" => ChannelCountMode::ClampedMax,
+                "explicit" => ChannelCountMode::Explicit,
+                _ => panic!("undefined value for ChannelCountMode"),
+            };
+            node.set_channel_count_mode(value);
+
+            ctx.env.get_undefined()
+        }
+
+        #[js_function]
+        fn get_channel_interpretation(ctx: CallContext) -> Result<JsString> {
+            let js_this = ctx.this_unchecked::<JsObject>();
+            let napi_node = ctx.env.unwrap::<$napi_struct>(&js_this)?;
+            let node = napi_node.unwrap();
+
+            let value = node.channel_interpretation();
+            let value_str = match value {
+                ChannelInterpretation::Speakers => "speakers",
+                ChannelInterpretation::Discrete => "discrete",
+            };
+
+            ctx.env.create_string(value_str)
+        }
+
+        #[js_function(1)]
+        fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
+            let js_this = ctx.this_unchecked::<JsObject>();
+            let napi_node = ctx.env.unwrap::<$napi_struct>(&js_this)?;
+            let node = napi_node.unwrap();
+
+            let js_str = ctx.get::<JsString>(0)?;
+            let uf8_str = js_str.into_utf8()?.into_owned()?;
+            let value = match uf8_str.as_str() {
+                "speakers" => ChannelInterpretation::Speakers,
+                "discrete" => ChannelInterpretation::Discrete,
+                _ => panic!("undefined value for ChannelInterpretation"),
+            };
+            node.set_channel_interpretation(value);
+
+            ctx.env.get_undefined()
+        }
+
+        #[js_function]
+        fn get_number_of_inputs(ctx: CallContext) -> Result<JsNumber> {
+            let js_this = ctx.this_unchecked::<JsObject>();
+            let napi_node = ctx.env.unwrap::<$napi_struct>(&js_this)?;
+            let node = napi_node.unwrap();
+
+            let number_of_inputs = node.number_of_inputs() as f64;
+
+            ctx.env.create_double(number_of_inputs)
+        }
+
+        #[js_function]
+        fn get_number_of_outputs(ctx: CallContext) -> Result<JsNumber> {
+            let js_this = ctx.this_unchecked::<JsObject>();
+            let napi_node = ctx.env.unwrap::<$napi_struct>(&js_this)?;
+            let node = napi_node.unwrap();
+
+            let number_of_outputs = node.number_of_outputs() as f64;
+
+            ctx.env.create_double(number_of_outputs)
+        }
+
         #[js_function(3)]
         fn connect(ctx: napi::CallContext) -> napi::Result<napi::JsObject> {
             let js_this = ctx.this_unchecked::<napi::JsObject>();
@@ -222,12 +357,7 @@ macro_rules! connect_method {
                 }
             }
         }
-    };
-}
 
-#[macro_export]
-macro_rules! disconnect_method {
-    ($napi_struct:ident) => {
         #[js_function(1)]
         fn disconnect(ctx: napi::CallContext) -> napi::Result<napi::JsUndefined> {
             let js_this = ctx.this_unchecked::<napi::JsObject>();
