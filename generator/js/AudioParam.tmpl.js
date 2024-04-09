@@ -2,7 +2,7 @@ const conversions = require("webidl-conversions");
 
 const { toSanitizedSequence } = require('./lib/cast.js');
 const { throwSanitizedError } = require('./lib/errors.js');
-const { kEnumerableProperty } = require('./lib/utils.js');
+const { kEnumerableProperty, kHiddenProperty } = require('./lib/utils.js');
 const { kNativeAudioParam } = require('./lib/symbols.js');
 
 class AudioParam {
@@ -11,7 +11,10 @@ class AudioParam {
       throw new TypeError('Illegal constructor');
     }
 
-    this[kNativeAudioParam] = nativeAudioParam;
+    Object.defineProperty(this, kNativeAudioParam, {
+      value: nativeAudioParam,
+      ...kHiddenProperty,
+    });
   }
   // getters
 ${d.attributes(d.node).map(attr => {

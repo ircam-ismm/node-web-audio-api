@@ -3,6 +3,7 @@ const conversions = require('webidl-conversions');
 const { throwSanitizedError } = require('./lib/errors.js');
 const { toSanitizedSequence } = require('./lib/cast.js');
 const { kNapiObj } = require('./lib/symbols.js');
+const { kHiddenProperty } = require('./lib/utils.js');
 
 module.exports = (jsExport, nativeBinding) => {
   class PeriodicWave {
@@ -43,7 +44,11 @@ module.exports = (jsExport, nativeBinding) => {
       }
 
       try {
-        this[kNapiObj] = new nativeBinding.PeriodicWave(context[kNapiObj], parsedOptions);
+        const napiObj = new nativeBinding.PeriodicWave(context[kNapiObj], parsedOptions);
+        Object.defineProperty(this, kNapiObj, {
+          value: napiObj,
+          ...kHiddenProperty,
+        });
       } catch (err) {
         throwSanitizedError(err);
       }

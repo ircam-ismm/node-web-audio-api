@@ -245,7 +245,12 @@ module.exports = (jsExport, nativeBinding) => {
           if (type === 'AudioBuffer') {
             return `
       // keep the wrapped AudioBuffer around
-      this[kAudioBuffer] = null;
+      Object.defineProperty(this, kAudioBuffer, {
+        __proto__: null,
+        enumerable: false,
+        writable: true,
+        value: null,
+      });
 
       if (options && '${optionName}' in options) {
         this[kAudioBuffer] = options.${optionName};

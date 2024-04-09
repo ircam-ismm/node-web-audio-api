@@ -26,6 +26,7 @@ const {
 } = require('./lib/symbols.js');
 const {
   kEnumerableProperty,
+  kHiddenProperty,
 } = require('./lib/utils.js');
 
 const AudioParam = require('./AudioParam.js');
@@ -37,7 +38,11 @@ class AudioNode extends EventTarget {
     super(napiObj);
 
     this.#context = context;
-    this[kNapiObj] = napiObj;
+
+    Object.defineProperty(this, kNapiObj, {
+      value: napiObj,
+      ...kHiddenProperty,
+    });
   }
 
   get context() {

@@ -1,7 +1,7 @@
 const conversions = require("webidl-conversions");
 
 const { throwSanitizedError, DOMException } = require('./lib/errors.js');
-const { kEnumerableProperty } = require('./lib/utils.js');
+const { kEnumerableProperty, kHiddenProperty } = require('./lib/utils.js');
 
 const kNativeAudioBuffer = Symbol('node-web-audio-api:native-audio-buffer');
 const kAudioBuffer = Symbol('node-web-audio-api:audio-buffer');
@@ -19,11 +19,17 @@ module.exports.AudioBuffer = (NativeAudioBuffer) => {
 
       if (kNativeAudioBuffer in options) {
         // internal constructor for `startRendering` and `decodeAudioData` cases
-        this[kNativeAudioBuffer] = options[kNativeAudioBuffer];
+        Object.defineProperty(this, kNativeAudioBuffer, {
+          value: options[kNativeAudioBuffer],
+          ...kHiddenProperty,
+        });
       } else {
         // regular public constructor
         try {
-          this[kNativeAudioBuffer] = new NativeAudioBuffer(options);
+          Object.defineProperty(this, kNativeAudioBuffer, {
+            value: new NativeAudioBuffer(options),
+            ...kHiddenProperty,
+          });
         } catch (err) {
           throwSanitizedError(err);
         }
@@ -170,27 +176,6 @@ module.exports.AudioBuffer = (NativeAudioBuffer) => {
     copyToChannel: kEnumerableProperty,
     getChannelData: kEnumerableProperty,
   });
-
-  Object.defineProperties(AudioBuffer.prototype.copyToChannel, {
-    length: {
-      __proto__: null,
-      writable: false,
-      enumerable: false,
-      configurable: true,
-      value: 2,
-    },
-  });
-
-  Object.defineProperties(AudioBuffer.prototype.copyFromChannel, {
-    length: {
-      __proto__: null,
-      writable: false,
-      enumerable: false,
-      configurable: true,
-      value: 2,
-    },
-  });
-
 
   return AudioBuffer;
 };
