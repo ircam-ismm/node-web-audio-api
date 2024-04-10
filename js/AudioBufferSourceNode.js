@@ -171,37 +171,13 @@ module.exports = (jsExport, nativeBinding) => {
       return this[kAudioBuffer];
     }
 
-    get loop() {
-      if (!(this instanceof AudioBufferSourceNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
-      }
-
-      return this[kNapiObj].loop;
-    }
-
-    get loopStart() {
-      if (!(this instanceof AudioBufferSourceNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
-      }
-
-      return this[kNapiObj].loopStart;
-    }
-
-    get loopEnd() {
-      if (!(this instanceof AudioBufferSourceNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
-      }
-
-      return this[kNapiObj].loopEnd;
-    }
-
-    // @todo - should be able to set to null afterward
     set buffer(value) {
       if (!(this instanceof AudioBufferSourceNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
       }
 
       if (value === null) {
+        console.warn('Setting the \'buffer\' property on \'AudioBufferSourceNode\' to \'null\' is not supported yet');
         return;
       } else if (!(kNativeAudioBuffer in value)) {
         throw new TypeError('Failed to set the \'buffer\' property on \'AudioBufferSourceNode\': Failed to convert value to \'AudioBuffer\'');
@@ -216,10 +192,22 @@ module.exports = (jsExport, nativeBinding) => {
       this[kAudioBuffer] = value;
     }
 
+    get loop() {
+      if (!(this instanceof AudioBufferSourceNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
+      }
+
+      return this[kNapiObj].loop;
+    }
+
     set loop(value) {
       if (!(this instanceof AudioBufferSourceNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
       }
+
+      value = conversions['boolean'](value, {
+        context: `Failed to set the 'loop' property on 'AudioBufferSourceNode': Value`,
+      });
 
       try {
         this[kNapiObj].loop = value;
@@ -228,10 +216,22 @@ module.exports = (jsExport, nativeBinding) => {
       }
     }
 
+    get loopStart() {
+      if (!(this instanceof AudioBufferSourceNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
+      }
+
+      return this[kNapiObj].loopStart;
+    }
+
     set loopStart(value) {
       if (!(this instanceof AudioBufferSourceNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
       }
+
+      value = conversions['double'](value, {
+        context: `Failed to set the 'loopStart' property on 'AudioBufferSourceNode': Value`,
+      });
 
       try {
         this[kNapiObj].loopStart = value;
@@ -240,10 +240,22 @@ module.exports = (jsExport, nativeBinding) => {
       }
     }
 
+    get loopEnd() {
+      if (!(this instanceof AudioBufferSourceNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
+      }
+
+      return this[kNapiObj].loopEnd;
+    }
+
     set loopEnd(value) {
       if (!(this instanceof AudioBufferSourceNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
       }
+
+      value = conversions['double'](value, {
+        context: `Failed to set the 'loopEnd' property on 'AudioBufferSourceNode': Value`,
+      });
 
       try {
         this[kNapiObj].loopEnd = value;

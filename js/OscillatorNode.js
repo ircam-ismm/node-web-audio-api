@@ -179,6 +179,11 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'OscillatorNode\'');
       }
 
+      if (!['sine', 'square', 'sawtooth', 'triangle', 'custom'].includes(value)) {
+        console.warn(`Failed to set the 'type' property on 'OscillatorNode': Value '${value}' is not a valid 'OscillatorType' enum value`);
+        return;
+      }
+
       try {
         this[kNapiObj].type = value;
       } catch (err) {

@@ -194,6 +194,11 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BiquadFilterNode\'');
       }
 
+      if (!['lowpass', 'highpass', 'bandpass', 'lowshelf', 'highshelf', 'peaking', 'notch', 'allpass'].includes(value)) {
+        console.warn(`Failed to set the 'type' property on 'BiquadFilterNode': Value '${value}' is not a valid 'BiquadFilterType' enum value`);
+        return;
+      }
+
       try {
         this[kNapiObj].type = value;
       } catch (err) {

@@ -285,12 +285,46 @@ module.exports = (jsExport, nativeBinding) => {
       return this[kNapiObj].panningModel;
     }
 
+    set panningModel(value) {
+      if (!(this instanceof PannerNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
+      }
+
+      if (!['equalpower', 'HRTF'].includes(value)) {
+        console.warn(`Failed to set the 'panningModel' property on 'PannerNode': Value '${value}' is not a valid 'PanningModelType' enum value`);
+        return;
+      }
+
+      try {
+        this[kNapiObj].panningModel = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
+
     get distanceModel() {
       if (!(this instanceof PannerNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
       }
 
       return this[kNapiObj].distanceModel;
+    }
+
+    set distanceModel(value) {
+      if (!(this instanceof PannerNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
+      }
+
+      if (!['linear', 'inverse', 'exponential'].includes(value)) {
+        console.warn(`Failed to set the 'distanceModel' property on 'PannerNode': Value '${value}' is not a valid 'DistanceModelType' enum value`);
+        return;
+      }
+
+      try {
+        this[kNapiObj].distanceModel = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
     }
 
     get refDistance() {
@@ -301,12 +335,44 @@ module.exports = (jsExport, nativeBinding) => {
       return this[kNapiObj].refDistance;
     }
 
+    set refDistance(value) {
+      if (!(this instanceof PannerNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
+      }
+
+      value = conversions['double'](value, {
+        context: `Failed to set the 'refDistance' property on 'PannerNode': Value`,
+      });
+
+      try {
+        this[kNapiObj].refDistance = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
+
     get maxDistance() {
       if (!(this instanceof PannerNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
       }
 
       return this[kNapiObj].maxDistance;
+    }
+
+    set maxDistance(value) {
+      if (!(this instanceof PannerNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
+      }
+
+      value = conversions['double'](value, {
+        context: `Failed to set the 'maxDistance' property on 'PannerNode': Value`,
+      });
+
+      try {
+        this[kNapiObj].maxDistance = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
     }
 
     get rolloffFactor() {
@@ -317,12 +383,44 @@ module.exports = (jsExport, nativeBinding) => {
       return this[kNapiObj].rolloffFactor;
     }
 
+    set rolloffFactor(value) {
+      if (!(this instanceof PannerNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
+      }
+
+      value = conversions['double'](value, {
+        context: `Failed to set the 'rolloffFactor' property on 'PannerNode': Value`,
+      });
+
+      try {
+        this[kNapiObj].rolloffFactor = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
+
     get coneInnerAngle() {
       if (!(this instanceof PannerNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
       }
 
       return this[kNapiObj].coneInnerAngle;
+    }
+
+    set coneInnerAngle(value) {
+      if (!(this instanceof PannerNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
+      }
+
+      value = conversions['double'](value, {
+        context: `Failed to set the 'coneInnerAngle' property on 'PannerNode': Value`,
+      });
+
+      try {
+        this[kNapiObj].coneInnerAngle = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
     }
 
     get coneOuterAngle() {
@@ -333,90 +431,14 @@ module.exports = (jsExport, nativeBinding) => {
       return this[kNapiObj].coneOuterAngle;
     }
 
-    get coneOuterGain() {
-      if (!(this instanceof PannerNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
-      }
-
-      return this[kNapiObj].coneOuterGain;
-    }
-
-    set panningModel(value) {
-      if (!(this instanceof PannerNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
-      }
-
-      try {
-        this[kNapiObj].panningModel = value;
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
-    set distanceModel(value) {
-      if (!(this instanceof PannerNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
-      }
-
-      try {
-        this[kNapiObj].distanceModel = value;
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
-    set refDistance(value) {
-      if (!(this instanceof PannerNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
-      }
-
-      try {
-        this[kNapiObj].refDistance = value;
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
-    set maxDistance(value) {
-      if (!(this instanceof PannerNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
-      }
-
-      try {
-        this[kNapiObj].maxDistance = value;
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
-    set rolloffFactor(value) {
-      if (!(this instanceof PannerNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
-      }
-
-      try {
-        this[kNapiObj].rolloffFactor = value;
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
-    set coneInnerAngle(value) {
-      if (!(this instanceof PannerNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
-      }
-
-      try {
-        this[kNapiObj].coneInnerAngle = value;
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
     set coneOuterAngle(value) {
       if (!(this instanceof PannerNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
       }
+
+      value = conversions['double'](value, {
+        context: `Failed to set the 'coneOuterAngle' property on 'PannerNode': Value`,
+      });
 
       try {
         this[kNapiObj].coneOuterAngle = value;
@@ -425,10 +447,22 @@ module.exports = (jsExport, nativeBinding) => {
       }
     }
 
+    get coneOuterGain() {
+      if (!(this instanceof PannerNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
+      }
+
+      return this[kNapiObj].coneOuterGain;
+    }
+
     set coneOuterGain(value) {
       if (!(this instanceof PannerNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'PannerNode\'');
       }
+
+      value = conversions['double'](value, {
+        context: `Failed to set the 'coneOuterGain' property on 'PannerNode': Value`,
+      });
 
       try {
         this[kNapiObj].coneOuterGain = value;

@@ -126,17 +126,16 @@ module.exports = (jsExport, nativeBinding) => {
       return this[kNapiObj].curve;
     }
 
-    get oversample() {
+    set curve(value) {
       if (!(this instanceof WaveShaperNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'WaveShaperNode\'');
       }
 
-      return this[kNapiObj].oversample;
-    }
-
-    set curve(value) {
-      if (!(this instanceof WaveShaperNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'WaveShaperNode\'');
+      if (value === null) {
+        console.warn('Setting the \'curve\' property on \'WaveShaperNode\' to \'null\' is not supported yet');
+        return;
+      } else if (!(value instanceof Float32Array)) {
+        throw new TypeError('Failed to set the \'curve\' property on \'WaveShaperNode\': Value is not a valid \'Float32Array\' value');
       }
 
       try {
@@ -146,9 +145,22 @@ module.exports = (jsExport, nativeBinding) => {
       }
     }
 
+    get oversample() {
+      if (!(this instanceof WaveShaperNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'WaveShaperNode\'');
+      }
+
+      return this[kNapiObj].oversample;
+    }
+
     set oversample(value) {
       if (!(this instanceof WaveShaperNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'WaveShaperNode\'');
+      }
+
+      if (!['none', '2x', '4x'].includes(value)) {
+        console.warn(`Failed to set the 'oversample' property on 'WaveShaperNode': Value '${value}' is not a valid 'OverSampleType' enum value`);
+        return;
       }
 
       try {

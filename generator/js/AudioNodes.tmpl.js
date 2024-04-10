@@ -125,7 +125,7 @@ module.exports = (jsExport, nativeBinding) => {
                 throw new Error(`${type} default value is not a string`);
               }
 
-              const values = JSON.stringify(typeIdl.values.map(e => e.value))
+              const values = JSON.stringify(typeIdl.values.map(e => e.value));
 
               checkMember += `
       if (options && options.${optionName} !== undefined) {
@@ -312,23 +312,28 @@ module.exports = (jsExport, nativeBinding) => {
 
 ${d.audioParams(d.node).map(param => {
   return `
-  get ${d.name(param)}() {
-    if (!(this instanceof ${d.name(d.node)})) {
-      throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
-    }
+    get ${d.name(param)}() {
+      if (!(this instanceof ${d.name(d.node)})) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
+      }
 
-    return this.#${d.name(param)};
-  }
+      return this.#${d.name(param)};
+    }
   `;
 }).join('')}
 
 ${d.attributes(d.node).map(attr => {
   // ------------------------------------------------------
-  // Getters
+  // Getters / Setters
   // ------------------------------------------------------
-  switch (d.memberType(attr)) {
+  const type = attr.idlType.idlType;
+
+  let getter = ``;
+  let setter = ``;
+
+  switch (type) {
     case 'AudioBuffer': {
-      return `
+      getter = `
     get ${d.name(attr)}() {
       if (!(this instanceof ${d.name(d.node)})) {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
@@ -340,7 +345,7 @@ ${d.attributes(d.node).map(attr => {
       break;
     }
     default: {
-      return `
+      getter = `
     get ${d.name(attr)}() {
       if (!(this instanceof ${d.name(d.node)})) {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
@@ -352,25 +357,135 @@ ${d.attributes(d.node).map(attr => {
       break;
     }
   }
-}).join('')}
 
-${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
-  // ------------------------------------------------------
-  // Setters
-  // ------------------------------------------------------
-  switch (d.memberType(attr)) {
-    case 'AudioBuffer': {
-      return `
-    // @todo - should be able to set to null afterward
+  if (!attr.readonly) {
+    // nullable:
+    // - Float32Array - WaveshaperNode::curve
+    // - AudioBuffer - AudiobufferSourceNode::buffer & ConvolverNode::buffer
+    const nullable = attr.idlType.nullable;
+
+    switch (type) {
+      case 'boolean':
+      case 'float':
+      case 'double': {
+        setter = `
+    set ${d.name(attr)}(value) {
+      if (!(this instanceof ${d.name(d.node)})) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
+      }
+
+      value = conversions['${type}'](value, {
+        context: \`Failed to set the '${d.name(attr)}' property on '${d.name(d.node)}': Value\`
+      });
+
+      try {
+        this[kNapiObj].${d.name(attr)} = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
+        `;
+        break;
+      }
+      case 'unsigned long': {
+        // - Analyser::fftSize
+        setter = `
+    set ${d.name(attr)}(value) {
+      if (!(this instanceof ${d.name(d.node)})) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
+      }
+
+      // Weirdly wpt pretends that when set to -1 it should throw IndexSizeError, not a TypeError...
+      // For now let's just cast it to Number without further checks
+      // value = conversions['${type}'](value, {
+      //   enforceRange: true,
+      //   context: \`Failed to set the '${d.name(attr)}' property on '${d.name(d.node)}': Value\`
+      // });
+      value = conversions['unrestricted double'](value, {
+        context: \`Failed to set the '${d.name(attr)}' property on '${d.name(d.node)}': Value\`
+      });
+
+      try {
+        this[kNapiObj].${d.name(attr)} = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
+        `;
+        break;
+      }
+      case 'BiquadFilterType':
+      case 'OscillatorType':
+      case 'PanningModelType':
+      case 'DistanceModelType':
+      case 'OverSampleType': {
+        // https://webidl.spec.whatwg.org/#idl-enums
+        // Note: In the JavaScript binding, assignment of an invalid string value
+        // to an attribute is ignored, while passing such a value in other contexts
+        // (for example as an operation argument) results in an exception being thrown.
+        const typeIdl = d.findInTree(type);
+        const values = JSON.stringify(typeIdl.values.map(e => e.value));
+
+        setter = `
+    set ${d.name(attr)}(value) {
+      if (!(this instanceof ${d.name(d.node)})) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
+      }
+
+      if (!${values}.includes(value)) {
+        console.warn(\`Failed to set the '${d.name(attr)}' property on '${d.name(d.node)}': Value '\${value}' is not a valid '${type}' enum value\`);
+        return;
+      }
+
+      try {
+        this[kNapiObj].${d.name(attr)} = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
+        `;
+        break;
+      }
+      case 'Float32Array': {
+        // - WaveShaperNode::curve
+        // @todo - should be able to set back to null
+        setter = `
     set ${d.name(attr)}(value) {
       if (!(this instanceof ${d.name(d.node)})) {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
       }
 
       if (value === null) {
+        console.warn("Setting the '${d.name(attr)}' property on '${d.name(d.node)}' to 'null' is not supported yet");
+        return;
+      } else if (!(value instanceof ${type})) {
+        throw new TypeError("Failed to set the '${d.name(attr)}' property on '${d.name(d.node)}': Value is not a valid '${type}' value");
+      }
+
+      try {
+        this[kNapiObj].${d.name(attr)} = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
+        `;
+        break;
+      }
+      case 'AudioBuffer': {
+        // - AudioBufferSourceNode::buffer
+        // - ConvolverNode::buffer
+        // @todo - should be able to set back to null
+        setter = `
+    set ${d.name(attr)}(value) {
+      if (!(this instanceof ${d.name(d.node)})) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
+      }
+
+      if (value === null) {
+        console.warn("Setting the '${d.name(attr)}' property on '${d.name(d.node)}' to 'null' is not supported yet");
         return;
       } else if (!(kNativeAudioBuffer in value)) {
-        throw new TypeError("Failed to set the 'buffer' property on 'AudioBufferSourceNode': Failed to convert value to 'AudioBuffer'");
+        throw new TypeError("Failed to set the '${d.name(attr)}' property on '${d.name(d.node)}': Failed to convert value to '${type}'");
       }
 
       try {
@@ -381,26 +496,17 @@ ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
 
       this[kAudioBuffer] = value;
     }
-      `;
-      break;
-    }
-    default: {
-      return `
-    set ${d.name(attr)}(value) {
-      if (!(this instanceof ${d.name(d.node)})) {
-        throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
+        `;
+        break;
       }
-
-      try {
-        this[kNapiObj].${d.name(attr)} = value;
-      } catch (err) {
-        throwSanitizedError(err);
+      default: {
+        console.log(`Warning: Unhandled type '${type}' in setters`);
+        break;
       }
-    }
-      `;
-      break;
     }
   }
+
+  return `${getter}${setter}`;
 }).join('')}
 
 ${d.methods(d.node, false).map(method => {

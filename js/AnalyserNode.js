@@ -137,6 +137,28 @@ module.exports = (jsExport, nativeBinding) => {
       return this[kNapiObj].fftSize;
     }
 
+    set fftSize(value) {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
+      // Weirdly wpt pretends that when set to -1 it should throw IndexSizeError, not a TypeError...
+      // For now let's just cast it to Number without further checks
+      // value = conversions['unsigned long'](value, {
+      //   enforceRange: true,
+      //   context: `Failed to set the 'fftSize' property on 'AnalyserNode': Value`
+      // });
+      value = conversions['unrestricted double'](value, {
+        context: `Failed to set the 'fftSize' property on 'AnalyserNode': Value`,
+      });
+
+      try {
+        this[kNapiObj].fftSize = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
+
     get frequencyBinCount() {
       if (!(this instanceof AnalyserNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
@@ -153,12 +175,44 @@ module.exports = (jsExport, nativeBinding) => {
       return this[kNapiObj].minDecibels;
     }
 
+    set minDecibels(value) {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
+      value = conversions['double'](value, {
+        context: `Failed to set the 'minDecibels' property on 'AnalyserNode': Value`,
+      });
+
+      try {
+        this[kNapiObj].minDecibels = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
+
     get maxDecibels() {
       if (!(this instanceof AnalyserNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
       }
 
       return this[kNapiObj].maxDecibels;
+    }
+
+    set maxDecibels(value) {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
+      value = conversions['double'](value, {
+        context: `Failed to set the 'maxDecibels' property on 'AnalyserNode': Value`,
+      });
+
+      try {
+        this[kNapiObj].maxDecibels = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
     }
 
     get smoothingTimeConstant() {
@@ -169,46 +223,14 @@ module.exports = (jsExport, nativeBinding) => {
       return this[kNapiObj].smoothingTimeConstant;
     }
 
-    set fftSize(value) {
-      if (!(this instanceof AnalyserNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
-      }
-
-      try {
-        this[kNapiObj].fftSize = value;
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
-    set minDecibels(value) {
-      if (!(this instanceof AnalyserNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
-      }
-
-      try {
-        this[kNapiObj].minDecibels = value;
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
-    set maxDecibels(value) {
-      if (!(this instanceof AnalyserNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
-      }
-
-      try {
-        this[kNapiObj].maxDecibels = value;
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
     set smoothingTimeConstant(value) {
       if (!(this instanceof AnalyserNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
       }
+
+      value = conversions['double'](value, {
+        context: `Failed to set the 'smoothingTimeConstant' property on 'AnalyserNode': Value`,
+      });
 
       try {
         this[kNapiObj].smoothingTimeConstant = value;

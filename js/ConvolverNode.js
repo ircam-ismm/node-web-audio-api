@@ -134,24 +134,16 @@ module.exports = (jsExport, nativeBinding) => {
       return this[kAudioBuffer];
     }
 
-    get normalize() {
-      if (!(this instanceof ConvolverNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'ConvolverNode\'');
-      }
-
-      return this[kNapiObj].normalize;
-    }
-
-    // @todo - should be able to set to null afterward
     set buffer(value) {
       if (!(this instanceof ConvolverNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'ConvolverNode\'');
       }
 
       if (value === null) {
+        console.warn('Setting the \'buffer\' property on \'ConvolverNode\' to \'null\' is not supported yet');
         return;
       } else if (!(kNativeAudioBuffer in value)) {
-        throw new TypeError('Failed to set the \'buffer\' property on \'AudioBufferSourceNode\': Failed to convert value to \'AudioBuffer\'');
+        throw new TypeError('Failed to set the \'buffer\' property on \'ConvolverNode\': Failed to convert value to \'AudioBuffer\'');
       }
 
       try {
@@ -163,10 +155,22 @@ module.exports = (jsExport, nativeBinding) => {
       this[kAudioBuffer] = value;
     }
 
+    get normalize() {
+      if (!(this instanceof ConvolverNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'ConvolverNode\'');
+      }
+
+      return this[kNapiObj].normalize;
+    }
+
     set normalize(value) {
       if (!(this instanceof ConvolverNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'ConvolverNode\'');
       }
+
+      value = conversions['boolean'](value, {
+        context: `Failed to set the 'normalize' property on 'ConvolverNode': Value`,
+      });
 
       try {
         this[kNapiObj].normalize = value;
