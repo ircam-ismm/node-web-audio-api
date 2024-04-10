@@ -68,7 +68,10 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
     let js_audio_context = ctx.get::<JsObject>(0)?;
 
-    // parse options
+    // --------------------------------------------------------
+    // Parse AnalyserOptions
+    // by bindings construction all fields are populated on the JS side
+    // --------------------------------------------------------
     let js_options = ctx.get::<JsObject>(1)?;
 
     let fft_size = js_options
@@ -91,6 +94,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         .unwrap()
         .get_double()?;
 
+    // --------------------------------------------------------
+    // Parse AudioNodeOptions
+    // --------------------------------------------------------
     let node_defaults = AnalyserOptions::default();
     let audio_node_options_default = node_defaults.audio_node_options;
 
@@ -137,6 +143,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         audio_node_options_default.channel_interpretation
     };
 
+    // --------------------------------------------------------
+    // Create AnalyserOptions object
+    // --------------------------------------------------------
     let options = AnalyserOptions {
         fft_size,
         max_decibels,
@@ -149,12 +158,14 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         },
     };
 
+    // --------------------------------------------------------
+    // Create native AnalyserNode
+    // --------------------------------------------------------
     let audio_context_name =
         js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
     let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
     let audio_context_str = &audio_context_utf8_name[..];
 
-    // create native node
     let native_node = match audio_context_str {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
@@ -171,6 +182,13 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         &_ => unreachable!(),
     };
 
+    // --------------------------------------------------------
+    // Bind AudioParam to JS object
+    // --------------------------------------------------------
+
+    // --------------------------------------------------------
+    // Finalize instance creation
+    // --------------------------------------------------------
     js_this.define_properties(&[
         Property::new("context")?
             .with_value(&js_audio_context)
@@ -304,7 +322,7 @@ fn set_smoothing_time_constant(ctx: CallContext) -> Result<JsUndefined> {
 fn get_float_frequency_data(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
-    // avoid warnings while we don't support all methods
+    // avoid warnings while we don"t support all methods
     #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
@@ -320,7 +338,7 @@ fn get_float_frequency_data(ctx: CallContext) -> Result<JsUndefined> {
 fn get_byte_frequency_data(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
-    // avoid warnings while we don't support all methods
+    // avoid warnings while we don"t support all methods
     #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
@@ -336,7 +354,7 @@ fn get_byte_frequency_data(ctx: CallContext) -> Result<JsUndefined> {
 fn get_float_time_domain_data(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
-    // avoid warnings while we don't support all methods
+    // avoid warnings while we don"t support all methods
     #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
@@ -352,7 +370,7 @@ fn get_float_time_domain_data(ctx: CallContext) -> Result<JsUndefined> {
 fn get_byte_time_domain_data(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
-    // avoid warnings while we don't support all methods
+    // avoid warnings while we don"t support all methods
     #[allow(unused_variables)]
     let node = napi_node.unwrap();
 

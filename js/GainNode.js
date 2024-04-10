@@ -61,18 +61,37 @@ module.exports = (jsExport, nativeBinding) => {
       }
 
       // parsed version of the option to be passed to NAPI
-      const parsedOptions = Object.assign({}, options);
+      const parsedOptions = {};
 
       if (options && typeof options !== 'object') {
         throw new TypeError('Failed to construct \'GainNode\': argument 2 is not of type \'GainOptions\'');
       }
 
-      if (options && 'gain' in options) {
+      if (options && options.gain !== undefined) {
         parsedOptions.gain = conversions['float'](options.gain, {
           context: `Failed to construct 'GainNode': Failed to read the 'gain' property from GainOptions: The provided value (${options.gain}})`,
         });
       } else {
         parsedOptions.gain = 1.0;
+      }
+
+      if (options && options.channelCount !== undefined) {
+        parsedOptions.channelCount = conversions['unsigned long'](options.channelCount, {
+          enforceRange: true,
+          context: `Failed to construct 'GainNode': Failed to read the 'channelCount' property from GainOptions: The provided value '${options.channelCount}'`,
+        });
+      }
+
+      if (options && options.channelCountMode !== undefined) {
+        parsedOptions.channelCountMode = conversions['DOMString'](options.channelCountMode, {
+          context: `Failed to construct 'GainNode': Failed to read the 'channelCount' property from GainOptions: The provided value '${options.channelCountMode}'`,
+        });
+      }
+
+      if (options && options.channelInterpretation !== undefined) {
+        parsedOptions.channelInterpretation = conversions['DOMString'](options.channelInterpretation, {
+          context: `Failed to construct 'GainNode': Failed to read the 'channelInterpretation' property from GainOptions: The provided value '${options.channelInterpretation}'`,
+        });
       }
 
       let napiObj;

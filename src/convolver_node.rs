@@ -57,7 +57,10 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
     let js_audio_context = ctx.get::<JsObject>(0)?;
 
-    // parse options
+    // --------------------------------------------------------
+    // Parse ConvolverOptions
+    // by bindings construction all fields are populated on the JS side
+    // --------------------------------------------------------
     let js_options = ctx.get::<JsObject>(1)?;
 
     let buffer_js = js_options.get::<&str, JsUnknown>("buffer")?.unwrap();
@@ -76,6 +79,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         .unwrap()
         .try_into()?;
 
+    // --------------------------------------------------------
+    // Parse AudioNodeOptions
+    // --------------------------------------------------------
     let node_defaults = ConvolverOptions::default();
     let audio_node_options_default = node_defaults.audio_node_options;
 
@@ -122,6 +128,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         audio_node_options_default.channel_interpretation
     };
 
+    // --------------------------------------------------------
+    // Create ConvolverOptions object
+    // --------------------------------------------------------
     let options = ConvolverOptions {
         buffer,
         disable_normalization,
@@ -132,12 +141,14 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         },
     };
 
+    // --------------------------------------------------------
+    // Create native ConvolverNode
+    // --------------------------------------------------------
     let audio_context_name =
         js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
     let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
     let audio_context_str = &audio_context_utf8_name[..];
 
-    // create native node
     let native_node = match audio_context_str {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
@@ -154,6 +165,13 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         &_ => unreachable!(),
     };
 
+    // --------------------------------------------------------
+    // Bind AudioParam to JS object
+    // --------------------------------------------------------
+
+    // --------------------------------------------------------
+    // Finalize instance creation
+    // --------------------------------------------------------
     js_this.define_properties(&[
         Property::new("context")?
             .with_value(&js_audio_context)

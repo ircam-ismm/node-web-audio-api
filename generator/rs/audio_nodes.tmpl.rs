@@ -61,70 +61,75 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         const optionsArg = d.constructor(d.node).arguments[1];
         const optionsType = d.memberType(optionsArg);
         const optionsIdl = d.findInTree(optionsType);
+        let hasRequiredMember = false;
+        let parseOptions = ``;
 
-        return `
-    // parse options
+        parseOptions += `
+    // --------------------------------------------------------
+    // Parse ${optionsType}
+    // by bindings construction all fields are populated on the JS side
+    // --------------------------------------------------------
     let js_options = ctx.get::<JsObject>(1)?;
 
-        ${optionsIdl.members.map(m => {
-            const member = m;
+            ${optionsIdl.members.map(member => {
+                const optionName = d.name(member);
+                const type = d.memberType(member);
+                const required = member.required;
+                const defaultValue = member.default; // null or object
+                const nullable = member.idlType.nullable; // only AudioBuffer is actually nullable
+                const simple_slug = d.slug(member);
+                const slug = d.slug(member, true); // append _ to protect from protected keywords
 
-            const optionName = d.name(member);
-            const type = d.memberType(member);
-            const required = member.required;
-            const defaultValue = member.default; // null or object
-            // only AudioBuffer is actually nullable
-            const nullable = member.idlType.nullable;
-            const simple_slug = d.slug(m);
-            const slug = d.slug(m, true); // append _ to protect from protected keywords
+                // Note that the options object has required member for AudioNodeOptions parsing
+                hasRequiredMember = hasRequiredMember || required;
 
-            switch (type) {
-                case 'boolean': {
-                    return `
-    let ${slug} = js_options.get::<&str, JsBoolean>("${m.name}")?.unwrap().try_into()?;
-                    `;
-                    break;
-                }
-                case 'float': {
-                    return `
-    let ${slug} = js_options.get::<&str, JsNumber>("${m.name}")?.unwrap().get_double()? as f32;
-                    `;
-                    break;
-                }
-                case 'double': {
-                    return `
-    let ${slug} = js_options.get::<&str, JsNumber>("${m.name}")?.unwrap().get_double()?;
-                    `;
-                    break;
-                }
-                case 'unsigned long': {
-                    return `
-    let ${slug} = js_options.get::<&str, JsNumber>("${m.name}")?.unwrap().get_double()? as usize;
-                    `;
-                    break;
-                }
-                case 'BiquadFilterType':
-                case 'OscillatorType':
-                case 'PanningModelType':
-                case 'DistanceModelType':
-                case 'OverSampleType': {
-                    const idl = d.findInTree(d.memberType(member));
-                    return `
-    let ${simple_slug}_js = js_options.get::<&str, JsString>("${m.name}")?.unwrap();
+                switch (type) {
+                    case "boolean": {
+                        return `
+    let ${slug} = js_options.get::<&str, JsBoolean>("${optionName}")?.unwrap().try_into()?;
+                        `;
+                        break;
+                    }
+                    case "float": {
+                        return `
+    let ${slug} = js_options.get::<&str, JsNumber>("${optionName}")?.unwrap().get_double()? as f32;
+                        `;
+                        break;
+                    }
+                    case "double": {
+                        return `
+    let ${slug} = js_options.get::<&str, JsNumber>("${optionName}")?.unwrap().get_double()?;
+                        `;
+                        break;
+                    }
+                    case "unsigned long": {
+                        return `
+    let ${slug} = js_options.get::<&str, JsNumber>("${optionName}")?.unwrap().get_double()? as usize;
+                        `;
+                        break;
+                    }
+                    case "BiquadFilterType":
+                    case "OscillatorType":
+                    case "PanningModelType":
+                    case "DistanceModelType":
+                    case "OverSampleType": {
+                        const idl = d.findInTree(d.memberType(member));
+                        return `
+    let ${simple_slug}_js = js_options.get::<&str, JsString>("${optionName}")?.unwrap();
     let ${simple_slug}_str = ${simple_slug}_js.into_utf8()?.into_owned()?;
     let ${slug} = match ${simple_slug}_str.as_str() {${idl.values.map(v => `
-        "${v.value}" => ${idl.name}::${d.camelcase(v.value)},`).join('')}
+        "${v.value}" => ${idl.name}::${d.camelcase(v.value)},`).join("")}
         _ => unreachable!(),
     };
-                    `;
-                    break;
-                }
-                // default values are null
-                case 'PeriodicWave':
-                case 'AudioBuffer': {
-                    const idl = d.findInTree(d.memberType(member));
-                    return `
-    let ${simple_slug}_js = js_options.get::<&str, JsUnknown>("${m.name}")?.unwrap();
+                        `;
+                        break;
+                    }
+                    // default values are null
+                    case "PeriodicWave":
+                    case "AudioBuffer": {
+                        const idl = d.findInTree(d.memberType(member));
+                        return `
+    let ${simple_slug}_js = js_options.get::<&str, JsUnknown>("${optionName}")?.unwrap();
     let ${slug} = match ${simple_slug}_js.get_type()? {
         ValueType::Object => {
             let ${simple_slug}_js = ${simple_slug}_js.coerce_to_object()?;
@@ -134,59 +139,72 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         ValueType::Null => None,
         _ => unreachable!(),
     };
-                    `;
-                    break;
-                }
-                case 'MediaStream': {
-                    const napiName = `Napi${member.idlType.idlType}`;
-                    return `
-    let ${simple_slug}_js = js_options.get::<&str, JsObject>("${m.name}")?.unwrap();
+                        `;
+                        break;
+                    }
+                    case "MediaStream": {
+                        const napiName = `Napi${member.idlType.idlType}`;
+                        return `
+    let ${simple_slug}_js = js_options.get::<&str, JsObject>("${optionName}")?.unwrap();
     let ${simple_slug}_napi = ctx.env.unwrap::<${napiName}>(&${simple_slug}_js)?;
     let ${slug} = ${simple_slug}_napi.unwrap();
-                    `;
-                    break;
-                }
-                default: {
-                    // sequences:
-                    // - IIRFIlterOptions::feedforward
-                    // - IIRFIlterOptions::feedback
-                    // - WevashaperOptions::curve
-                    let targetType = m.idlType.idlType[0].idlType === 'float' ? 'f32' : 'f64';
-                    if (member.required) {
-                        return `
-    let ${simple_slug}_js = js_options.get::<&str, JsTypedArray>("${m.name}")?.unwrap();
+                        `;
+                        break;
+                    }
+                    default: {
+                        // sequences:
+                        // - IIRFIlterOptions::feedforward
+                        // - IIRFIlterOptions::feedback
+                        // - WevashaperOptions::curve
+                        let targetType = member.idlType.idlType[0].idlType === "float" ? "f32" : "f64";
+                        if (member.required) {
+                            return `
+    let ${simple_slug}_js = js_options.get::<&str, JsTypedArray>("${optionName}")?.unwrap();
     let ${simple_slug}_value = ${simple_slug}_js.into_value()?;
     let ${slug}: &[${targetType}] = ${simple_slug}_value.as_ref();
     let ${slug} = ${slug}.to_vec();
-                        `;
-                    } else {
-                        return `
-    let ${simple_slug}_js = js_options.get::<&str, JsUnknown>("${m.name}")?.unwrap();
+                            `;
+                        } else {
+                            return `
+    let ${simple_slug}_js = js_options.get::<&str, JsUnknown>("${optionName}")?.unwrap();
     let ${slug} = if ${simple_slug}_js.get_type()? == ValueType::Null {
         None
     } else {
-        let ${simple_slug}_js = js_options.get::<&str, JsTypedArray>("${m.name}")?.unwrap();
+        let ${simple_slug}_js = js_options.get::<&str, JsTypedArray>("${optionName}")?.unwrap();
         let ${simple_slug}_value = ${simple_slug}_js.into_value()?;
         let ${slug}: &[${targetType}] = ${simple_slug}_value.as_ref();
         Some(${slug}.to_vec())
     };
-                        `;
+                            `;
+                        }
+                        break;
                     }
-                    break;
                 }
-            }
-        // end options mamber
-        }).join('')}
+            // end options member
+            }).join("")}
+        `;
 
-    ${d.parent(optionsIdl) === 'AudioNodeOptions' ? `
-        ${optionsIdl.members.reduce((acc, current) => acc || current.required, false) ? `
-    // can't create default from ${optionsType}
+        if (d.parent(optionsIdl) === "AudioNodeOptions") {
+            parseOptions += `
+    // --------------------------------------------------------
+    // Parse AudioNodeOptions
+    // --------------------------------------------------------\
+            `;
+            // if the node options object has required member, e.g. IIRFilterNodeOptions
+            // it does not implement Default, then we need to grab the default
+            // directly from AudioNodeOptions
+            if (hasRequiredMember) {
+                parseOptions += `
     let audio_node_options_default = AudioNodeOptions::default();
-        ` : `
+                `;
+            } else {
+                parseOptions += `
     let node_defaults = ${optionsType}::default();
     let audio_node_options_default = node_defaults.audio_node_options;
-        `}
+                `;
+            }
 
+            parseOptions += `
     let some_channel_count_js = js_options.get::<&str, JsObject>("channelCount")?;
     let channel_count = if let Some(channel_count_js) = some_channel_count_js {
         channel_count_js.coerce_to_number()?.get_double()? as usize
@@ -220,26 +238,40 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     } else {
         audio_node_options_default.channel_interpretation
     };
-    ` : ``}
 
+    // --------------------------------------------------------
+    // Create ${d.name(optionsIdl)} object
+    // --------------------------------------------------------
     let options = ${optionsType} {
-        ${optionsIdl.members.map(m => d.slug(m, true)).join(', ')},
-        ${d.parent(optionsIdl) === 'AudioNodeOptions' ?
-        `audio_node_options: AudioNodeOptions {
+        ${optionsIdl.members.map(m => d.slug(m, true)).join(",")},
+        audio_node_options: AudioNodeOptions {
             channel_count,
             channel_count_mode,
             channel_interpretation,
-        },` : ``}
+        },
     };
+            `;
+        } else {
+            parseOptions += `
+    // --------------------------------------------------------
+    // Create ${d.name(optionsIdl)} object
+    // --------------------------------------------------------
+    let options = ${optionsType} {
+        ${optionsIdl.members.map(m => d.slug(m, true)).join(",")},
+    };
+            `;
+        }
 
-        `; // end options parsing
+        return parseOptions;
     }())}
 
+    // --------------------------------------------------------
+    // Create native ${d.name(d.node)}
+    // --------------------------------------------------------
     let audio_context_name = js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
     let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
     let audio_context_str = &audio_context_utf8_name[..];
 
-    // create native node
     let native_node = match audio_context_str {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
@@ -254,8 +286,10 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         &_ => unreachable!(),
     };
 
+    // --------------------------------------------------------
+    // Bind AudioParam to JS object
+    // --------------------------------------------------------\
     ${d.audioParams(d.node).map((param) => {
-        // AudioParam: ${d.name(d.node)}::${param.name}
         return `
     let native_param = native_node.${d.slug(param.name)}().clone();
     let napi_param = NapiAudioParam::new(native_param);
@@ -265,6 +299,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         `;
     }).join('')}
 
+    // --------------------------------------------------------
+    // Finalize instance creation
+    // --------------------------------------------------------
     js_this.define_properties(&[
         Property::new("context")?
             .with_value(&js_audio_context)
@@ -284,12 +321,12 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
 audio_node_impl!(${d.napiName(d.node)});
 
-${d.parent(d.node) === 'AudioScheduledSourceNode' ?
+${d.parent(d.node) === "AudioScheduledSourceNode" ?
 `
 // -------------------------------------------------
 // AudioScheduledSourceNode Interface
 // -------------------------------------------------
-    ${d.name(d.node) !== 'AudioBufferSourceNode' ?
+    ${d.name(d.node) !== "AudioBufferSourceNode" ?
 `#[js_function(1)]` :
 `#[js_function(3)]`
 }
@@ -298,7 +335,7 @@ fn start(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
     let node = napi_node.unwrap();
 
-${d.name(d.node) !== 'AudioBufferSourceNode' ?
+${d.name(d.node) !== "AudioBufferSourceNode" ?
 `
     match ctx.length {
         0 => node.start(),
@@ -414,7 +451,7 @@ ${d.attributes(d.node).map(attr => {
     const attrType = d.memberType(attr);
 
     switch (attrType) {
-        case 'boolean':
+        case "boolean":
             return `
 #[js_function(0)]
 fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsBoolean> {
@@ -427,7 +464,7 @@ fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsBoolean> {
 }
             `;
             break;
-        case 'float':
+        case "float":
             return `
 #[js_function(0)]
 fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsNumber> {
@@ -440,7 +477,7 @@ fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsNumber> {
 }
             `;
             break;
-        case 'double':
+        case "double":
             return `
 #[js_function(0)]
 fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsNumber> {
@@ -453,7 +490,7 @@ fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsNumber> {
 }
             `;
             break;
-        case 'unsigned long':
+        case "unsigned long":
             return `
 #[js_function(0)]
 fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsNumber> {
@@ -466,7 +503,7 @@ fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsNumber> {
 }
             `;
             break;
-        case 'Float32Array':
+        case "Float32Array":
                     return `
 #[js_function(0)]
 fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsUnknown> {
@@ -483,8 +520,8 @@ fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsUnknown> {
         // IDL types
         default: {
             // handle MediaStream
-            if (attr.idlType.type === 'attribute-type' && attr.idlType.idlType === 'MediaStream') {
-                console.log('!!!! ignored getter for MediaStream ');
+            if (attr.idlType.type === "attribute-type" && attr.idlType.idlType === "MediaStream") {
+                console.log("!!!! ignored getter for MediaStream ");
                 return ``;
             }
 
@@ -495,13 +532,13 @@ fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsUnknown> {
             try {
                 idlType = d.type(idl);
             } catch(err) {
-                console.log('issue in getter');
+                console.log("issue in getter");
                 console.log(JSON.stringify(attr, null, 2));
-                return '';
+                return "";
             }
 
             switch (idlType) {
-                case 'enum':
+                case "enum":
                     return `
 #[js_function(0)]
 fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsString> {
@@ -511,14 +548,14 @@ fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsString> {
 
     let value = node.${d.slug(attr, true)}();
     let js_value = match value {${idl.values.map(v => `
-        ${idl.name}::${d.camelcase(v.value)} => "${v.value}",`).join('')}
+        ${idl.name}::${d.camelcase(v.value)} => "${v.value}",`).join("")}
     };
 
     ctx.env.create_string(js_value)
 }
                     `;
                     break;
-                case 'interface':
+                case "interface":
                     return `
 #[js_function(0)]
 fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsUnknown> {
@@ -550,7 +587,7 @@ ${d.attributes(d.node).map(attr => {
     let attrType = d.memberType(attr);
 
     switch (attrType) {
-        case 'boolean':
+        case "boolean":
             return `
 #[js_function(1)]
 fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
@@ -565,7 +602,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
 }
             `;
             break;
-        case 'float':
+        case "float":
             return `
 #[js_function(1)]
 fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
@@ -580,7 +617,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
 }
             `;
             break;
-        case 'double':
+        case "double":
             return `
 #[js_function(1)]
 fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
@@ -595,7 +632,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
 }
             `;
             break;
-        case 'unsigned long':
+        case "unsigned long":
             return `
 #[js_function(1)]
 fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
@@ -611,7 +648,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
             `;
             break;
         // WaveShaperNode::curve
-        case 'Float32Array':
+        case "Float32Array":
             return `
 #[js_function(1)]
 fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
@@ -643,13 +680,13 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
             try {
                 idlType = d.type(idl);
             } catch(err) {
-                console.log('issue in setter');
+                console.log("issue in setter");
                 console.log(JSON.stringify(attr, null, 2));
-                return '';
+                return "";
             }
 
             switch (idlType) {
-                case 'enum':
+                case "enum":
                     return `
 #[js_function(1)]
 fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
@@ -660,7 +697,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
     let js_str = ctx.get::<JsObject>(0)?.coerce_to_string()?;
     let utf8_str = js_str.into_utf8()?.into_owned()?;
     let value = match utf8_str.as_str() {${idl.values.map(v => `
-        "${v.value}" => ${idl.name}::${d.camelcase(v.value)},`).join('')}
+        "${v.value}" => ${idl.name}::${d.camelcase(v.value)},`).join("")}
         _ => return ctx.env.get_undefined(),
     };
 
@@ -670,7 +707,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
 }
                     `;
                     break
-                case 'interface': // AudioBuffer
+                case "interface": // AudioBuffer
                     return `
 #[js_function(1)]
 fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
@@ -696,15 +733,15 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
             break;
         }
     }
-}).join('')}
+}).join("")}
 
 // -------------------------------------------------
 // METHODS
 // -------------------------------------------------
 ${d.methods(d.node).map(method => {
-if (method.idlType.idlType !== 'undefined') {
+if (method.idlType.idlType !== "undefined") {
     console.log(`[WARNING] return type ${method.idlType.idlType} for method ${method.name} not parsed`);
-    return '';
+    return "";
 }
 
 let doWriteMethodCall = true;
@@ -714,31 +751,31 @@ return `
 fn ${d.slug(method)}(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    // avoid warnings while we don't support all methods
+    // avoid warnings while we don"t support all methods
     #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
     ${method.arguments.map((arg, index) => {
         switch (d.memberType(arg)) {
-            case 'float':
+            case "float":
                 return `
     let ${d.slug(arg.name)}_js = ctx.get::<JsObject>(${index})?.coerce_to_number()?;
     let ${d.slug(arg.name)} = ${d.slug(arg.name)}_js.get_double()? as f32;
                 `;
                 break;
-            case 'double':
+            case "double":
                 return `
     let ${d.slug(arg.name)}_js = ctx.get::<JsObject>(${index})?.coerce_to_number()?;
     let ${d.slug(arg.name)} = ${d.slug(arg.name)}_js.get_double()? as f64;
                 `;
                 break;
-            case 'Float32Array':
+            case "Float32Array":
                 return `
     let mut ${d.slug(arg.name)}_js = ctx.get::<JsTypedArray>(${index})?.into_value()?;
     let ${d.slug(arg.name)}: &mut [f32] = ${d.slug(arg.name)}_js.as_mut();
                 `;
                 break;
-            case 'Uint8Array':
+            case "Uint8Array":
                 return `
     let mut ${d.slug(arg.name)}_js = ctx.get::<JsTypedArray>(${index})?.into_value()?;
     let ${d.slug(arg.name)}: &mut [u8] = ${d.slug(arg.name)}_js.as_mut();
@@ -753,7 +790,7 @@ fn ${d.slug(method)}(ctx: CallContext) -> Result<JsUndefined> {
                     doWriteMethodCall = false;
                 } else {
                     switch (d.type(idl)) {
-                        case 'interface':
+                        case "interface":
                             return `
         let ${d.slug(arg.name)}_js = ctx.get::<JsObject>(${index})?;
         let ${d.slug(arg.name)}_napi = ctx.env.unwrap::<${d.napiName(idl)}>(&${d.slug(arg.name)}_js)?;
@@ -769,10 +806,10 @@ fn ${d.slug(method)}(ctx: CallContext) -> Result<JsUndefined> {
                 break;
 
         }
-    }).join('')}
+    }).join("")}
 
     ${doWriteMethodCall ?
-    `node.${d.slug(method)}(${method.arguments.map(arg => d.slug(arg.name)).join(', ')});` :
+    `node.${d.slug(method)}(${method.arguments.map(arg => d.slug(arg.name)).join(",")});` :
     ``
     }
 

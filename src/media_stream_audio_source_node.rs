@@ -50,21 +50,29 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
     let js_audio_context = ctx.get::<JsObject>(0)?;
 
-    // parse options
+    // --------------------------------------------------------
+    // Parse MediaStreamAudioSourceOptions
+    // by bindings construction all fields are populated on the JS side
+    // --------------------------------------------------------
     let js_options = ctx.get::<JsObject>(1)?;
 
     let media_stream_js = js_options.get::<&str, JsObject>("mediaStream")?.unwrap();
     let media_stream_napi = ctx.env.unwrap::<NapiMediaStream>(&media_stream_js)?;
     let media_stream = media_stream_napi.unwrap();
 
+    // --------------------------------------------------------
+    // Create MediaStreamAudioSourceOptions object
+    // --------------------------------------------------------
     let options = MediaStreamAudioSourceOptions { media_stream };
 
+    // --------------------------------------------------------
+    // Create native MediaStreamAudioSourceNode
+    // --------------------------------------------------------
     let audio_context_name =
         js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
     let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
     let audio_context_str = &audio_context_utf8_name[..];
 
-    // create native node
     let native_node = match audio_context_str {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
@@ -81,6 +89,13 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         &_ => unreachable!(),
     };
 
+    // --------------------------------------------------------
+    // Bind AudioParam to JS object
+    // --------------------------------------------------------
+
+    // --------------------------------------------------------
+    // Finalize instance creation
+    // --------------------------------------------------------
     js_this.define_properties(&[
         Property::new("context")?
             .with_value(&js_audio_context)

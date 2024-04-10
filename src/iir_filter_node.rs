@@ -52,7 +52,10 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
     let js_audio_context = ctx.get::<JsObject>(0)?;
 
-    // parse options
+    // --------------------------------------------------------
+    // Parse IIRFilterOptions
+    // by bindings construction all fields are populated on the JS side
+    // --------------------------------------------------------
     let js_options = ctx.get::<JsObject>(1)?;
 
     let feedforward_js = js_options
@@ -67,7 +70,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let feedback: &[f64] = feedback_value.as_ref();
     let feedback = feedback.to_vec();
 
-    // can't create default from IIRFilterOptions
+    // --------------------------------------------------------
+    // Parse AudioNodeOptions
+    // --------------------------------------------------------
     let audio_node_options_default = AudioNodeOptions::default();
 
     let some_channel_count_js = js_options.get::<&str, JsObject>("channelCount")?;
@@ -113,6 +118,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         audio_node_options_default.channel_interpretation
     };
 
+    // --------------------------------------------------------
+    // Create IIRFilterOptions object
+    // --------------------------------------------------------
     let options = IIRFilterOptions {
         feedforward,
         feedback,
@@ -123,12 +131,14 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         },
     };
 
+    // --------------------------------------------------------
+    // Create native IIRFilterNode
+    // --------------------------------------------------------
     let audio_context_name =
         js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
     let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
     let audio_context_str = &audio_context_utf8_name[..];
 
-    // create native node
     let native_node = match audio_context_str {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
@@ -145,6 +155,13 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         &_ => unreachable!(),
     };
 
+    // --------------------------------------------------------
+    // Bind AudioParam to JS object
+    // --------------------------------------------------------
+
+    // --------------------------------------------------------
+    // Finalize instance creation
+    // --------------------------------------------------------
     js_this.define_properties(&[
         Property::new("context")?
             .with_value(&js_audio_context)
@@ -180,7 +197,7 @@ audio_node_impl!(NapiIIRFilterNode);
 fn get_frequency_response(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiIIRFilterNode>(&js_this)?;
-    // avoid warnings while we don't support all methods
+    // avoid warnings while we don"t support all methods
     #[allow(unused_variables)]
     let node = napi_node.unwrap();
 

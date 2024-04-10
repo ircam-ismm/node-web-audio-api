@@ -59,21 +59,22 @@ module.exports = (jsExport, nativeBinding) => {
       }
 
       // parsed version of the option to be passed to NAPI
-      const parsedOptions = Object.assign({}, options);
+      const parsedOptions = {};
 
       if (options && typeof options !== 'object') {
         throw new TypeError('Failed to construct \'AnalyserNode\': argument 2 is not of type \'AnalyserOptions\'');
       }
 
-      if (options && 'fftSize' in options) {
+      if (options && options.fftSize !== undefined) {
         parsedOptions.fftSize = conversions['unsigned long'](options.fftSize, {
+          enforceRange: true,
           context: `Failed to construct 'AnalyserNode': Failed to read the 'fftSize' property from AnalyserOptions: The provided value (${options.fftSize}})`,
         });
       } else {
         parsedOptions.fftSize = 2048;
       }
 
-      if (options && 'maxDecibels' in options) {
+      if (options && options.maxDecibels !== undefined) {
         parsedOptions.maxDecibels = conversions['double'](options.maxDecibels, {
           context: `Failed to construct 'AnalyserNode': Failed to read the 'maxDecibels' property from AnalyserOptions: The provided value (${options.maxDecibels}})`,
         });
@@ -81,7 +82,7 @@ module.exports = (jsExport, nativeBinding) => {
         parsedOptions.maxDecibels = -30;
       }
 
-      if (options && 'minDecibels' in options) {
+      if (options && options.minDecibels !== undefined) {
         parsedOptions.minDecibels = conversions['double'](options.minDecibels, {
           context: `Failed to construct 'AnalyserNode': Failed to read the 'minDecibels' property from AnalyserOptions: The provided value (${options.minDecibels}})`,
         });
@@ -89,12 +90,31 @@ module.exports = (jsExport, nativeBinding) => {
         parsedOptions.minDecibels = -100;
       }
 
-      if (options && 'smoothingTimeConstant' in options) {
+      if (options && options.smoothingTimeConstant !== undefined) {
         parsedOptions.smoothingTimeConstant = conversions['double'](options.smoothingTimeConstant, {
           context: `Failed to construct 'AnalyserNode': Failed to read the 'smoothingTimeConstant' property from AnalyserOptions: The provided value (${options.smoothingTimeConstant}})`,
         });
       } else {
         parsedOptions.smoothingTimeConstant = 0.8;
+      }
+
+      if (options && options.channelCount !== undefined) {
+        parsedOptions.channelCount = conversions['unsigned long'](options.channelCount, {
+          enforceRange: true,
+          context: `Failed to construct 'AnalyserNode': Failed to read the 'channelCount' property from AnalyserOptions: The provided value '${options.channelCount}'`,
+        });
+      }
+
+      if (options && options.channelCountMode !== undefined) {
+        parsedOptions.channelCountMode = conversions['DOMString'](options.channelCountMode, {
+          context: `Failed to construct 'AnalyserNode': Failed to read the 'channelCount' property from AnalyserOptions: The provided value '${options.channelCountMode}'`,
+        });
+      }
+
+      if (options && options.channelInterpretation !== undefined) {
+        parsedOptions.channelInterpretation = conversions['DOMString'](options.channelInterpretation, {
+          context: `Failed to construct 'AnalyserNode': Failed to read the 'channelInterpretation' property from AnalyserOptions: The provided value '${options.channelInterpretation}'`,
+        });
       }
 
       let napiObj;

@@ -59,18 +59,38 @@ module.exports = (jsExport, nativeBinding) => {
       }
 
       // parsed version of the option to be passed to NAPI
-      const parsedOptions = Object.assign({}, options);
+      const parsedOptions = {};
 
       if (options && typeof options !== 'object') {
         throw new TypeError('Failed to construct \'ChannelSplitterNode\': argument 2 is not of type \'ChannelSplitterOptions\'');
       }
 
-      if (options && 'numberOfOutputs' in options) {
+      if (options && options.numberOfOutputs !== undefined) {
         parsedOptions.numberOfOutputs = conversions['unsigned long'](options.numberOfOutputs, {
+          enforceRange: true,
           context: `Failed to construct 'ChannelSplitterNode': Failed to read the 'numberOfOutputs' property from ChannelSplitterOptions: The provided value (${options.numberOfOutputs}})`,
         });
       } else {
         parsedOptions.numberOfOutputs = 6;
+      }
+
+      if (options && options.channelCount !== undefined) {
+        parsedOptions.channelCount = conversions['unsigned long'](options.channelCount, {
+          enforceRange: true,
+          context: `Failed to construct 'ChannelSplitterNode': Failed to read the 'channelCount' property from ChannelSplitterOptions: The provided value '${options.channelCount}'`,
+        });
+      }
+
+      if (options && options.channelCountMode !== undefined) {
+        parsedOptions.channelCountMode = conversions['DOMString'](options.channelCountMode, {
+          context: `Failed to construct 'ChannelSplitterNode': Failed to read the 'channelCount' property from ChannelSplitterOptions: The provided value '${options.channelCountMode}'`,
+        });
+      }
+
+      if (options && options.channelInterpretation !== undefined) {
+        parsedOptions.channelInterpretation = conversions['DOMString'](options.channelInterpretation, {
+          context: `Failed to construct 'ChannelSplitterNode': Failed to read the 'channelInterpretation' property from ChannelSplitterOptions: The provided value '${options.channelInterpretation}'`,
+        });
       }
 
       let napiObj;

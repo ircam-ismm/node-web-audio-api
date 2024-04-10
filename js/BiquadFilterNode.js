@@ -64,23 +64,25 @@ module.exports = (jsExport, nativeBinding) => {
       }
 
       // parsed version of the option to be passed to NAPI
-      const parsedOptions = Object.assign({}, options);
+      const parsedOptions = {};
 
       if (options && typeof options !== 'object') {
         throw new TypeError('Failed to construct \'BiquadFilterNode\': argument 2 is not of type \'BiquadFilterOptions\'');
       }
 
-      if (options && 'type' in options) {
+      if (options && options.type !== undefined) {
         if (!['lowpass', 'highpass', 'bandpass', 'lowshelf', 'highshelf', 'peaking', 'notch', 'allpass'].includes(options.type)) {
           throw new TypeError(`Failed to construct 'BiquadFilterNode': Failed to read the 'type' property from BiquadFilterOptions: The provided value '${options.type}' is not a valid enum value of type BiquadFilterType`);
         }
 
-        parsedOptions.type = options.type;
+        parsedOptions.type = conversions['DOMString'](options.type, {
+          context: `Failed to construct 'BiquadFilterNode': Failed to read the 'type' property from BiquadFilterOptions: The provided value '${options.type}'`,
+        });
       } else {
         parsedOptions.type = 'lowpass';
       }
 
-      if (options && 'Q' in options) {
+      if (options && options.Q !== undefined) {
         parsedOptions.Q = conversions['float'](options.Q, {
           context: `Failed to construct 'BiquadFilterNode': Failed to read the 'Q' property from BiquadFilterOptions: The provided value (${options.Q}})`,
         });
@@ -88,7 +90,7 @@ module.exports = (jsExport, nativeBinding) => {
         parsedOptions.Q = 1;
       }
 
-      if (options && 'detune' in options) {
+      if (options && options.detune !== undefined) {
         parsedOptions.detune = conversions['float'](options.detune, {
           context: `Failed to construct 'BiquadFilterNode': Failed to read the 'detune' property from BiquadFilterOptions: The provided value (${options.detune}})`,
         });
@@ -96,7 +98,7 @@ module.exports = (jsExport, nativeBinding) => {
         parsedOptions.detune = 0;
       }
 
-      if (options && 'frequency' in options) {
+      if (options && options.frequency !== undefined) {
         parsedOptions.frequency = conversions['float'](options.frequency, {
           context: `Failed to construct 'BiquadFilterNode': Failed to read the 'frequency' property from BiquadFilterOptions: The provided value (${options.frequency}})`,
         });
@@ -104,12 +106,31 @@ module.exports = (jsExport, nativeBinding) => {
         parsedOptions.frequency = 350;
       }
 
-      if (options && 'gain' in options) {
+      if (options && options.gain !== undefined) {
         parsedOptions.gain = conversions['float'](options.gain, {
           context: `Failed to construct 'BiquadFilterNode': Failed to read the 'gain' property from BiquadFilterOptions: The provided value (${options.gain}})`,
         });
       } else {
         parsedOptions.gain = 0;
+      }
+
+      if (options && options.channelCount !== undefined) {
+        parsedOptions.channelCount = conversions['unsigned long'](options.channelCount, {
+          enforceRange: true,
+          context: `Failed to construct 'BiquadFilterNode': Failed to read the 'channelCount' property from BiquadFilterOptions: The provided value '${options.channelCount}'`,
+        });
+      }
+
+      if (options && options.channelCountMode !== undefined) {
+        parsedOptions.channelCountMode = conversions['DOMString'](options.channelCountMode, {
+          context: `Failed to construct 'BiquadFilterNode': Failed to read the 'channelCount' property from BiquadFilterOptions: The provided value '${options.channelCountMode}'`,
+        });
+      }
+
+      if (options && options.channelInterpretation !== undefined) {
+        parsedOptions.channelInterpretation = conversions['DOMString'](options.channelInterpretation, {
+          context: `Failed to construct 'BiquadFilterNode': Failed to read the 'channelInterpretation' property from BiquadFilterOptions: The provided value '${options.channelInterpretation}'`,
+        });
       }
 
       let napiObj;

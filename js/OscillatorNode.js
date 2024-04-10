@@ -62,23 +62,25 @@ module.exports = (jsExport, nativeBinding) => {
       }
 
       // parsed version of the option to be passed to NAPI
-      const parsedOptions = Object.assign({}, options);
+      const parsedOptions = {};
 
       if (options && typeof options !== 'object') {
         throw new TypeError('Failed to construct \'OscillatorNode\': argument 2 is not of type \'OscillatorOptions\'');
       }
 
-      if (options && 'type' in options) {
+      if (options && options.type !== undefined) {
         if (!['sine', 'square', 'sawtooth', 'triangle', 'custom'].includes(options.type)) {
           throw new TypeError(`Failed to construct 'OscillatorNode': Failed to read the 'type' property from OscillatorOptions: The provided value '${options.type}' is not a valid enum value of type OscillatorType`);
         }
 
-        parsedOptions.type = options.type;
+        parsedOptions.type = conversions['DOMString'](options.type, {
+          context: `Failed to construct 'OscillatorNode': Failed to read the 'type' property from OscillatorOptions: The provided value '${options.type}'`,
+        });
       } else {
         parsedOptions.type = 'sine';
       }
 
-      if (options && 'frequency' in options) {
+      if (options && options.frequency !== undefined) {
         parsedOptions.frequency = conversions['float'](options.frequency, {
           context: `Failed to construct 'OscillatorNode': Failed to read the 'frequency' property from OscillatorOptions: The provided value (${options.frequency}})`,
         });
@@ -86,7 +88,7 @@ module.exports = (jsExport, nativeBinding) => {
         parsedOptions.frequency = 440;
       }
 
-      if (options && 'detune' in options) {
+      if (options && options.detune !== undefined) {
         parsedOptions.detune = conversions['float'](options.detune, {
           context: `Failed to construct 'OscillatorNode': Failed to read the 'detune' property from OscillatorOptions: The provided value (${options.detune}})`,
         });
@@ -94,7 +96,7 @@ module.exports = (jsExport, nativeBinding) => {
         parsedOptions.detune = 0;
       }
 
-      if (options && 'periodicWave' in options) {
+      if (options && options.periodicWave !== undefined) {
         if (!(options.periodicWave instanceof jsExport.PeriodicWave)) {
           throw new TypeError(`Failed to construct 'OscillatorNode': Failed to read the 'periodicWave' property from OscillatorOptions: The provided value '${options.periodicWave}' is not an instance of PeriodicWave`);
         }
@@ -110,6 +112,25 @@ module.exports = (jsExport, nativeBinding) => {
 
       if (parsedOptions.periodicWave !== null) {
         parsedOptions.type = 'custom';
+      }
+
+      if (options && options.channelCount !== undefined) {
+        parsedOptions.channelCount = conversions['unsigned long'](options.channelCount, {
+          enforceRange: true,
+          context: `Failed to construct 'OscillatorNode': Failed to read the 'channelCount' property from OscillatorOptions: The provided value '${options.channelCount}'`,
+        });
+      }
+
+      if (options && options.channelCountMode !== undefined) {
+        parsedOptions.channelCountMode = conversions['DOMString'](options.channelCountMode, {
+          context: `Failed to construct 'OscillatorNode': Failed to read the 'channelCount' property from OscillatorOptions: The provided value '${options.channelCountMode}'`,
+        });
+      }
+
+      if (options && options.channelInterpretation !== undefined) {
+        parsedOptions.channelInterpretation = conversions['DOMString'](options.channelInterpretation, {
+          context: `Failed to construct 'OscillatorNode': Failed to read the 'channelInterpretation' property from OscillatorOptions: The provided value '${options.channelInterpretation}'`,
+        });
       }
 
       let napiObj;

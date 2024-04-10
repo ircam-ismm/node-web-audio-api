@@ -77,7 +77,10 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
     let js_audio_context = ctx.get::<JsObject>(0)?;
 
-    // parse options
+    // --------------------------------------------------------
+    // Parse PannerOptions
+    // by bindings construction all fields are populated on the JS side
+    // --------------------------------------------------------
     let js_options = ctx.get::<JsObject>(1)?;
 
     let panning_model_js = js_options.get::<&str, JsString>("panningModel")?.unwrap();
@@ -157,6 +160,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         .unwrap()
         .get_double()?;
 
+    // --------------------------------------------------------
+    // Parse AudioNodeOptions
+    // --------------------------------------------------------
     let node_defaults = PannerOptions::default();
     let audio_node_options_default = node_defaults.audio_node_options;
 
@@ -203,6 +209,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         audio_node_options_default.channel_interpretation
     };
 
+    // --------------------------------------------------------
+    // Create PannerOptions object
+    // --------------------------------------------------------
     let options = PannerOptions {
         panning_model,
         distance_model,
@@ -225,12 +234,14 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         },
     };
 
+    // --------------------------------------------------------
+    // Create native PannerNode
+    // --------------------------------------------------------
     let audio_context_name =
         js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
     let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
     let audio_context_str = &audio_context_utf8_name[..];
 
-    // create native node
     let native_node = match audio_context_str {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
@@ -247,6 +258,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         &_ => unreachable!(),
     };
 
+    // --------------------------------------------------------
+    // Bind AudioParam to JS object
+    // --------------------------------------------------------
     let native_param = native_node.position_x().clone();
     let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
@@ -283,6 +297,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("orientationZ", &js_obj)?;
 
+    // --------------------------------------------------------
+    // Finalize instance creation
+    // --------------------------------------------------------
     js_this.define_properties(&[
         Property::new("context")?
             .with_value(&js_audio_context)
@@ -520,7 +537,7 @@ fn set_cone_outer_gain(ctx: CallContext) -> Result<JsUndefined> {
 fn set_position(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
-    // avoid warnings while we don't support all methods
+    // avoid warnings while we don"t support all methods
     #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
@@ -542,7 +559,7 @@ fn set_position(ctx: CallContext) -> Result<JsUndefined> {
 fn set_orientation(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
-    // avoid warnings while we don't support all methods
+    // avoid warnings while we don"t support all methods
     #[allow(unused_variables)]
     let node = napi_node.unwrap();
 

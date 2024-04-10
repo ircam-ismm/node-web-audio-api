@@ -33,7 +33,7 @@ module.exports = (jsExport, nativeBinding) => {
       }())}
 
       ${(function() {
-        // handle audio context
+        // handle argument 1: audio context
         const arg = d.constructor(d.node).arguments[0];
         const argType = d.memberType(arg);
 
@@ -42,10 +42,10 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError(\`Failed to construct '${d.name(d.node)}': argument 1 is not of type ${argType}\`);
       }
           `;
-        // }
       }())}
+
       // parsed version of the option to be passed to NAPI
-      const parsedOptions = Object.assign({}, options);
+      const parsedOptions = {};
 
       ${(function() {
         // handle argument 2: options
@@ -79,11 +79,23 @@ module.exports = (jsExport, nativeBinding) => {
           switch (type) {
             case 'boolean':
             case 'float':
-            case 'double':
+            case 'double': {
+              checkMember += `
+      if (options && options.${optionName} !== undefined) {
+        parsedOptions.${optionName} = conversions['${type}'](options.${optionName}, {
+          context: \`Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value (\${options.${optionName}}})\`,
+        });
+      } else {
+        parsedOptions.${optionName} = ${defaultValue.value};
+      }
+              `;
+              break;
+            }
             case 'unsigned long': {
               checkMember += `
-      if (options && '${optionName}' in options) {
+      if (options && options.${optionName} !== undefined) {
         parsedOptions.${optionName} = conversions['${type}'](options.${optionName}, {
+          enforceRange: true,
           context: \`Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value (\${options.${optionName}}})\`,
         });
       } else {
@@ -98,6 +110,11 @@ module.exports = (jsExport, nativeBinding) => {
             case 'PanningModelType':
             case 'DistanceModelType':
             case 'OverSampleType': {
+              // https://webidl.spec.whatwg.org/#idl-enums
+              // Note: In the JavaScript binding, assignment of an invalid string value
+              // to an attribute is ignored, while passing such a value in other contexts
+              // (for example as an operation argument) results in an exception being thrown.
+
               const typeIdl = d.findInTree(type);
               // check assumptions on parsing
               if (typeIdl.type !== 'enum') {
@@ -111,12 +128,14 @@ module.exports = (jsExport, nativeBinding) => {
               const values = JSON.stringify(typeIdl.values.map(e => e.value))
 
               checkMember += `
-      if (options && '${optionName}' in options) {
+      if (options && options.${optionName} !== undefined) {
         if (!${values}.includes(options.${optionName})) {
           throw new TypeError(\`Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value '\${options.${optionName}}' is not a valid enum value of type ${type}\`);
         }
 
-        parsedOptions.${optionName} = options.${optionName};
+        parsedOptions.${optionName} = conversions['DOMString'](options.${optionName}, {
+          context: \`Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value '\${options.${optionName}}'\`,
+        });
       } else {
         parsedOptions.${optionName} = '${defaultValue.value}';
       }
@@ -134,7 +153,7 @@ module.exports = (jsExport, nativeBinding) => {
             }
             case 'PeriodicWave': {
               checkMember += `
-      if (options && '${optionName}' in options) {
+      if (options && options.${optionName} !== undefined) {
         if (!(options.${optionName} instanceof jsExport.PeriodicWave)) {
           throw new TypeError(\`Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value '\${options.${optionName}}' is not an instance of ${type}\`);
         }
@@ -149,15 +168,16 @@ module.exports = (jsExport, nativeBinding) => {
             // audio buffer requires special handling because of its wrapper
             case 'AudioBuffer': {
               checkMember += `
-      if (options && '${optionName}' in options) {
+      if (options && options.${optionName} !== undefined) {
         if (options.${optionName} !== null) {
-          // if (!(kNativeAudioBuffer in options.${optionName})) {
           if (!(options.${optionName} instanceof jsExport.AudioBuffer)) {
             throw new TypeError("Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value cannot be converted to 'AudioBuffer'");
           }
 
           // unwrap napi audio buffer
           parsedOptions.${optionName} = options.${optionName}[kNativeAudioBuffer];
+        } else {
+          parsedOptions.${optionName} = ${defaultValue};
         }
       } else {
         parsedOptions.${optionName} = ${defaultValue};
@@ -186,7 +206,7 @@ module.exports = (jsExport, nativeBinding) => {
 
               // if the value is required, it should have failed earlier
               checkMember += `
-      if (options && '${optionName}' in options) {
+      if (options && options.${optionName} !== undefined) {
         try {
           parsedOptions.${optionName} = toSanitizedSequence(options.${optionName}, ${targetType});
         } catch (err) {
@@ -219,6 +239,31 @@ module.exports = (jsExport, nativeBinding) => {
           `;
         }
 
+        // audio node options
+        if (d.parent(optionsIdl) === 'AudioNodeOptions') {
+          // Real check is done on rust side, let's just convert values to proper IDL type
+          checkOptions += `
+        if (options && options.channelCount !== undefined) {
+          parsedOptions.channelCount = conversions['unsigned long'](options.channelCount, {
+            enforceRange: true,
+            context: \`Failed to construct '${d.name(d.node)}': Failed to read the 'channelCount' property from ${optionsType}: The provided value '\${options.channelCount}'\`,
+          });
+        }
+
+        if (options && options.channelCountMode !== undefined) {
+          parsedOptions.channelCountMode = conversions['DOMString'](options.channelCountMode, {
+            context: \`Failed to construct '${d.name(d.node)}': Failed to read the 'channelCount' property from ${optionsType}: The provided value '\${options.channelCountMode}'\`,
+          });
+        }
+
+        if (options && options.channelInterpretation !== undefined) {
+          parsedOptions.channelInterpretation = conversions['DOMString'](options.channelInterpretation, {
+            context: \`Failed to construct '${d.name(d.node)}': Failed to read the 'channelInterpretation' property from ${optionsType}: The provided value '\${options.channelInterpretation}'\`,
+          });
+        }
+          `;
+        }
+
         return checkOptions;
       }())}
 
@@ -247,7 +292,7 @@ module.exports = (jsExport, nativeBinding) => {
       // keep the wrapped AudioBuffer around
       this[kAudioBuffer] = null;
 
-      if (options && '${optionName}' in options) {
+      if (options && options.${optionName} !== undefined) {
         this[kAudioBuffer] = options.${optionName};
       }
             `;

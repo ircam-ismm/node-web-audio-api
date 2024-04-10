@@ -62,27 +62,28 @@ module.exports = (jsExport, nativeBinding) => {
       }
 
       // parsed version of the option to be passed to NAPI
-      const parsedOptions = Object.assign({}, options);
+      const parsedOptions = {};
 
       if (options && typeof options !== 'object') {
         throw new TypeError('Failed to construct \'AudioBufferSourceNode\': argument 2 is not of type \'AudioBufferSourceOptions\'');
       }
 
-      if (options && 'buffer' in options) {
+      if (options && options.buffer !== undefined) {
         if (options.buffer !== null) {
-          // if (!(kNativeAudioBuffer in options.buffer)) {
           if (!(options.buffer instanceof jsExport.AudioBuffer)) {
             throw new TypeError('Failed to construct \'AudioBufferSourceNode\': Failed to read the \'buffer\' property from AudioBufferSourceOptions: The provided value cannot be converted to \'AudioBuffer\'');
           }
 
           // unwrap napi audio buffer
           parsedOptions.buffer = options.buffer[kNativeAudioBuffer];
+        } else {
+          parsedOptions.buffer = null;
         }
       } else {
         parsedOptions.buffer = null;
       }
 
-      if (options && 'detune' in options) {
+      if (options && options.detune !== undefined) {
         parsedOptions.detune = conversions['float'](options.detune, {
           context: `Failed to construct 'AudioBufferSourceNode': Failed to read the 'detune' property from AudioBufferSourceOptions: The provided value (${options.detune}})`,
         });
@@ -90,7 +91,7 @@ module.exports = (jsExport, nativeBinding) => {
         parsedOptions.detune = 0;
       }
 
-      if (options && 'loop' in options) {
+      if (options && options.loop !== undefined) {
         parsedOptions.loop = conversions['boolean'](options.loop, {
           context: `Failed to construct 'AudioBufferSourceNode': Failed to read the 'loop' property from AudioBufferSourceOptions: The provided value (${options.loop}})`,
         });
@@ -98,7 +99,7 @@ module.exports = (jsExport, nativeBinding) => {
         parsedOptions.loop = false;
       }
 
-      if (options && 'loopEnd' in options) {
+      if (options && options.loopEnd !== undefined) {
         parsedOptions.loopEnd = conversions['double'](options.loopEnd, {
           context: `Failed to construct 'AudioBufferSourceNode': Failed to read the 'loopEnd' property from AudioBufferSourceOptions: The provided value (${options.loopEnd}})`,
         });
@@ -106,7 +107,7 @@ module.exports = (jsExport, nativeBinding) => {
         parsedOptions.loopEnd = 0;
       }
 
-      if (options && 'loopStart' in options) {
+      if (options && options.loopStart !== undefined) {
         parsedOptions.loopStart = conversions['double'](options.loopStart, {
           context: `Failed to construct 'AudioBufferSourceNode': Failed to read the 'loopStart' property from AudioBufferSourceOptions: The provided value (${options.loopStart}})`,
         });
@@ -114,7 +115,7 @@ module.exports = (jsExport, nativeBinding) => {
         parsedOptions.loopStart = 0;
       }
 
-      if (options && 'playbackRate' in options) {
+      if (options && options.playbackRate !== undefined) {
         parsedOptions.playbackRate = conversions['float'](options.playbackRate, {
           context: `Failed to construct 'AudioBufferSourceNode': Failed to read the 'playbackRate' property from AudioBufferSourceOptions: The provided value (${options.playbackRate}})`,
         });
@@ -135,7 +136,7 @@ module.exports = (jsExport, nativeBinding) => {
       // keep the wrapped AudioBuffer around
       this[kAudioBuffer] = null;
 
-      if (options && 'buffer' in options) {
+      if (options && options.buffer !== undefined) {
         this[kAudioBuffer] = options.buffer;
       }
 
