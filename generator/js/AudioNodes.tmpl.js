@@ -403,65 +403,48 @@ ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
   }
 }).join('')}
 
-${d.methods(d.node, false)
-  // dedup method names
-  .reduce((acc, method) => {
-    if (!acc.find(i => d.name(i) === d.name(method))) {
-      acc.push(method)
-    }
-    return acc;
-  }, [])
-  // filter AudioScheduledSourceNode methods to prevent re-throwing errors
-  .filter(method => d.name(method) !== 'start' && d.name(method) !== 'stop')
-  .map(method => {
+${d.methods(d.node, false).map(method => {
     const numRequired = d.minRequiredArgs(method);
-    const argumentNames = method.arguments.filter(arg => arg.optional === false).map(d.name);
-    // make sure we can assume that all arguments are required
-    if (argumentNames.length !== method.arguments.length) {
-      console.log(`> Warning: optionnal argument for ${d.name(method)}`)
-    }
+    const args = method.arguments;
 
     return `
-    ${d.name(method)}(${argumentNames.join(', ')}) {
+    ${d.name(method)}(${args.map(arg => arg.optional ? `${arg.name} = ${arg.default !== null ? arg.default.value : 'null'}` : arg.name).join(', ')}) {
       if (!(this instanceof ${d.name(d.node)})) {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
       }
 
+      ${numRequired > 0 ? `
       if (arguments.length < ${numRequired}) {
         throw new TypeError(\`Failed to execute '${d.name(method)}' on '${d.name(d.node)}': ${numRequired} argument required, but only \${arguments.length}\ present\`);
-      }
+      }` : ``}
 
       ${method.arguments.map((argument, index) => {
         const name = d.name(argument);
         const type = argument.idlType.idlType;
 
+        let argCheck = ``;
+
         switch (type) {
-          case 'float': {
-            return `
+          case 'float':
+          case 'double': {
+            argCheck += `
       ${name} = conversions['${type}'](${name}, {
         context: \`Failed to execute '${d.name(method)}' on '${d.name(d.node)}': Parameter ${index + 1}\`,
       });
             `;
             break;
           }
-          case 'Float32Array': {
-            return `
-      if (!(${name} instanceof Float32Array)) {
-        throw new TypeError(\`Failed to execute '${d.name(method)}' on '${d.name(d.node)}': Parameter ${index + 1} is not of type 'Float32Array'\`);
-      }
-            `;
-            break;
-          }
+          case 'Float32Array':
           case 'Uint8Array': {
-            return `
-      if (!(${name} instanceof Uint8Array)) {
-        throw new TypeError(\`Failed to execute '${d.name(method)}' on '${d.name(d.node)}': Parameter ${index + 1} is not of type 'Uint8Array'\`);
+            argCheck += `
+      if (!(${name} instanceof ${type})) {
+        throw new TypeError(\`Failed to execute '${d.name(method)}' on '${d.name(d.node)}': Parameter ${index + 1} is not of type '${type}'\`);
       }
             `;
             break;
           }
           case 'PeriodicWave': {
-            return `
+            argCheck += `
       if (!(${name} instanceof jsExport.PeriodicWave)) {
         throw new TypeError(\`Failed to execute '${d.name(method)}' on '${d.name(d.node)}': Parameter ${index + 1} is not of type 'PeriodicWave'\`);
       }
@@ -475,10 +458,22 @@ ${d.methods(d.node, false)
             break;
           }
         }
+
+        // if argument is optionnal, cf. AudioBufferSourceNode::start, do the
+        // conversion only if argument is different from default value
+        if (argument.optional) {
+          const defaultValue = argument.default !== null ? argument.default.value : null;
+
+          argCheck = `
+      if (${name} !== ${defaultValue}) { ${argCheck} }
+          `;
+        }
+
+        return argCheck;
       }).join('')}
 
       try {
-        return this[kNapiObj].${d.name(method)}(${argumentNames.join(', ')});
+        return this[kNapiObj].${d.name(method)}(${args.map(arg => arg.name).join(', ')});
       } catch (err) {
         throwSanitizedError(err);
       }

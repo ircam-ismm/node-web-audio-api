@@ -184,31 +184,30 @@ audio_node_impl!(NapiAudioBufferSourceNode);
 // -------------------------------------------------
 // AudioScheduledSourceNode Interface
 // -------------------------------------------------
+
 #[js_function(3)]
 fn start(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    match ctx.length {
-        0 => node.start(),
-        1 => {
-            let when = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
-            node.start_at(when);
-        }
-        2 => {
-            let when = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
-            let offset = ctx.get::<JsObject>(1)?.coerce_to_number()?.get_double()?;
-            node.start_at_with_offset(when, offset);
-        }
-        3 => {
-            let when = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
-            let offset = ctx.get::<JsObject>(1)?.coerce_to_number()?.get_double()?;
-            let duration = ctx.get::<JsObject>(2)?.coerce_to_number()?.get_double()?;
-            node.start_at_with_offset_and_duration(when, offset, duration);
-        }
-        _ => (),
-    }
+    let when = ctx.get::<JsNumber>(0)?.get_double()?;
+
+    let offset_js = ctx.get::<JsUnknown>(1)?;
+    let offset = match offset_js.get_type()? {
+        ValueType::Number => offset_js.coerce_to_number()?.get_double()?,
+        ValueType::Null => 0.,
+        _ => unreachable!(),
+    };
+
+    let duration_js = ctx.get::<JsUnknown>(2)?;
+    let duration = match duration_js.get_type()? {
+        ValueType::Number => duration_js.coerce_to_number()?.get_double()?,
+        ValueType::Null => f64::MAX,
+        _ => unreachable!(),
+    };
+
+    node.start_at_with_offset_and_duration(when, offset, duration);
 
     ctx.env.get_undefined()
 }
@@ -219,20 +218,14 @@ fn stop(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    match ctx.length {
-        0 => node.stop(),
-        1 => {
-            let when = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
-            node.stop_at(when);
-        }
-        _ => (),
-    };
+    let when = ctx.get::<JsNumber>(0)?.get_double()?;
+    node.stop_at(when);
 
     ctx.env.get_undefined()
 }
 
 // ----------------------------------------------------
-// Private Event Target initialization
+// Private EventTarget initialization
 // ----------------------------------------------------
 #[js_function]
 fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {

@@ -1,3 +1,4 @@
+const conversions = require("webidl-conversions");
 const { throwSanitizedError } = require('./lib/errors.js');
 const { isFunction, kEnumerableProperty } = require('./lib/utils.js');
 const { kNapiObj } = require('./lib/symbols.js');
@@ -34,21 +35,26 @@ ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
   }
   `}).join('')}
 
-${d.methods(d.node, false).reduce((acc, method) => {
-    // dedup method names
-    if (!acc.find(i => d.name(i) === d.name(method))) {
-      acc.push(method)
-    }
-    return acc;
-  }, []).map(method => {
+${d.methods(d.node, false).map(method => {
+  const args = method.arguments;
+
     return `
-  ${d.name(method)}(...args) {
+  ${d.name(method)}(${args.map(arg => arg.optional ? `${arg.name} = ${arg.default.value}` : arg.name).join(', ')}) {
     if (!(this instanceof AudioScheduledSourceNode)) {
       throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioScheduledSourceNode'");
     }
 
+    ${args.map((arg, index) => {
+      const idlType = arg.idlType.idlType;
+      return `
+    ${arg.name} = conversions['${idlType}'](${arg.name}, {
+      context: \`Failed to execute '${d.name(method)}' on 'AudioScheduledSourceNode': Parameter ${index + 1}\`,
+    });
+      `;
+    }).join('')}
+
     try {
-      return this[kNapiObj].${d.name(method)}(...args);
+      return this[kNapiObj].${d.name(method)}(${args.map(arg => arg.name).join(', ')});
     } catch (err) {
       throwSanitizedError(err);
     }
@@ -74,33 +80,11 @@ Object.defineProperties(AudioScheduledSourceNode.prototype, {
     configurable: true,
     value: 'AudioScheduledSourceNode',
   },
-
   ${d.attributes(d.node).map(attr => {
     return `${d.name(attr)}: kEnumerableProperty,`;
   }).join('')}
-
   start: kEnumerableProperty,
   stop: kEnumerableProperty,
-});
-
-Object.defineProperties(AudioScheduledSourceNode.prototype.start, {
-  length: {
-    __proto__: null,
-    writable: false,
-    enumerable: false,
-    configurable: true,
-    value: 0,
-  },
-});
-
-Object.defineProperties(AudioScheduledSourceNode.prototype.stop, {
-  length: {
-    __proto__: null,
-    writable: false,
-    enumerable: false,
-    configurable: true,
-    value: 0,
-  },
 });
 
 module.exports = AudioScheduledSourceNode;

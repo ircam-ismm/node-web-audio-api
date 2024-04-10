@@ -252,6 +252,36 @@ module.exports = (jsExport, nativeBinding) => {
       }
     }
 
+    start(when = 0, offset = null, duration = null) {
+      if (!(this instanceof AudioBufferSourceNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
+      }
+
+      if (when !== 0) {
+        when = conversions['double'](when, {
+          context: `Failed to execute 'start' on 'AudioBufferSourceNode': Parameter 1`,
+        });
+      }
+
+      if (offset !== null) {
+        offset = conversions['double'](offset, {
+          context: `Failed to execute 'start' on 'AudioBufferSourceNode': Parameter 2`,
+        });
+      }
+
+      if (duration !== null) {
+        duration = conversions['double'](duration, {
+          context: `Failed to execute 'start' on 'AudioBufferSourceNode': Parameter 3`,
+        });
+      }
+
+      try {
+        return this[kNapiObj].start(when, offset, duration);
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
+
   }
 
   Object.defineProperties(AudioBufferSourceNode, {
