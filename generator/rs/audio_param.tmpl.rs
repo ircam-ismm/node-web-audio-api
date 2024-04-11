@@ -2,20 +2,15 @@ use napi::*;
 use napi_derive::js_function;
 use web_audio_api::{AudioParam, AutomationRate};
 
-pub(crate) struct NapiAudioParam(AudioParam);
+pub(crate) struct NapiAudioParam(Option<AudioParam>);
 
 impl NapiAudioParam {
-    pub fn new(audio_param: AudioParam) -> Self {
-        Self(audio_param)
-    }
+    // pub fn new(audio_param: AudioParam) -> Self {
+    //     Self(audio_param)
+    // }
 
-    pub fn create_js_object(env: &Env) -> Result<JsObject> {
-        let mut obj = env.create_object()?;
-
-        obj.define_properties(&[
-            Property::new("Symbol.toStringTag")?
-                .with_value(&env.create_string("AudioParam")?)
-                .with_property_attributes(PropertyAttributes::Static),
+    pub fn create_js_class(env: &Env) -> Result<JsFunction> {
+        let interface = [
             // Attributes
             Property::new("automationRate")?
                 .with_getter(get_automation_rate)
@@ -38,14 +33,38 @@ impl NapiAudioParam {
             Property::new("setTargetAtTime")?.with_method(set_target_at_time),
             Property::new("cancelScheduledValues")?.with_method(cancel_scheduled_values),
             Property::new("cancelAndHoldAtTime")?.with_method(cancel_and_hold_at_time),
-        ])?;
+        ];
 
-        Ok(obj)
+        env.define_class("AudioParam", constructor, &interface)
+    }
+
+    pub fn wrap(&mut self, audio_param: AudioParam) {
+        self.0 = Some(audio_param);
     }
 
     pub fn unwrap(&self) -> &AudioParam {
-        &self.0
+        if self.0.is_none() {
+            panic!("AudioParam - invalid unwrap call, inner AudioBuffer not yet set");
+        } else {
+            self.0.as_ref().unwrap()
+        }
     }
+}
+
+#[js_function(1)]
+fn constructor(ctx: CallContext) -> Result<JsUndefined> {
+    let mut js_this = ctx.this_unchecked::<JsObject>();
+
+    js_this.define_properties(&[
+        Property::new("Symbol.toStringTag")?
+            .with_value(&ctx.env.create_string("AudioParam")?)
+            .with_property_attributes(PropertyAttributes::Static),
+    ])?;
+
+    let napi_node = NapiAudioParam(None);
+    ctx.env.wrap(&mut js_this, napi_node)?;
+
+    ctx.env.get_undefined()
 }
 
 // Attributes
@@ -68,14 +87,14 @@ fn get_automation_rate(ctx: CallContext) -> Result<JsString> {
 fn set_automation_rate(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_this)?;
-    let obj = &mut napi_obj.0;
+    let obj = &mut napi_obj.0.as_mut().unwrap();
 
     let js_str = ctx.get::<JsObject>(0)?;
     let utf8_str = js_str.coerce_to_string()?.into_utf8()?.into_owned()?;
     let value = match utf8_str.as_str() {
         "a-rate" => AutomationRate::A,
         "k-rate" => AutomationRate::K,
-        _ => panic!("TypeError - The provided value '{:?}' is not a valid enum value of type AutomationRate.", utf8_str),
+        _ => unreachable!(),
     };
     obj.set_automation_rate(value);
 

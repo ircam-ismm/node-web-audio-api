@@ -15,21 +15,20 @@ pub(crate) fn to_byte_slice<'a>(floats: &'a [f32]) -> &'a [u8] {
 #[macro_use]
 mod audio_node;
 
-mod audio_param;
-use crate::audio_param::{NapiAudioParam};
-// public
 mod audio_context;
 use crate::audio_context::NapiAudioContext;
-mod offline_audio_context;
-use crate::offline_audio_context::NapiOfflineAudioContext;
 mod audio_destination_node;
 use crate::audio_destination_node::NapiAudioDestinationNode;
+mod audio_param;
+use crate::audio_param::NapiAudioParam;
 mod audio_listener;
 use crate::audio_listener::NapiAudioListener;
 mod audio_buffer;
 use crate::audio_buffer::NapiAudioBuffer;
 mod periodic_wave;
 use crate::periodic_wave::NapiPeriodicWave;
+mod offline_audio_context;
+use crate::offline_audio_context::NapiOfflineAudioContext;
 
 // import audio nodes (generated)
 ${d.nodes.map(n => { return `
@@ -70,12 +69,13 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     let napi_class = NapiOfflineAudioContext::create_js_class(&env)?;
     exports.set_named_property("OfflineAudioContext", napi_class)?;
 
-    // @todo - expose AudioParam as well
-
     // ----------------------------------------------------------------
     // special non node classes with private constructors
     // i.e. not exposed in export
     // ----------------------------------------------------------------
+    let napi_class = NapiAudioParam::create_js_class(&env)?;
+    store.set_named_property("AudioParam", napi_class)?;
+
     let napi_class = NapiAudioDestinationNode::create_js_class(&env)?;
     store.set_named_property("AudioDestinationNode", napi_class)?;
 
