@@ -24,7 +24,6 @@ const {
 } = require('./lib/errors.js');
 const {
   kNapiObj,
-  kNativeAudioParam,
 } = require('./lib/symbols.js');
 const {
   kEnumerableProperty,
@@ -159,7 +158,7 @@ class AudioNode extends EventTarget {
 
     // note that audio listener params are not wrapped
     if (args[0] instanceof AudioParam) {
-      args[0] = args[0][kNativeAudioParam];
+      args[0] = args[0][kNapiObj];
     }
 
     if (args[0] instanceof AudioNode) {
@@ -191,7 +190,7 @@ class AudioNode extends EventTarget {
     }
 
     if (args[0] instanceof AudioParam) {
-      args[0] = args[0][kNativeAudioParam];
+      args[0] = args[0][kNapiObj];
     }
 
     if (args[0] instanceof AudioNode) {

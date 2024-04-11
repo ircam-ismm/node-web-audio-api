@@ -25,7 +25,7 @@ const options = program.opts();
 const INDENT_SIZE = 2;
 
 function indent(string, times) {
-  const prefix = " ".repeat(times);
+  const prefix = ' '.repeat(times);
   return string.split("\n").map(l => prefix + l).join("\n");
 }
 

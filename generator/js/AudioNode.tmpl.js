@@ -1,7 +1,7 @@
 const conversions = require("webidl-conversions");
 
 const { throwSanitizedError } = require('./lib/errors.js');
-const { kNapiObj, kNativeAudioParam } = require('./lib/symbols.js');
+const { kNapiObj } = require('./lib/symbols.js');
 const { kEnumerableProperty } = require('./lib/utils.js');
 
 const AudioParam = require('./AudioParam.js');
@@ -83,6 +83,10 @@ ${d.attributes(d.node).filter(attr => d.name(attr) !== 'context').map(attr => {
         `;
         break;
       }
+      default: {
+        console.log(`Warning: Unhandled type '${type}' in setters`);
+        break;
+      }
     }
   }
 
@@ -112,7 +116,7 @@ ${d.attributes(d.node).filter(attr => d.name(attr) !== 'context').map(attr => {
 
     // note that audio listener params are not wrapped
     if (args[0] instanceof AudioParam) {
-      args[0] = args[0][kNativeAudioParam];
+      args[0] = args[0][kNapiObj];
     }
 
     if (args[0] instanceof AudioNode) {
@@ -144,7 +148,7 @@ ${d.attributes(d.node).filter(attr => d.name(attr) !== 'context').map(attr => {
     }
 
     if (args[0] instanceof AudioParam) {
-      args[0] = args[0][kNativeAudioParam];
+      args[0] = args[0][kNapiObj];
     }
 
     if (args[0] instanceof AudioNode) {

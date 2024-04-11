@@ -1,3 +1,5 @@
+const conversions = require('webidl-conversions');
+
 const { bridgeEventTarget } = require('./lib/events.js');
 const { DOMException, throwSanitizedError } = require('./lib/errors.js');
 const {
@@ -145,6 +147,10 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
       if (arguments.length < 1) {
         throw new TypeError(`Failed to execute 'suspend' on 'OfflineAudioContext': 1 argument required, but only ${arguments.length} present`);
       }
+
+      suspendTime = conversions['double'](suspendTime, {
+        context: `Failed to execute 'suspend' on 'OfflineAudioContext': argument 1`,
+      });
 
       try {
         await this[kNapiObj].suspend(suspendTime);

@@ -4,10 +4,8 @@ use std::sync::{Arc, Mutex};
 
 use napi::*;
 use napi_derive::js_function;
-#[allow(unused_imports)] // @todo - remove directive once OfflineAudioContext events are implemented
 use napi::threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunction, ThreadsafeFunctionCallMode};
 use web_audio_api::context::*;
-#[allow(unused_imports)] // @todo - remove directive once OfflineAudioContext events are implemented
 use web_audio_api::{Event};
 use uuid::Uuid;
 
@@ -39,9 +37,6 @@ impl ${d.napiName(d.node)} {
                 Property::new("listener")?.with_getter(get_listener),
                 Property::new("state")?.with_getter(get_state),
                 Property::new("decodeAudioData")?.with_method(decode_audio_data),
-                // @todo - move to js?
-                Property::new("createPeriodicWave")?.with_method(create_periodic_wave),
-                Property::new("createBuffer")?.with_method(create_buffer),
 
                 ${d.name(d.node) === 'AudioContext' ?
                     `
@@ -311,54 +306,6 @@ fn decode_audio_data(ctx: CallContext) -> Result<JsObject> {
     }
 }
 
-#[js_function(3)]
-fn create_buffer(ctx: CallContext) -> Result<JsObject> {
-    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
-    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
-    let ctor: JsFunction = store.get_named_property("AudioBuffer")?;
-
-    let number_of_channels = ctx.get::<JsNumber>(0)?;
-    let length = ctx.get::<JsNumber>(1)?;
-    let sample_rate = ctx.get::<JsNumber>(2)?;
-
-    let mut options = ctx.env.create_object()?;
-    options.set("numberOfChannels", number_of_channels)?;
-    options.set("length", length)?;
-    options.set("sampleRate", sample_rate)?;
-
-    ctor.new_instance(&[options])
-}
-
-#[js_function(3)]
-fn create_periodic_wave(ctx: CallContext) -> Result<JsObject> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-
-    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
-    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
-    let ctor: JsFunction = store.get_named_property("PeriodicWave")?;
-
-    let real = ctx.get::<JsTypedArray>(0)?;
-    let imag = ctx.get::<JsTypedArray>(1)?;
-    // this differ slightly from the spec
-    let disable_normalization = match ctx.try_get::<JsObject>(2)? {
-        Either::A(constraints_js) => {
-            if let Some(disable_nomalization) = constraints_js.get::<&str, JsBoolean>("disableNormalization")? {
-                disable_nomalization
-            } else {
-                ctx.env.get_boolean(false)?
-            }
-        },
-        Either::B(_) => ctx.env.get_boolean(false)?,
-    };
-
-    let mut options = ctx.env.create_object()?;
-    options.set("real", real)?;
-    options.set("imag", imag)?;
-    options.set("disableNormalization", disable_normalization)?;
-
-    ctor.new_instance(&[js_this, options])
-}
-
 ${d.name(d.node) === 'AudioContext' ?
     `
 // ----------------------------------------------------
@@ -564,13 +511,7 @@ fn suspend(ctx: CallContext) -> Result<JsObject> {
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
     let clone = Arc::clone(&napi_obj.context);
 
-    let when = match ctx.try_get::<JsNumber>(0)? {
-        Either::A(value) => value.get_double()?,
-        Either::B(_) => {
-            let msg = "TypeError - Failed to suspend '${d.name(d.node)}': argument 1 is not a number";
-            return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-        }
-    };
+    let when = ctx.get::<JsNumber>(0)?.get_double()?;
 
     ctx.env.execute_tokio_future(
         async move {
