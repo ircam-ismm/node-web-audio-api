@@ -332,6 +332,9 @@ ${d.attributes(d.node).map(attr => {
   let setter = ``;
 
   switch (type) {
+    // @todo - other special cases
+    // - Float32Array
+    // - MediaStream
     case 'AudioBuffer': {
       getter = `
     get ${d.name(attr)}() {
@@ -358,6 +361,9 @@ ${d.attributes(d.node).map(attr => {
     }
   }
 
+  // ------------------------------------------------------
+  // Setters
+  // ------------------------------------------------------
   if (!attr.readonly) {
     // nullable:
     // - Float32Array - WaveshaperNode::curve

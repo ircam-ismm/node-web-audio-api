@@ -224,7 +224,6 @@ audio_node_impl!(NapiOscillatorNode);
 // -------------------------------------------------
 // AudioScheduledSourceNode Interface
 // -------------------------------------------------
-
 #[js_function(1)]
 fn start(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -250,7 +249,7 @@ fn stop(ctx: CallContext) -> Result<JsUndefined> {
 }
 
 // ----------------------------------------------------
-// Private EventTarget initialization
+// EventTarget initialization - cf. js/utils/events.js
 // ----------------------------------------------------
 #[js_function]
 fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
@@ -311,9 +310,8 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
 }
 
 // -------------------------------------------------
-// GETTERS
+// Getters / Setters
 // -------------------------------------------------
-
 #[js_function(0)]
 fn get_type(ctx: CallContext) -> Result<JsString> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -331,10 +329,6 @@ fn get_type(ctx: CallContext) -> Result<JsString> {
 
     ctx.env.create_string(js_value)
 }
-
-// -------------------------------------------------
-// SETTERS
-// -------------------------------------------------
 
 #[js_function(1)]
 fn set_type(ctx: CallContext) -> Result<JsUndefined> {
@@ -361,7 +355,6 @@ fn set_type(ctx: CallContext) -> Result<JsUndefined> {
 // -------------------------------------------------
 // METHODS
 // -------------------------------------------------
-
 #[js_function(1)]
 fn set_periodic_wave(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();

@@ -182,17 +182,12 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 audio_node_impl!(NapiIIRFilterNode);
 
 // -------------------------------------------------
-// GETTERS
-// -------------------------------------------------
-
-// -------------------------------------------------
-// SETTERS
+// Getters / Setters
 // -------------------------------------------------
 
 // -------------------------------------------------
 // METHODS
 // -------------------------------------------------
-
 #[js_function(3)]
 fn get_frequency_response(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();

@@ -209,9 +209,8 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 audio_node_impl!(NapiAnalyserNode);
 
 // -------------------------------------------------
-// GETTERS
+// Getters / Setters
 // -------------------------------------------------
-
 #[js_function(0)]
 fn get_fft_size(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -220,6 +219,18 @@ fn get_fft_size(ctx: CallContext) -> Result<JsNumber> {
 
     let value = node.fft_size();
     ctx.env.create_double(value as f64)
+}
+
+#[js_function(1)]
+fn set_fft_size(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let value = ctx.get::<JsNumber>(0)?.get_double()? as usize;
+    node.set_fft_size(value);
+
+    ctx.env.get_undefined()
 }
 
 #[js_function(0)]
@@ -242,6 +253,18 @@ fn get_min_decibels(ctx: CallContext) -> Result<JsNumber> {
     ctx.env.create_double(value)
 }
 
+#[js_function(1)]
+fn set_min_decibels(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let value = ctx.get::<JsNumber>(0)?.get_double()?;
+    node.set_min_decibels(value);
+
+    ctx.env.get_undefined()
+}
+
 #[js_function(0)]
 fn get_max_decibels(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -250,6 +273,18 @@ fn get_max_decibels(ctx: CallContext) -> Result<JsNumber> {
 
     let value = node.max_decibels();
     ctx.env.create_double(value)
+}
+
+#[js_function(1)]
+fn set_max_decibels(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let value = ctx.get::<JsNumber>(0)?.get_double()?;
+    node.set_max_decibels(value);
+
+    ctx.env.get_undefined()
 }
 
 #[js_function(0)]
@@ -262,53 +297,13 @@ fn get_smoothing_time_constant(ctx: CallContext) -> Result<JsNumber> {
     ctx.env.create_double(value)
 }
 
-// -------------------------------------------------
-// SETTERS
-// -------------------------------------------------
-
-#[js_function(1)]
-fn set_fft_size(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()? as usize;
-    node.set_fft_size(value);
-
-    ctx.env.get_undefined()
-}
-
-#[js_function(1)]
-fn set_min_decibels(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
-    node.set_min_decibels(value);
-
-    ctx.env.get_undefined()
-}
-
-#[js_function(1)]
-fn set_max_decibels(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
-    node.set_max_decibels(value);
-
-    ctx.env.get_undefined()
-}
-
 #[js_function(1)]
 fn set_smoothing_time_constant(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
+    let value = ctx.get::<JsNumber>(0)?.get_double()?;
     node.set_smoothing_time_constant(value);
 
     ctx.env.get_undefined()
@@ -317,7 +312,6 @@ fn set_smoothing_time_constant(ctx: CallContext) -> Result<JsUndefined> {
 // -------------------------------------------------
 // METHODS
 // -------------------------------------------------
-
 #[js_function(1)]
 fn get_float_frequency_data(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();

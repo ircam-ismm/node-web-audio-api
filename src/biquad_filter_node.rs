@@ -234,9 +234,8 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 audio_node_impl!(NapiBiquadFilterNode);
 
 // -------------------------------------------------
-// GETTERS
+// Getters / Setters
 // -------------------------------------------------
-
 #[js_function(0)]
 fn get_type(ctx: CallContext) -> Result<JsString> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -257,10 +256,6 @@ fn get_type(ctx: CallContext) -> Result<JsString> {
 
     ctx.env.create_string(js_value)
 }
-
-// -------------------------------------------------
-// SETTERS
-// -------------------------------------------------
 
 #[js_function(1)]
 fn set_type(ctx: CallContext) -> Result<JsUndefined> {
@@ -290,7 +285,6 @@ fn set_type(ctx: CallContext) -> Result<JsUndefined> {
 // -------------------------------------------------
 // METHODS
 // -------------------------------------------------
-
 #[js_function(3)]
 fn get_frequency_response(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();

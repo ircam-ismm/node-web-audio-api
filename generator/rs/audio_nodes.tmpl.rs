@@ -153,10 +153,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
                     }
                     default: {
                         // sequences:
+                        let targetType = member.idlType.idlType[0].idlType === "float" ? "f32" : "f64";
                         // - IIRFIlterOptions::feedforward
                         // - IIRFIlterOptions::feedback
-                        // - WevashaperOptions::curve
-                        let targetType = member.idlType.idlType[0].idlType === "float" ? "f32" : "f64";
                         if (member.required) {
                             return `
     let ${simple_slug}_js = js_options.get::<&str, JsTypedArray>("${optionName}")?.unwrap();
@@ -164,6 +163,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let ${slug}: &[${targetType}] = ${simple_slug}_value.as_ref();
     let ${slug} = ${slug}.to_vec();
                             `;
+                        // - WevashaperOptions::curve
                         } else {
                             return `
     let ${simple_slug}_js = js_options.get::<&str, JsUnknown>("${optionName}")?.unwrap();
@@ -326,10 +326,9 @@ ${(function() {
         let methods = `
 // -------------------------------------------------
 // AudioScheduledSourceNode Interface
-// -------------------------------------------------
+// -------------------------------------------------\
         `;
 
-        // start method
         if (d.name(d.node) !== "AudioBufferSourceNode") {
             methods += `
 #[js_function(1)]
@@ -375,7 +374,6 @@ fn start(ctx: CallContext) -> Result<JsUndefined> {
             `;
         }
 
-        // stop method
         methods += `
 #[js_function(1)]
 fn stop(ctx: CallContext) -> Result<JsUndefined> {
@@ -392,7 +390,7 @@ fn stop(ctx: CallContext) -> Result<JsUndefined> {
 
         methods += `
 // ----------------------------------------------------
-// Private EventTarget initialization
+// EventTarget initialization - cf. js/utils/events.js
 // ----------------------------------------------------
 #[js_function]
 fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
@@ -453,14 +451,19 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
 }())}
 
 // -------------------------------------------------
-// GETTERS
-// -------------------------------------------------
+// Getters / Setters
+// -------------------------------------------------\
 ${d.attributes(d.node).map(attr => {
     const attrType = d.memberType(attr);
+    let getter = ``;
+    let setter = ``;
 
+    // -------------------------------------------------
+    // Getters
+    // -------------------------------------------------
     switch (attrType) {
-        case "boolean":
-            return `
+        case "boolean": {
+            getter = `
 #[js_function(0)]
 fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsBoolean> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -472,8 +475,9 @@ fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsBoolean> {
 }
             `;
             break;
-        case "float":
-            return `
+        }
+        case "float": {
+            getter = `
 #[js_function(0)]
 fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -485,8 +489,9 @@ fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsNumber> {
 }
             `;
             break;
-        case "double":
-            return `
+        }
+        case "double": {
+            getter = `
 #[js_function(0)]
 fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -498,8 +503,9 @@ fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsNumber> {
 }
             `;
             break;
-        case "unsigned long":
-            return `
+        }
+        case "unsigned long": {
+            getter = `
 #[js_function(0)]
 fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -510,44 +516,16 @@ fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsNumber> {
     ctx.env.create_double(value as f64)
 }
             `;
+        }
             break;
-        case "Float32Array":
-                    return `
-#[js_function(0)]
-fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsUnknown> {
-    let js_this = ctx.this_unchecked::<JsObject>();
+        case "BiquadFilterType":
+        case "OscillatorType":
+        case "PanningModelType":
+        case "DistanceModelType":
+        case "OverSampleType": {
+            let typeIdl = d.findInTree(attrType);
 
-    if js_this.has_named_property("__${d.slug(attr)}__")? {
-        Ok(js_this.get_named_property::<JsObject>("__${d.slug(attr)}__")?.into_unknown())
-    } else {
-        Ok(ctx.env.get_null()?.into_unknown())
-    }
-}
-                    `;
-            break;
-        // IDL types
-        default: {
-            // handle MediaStream
-            if (attr.idlType.type === "attribute-type" && attr.idlType.idlType === "MediaStream") {
-                console.log("!!!! ignored getter for MediaStream ");
-                return ``;
-            }
-
-            // handle IDL types
-            let idl = d.findInTree(attrType);
-            let idlType;
-
-            try {
-                idlType = d.type(idl);
-            } catch(err) {
-                console.log("issue in getter");
-                console.log(JSON.stringify(attr, null, 2));
-                return "";
-            }
-
-            switch (idlType) {
-                case "enum":
-                    return `
+            getter = `
 #[js_function(0)]
 fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsString> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -555,147 +533,143 @@ fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsString> {
     let node = napi_node.unwrap();
 
     let value = node.${d.slug(attr, true)}();
-    let js_value = match value {${idl.values.map(v => `
-        ${idl.name}::${d.camelcase(v.value)} => "${v.value}",`).join("")}
+    let js_value = match value {${typeIdl.values.map(v => `
+        ${typeIdl.name}::${d.camelcase(v.value)} => "${v.value}",`).join("")}
     };
 
     ctx.env.create_string(js_value)
 }
-                    `;
-                    break;
-                case "interface":
-                    return `
+            `;
+            break;
+        }
+        case "Float32Array": {
+            // WaveShaperNode::curve
+            getter = `
 #[js_function(0)]
 fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsUnknown> {
     let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+    let node = napi_node.unwrap();
 
-    if js_this.has_named_property("__${d.slug(attr)}__")? {
-        Ok(js_this.get_named_property::<JsObject>("__${d.slug(attr)}__")?.into_unknown())
+    let value = node.${d.slug(attr, true)}();
+
+    if let Some(arr_f32) = value {
+        let length = arr_f32.len();
+        let arr_u8 = crate::to_byte_slice(arr_f32);
+
+        Ok(ctx.env
+            .create_arraybuffer_with_data(arr_u8.to_vec())
+            .map(|array_buffer| {
+                array_buffer
+                    .into_raw()
+                    .into_typedarray(TypedArrayType::Float32, length, 0)
+            })
+            .unwrap()?
+            .into_unknown())
     } else {
         Ok(ctx.env.get_null()?.into_unknown())
     }
 }
                     `;
-                    break;
-                default:
-                    console.log(`[WARNING] getter for ${attr} with type ${attrType}/${idlType} not parsed`);
-                    break;
-            }
+            break;
+        }
+        case "AudioBuffer": {
+            // This should never be called as the AudioBuffer is stored directly
+            // on the JS side to retrieve the exact same AudioBuffer reference.
+            // - AudioBufferSourceNode::buffer
+            // - ConvolverNode::curve
+            getter = `
+#[js_function(0)]
+fn get_${d.slug(attr)}(_ctx: CallContext) -> Result<JsUnknown> {
+    unreachable!();
+}
+            `
+            break;
+        }
+        // IDL types
+        default: {
+            console.log(`[warning] Unhandled getter ${d.name(d.node)}::${d.name(attr)} (type: ${attrType})`);
             break;
         }
     }
-}).join('')}
 
-// -------------------------------------------------
-// SETTERS
-// -------------------------------------------------
-${d.attributes(d.node).map(attr => {
-    if (attr.readonly) return;
-
-    let attrType = d.memberType(attr);
-
-    switch (attrType) {
-        case "boolean":
-            return `
+    // -------------------------------------------------
+    // Setters
+    // -------------------------------------------------
+    if (!attr.readonly) {
+        switch (attrType) {
+            case "boolean": {
+                setter = `
 #[js_function(1)]
 fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsObject>(0)?.coerce_to_bool()?.try_into()?;
+    let value = ctx.get::<JsBoolean>(0)?.try_into()?;
     node.set_${d.slug(attr)}(value);
 
     ctx.env.get_undefined()
 }
-            `;
-            break;
-        case "float":
-            return `
-#[js_function(1)]
-fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()? as f32;
-    node.set_${d.slug(attr)}(value);
-
-    ctx.env.get_undefined()
-}
-            `;
-            break;
-        case "double":
-            return `
-#[js_function(1)]
-fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
-    node.set_${d.slug(attr)}(value);
-
-    ctx.env.get_undefined()
-}
-            `;
-            break;
-        case "unsigned long":
-            return `
-#[js_function(1)]
-fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()? as usize;
-    node.set_${d.slug(attr)}(value);
-
-    ctx.env.get_undefined()
-}
-            `;
-            break;
-        // WaveShaperNode::curve
-        case "Float32Array":
-            return `
-#[js_function(1)]
-fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
-    let mut js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let js_obj = ctx.get::<JsTypedArray>(0)?;
-    let buffer = js_obj.into_value()?;
-    let buffer_ref: &[f32] = buffer.as_ref();
-    // @todo - remove this vec![]
-    node.set_${d.slug(attr)}(buffer_ref.to_vec());
-    // weird but seems we can have twice the same owned value...
-    let js_obj = ctx.get::<JsTypedArray>(0)?;
-    // store in "private" field for getter (not very clean, to review)
-    js_this.set_named_property("__${d.slug(attr)}__", js_obj)?;
-
-    ctx.env.get_undefined()
-}
-            `;
-            break;
-
-        // IDL types
-        default: {
-            let idl = d.findInTree(attrType);
-            let idlType;
-
-            // for debugging
-            try {
-                idlType = d.type(idl);
-            } catch(err) {
-                console.log("issue in setter");
-                console.log(JSON.stringify(attr, null, 2));
-                return "";
+                `;
+                break;
             }
+            case "float": {
+                setter = `
+#[js_function(1)]
+fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+    let node = napi_node.unwrap();
 
-            switch (idlType) {
-                case "enum":
-                    return `
+    let value = ctx.get::<JsNumber>(0)?.get_double()? as f32;
+    node.set_${d.slug(attr)}(value);
+
+    ctx.env.get_undefined()
+}
+                `;
+                break;
+            }
+            case "double": {
+                setter = `
+#[js_function(1)]
+fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let value = ctx.get::<JsNumber>(0)?.get_double()?;
+    node.set_${d.slug(attr)}(value);
+
+    ctx.env.get_undefined()
+}
+                `;
+                break;
+            }
+            case "unsigned long": {
+                setter = `
+#[js_function(1)]
+fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let value = ctx.get::<JsNumber>(0)?.get_double()? as usize;
+    node.set_${d.slug(attr)}(value);
+
+    ctx.env.get_undefined()
+}
+                `;
+                break;
+            }
+            case "BiquadFilterType":
+            case "OscillatorType":
+            case "PanningModelType":
+            case "DistanceModelType":
+            case "OverSampleType": {
+                let typeIdl = d.findInTree(attrType);
+
+                setter = `
 #[js_function(1)]
 fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -704,8 +678,8 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
 
     let js_str = ctx.get::<JsObject>(0)?.coerce_to_string()?;
     let utf8_str = js_str.into_utf8()?.into_owned()?;
-    let value = match utf8_str.as_str() {${idl.values.map(v => `
-        "${v.value}" => ${idl.name}::${d.camelcase(v.value)},`).join("")}
+    let value = match utf8_str.as_str() {${typeIdl.values.map(v => `
+        "${v.value}" => ${typeIdl.name}::${d.camelcase(v.value)},`).join("")}
         _ => return ctx.env.get_undefined(),
     };
 
@@ -713,39 +687,61 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
 
     ctx.env.get_undefined()
 }
-                    `;
-                    break
-                case "interface": // AudioBuffer
-                    return `
+                `;
+                break;
+            }
+            case "Float32Array": {
+                // WaveShaperNode::curve
+                setter = `
 #[js_function(1)]
 fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
-    let mut js_this = ctx.this_unchecked::<JsObject>();
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let js_obj = ctx.get::<JsTypedArray>(0)?;
+    let buffer = js_obj.into_value()?;
+    let buffer_ref: &[f32] = buffer.as_ref();
+    node.set_${d.slug(attr)}(buffer_ref.to_vec());
+
+    ctx.env.get_undefined()
+}
+                `;
+                break;
+            }
+            case "AudioBuffer": {
+                let typeIdl = d.findInTree(attrType);
+
+                setter = `
+#[js_function(1)]
+fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
     let node = napi_node.unwrap();
 
     let js_obj = ctx.get::<JsObject>(0)?;
-    let napi_obj = ctx.env.unwrap::<${d.napiName(idl)}>(&js_obj)?;
+    let napi_obj = ctx.env.unwrap::<${d.napiName(typeIdl)}>(&js_obj)?;
     let obj = napi_obj.unwrap();
     node.set_${d.slug(attr)}(obj.clone());
-    // store in "private" field for getter (not very clean, to review)
-    js_this.set_named_property("__${d.slug(attr)}__", js_obj)?;
 
     ctx.env.get_undefined()
 }
-                    `;
-                    break;
-                default:
-                    console.log(`[WARNING] getter for ${attr} with type ${attrType}/${idlType} not parsed`);
-                    break;
+                `;
+                break;
             }
-            break;
+            default: {
+                console.log(`[warning] Unhandled setter ${d.name(d.node)}::${d.name(attr)} (type: ${attrType})`);
+                break;
+            }
         }
     }
-}).join("")}
+
+    return `${getter}${setter}`
+}).join('')}
 
 // -------------------------------------------------
 // METHODS
-// -------------------------------------------------
+// -------------------------------------------------\
 ${d.methods(d.node).map(method => {
 if (method.idlType.idlType !== "undefined") {
     console.log(`[WARNING] return type ${method.idlType.idlType} for method ${method.name} not parsed`);

@@ -195,20 +195,47 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 audio_node_impl!(NapiWaveShaperNode);
 
 // -------------------------------------------------
-// GETTERS
+// Getters / Setters
 // -------------------------------------------------
-
 #[js_function(0)]
 fn get_curve(ctx: CallContext) -> Result<JsUnknown> {
     let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiWaveShaperNode>(&js_this)?;
+    let node = napi_node.unwrap();
 
-    if js_this.has_named_property("__curve__")? {
-        Ok(js_this
-            .get_named_property::<JsObject>("__curve__")?
+    let value = node.curve();
+
+    if let Some(arr_f32) = value {
+        let length = arr_f32.len();
+        let arr_u8 = crate::to_byte_slice(arr_f32);
+
+        Ok(ctx
+            .env
+            .create_arraybuffer_with_data(arr_u8.to_vec())
+            .map(|array_buffer| {
+                array_buffer
+                    .into_raw()
+                    .into_typedarray(TypedArrayType::Float32, length, 0)
+            })
+            .unwrap()?
             .into_unknown())
     } else {
         Ok(ctx.env.get_null()?.into_unknown())
     }
+}
+
+#[js_function(1)]
+fn set_curve(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiWaveShaperNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let js_obj = ctx.get::<JsTypedArray>(0)?;
+    let buffer = js_obj.into_value()?;
+    let buffer_ref: &[f32] = buffer.as_ref();
+    node.set_curve(buffer_ref.to_vec());
+
+    ctx.env.get_undefined()
 }
 
 #[js_function(0)]
@@ -225,29 +252,6 @@ fn get_oversample(ctx: CallContext) -> Result<JsString> {
     };
 
     ctx.env.create_string(js_value)
-}
-
-// -------------------------------------------------
-// SETTERS
-// -------------------------------------------------
-
-#[js_function(1)]
-fn set_curve(ctx: CallContext) -> Result<JsUndefined> {
-    let mut js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiWaveShaperNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let js_obj = ctx.get::<JsTypedArray>(0)?;
-    let buffer = js_obj.into_value()?;
-    let buffer_ref: &[f32] = buffer.as_ref();
-    // @todo - remove this vec![]
-    node.set_curve(buffer_ref.to_vec());
-    // weird but seems we can have twice the same owned value...
-    let js_obj = ctx.get::<JsTypedArray>(0)?;
-    // store in "private" field for getter (not very clean, to review)
-    js_this.set_named_property("__curve__", js_obj)?;
-
-    ctx.env.get_undefined()
 }
 
 #[js_function(1)]

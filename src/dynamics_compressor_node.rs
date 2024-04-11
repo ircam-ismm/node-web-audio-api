@@ -227,9 +227,8 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 audio_node_impl!(NapiDynamicsCompressorNode);
 
 // -------------------------------------------------
-// GETTERS
+// Getters / Setters
 // -------------------------------------------------
-
 #[js_function(0)]
 fn get_reduction(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -239,10 +238,6 @@ fn get_reduction(ctx: CallContext) -> Result<JsNumber> {
     let value = node.reduction();
     ctx.env.create_double(value as f64)
 }
-
-// -------------------------------------------------
-// SETTERS
-// -------------------------------------------------
 
 // -------------------------------------------------
 // METHODS

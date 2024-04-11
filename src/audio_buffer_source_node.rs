@@ -184,7 +184,6 @@ audio_node_impl!(NapiAudioBufferSourceNode);
 // -------------------------------------------------
 // AudioScheduledSourceNode Interface
 // -------------------------------------------------
-
 #[js_function(3)]
 fn start(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -225,7 +224,7 @@ fn stop(ctx: CallContext) -> Result<JsUndefined> {
 }
 
 // ----------------------------------------------------
-// Private EventTarget initialization
+// EventTarget initialization - cf. js/utils/events.js
 // ----------------------------------------------------
 #[js_function]
 fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
@@ -286,20 +285,25 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
 }
 
 // -------------------------------------------------
-// GETTERS
+// Getters / Setters
 // -------------------------------------------------
-
 #[js_function(0)]
-fn get_buffer(ctx: CallContext) -> Result<JsUnknown> {
-    let js_this = ctx.this_unchecked::<JsObject>();
+fn get_buffer(_ctx: CallContext) -> Result<JsUnknown> {
+    unreachable!();
+}
 
-    if js_this.has_named_property("__buffer__")? {
-        Ok(js_this
-            .get_named_property::<JsObject>("__buffer__")?
-            .into_unknown())
-    } else {
-        Ok(ctx.env.get_null()?.into_unknown())
-    }
+#[js_function(1)]
+fn set_buffer(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let js_obj = ctx.get::<JsObject>(0)?;
+    let napi_obj = ctx.env.unwrap::<NapiAudioBuffer>(&js_obj)?;
+    let obj = napi_obj.unwrap();
+    node.set_buffer(obj.clone());
+
+    ctx.env.get_undefined()
 }
 
 #[js_function(0)]
@@ -312,6 +316,18 @@ fn get_loop(ctx: CallContext) -> Result<JsBoolean> {
     ctx.env.get_boolean(value)
 }
 
+#[js_function(1)]
+fn set_loop(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let value = ctx.get::<JsBoolean>(0)?.try_into()?;
+    node.set_loop(value);
+
+    ctx.env.get_undefined()
+}
+
 #[js_function(0)]
 fn get_loop_start(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -320,6 +336,18 @@ fn get_loop_start(ctx: CallContext) -> Result<JsNumber> {
 
     let value = node.loop_start();
     ctx.env.create_double(value)
+}
+
+#[js_function(1)]
+fn set_loop_start(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let value = ctx.get::<JsNumber>(0)?.get_double()?;
+    node.set_loop_start(value);
+
+    ctx.env.get_undefined()
 }
 
 #[js_function(0)]
@@ -332,57 +360,13 @@ fn get_loop_end(ctx: CallContext) -> Result<JsNumber> {
     ctx.env.create_double(value)
 }
 
-// -------------------------------------------------
-// SETTERS
-// -------------------------------------------------
-
-#[js_function(1)]
-fn set_buffer(ctx: CallContext) -> Result<JsUndefined> {
-    let mut js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let js_obj = ctx.get::<JsObject>(0)?;
-    let napi_obj = ctx.env.unwrap::<NapiAudioBuffer>(&js_obj)?;
-    let obj = napi_obj.unwrap();
-    node.set_buffer(obj.clone());
-    // store in "private" field for getter (not very clean, to review)
-    js_this.set_named_property("__buffer__", js_obj)?;
-
-    ctx.env.get_undefined()
-}
-
-#[js_function(1)]
-fn set_loop(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = ctx.get::<JsObject>(0)?.coerce_to_bool()?.try_into()?;
-    node.set_loop(value);
-
-    ctx.env.get_undefined()
-}
-
-#[js_function(1)]
-fn set_loop_start(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
-    node.set_loop_start(value);
-
-    ctx.env.get_undefined()
-}
-
 #[js_function(1)]
 fn set_loop_end(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
+    let value = ctx.get::<JsNumber>(0)?.get_double()?;
     node.set_loop_end(value);
 
     ctx.env.get_undefined()

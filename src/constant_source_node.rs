@@ -128,7 +128,6 @@ audio_node_impl!(NapiConstantSourceNode);
 // -------------------------------------------------
 // AudioScheduledSourceNode Interface
 // -------------------------------------------------
-
 #[js_function(1)]
 fn start(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -154,7 +153,7 @@ fn stop(ctx: CallContext) -> Result<JsUndefined> {
 }
 
 // ----------------------------------------------------
-// Private EventTarget initialization
+// EventTarget initialization - cf. js/utils/events.js
 // ----------------------------------------------------
 #[js_function]
 fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
@@ -215,11 +214,7 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
 }
 
 // -------------------------------------------------
-// GETTERS
-// -------------------------------------------------
-
-// -------------------------------------------------
-// SETTERS
+// Getters / Setters
 // -------------------------------------------------
 
 // -------------------------------------------------

@@ -320,9 +320,8 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 audio_node_impl!(NapiPannerNode);
 
 // -------------------------------------------------
-// GETTERS
+// Getters / Setters
 // -------------------------------------------------
-
 #[js_function(0)]
 fn get_panning_model(ctx: CallContext) -> Result<JsString> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -337,86 +336,6 @@ fn get_panning_model(ctx: CallContext) -> Result<JsString> {
 
     ctx.env.create_string(js_value)
 }
-
-#[js_function(0)]
-fn get_distance_model(ctx: CallContext) -> Result<JsString> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = node.distance_model();
-    let js_value = match value {
-        DistanceModelType::Linear => "linear",
-        DistanceModelType::Inverse => "inverse",
-        DistanceModelType::Exponential => "exponential",
-    };
-
-    ctx.env.create_string(js_value)
-}
-
-#[js_function(0)]
-fn get_ref_distance(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = node.ref_distance();
-    ctx.env.create_double(value)
-}
-
-#[js_function(0)]
-fn get_max_distance(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = node.max_distance();
-    ctx.env.create_double(value)
-}
-
-#[js_function(0)]
-fn get_rolloff_factor(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = node.rolloff_factor();
-    ctx.env.create_double(value)
-}
-
-#[js_function(0)]
-fn get_cone_inner_angle(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = node.cone_inner_angle();
-    ctx.env.create_double(value)
-}
-
-#[js_function(0)]
-fn get_cone_outer_angle(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = node.cone_outer_angle();
-    ctx.env.create_double(value)
-}
-
-#[js_function(0)]
-fn get_cone_outer_gain(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = node.cone_outer_gain();
-    ctx.env.create_double(value)
-}
-
-// -------------------------------------------------
-// SETTERS
-// -------------------------------------------------
 
 #[js_function(1)]
 fn set_panning_model(ctx: CallContext) -> Result<JsUndefined> {
@@ -435,6 +354,22 @@ fn set_panning_model(ctx: CallContext) -> Result<JsUndefined> {
     node.set_panning_model(value);
 
     ctx.env.get_undefined()
+}
+
+#[js_function(0)]
+fn get_distance_model(ctx: CallContext) -> Result<JsString> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let value = node.distance_model();
+    let js_value = match value {
+        DistanceModelType::Linear => "linear",
+        DistanceModelType::Inverse => "inverse",
+        DistanceModelType::Exponential => "exponential",
+    };
+
+    ctx.env.create_string(js_value)
 }
 
 #[js_function(1)]
@@ -457,16 +392,36 @@ fn set_distance_model(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 
+#[js_function(0)]
+fn get_ref_distance(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let value = node.ref_distance();
+    ctx.env.create_double(value)
+}
+
 #[js_function(1)]
 fn set_ref_distance(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
+    let value = ctx.get::<JsNumber>(0)?.get_double()?;
     node.set_ref_distance(value);
 
     ctx.env.get_undefined()
+}
+
+#[js_function(0)]
+fn get_max_distance(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let value = node.max_distance();
+    ctx.env.create_double(value)
 }
 
 #[js_function(1)]
@@ -475,10 +430,20 @@ fn set_max_distance(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
+    let value = ctx.get::<JsNumber>(0)?.get_double()?;
     node.set_max_distance(value);
 
     ctx.env.get_undefined()
+}
+
+#[js_function(0)]
+fn get_rolloff_factor(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let value = node.rolloff_factor();
+    ctx.env.create_double(value)
 }
 
 #[js_function(1)]
@@ -487,10 +452,20 @@ fn set_rolloff_factor(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
+    let value = ctx.get::<JsNumber>(0)?.get_double()?;
     node.set_rolloff_factor(value);
 
     ctx.env.get_undefined()
+}
+
+#[js_function(0)]
+fn get_cone_inner_angle(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let value = node.cone_inner_angle();
+    ctx.env.create_double(value)
 }
 
 #[js_function(1)]
@@ -499,10 +474,20 @@ fn set_cone_inner_angle(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
+    let value = ctx.get::<JsNumber>(0)?.get_double()?;
     node.set_cone_inner_angle(value);
 
     ctx.env.get_undefined()
+}
+
+#[js_function(0)]
+fn get_cone_outer_angle(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let value = node.cone_outer_angle();
+    ctx.env.create_double(value)
 }
 
 #[js_function(1)]
@@ -511,10 +496,20 @@ fn set_cone_outer_angle(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
+    let value = ctx.get::<JsNumber>(0)?.get_double()?;
     node.set_cone_outer_angle(value);
 
     ctx.env.get_undefined()
+}
+
+#[js_function(0)]
+fn get_cone_outer_gain(ctx: CallContext) -> Result<JsNumber> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let value = node.cone_outer_gain();
+    ctx.env.create_double(value)
 }
 
 #[js_function(1)]
@@ -523,7 +518,7 @@ fn set_cone_outer_gain(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
+    let value = ctx.get::<JsNumber>(0)?.get_double()?;
     node.set_cone_outer_gain(value);
 
     ctx.env.get_undefined()
@@ -532,7 +527,6 @@ fn set_cone_outer_gain(ctx: CallContext) -> Result<JsUndefined> {
 // -------------------------------------------------
 // METHODS
 // -------------------------------------------------
-
 #[js_function(3)]
 fn set_position(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();

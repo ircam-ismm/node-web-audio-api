@@ -192,20 +192,25 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 audio_node_impl!(NapiConvolverNode);
 
 // -------------------------------------------------
-// GETTERS
+// Getters / Setters
 // -------------------------------------------------
-
 #[js_function(0)]
-fn get_buffer(ctx: CallContext) -> Result<JsUnknown> {
-    let js_this = ctx.this_unchecked::<JsObject>();
+fn get_buffer(_ctx: CallContext) -> Result<JsUnknown> {
+    unreachable!();
+}
 
-    if js_this.has_named_property("__buffer__")? {
-        Ok(js_this
-            .get_named_property::<JsObject>("__buffer__")?
-            .into_unknown())
-    } else {
-        Ok(ctx.env.get_null()?.into_unknown())
-    }
+#[js_function(1)]
+fn set_buffer(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiConvolverNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let js_obj = ctx.get::<JsObject>(0)?;
+    let napi_obj = ctx.env.unwrap::<NapiAudioBuffer>(&js_obj)?;
+    let obj = napi_obj.unwrap();
+    node.set_buffer(obj.clone());
+
+    ctx.env.get_undefined()
 }
 
 #[js_function(0)]
@@ -218,33 +223,13 @@ fn get_normalize(ctx: CallContext) -> Result<JsBoolean> {
     ctx.env.get_boolean(value)
 }
 
-// -------------------------------------------------
-// SETTERS
-// -------------------------------------------------
-
-#[js_function(1)]
-fn set_buffer(ctx: CallContext) -> Result<JsUndefined> {
-    let mut js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiConvolverNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let js_obj = ctx.get::<JsObject>(0)?;
-    let napi_obj = ctx.env.unwrap::<NapiAudioBuffer>(&js_obj)?;
-    let obj = napi_obj.unwrap();
-    node.set_buffer(obj.clone());
-    // store in "private" field for getter (not very clean, to review)
-    js_this.set_named_property("__buffer__", js_obj)?;
-
-    ctx.env.get_undefined()
-}
-
 #[js_function(1)]
 fn set_normalize(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiConvolverNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let value = ctx.get::<JsObject>(0)?.coerce_to_bool()?.try_into()?;
+    let value = ctx.get::<JsBoolean>(0)?.try_into()?;
     node.set_normalize(value);
 
     ctx.env.get_undefined()
