@@ -320,7 +320,7 @@ module.exports = (jsExport, nativeBinding) => {
     loop: kEnumerableProperty,
     loopStart: kEnumerableProperty,
     loopEnd: kEnumerableProperty,
-
+    start: kEnumerableProperty,
   });
 
   return AudioBufferSourceNode;

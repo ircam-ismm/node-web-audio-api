@@ -263,7 +263,7 @@ fn set_oversample(ctx: CallContext) -> Result<JsUndefined> {
         "none" => OverSampleType::None,
         "2x" => OverSampleType::X2,
         "4x" => OverSampleType::X4,
-        _ => return ctx.env.get_undefined(),
+        _ => unreachable!(),
     };
 
     node.set_oversample(value);

@@ -93,7 +93,7 @@ macro_rules! audio_node_impl {
                 "max" => ChannelCountMode::Max,
                 "clamped-max" => ChannelCountMode::ClampedMax,
                 "explicit" => ChannelCountMode::Explicit,
-                _ => panic!("undefined value for ChannelCountMode"),
+                _ => unreachable!(),
             };
             node.set_channel_count_mode(value);
 
@@ -126,7 +126,7 @@ macro_rules! audio_node_impl {
             let value = match uf8_str.as_str() {
                 "speakers" => ChannelInterpretation::Speakers,
                 "discrete" => ChannelInterpretation::Discrete,
-                _ => panic!("undefined value for ChannelInterpretation"),
+                _ => unreachable!(),
             };
             node.set_channel_interpretation(value);
 

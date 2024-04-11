@@ -623,19 +623,9 @@ ${(function() {
     ${d.attributes(d.node).map(attr => {
       return `${d.name(attr)}: kEnumerableProperty,`;
     }).join('')}
-    ${d.methods(d.node, false)
-      .reduce((acc, method) => {
-        // dedup method names
-        if (!acc.find(i => d.name(i) === d.name(method))) {
-          acc.push(method)
-        }
-        return acc;
-      }, [])
-      // filter AudioScheduledSourceNode methods to prevent re-throwing errors
-      .filter(method => d.name(method) !== 'start' && d.name(method) !== 'stop')
-      .map(method => {
-        return `${d.name(method)}: kEnumerableProperty,`;
-      }).join('')}
+    ${d.methods(d.node, false).map(method => {
+      return `${d.name(method)}: kEnumerableProperty,`;
+    }).join('')}
   });
   `;
 }())}

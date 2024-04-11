@@ -684,7 +684,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
     let utf8_str = js_str.into_utf8()?.into_owned()?;
     let value = match utf8_str.as_str() {${typeIdl.values.map(v => `
         "${v.value}" => ${typeIdl.name}::${d.camelcase(v.value)},`).join("")}
-        _ => return ctx.env.get_undefined(),
+        _ => unreachable!(),
     };
 
     node.set_${d.slug(attr)}(value);

@@ -276,7 +276,7 @@ fn set_type(ctx: CallContext) -> Result<JsUndefined> {
         "peaking" => BiquadFilterType::Peaking,
         "notch" => BiquadFilterType::Notch,
         "allpass" => BiquadFilterType::Allpass,
-        _ => return ctx.env.get_undefined(),
+        _ => unreachable!(),
     };
 
     node.set_type(value);

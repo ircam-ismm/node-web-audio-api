@@ -1,3 +1,5 @@
+const conversions = require("webidl-conversions");
+
 const { throwSanitizedError } = require('./lib/errors.js');
 const { kNapiObj, kNativeAudioParam } = require('./lib/symbols.js');
 const { kEnumerableProperty } = require('./lib/utils.js');
@@ -19,7 +21,10 @@ class AudioNode extends EventTarget {
   }
 
 ${d.attributes(d.node).filter(attr => d.name(attr) !== 'context').map(attr => {
-return `
+  let getter = ``;
+  let setter = ``;
+
+  getter = `
   get ${d.name(attr)}() {
     if (!(this instanceof AudioNode)) {
       throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioNode'");
@@ -27,13 +32,46 @@ return `
 
     return this[kNapiObj].${d.name(attr)};
   }
-`}).join('')}
+  `;
 
-${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
-return `
+  if (!attr.readonly) {
+    const type = attr.idlType.idlType;
+
+    switch (type) {
+      case 'unsigned long': {
+        setter = `
   set ${d.name(attr)}(value) {
     if (!(this instanceof AudioNode)) {
       throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioNode'");
+    }
+
+    value = conversions['${type}'](value, {
+      context: \`Failed to set the '${d.name(attr)}' property on '${d.name(d.node)}': Value\`
+    });
+
+    try {
+      this[kNapiObj].${d.name(attr)} = value;
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+  }
+        `;
+        break;
+      }
+      case 'ChannelCountMode':
+      case 'ChannelInterpretation': {
+        const typeIdl = d.findInTree(type);
+        const values = JSON.stringify(typeIdl.values.map(e => e.value));
+
+        setter = `
+  set ${d.name(attr)}(value) {
+    if (!(this instanceof AudioNode)) {
+      throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioNode'");
+    }
+
+    if (!${values}.includes(value)) {
+      console.warn(\`Failed to set the '${d.name(attr)}' property on '${d.name(d.node)}': Value '\${value}' is not a valid '${type}' enum value\`);
+      return;
     }
 
     try {
@@ -42,7 +80,14 @@ return `
       throwSanitizedError(err);
     }
   }
-`}).join('')}
+        `;
+        break;
+      }
+    }
+  }
+
+  return `${getter}${setter}`;
+}).join('')}
 
   // ------------------------------------------------------
   // connect / disconnect
@@ -132,11 +177,9 @@ Object.defineProperties(AudioNode.prototype, {
     configurable: true,
     value: 'AudioNode',
   },
-
   ${d.attributes(d.node).map(attr => {
     return `${d.name(attr)}: kEnumerableProperty,`;
   }).join('')}
-
   connect: kEnumerableProperty,
   disconnect: kEnumerableProperty,
 });

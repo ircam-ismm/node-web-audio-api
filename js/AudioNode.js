@@ -17,6 +17,8 @@
 // -------------------------------------------------------------------------- //
 // -------------------------------------------------------------------------- //
 
+const conversions = require('webidl-conversions');
+
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
@@ -68,12 +70,45 @@ class AudioNode extends EventTarget {
     return this[kNapiObj].channelCount;
   }
 
+  set channelCount(value) {
+    if (!(this instanceof AudioNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioNode\'');
+    }
+
+    value = conversions['unsigned long'](value, {
+      context: `Failed to set the 'channelCount' property on 'AudioNode': Value`,
+    });
+
+    try {
+      this[kNapiObj].channelCount = value;
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+  }
+
   get channelCountMode() {
     if (!(this instanceof AudioNode)) {
       throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioNode\'');
     }
 
     return this[kNapiObj].channelCountMode;
+  }
+
+  set channelCountMode(value) {
+    if (!(this instanceof AudioNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioNode\'');
+    }
+
+    if (!['max', 'clamped-max', 'explicit'].includes(value)) {
+      console.warn(`Failed to set the 'channelCountMode' property on 'AudioNode': Value '${value}' is not a valid 'ChannelCountMode' enum value`);
+      return;
+    }
+
+    try {
+      this[kNapiObj].channelCountMode = value;
+    } catch (err) {
+      throwSanitizedError(err);
+    }
   }
 
   get channelInterpretation() {
@@ -84,33 +119,14 @@ class AudioNode extends EventTarget {
     return this[kNapiObj].channelInterpretation;
   }
 
-  set channelCount(value) {
-    if (!(this instanceof AudioNode)) {
-      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioNode\'');
-    }
-
-    try {
-      this[kNapiObj].channelCount = value;
-    } catch (err) {
-      throwSanitizedError(err);
-    }
-  }
-
-  set channelCountMode(value) {
-    if (!(this instanceof AudioNode)) {
-      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioNode\'');
-    }
-
-    try {
-      this[kNapiObj].channelCountMode = value;
-    } catch (err) {
-      throwSanitizedError(err);
-    }
-  }
-
   set channelInterpretation(value) {
     if (!(this instanceof AudioNode)) {
       throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioNode\'');
+    }
+
+    if (!['speakers', 'discrete'].includes(value)) {
+      console.warn(`Failed to set the 'channelInterpretation' property on 'AudioNode': Value '${value}' is not a valid 'ChannelInterpretation' enum value`);
+      return;
     }
 
     try {
@@ -208,14 +224,12 @@ Object.defineProperties(AudioNode.prototype, {
     configurable: true,
     value: 'AudioNode',
   },
-
   context: kEnumerableProperty,
   numberOfInputs: kEnumerableProperty,
   numberOfOutputs: kEnumerableProperty,
   channelCount: kEnumerableProperty,
   channelCountMode: kEnumerableProperty,
   channelInterpretation: kEnumerableProperty,
-
   connect: kEnumerableProperty,
   disconnect: kEnumerableProperty,
 });
