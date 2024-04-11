@@ -37,15 +37,54 @@ module.exports = function(jsExport, nativeBinding) {
         throw new TypeError(`Failed to construct 'AudioContext': The provided value is not of type 'AudioContextOptions'`);
       }
 
+      // @todo - check AudioNodeOptions
+      // dictionary AudioContextOptions {
+      //     (AudioContextLatencyCategory or double) latencyHint = "interactive";
+      //     float sampleRate;
+      //     (DOMString or AudioSinkOptions) sinkId;
+      //     (AudioContextRenderSizeCategory or unsigned long) renderSizeHint = "default";
+      // };
+
+      const targetOptions = Object.assign({}, options);
+
+      let targetSinkId = '';
+
+      if (options.sinkId !== undefined) {
+        const sinkId = options.sinkId;
+
+        if (isPlainObject(sinkId)) {
+          if (!('type' in sinkId) || sinkId.type !== 'none') {
+            const err = TypeError(`Failed to construct 'AudioContext': Failed to read the 'sinkId' property from AudioNodeOptions: Failed to read the 'type' property from 'AudioSinkOptions': The provided value '${sinkId.type}' is not a valid enum value of type AudioSinkType.`);
+            return Promise.reject(err);
+          }
+
+          targetSinkId = 'none';
+        } else {
+          try {
+            targetSinkId = conversions['DOMString'](sinkId, {
+              context: `Failed to construct 'AudioContext': Failed to read the 'sinkId' property from AudioNodeOptions:  Failed to read the 'type' property from 'AudioSinkOptions': The provided value '${sinkId}'`,
+            });
+          } catch (err) {
+            return Promise.reject(err);
+          }
+        }
+
+        targetOptions.sinkId = targetSinkId;
+      }
+
       let napiObj;
 
       try {
-        napiObj = new nativeBinding.AudioContext(options);
+        napiObj = new nativeBinding.AudioContext(targetOptions);
       } catch (err) {
         throwSanitizedError(err);
       }
 
       super(napiObj);
+
+      if (options.sinkId) {
+        this.#sinkId = sinkId;
+      }
 
       // Bridge Rust native event to Node EventTarget
       bridgeEventTarget(this);
