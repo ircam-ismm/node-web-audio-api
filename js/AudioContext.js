@@ -65,7 +65,7 @@ module.exports = function(jsExport, nativeBinding) {
               context: `Failed to construct 'AudioContext': Failed to read the 'sinkId' property from AudioNodeOptions:  Failed to read the 'type' property from 'AudioSinkOptions': The provided value '${sinkId}'`,
             });
           } catch (err) {
-            return Promise.reject(err);
+            throw throwSanitizedError(err);
           }
         }
 
