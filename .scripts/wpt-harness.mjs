@@ -69,6 +69,8 @@ const setup = window => {
   window.Error = Error;
   window.DOMException = DOMException;
   window.Float32Array = Float32Array;
+  window.Float64Array = Float64Array;
+  window.Uint8Array = Uint8Array;
   window.EventTarget = EventTarget;
   window.Promise = Promise;
 }
