@@ -348,8 +348,7 @@ async function beautifyAndLint(pathname, code) {
   beautifyAndLint(pathname, generatedPrefix(code));
 }
 
-{
-  const src = 'AudioParam';
+['AudioParam', 'AudioNode'].forEach((src) => {
   const nodeIdl = findInTree(src);
   const pathname = path.join(jsOutput, `${src}.js`);
   console.log(`> generating file: ${path.relative(process.cwd(), pathname)}`);
@@ -361,23 +360,6 @@ async function beautifyAndLint(pathname, code) {
     node: nodeIdl,
     tree,
     ...utils,
-  });
-
-  beautifyAndLint(pathname, generatedPrefix(code));
-}
-
-['AudioNode', 'AudioScheduledSourceNode'].forEach((name, index) => {
-  const nodeIdl = findInTree(name);
-  const pathname = path.join(jsOutput, `${name}.js`);
-  console.log(`> generating file: ${path.relative(process.cwd(), pathname)}`);
-
-  const codeTmpl = fs.readFileSync(path.join(jsTemplates, `${name}.tmpl.js`), 'utf8');
-  const tmpl = compile(codeTmpl);
-
-  const code = tmpl({
-    node: nodeIdl,
-    tree,
-    ...utils
   });
 
   beautifyAndLint(pathname, generatedPrefix(code));

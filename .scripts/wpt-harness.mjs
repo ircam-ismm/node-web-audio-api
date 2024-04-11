@@ -71,6 +71,7 @@ const setup = window => {
   window.Float32Array = Float32Array;
   window.Float64Array = Float64Array;
   window.Uint8Array = Uint8Array;
+  window.ArrayBuffer = ArrayBuffer;
   window.EventTarget = EventTarget;
   window.Promise = Promise;
 }

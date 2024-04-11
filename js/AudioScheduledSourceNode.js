@@ -1,22 +1,3 @@
-// -------------------------------------------------------------------------- //
-// -------------------------------------------------------------------------- //
-//                                                                            //
-//                                                                            //
-//                                                                            //
-//    ██╗    ██╗ █████╗ ██████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗               //
-//    ██║    ██║██╔══██╗██╔══██╗████╗  ██║██║████╗  ██║██╔════╝               //
-//    ██║ █╗ ██║███████║██████╔╝██╔██╗ ██║██║██╔██╗ ██║██║  ███╗              //
-//    ██║███╗██║██╔══██║██╔══██╗██║╚██╗██║██║██║╚██╗██║██║   ██║              //
-//    ╚███╔███╔╝██║  ██║██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝              //
-//     ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝               //
-//                                                                            //
-//                                                                            //
-//    - This file has been generated ---------------------------              //
-//                                                                            //
-//                                                                            //
-// -------------------------------------------------------------------------- //
-// -------------------------------------------------------------------------- //
-
 const conversions = require('webidl-conversions');
 const {
   throwSanitizedError,
@@ -32,6 +13,8 @@ const {
 const AudioNode = require('./AudioNode.js');
 
 class AudioScheduledSourceNode extends AudioNode {
+  #onended = null;
+
   constructor(context, napiObj) {
     super(context, napiObj);
   }
@@ -41,7 +24,7 @@ class AudioScheduledSourceNode extends AudioNode {
       throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioScheduledSourceNode\'');
     }
 
-    return this._onended || null;
+    return this.#onended;
   }
 
   set onended(value) {
@@ -50,7 +33,7 @@ class AudioScheduledSourceNode extends AudioNode {
     }
 
     if (isFunction(value) || value === null) {
-      this._onended = value;
+      this.#onended = value;
     }
   }
 
@@ -85,7 +68,6 @@ class AudioScheduledSourceNode extends AudioNode {
       throwSanitizedError(err);
     }
   }
-
 }
 
 Object.defineProperties(AudioScheduledSourceNode, {
