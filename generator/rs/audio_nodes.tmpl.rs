@@ -286,9 +286,11 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         &_ => unreachable!(),
     };
 
+    ${d.audioParams(d.node).length > 0 ? `
     // --------------------------------------------------------
     // Bind AudioParam to JS object
     // --------------------------------------------------------\
+    ` : ``}
     ${d.audioParams(d.node).map((param) => {
         return `
     let native_param = native_node.${d.slug(param.name)}().clone();
@@ -450,9 +452,11 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
     }
 }())}
 
+${d.attributes(d.node).length > 0 ? `
 // -------------------------------------------------
 // Getters / Setters
 // -------------------------------------------------\
+` : ``}
 ${d.attributes(d.node).map(attr => {
     const attrType = d.memberType(attr);
     let getter = ``;
@@ -588,7 +592,7 @@ fn get_${d.slug(attr)}(_ctx: CallContext) -> Result<JsUnknown> {
         }
         // IDL types
         default: {
-            console.log(`[warning] Unhandled getter ${d.name(d.node)}::${d.name(attr)} (type: ${attrType})`);
+            console.log(`[warning] Unhandled getter ${d.name(d.node)}::${d.name(attr)}: type: ${attrType}`);
             break;
         }
     }
@@ -730,7 +734,7 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
                 break;
             }
             default: {
-                console.log(`[warning] Unhandled setter ${d.name(d.node)}::${d.name(attr)} (type: ${attrType})`);
+                console.log(`[warning] Unhandled setter ${d.name(d.node)}::${d.name(attr)}: type: ${attrType}`);
                 break;
             }
         }
@@ -739,86 +743,65 @@ fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
     return `${getter}${setter}`
 }).join('')}
 
+
+${d.methods(d.node).length > 0 ? `
 // -------------------------------------------------
 // METHODS
 // -------------------------------------------------\
+` : ``}
 ${d.methods(d.node).map(method => {
-if (method.idlType.idlType !== "undefined") {
-    console.log(`[WARNING] return type ${method.idlType.idlType} for method ${method.name} not parsed`);
-    return "";
-}
-
-let doWriteMethodCall = true;
-
-return `
+    return `
 #[js_function(${method.arguments.length})]
 fn ${d.slug(method)}(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    // avoid warnings while we don"t support all methods
-    #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
     ${method.arguments.map((arg, index) => {
-        switch (d.memberType(arg)) {
-            case "float":
+        const attrType = d.memberType(arg);
+
+        switch (attrType) {
+            case "float": {
                 return `
-    let ${d.slug(arg.name)}_js = ctx.get::<JsObject>(${index})?.coerce_to_number()?;
-    let ${d.slug(arg.name)} = ${d.slug(arg.name)}_js.get_double()? as f32;
+    let ${d.slug(arg.name)} = ctx.get::<JsNumber>(${index})?.get_double()? as f32;
                 `;
                 break;
-            case "double":
-                return `
-    let ${d.slug(arg.name)}_js = ctx.get::<JsObject>(${index})?.coerce_to_number()?;
-    let ${d.slug(arg.name)} = ${d.slug(arg.name)}_js.get_double()? as f64;
-                `;
-                break;
-            case "Float32Array":
+            }
+            case "Float32Array": {
                 return `
     let mut ${d.slug(arg.name)}_js = ctx.get::<JsTypedArray>(${index})?.into_value()?;
     let ${d.slug(arg.name)}: &mut [f32] = ${d.slug(arg.name)}_js.as_mut();
                 `;
                 break;
-            case "Uint8Array":
+            }
+            case "Uint8Array": {
                 return `
     let mut ${d.slug(arg.name)}_js = ctx.get::<JsTypedArray>(${index})?.into_value()?;
     let ${d.slug(arg.name)}: &mut [u8] = ${d.slug(arg.name)}_js.as_mut();
                 `;
                 break;
-            default:
-                let idl = d.findInTree(d.memberType(arg));
+            }
+            case "PeriodicWave": {
+                let typeIdl = d.findInTree(attrType);
 
-                // this is a not implemented primitive
-                if (idl === undefined) {
-                    console.log(`[method] argument ${arg.name} for method ${method.name} with type ${d.memberType(arg)} not parsed`);
-                    doWriteMethodCall = false;
-                } else {
-                    switch (d.type(idl)) {
-                        case "interface":
-                            return `
-        let ${d.slug(arg.name)}_js = ctx.get::<JsObject>(${index})?;
-        let ${d.slug(arg.name)}_napi = ctx.env.unwrap::<${d.napiName(idl)}>(&${d.slug(arg.name)}_js)?;
-        let ${d.slug(arg.name)} = ${d.slug(arg.name)}_napi.unwrap().clone();
-                            `;
-                            break;
-                        default:
-                            console.log(`[method] argument ${arg.name} for method ${method.name} with type ${d.memberType(arg)} not parsed`);
-                            doWriteMethodCall = false;
-                            break;
-                    }
-                }
+                return `
+    let ${d.slug(arg.name)}_js = ctx.get::<JsObject>(${index})?;
+    let ${d.slug(arg.name)}_napi = ctx.env.unwrap::<${d.napiName(typeIdl)}>(&${d.slug(arg.name)}_js)?;
+    let ${d.slug(arg.name)} = ${d.slug(arg.name)}_napi.unwrap().clone();
+                `;
                 break;
-
+            }
+            default: {
+                console.log(`[warning] Unhandled method argument ${d.name(d.node)}::${d.slug(method)}: ${arg.name} with type: ${attrType}`);
+                break;
+            }
         }
     }).join("")}
 
-    ${doWriteMethodCall ?
-    `node.${d.slug(method)}(${method.arguments.map(arg => d.slug(arg.name)).join(",")});` :
-    ``
-    }
+    node.${d.slug(method)}(${method.arguments.map(arg => d.slug(arg.name)).join(",")});
 
     ctx.env.get_undefined()
 }
-`;
+    `;
 }).join('')}
 

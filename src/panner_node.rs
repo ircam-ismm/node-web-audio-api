@@ -261,6 +261,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // --------------------------------------------------------
     // Bind AudioParam to JS object
     // --------------------------------------------------------
+
     let native_param = native_node.position_x().clone();
     let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
@@ -322,6 +323,7 @@ audio_node_impl!(NapiPannerNode);
 // -------------------------------------------------
 // Getters / Setters
 // -------------------------------------------------
+
 #[js_function(0)]
 fn get_panning_model(ctx: CallContext) -> Result<JsString> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -527,22 +529,18 @@ fn set_cone_outer_gain(ctx: CallContext) -> Result<JsUndefined> {
 // -------------------------------------------------
 // METHODS
 // -------------------------------------------------
+
 #[js_function(3)]
 fn set_position(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
-    // avoid warnings while we don"t support all methods
-    #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
-    let x_js = ctx.get::<JsObject>(0)?.coerce_to_number()?;
-    let x = x_js.get_double()? as f32;
+    let x = ctx.get::<JsNumber>(0)?.get_double()? as f32;
 
-    let y_js = ctx.get::<JsObject>(1)?.coerce_to_number()?;
-    let y = y_js.get_double()? as f32;
+    let y = ctx.get::<JsNumber>(1)?.get_double()? as f32;
 
-    let z_js = ctx.get::<JsObject>(2)?.coerce_to_number()?;
-    let z = z_js.get_double()? as f32;
+    let z = ctx.get::<JsNumber>(2)?.get_double()? as f32;
 
     node.set_position(x, y, z);
 
@@ -553,18 +551,13 @@ fn set_position(ctx: CallContext) -> Result<JsUndefined> {
 fn set_orientation(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiPannerNode>(&js_this)?;
-    // avoid warnings while we don"t support all methods
-    #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
-    let x_js = ctx.get::<JsObject>(0)?.coerce_to_number()?;
-    let x = x_js.get_double()? as f32;
+    let x = ctx.get::<JsNumber>(0)?.get_double()? as f32;
 
-    let y_js = ctx.get::<JsObject>(1)?.coerce_to_number()?;
-    let y = y_js.get_double()? as f32;
+    let y = ctx.get::<JsNumber>(1)?.get_double()? as f32;
 
-    let z_js = ctx.get::<JsObject>(2)?.coerce_to_number()?;
-    let z = z_js.get_double()? as f32;
+    let z = ctx.get::<JsNumber>(2)?.get_double()? as f32;
 
     node.set_orientation(x, y, z);
 

@@ -147,6 +147,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // --------------------------------------------------------
     // Bind AudioParam to JS object
     // --------------------------------------------------------
+
     let native_param = native_node.playback_rate().clone();
     let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
@@ -287,6 +288,7 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
 // -------------------------------------------------
 // Getters / Setters
 // -------------------------------------------------
+
 #[js_function(0)]
 fn get_buffer(_ctx: CallContext) -> Result<JsUnknown> {
     unreachable!();
@@ -371,7 +373,3 @@ fn set_loop_end(ctx: CallContext) -> Result<JsUndefined> {
 
     ctx.env.get_undefined()
 }
-
-// -------------------------------------------------
-// METHODS
-// -------------------------------------------------

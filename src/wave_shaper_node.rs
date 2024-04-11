@@ -169,10 +169,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     };
 
     // --------------------------------------------------------
-    // Bind AudioParam to JS object
-    // --------------------------------------------------------
-
-    // --------------------------------------------------------
     // Finalize instance creation
     // --------------------------------------------------------
     js_this.define_properties(&[
@@ -197,6 +193,7 @@ audio_node_impl!(NapiWaveShaperNode);
 // -------------------------------------------------
 // Getters / Setters
 // -------------------------------------------------
+
 #[js_function(0)]
 fn get_curve(ctx: CallContext) -> Result<JsUnknown> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -273,7 +270,3 @@ fn set_oversample(ctx: CallContext) -> Result<JsUndefined> {
 
     ctx.env.get_undefined()
 }
-
-// -------------------------------------------------
-// METHODS
-// -------------------------------------------------

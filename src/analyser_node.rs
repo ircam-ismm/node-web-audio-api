@@ -183,10 +183,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     };
 
     // --------------------------------------------------------
-    // Bind AudioParam to JS object
-    // --------------------------------------------------------
-
-    // --------------------------------------------------------
     // Finalize instance creation
     // --------------------------------------------------------
     js_this.define_properties(&[
@@ -211,6 +207,7 @@ audio_node_impl!(NapiAnalyserNode);
 // -------------------------------------------------
 // Getters / Setters
 // -------------------------------------------------
+
 #[js_function(0)]
 fn get_fft_size(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -312,12 +309,11 @@ fn set_smoothing_time_constant(ctx: CallContext) -> Result<JsUndefined> {
 // -------------------------------------------------
 // METHODS
 // -------------------------------------------------
+
 #[js_function(1)]
 fn get_float_frequency_data(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
-    // avoid warnings while we don"t support all methods
-    #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
     let mut array_js = ctx.get::<JsTypedArray>(0)?.into_value()?;
@@ -332,8 +328,6 @@ fn get_float_frequency_data(ctx: CallContext) -> Result<JsUndefined> {
 fn get_byte_frequency_data(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
-    // avoid warnings while we don"t support all methods
-    #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
     let mut array_js = ctx.get::<JsTypedArray>(0)?.into_value()?;
@@ -348,8 +342,6 @@ fn get_byte_frequency_data(ctx: CallContext) -> Result<JsUndefined> {
 fn get_float_time_domain_data(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
-    // avoid warnings while we don"t support all methods
-    #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
     let mut array_js = ctx.get::<JsTypedArray>(0)?.into_value()?;
@@ -364,8 +356,6 @@ fn get_float_time_domain_data(ctx: CallContext) -> Result<JsUndefined> {
 fn get_byte_time_domain_data(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
-    // avoid warnings while we don"t support all methods
-    #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
     let mut array_js = ctx.get::<JsTypedArray>(0)?.into_value()?;

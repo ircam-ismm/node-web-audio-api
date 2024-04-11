@@ -187,6 +187,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // --------------------------------------------------------
     // Bind AudioParam to JS object
     // --------------------------------------------------------
+
     let native_param = native_node.frequency().clone();
     let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
@@ -312,6 +313,7 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
 // -------------------------------------------------
 // Getters / Setters
 // -------------------------------------------------
+
 #[js_function(0)]
 fn get_type(ctx: CallContext) -> Result<JsString> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -355,12 +357,11 @@ fn set_type(ctx: CallContext) -> Result<JsUndefined> {
 // -------------------------------------------------
 // METHODS
 // -------------------------------------------------
+
 #[js_function(1)]
 fn set_periodic_wave(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
-    // avoid warnings while we don"t support all methods
-    #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
     let periodic_wave_js = ctx.get::<JsObject>(0)?;

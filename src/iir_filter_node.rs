@@ -156,10 +156,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     };
 
     // --------------------------------------------------------
-    // Bind AudioParam to JS object
-    // --------------------------------------------------------
-
-    // --------------------------------------------------------
     // Finalize instance creation
     // --------------------------------------------------------
     js_this.define_properties(&[
@@ -182,18 +178,13 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 audio_node_impl!(NapiIIRFilterNode);
 
 // -------------------------------------------------
-// Getters / Setters
-// -------------------------------------------------
-
-// -------------------------------------------------
 // METHODS
 // -------------------------------------------------
+
 #[js_function(3)]
 fn get_frequency_response(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiIIRFilterNode>(&js_this)?;
-    // avoid warnings while we don"t support all methods
-    #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
     let mut frequency_hz_js = ctx.get::<JsTypedArray>(0)?.into_value()?;

@@ -187,6 +187,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // --------------------------------------------------------
     // Bind AudioParam to JS object
     // --------------------------------------------------------
+
     let native_param = native_node.frequency().clone();
     let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
@@ -236,6 +237,7 @@ audio_node_impl!(NapiBiquadFilterNode);
 // -------------------------------------------------
 // Getters / Setters
 // -------------------------------------------------
+
 #[js_function(0)]
 fn get_type(ctx: CallContext) -> Result<JsString> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -285,12 +287,11 @@ fn set_type(ctx: CallContext) -> Result<JsUndefined> {
 // -------------------------------------------------
 // METHODS
 // -------------------------------------------------
+
 #[js_function(3)]
 fn get_frequency_response(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiBiquadFilterNode>(&js_this)?;
-    // avoid warnings while we don"t support all methods
-    #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
     let mut frequency_hz_js = ctx.get::<JsTypedArray>(0)?.into_value()?;

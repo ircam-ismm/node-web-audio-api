@@ -174,6 +174,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // --------------------------------------------------------
     // Bind AudioParam to JS object
     // --------------------------------------------------------
+
     let native_param = native_node.threshold().clone();
     let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
@@ -229,6 +230,7 @@ audio_node_impl!(NapiDynamicsCompressorNode);
 // -------------------------------------------------
 // Getters / Setters
 // -------------------------------------------------
+
 #[js_function(0)]
 fn get_reduction(ctx: CallContext) -> Result<JsNumber> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -238,7 +240,3 @@ fn get_reduction(ctx: CallContext) -> Result<JsNumber> {
     let value = node.reduction();
     ctx.env.create_double(value as f64)
 }
-
-// -------------------------------------------------
-// METHODS
-// -------------------------------------------------

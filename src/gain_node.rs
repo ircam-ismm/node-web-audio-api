@@ -149,6 +149,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // --------------------------------------------------------
     // Bind AudioParam to JS object
     // --------------------------------------------------------
+
     let native_param = native_node.gain().clone();
     let napi_param = NapiAudioParam::new(native_param);
     let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
@@ -176,11 +177,3 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 }
 
 audio_node_impl!(NapiGainNode);
-
-// -------------------------------------------------
-// Getters / Setters
-// -------------------------------------------------
-
-// -------------------------------------------------
-// METHODS
-// -------------------------------------------------

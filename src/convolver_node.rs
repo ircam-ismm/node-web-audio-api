@@ -166,10 +166,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     };
 
     // --------------------------------------------------------
-    // Bind AudioParam to JS object
-    // --------------------------------------------------------
-
-    // --------------------------------------------------------
     // Finalize instance creation
     // --------------------------------------------------------
     js_this.define_properties(&[
@@ -194,6 +190,7 @@ audio_node_impl!(NapiConvolverNode);
 // -------------------------------------------------
 // Getters / Setters
 // -------------------------------------------------
+
 #[js_function(0)]
 fn get_buffer(_ctx: CallContext) -> Result<JsUnknown> {
     unreachable!();
@@ -234,7 +231,3 @@ fn set_normalize(ctx: CallContext) -> Result<JsUndefined> {
 
     ctx.env.get_undefined()
 }
-
-// -------------------------------------------------
-// METHODS
-// -------------------------------------------------
