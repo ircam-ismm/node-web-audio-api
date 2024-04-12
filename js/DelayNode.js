@@ -29,8 +29,6 @@ const {
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
-
-const AudioParam = require('./AudioParam.js');
 const {
   kNapiObj,
   kAudioBuffer,
@@ -107,9 +105,13 @@ module.exports = (jsExport, nativeBinding) => {
         throwSanitizedError(err);
       }
 
-      super(context, napiObj);
+      super(context, {
+        [kNapiObj]: napiObj,
+      });
 
-      this.#delayTime = new AudioParam(this[kNapiObj].delayTime);
+      this.#delayTime = new jsExport.AudioParam({
+        [kNapiObj]: this[kNapiObj].delayTime,
+      });
     }
 
     get delayTime() {

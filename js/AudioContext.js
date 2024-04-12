@@ -193,7 +193,7 @@ module.exports = function(jsExport, nativeBinding) {
       await this[kNapiObj].close();
     }
 
-    setSinkId(sinkId) {
+    async setSinkId(sinkId) {
       if (!(this instanceof AudioContext)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioContext\'');
       }
@@ -206,32 +206,23 @@ module.exports = function(jsExport, nativeBinding) {
 
       if (isPlainObject(sinkId)) {
         if (!('type' in sinkId) || sinkId.type !== 'none') {
-          const err = TypeError(`Failed to execute 'setSinkId' on 'AudioContext': Failed to read the 'type' property from 'AudioSinkOptions': The provided value '${sinkId.type}' is not a valid enum value of type AudioSinkType.`);
+          throw new TypeError(`Failed to execute 'setSinkId' on 'AudioContext': Failed to read the 'type' property from 'AudioSinkOptions': The provided value '${sinkId.type}' is not a valid enum value of type AudioSinkType.`);
           return Promise.reject(err);
         }
 
         targetSinkId = 'none';
       } else {
-        try {
-          targetSinkId = conversions['DOMString'](sinkId, {
-            context: `Failed to execute 'setSinkId' on 'AudioContext': Failed to read the 'type' property from 'AudioSinkOptions': The provided value '${sinkId.type}'`,
-          });
-        } catch (err) {
-          return Promise.reject(err);
-        }
+        targetSinkId = conversions['DOMString'](sinkId, {
+          context: `Failed to execute 'setSinkId' on 'AudioContext': Failed to read the 'type' property from 'AudioSinkOptions': The provided value '${sinkId.type}'`,
+        });
       }
 
       this.#sinkId = sinkId;
 
       try {
         this[kNapiObj].setSinkId(targetSinkId);
-        return Promise.resolve(undefined);
       } catch (err) {
-        try {
-          throwSanitizedError(err);
-        } catch (err) {
-          return Promise.reject(err);
-        }
+        throwSanitizedError(err);
       }
     }
 

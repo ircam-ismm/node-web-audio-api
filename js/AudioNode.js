@@ -34,11 +34,19 @@ const AudioParam = require('./AudioParam.js');
 class AudioNode extends EventTarget {
   #context = null;
 
-  constructor(context, napiObj) {
-    super(napiObj);
+  constructor(context, options) {
+    // Make constructor "private"
+    if (
+      (typeof options !== 'object') ||
+      !(kNapiObj in options)
+    ) {
+      throw new TypeError('Illegal constructor');
+    }
+
+    super(options[kNapiObj]);
 
     this.#context = context;
-    this[kNapiObj] = napiObj;
+    this[kNapiObj] = options[kNapiObj];
   }
 
   get context() {

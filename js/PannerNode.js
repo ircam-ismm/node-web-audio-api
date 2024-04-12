@@ -29,8 +29,6 @@ const {
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
-
-const AudioParam = require('./AudioParam.js');
 const {
   kNapiObj,
   kAudioBuffer,
@@ -216,14 +214,28 @@ module.exports = (jsExport, nativeBinding) => {
         throwSanitizedError(err);
       }
 
-      super(context, napiObj);
+      super(context, {
+        [kNapiObj]: napiObj,
+      });
 
-      this.#positionX = new AudioParam(this[kNapiObj].positionX);
-      this.#positionY = new AudioParam(this[kNapiObj].positionY);
-      this.#positionZ = new AudioParam(this[kNapiObj].positionZ);
-      this.#orientationX = new AudioParam(this[kNapiObj].orientationX);
-      this.#orientationY = new AudioParam(this[kNapiObj].orientationY);
-      this.#orientationZ = new AudioParam(this[kNapiObj].orientationZ);
+      this.#positionX = new jsExport.AudioParam({
+        [kNapiObj]: this[kNapiObj].positionX,
+      });
+      this.#positionY = new jsExport.AudioParam({
+        [kNapiObj]: this[kNapiObj].positionY,
+      });
+      this.#positionZ = new jsExport.AudioParam({
+        [kNapiObj]: this[kNapiObj].positionZ,
+      });
+      this.#orientationX = new jsExport.AudioParam({
+        [kNapiObj]: this[kNapiObj].orientationX,
+      });
+      this.#orientationY = new jsExport.AudioParam({
+        [kNapiObj]: this[kNapiObj].orientationY,
+      });
+      this.#orientationZ = new jsExport.AudioParam({
+        [kNapiObj]: this[kNapiObj].orientationZ,
+      });
     }
 
     get positionX() {

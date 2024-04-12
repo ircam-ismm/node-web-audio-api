@@ -33,12 +33,17 @@ const {
 } = require('./lib/symbols.js');
 
 class AudioParam {
-  constructor(nativeAudioParam) {
-    if (nativeAudioParam['Symbol.toStringTag'] !== 'AudioParam') {
+  constructor(options) {
+    // Make constructor "private"
+    if (
+      (typeof options !== 'object') ||
+      !(kNapiObj in options) ||
+      options[kNapiObj]['Symbol.toStringTag'] !== 'AudioParam'
+    ) {
       throw new TypeError('Illegal constructor');
     }
 
-    this[kNapiObj] = nativeAudioParam;
+    this[kNapiObj] = options[kNapiObj];
   }
 
   get value() {

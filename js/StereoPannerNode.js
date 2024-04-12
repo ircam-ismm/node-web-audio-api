@@ -29,8 +29,6 @@ const {
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
-
-const AudioParam = require('./AudioParam.js');
 const {
   kNapiObj,
   kAudioBuffer,
@@ -99,9 +97,13 @@ module.exports = (jsExport, nativeBinding) => {
         throwSanitizedError(err);
       }
 
-      super(context, napiObj);
+      super(context, {
+        [kNapiObj]: napiObj,
+      });
 
-      this.#pan = new AudioParam(this[kNapiObj].pan);
+      this.#pan = new jsExport.AudioParam({
+        [kNapiObj]: this[kNapiObj].pan,
+      });
     }
 
     get pan() {

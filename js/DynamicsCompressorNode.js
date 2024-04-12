@@ -29,8 +29,6 @@ const {
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
-
-const AudioParam = require('./AudioParam.js');
 const {
   kNapiObj,
   kAudioBuffer,
@@ -135,13 +133,25 @@ module.exports = (jsExport, nativeBinding) => {
         throwSanitizedError(err);
       }
 
-      super(context, napiObj);
+      super(context, {
+        [kNapiObj]: napiObj,
+      });
 
-      this.#threshold = new AudioParam(this[kNapiObj].threshold);
-      this.#knee = new AudioParam(this[kNapiObj].knee);
-      this.#ratio = new AudioParam(this[kNapiObj].ratio);
-      this.#attack = new AudioParam(this[kNapiObj].attack);
-      this.#release = new AudioParam(this[kNapiObj].release);
+      this.#threshold = new jsExport.AudioParam({
+        [kNapiObj]: this[kNapiObj].threshold,
+      });
+      this.#knee = new jsExport.AudioParam({
+        [kNapiObj]: this[kNapiObj].knee,
+      });
+      this.#ratio = new jsExport.AudioParam({
+        [kNapiObj]: this[kNapiObj].ratio,
+      });
+      this.#attack = new jsExport.AudioParam({
+        [kNapiObj]: this[kNapiObj].attack,
+      });
+      this.#release = new jsExport.AudioParam({
+        [kNapiObj]: this[kNapiObj].release,
+      });
     }
 
     get threshold() {

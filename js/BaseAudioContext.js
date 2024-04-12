@@ -47,7 +47,9 @@ module.exports = (jsExport, _nativeBinding) => {
       }
 
       if (this.#listener === null) {
-        this.#listener = new jsExport.AudioListener(this[kNapiObj].listener);
+        this.#listener = new jsExport.AudioListener({
+          [kNapiObj]: this[kNapiObj].listener,
+        });
       }
 
       return this.#listener;
@@ -110,7 +112,7 @@ module.exports = (jsExport, _nativeBinding) => {
     // when decodeErrorCallback is present the program will crash in an
     // unexpected manner
     // cf. https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-decodeaudiodata
-    decodeAudioData(arrayBuffer, decodeSuccessCallback = undefined, decodeErrorCallback = undefined) {
+    async decodeAudioData(arrayBuffer, decodeSuccessCallback = undefined, decodeErrorCallback = undefined) {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
       }
@@ -132,13 +134,13 @@ module.exports = (jsExport, _nativeBinding) => {
         if (isFunction(decodeSuccessCallback)) {
           decodeSuccessCallback(audioBuffer);
         } else {
-          return Promise.resolve(audioBuffer);
+          return audioBuffer;
         }
       } catch (err) {
         if (isFunction(decodeErrorCallback)) {
           decodeErrorCallback(err);
         } else {
-          return Promise.reject(err);
+          throw err;
         }
       }
     }

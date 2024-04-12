@@ -5,12 +5,17 @@ const AudioNode = require('./AudioNode.js');
 class AudioDestinationNode extends AudioNode {
   constructor(context, options) {
     // Make constructor "private"
-    // @todo - this is not very solid, but does the job for now
-    if (!(kNapiObj in options) || options[kNapiObj]['Symbol.toStringTag'] !== 'AudioDestinationNode') {
+    if (
+      (typeof options !== 'object')
+      || !(kNapiObj in options)
+      || options[kNapiObj]['Symbol.toStringTag'] !== 'AudioDestinationNode'
+    ) {
       throw new TypeError('Illegal constructor');
     }
 
-    super(context, options[kNapiObj]);
+    super(context, {
+      [kNapiObj]: options[kNapiObj],
+    });
   }
 
   get maxChannelCount() {

@@ -30,24 +30,27 @@ class AudioListener {
   #upY = null;
   #upZ = null;
 
-  constructor(napiObj) {
+  constructor(options) {
     // Make constructor "private"
-    // @todo - this is not very solid, but does the job for now
-    if (napiObj['Symbol.toStringTag'] !== 'AudioListener') {
+    if (
+      (typeof options !== 'object')
+      || !(kNapiObj in options)
+      || options[kNapiObj]['Symbol.toStringTag'] !== 'AudioListener'
+    ) {
       throw new TypeError('Illegal constructor');
     }
 
-    this[kNapiObj] = napiObj;
+    this[kNapiObj] = options[kNapiObj];
 
-    this.#positionX = new AudioParam(napiObj.positionX);
-    this.#positionY = new AudioParam(napiObj.positionY);
-    this.#positionZ = new AudioParam(napiObj.positionZ);
-    this.#forwardX = new AudioParam(napiObj.forwardX);
-    this.#forwardY = new AudioParam(napiObj.forwardY);
-    this.#forwardZ = new AudioParam(napiObj.forwardZ);
-    this.#upX = new AudioParam(napiObj.upX);
-    this.#upY = new AudioParam(napiObj.upY);
-    this.#upZ = new AudioParam(napiObj.upZ);
+    this.#positionX = new AudioParam({ [kNapiObj]: this[kNapiObj].positionX });
+    this.#positionY = new AudioParam({ [kNapiObj]: this[kNapiObj].positionY });
+    this.#positionZ = new AudioParam({ [kNapiObj]: this[kNapiObj].positionZ });
+    this.#forwardX = new AudioParam({ [kNapiObj]: this[kNapiObj].forwardX });
+    this.#forwardY = new AudioParam({ [kNapiObj]: this[kNapiObj].forwardY });
+    this.#forwardZ = new AudioParam({ [kNapiObj]: this[kNapiObj].forwardZ });
+    this.#upX = new AudioParam({ [kNapiObj]: this[kNapiObj].upX });
+    this.#upY = new AudioParam({ [kNapiObj]: this[kNapiObj].upY });
+    this.#upZ = new AudioParam({ [kNapiObj]: this[kNapiObj].upZ });
   }
 
   get positionX() {

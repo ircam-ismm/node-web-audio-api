@@ -29,8 +29,6 @@ const {
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
-
-const AudioParam = require('./AudioParam.js');
 const {
   kNapiObj,
   kAudioBuffer,
@@ -128,7 +126,9 @@ module.exports = (jsExport, nativeBinding) => {
         throwSanitizedError(err);
       }
 
-      super(context, napiObj);
+      super(context, {
+        [kNapiObj]: napiObj,
+      });
 
       // keep the wrapped AudioBuffer around
       this[kAudioBuffer] = null;
@@ -140,8 +140,12 @@ module.exports = (jsExport, nativeBinding) => {
       // Bridge Rust native event to Node EventTarget
       bridgeEventTarget(this);
 
-      this.#playbackRate = new AudioParam(this[kNapiObj].playbackRate);
-      this.#detune = new AudioParam(this[kNapiObj].detune);
+      this.#playbackRate = new jsExport.AudioParam({
+        [kNapiObj]: this[kNapiObj].playbackRate,
+      });
+      this.#detune = new jsExport.AudioParam({
+        [kNapiObj]: this[kNapiObj].detune,
+      });
     }
 
     get playbackRate() {

@@ -15,8 +15,16 @@ const AudioNode = require('./AudioNode.js');
 class AudioScheduledSourceNode extends AudioNode {
   #onended = null;
 
-  constructor(context, napiObj) {
-    super(context, napiObj);
+  constructor(context, options) {
+    // Make constructor "private"
+    if (
+      (typeof options !== 'object')
+      || !(kNapiObj in options)
+    ) {
+      throw new TypeError('Illegal constructor');
+    }
+
+    super(context, options);
   }
 
   get onended() {

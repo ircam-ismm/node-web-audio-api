@@ -4,8 +4,6 @@ const conversions = require("webidl-conversions");
 const { toSanitizedSequence } = require('./lib/cast.js');
 const { isFunction, kEnumerableProperty } = require('./lib/utils.js');
 const { throwSanitizedError } = require('./lib/errors.js');
-
-const AudioParam = require('./AudioParam.js');
 const { kNapiObj, kAudioBuffer } = require('./lib/symbols.js');
 const { bridgeEventTarget } = require('./lib/events.js');
 /* eslint-enable no-unused-vars */
@@ -274,7 +272,7 @@ module.exports = (jsExport, nativeBinding) => {
         throwSanitizedError(err);
       }
 
-      super(context, napiObj);
+      super(context, { [kNapiObj]: napiObj });
 
       ${(function() {
         // handle special options cases
@@ -305,7 +303,9 @@ module.exports = (jsExport, nativeBinding) => {
 
       ${d.audioParams(d.node).map(param => {
         return `
-      this.#${d.name(param)} = new AudioParam(this[kNapiObj].${d.name(param)});`;
+      this.#${d.name(param)} = new jsExport.AudioParam({
+        [kNapiObj]: this[kNapiObj].${d.name(param)},
+      });`;
       }).join('')}
     }
 
