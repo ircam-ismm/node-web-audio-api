@@ -74,7 +74,7 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
         throwSanitizedError(err);
       }
 
-      super(napiObj);
+      super({ [kNapiObj]: napiObj });
     }
 
     get length() {

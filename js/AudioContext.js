@@ -80,7 +80,7 @@ module.exports = function(jsExport, nativeBinding) {
         throwSanitizedError(err);
       }
 
-      super(napiObj);
+      super({ [kNapiObj]: napiObj });
 
       if (options.sinkId) {
         this.#sinkId = sinkId;

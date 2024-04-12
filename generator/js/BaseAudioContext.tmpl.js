@@ -6,14 +6,22 @@ module.exports = (jsExport, _nativeBinding) => {
     #listener = null;
     #destination = null;
 
-    constructor(napiObj) {
-      super(napiObj);
+    constructor(options) {
+      // Make constructor "private"
+      if (
+        (typeof options !== 'object') ||
+        !(kNapiObj in options)
+      ) {
+        throw new TypeError('Illegal constructor');
+      }
 
-      this[kNapiObj] = napiObj;
+      super();
+
+      this[kNapiObj] = options[kNapiObj];
 
       this.#listener = null; // lazily instanciated
       this.#destination = new jsExport.AudioDestinationNode(this, {
-        [kNapiObj]: napiObj.destination
+        [kNapiObj]: this[kNapiObj].destination,
       });
     }
 
@@ -170,18 +178,15 @@ module.exports = (jsExport, _nativeBinding) => {
     // --------------------------------------------------------------------
     // Factory Methods (use the patched AudioNodes)
     // --------------------------------------------------------------------
-${d.nodes.map(n => {
-  let factoryName = d.factoryName(n);
-  let factoryIdl = d.factoryIdl(factoryName);
+    ${d.nodes.map(n => {
+      let factoryName = d.factoryName(n);
+      let factoryIdl = d.factoryIdl(factoryName);
+      // createMediaStreamSource is online AudioContext only
+      if (factoryIdl === undefined) { return ``; }
 
-  // createMediaStreamSource is online AudioContext only
-  if (factoryIdl === undefined) {
-    return ``;
-  }
+      let args = factoryIdl.arguments;
 
-  let args = factoryIdl.arguments;
-
-return `\
+    return `\
     ${d.factoryName(n)}(${args.map(arg => arg.optional ? `${arg.name} = ${arg.default.value}` : arg.name).join(', ')}) {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
@@ -191,8 +196,7 @@ return `\
 
       return new jsExport.${d.name(n)}(this, options);
     }
-`
-  }).join('\n')}
+    `}).join('\n')}
   }
 
   Object.defineProperties(BaseAudioContext, {
@@ -213,7 +217,6 @@ return `\
       configurable: true,
       value: 'BaseAudioContext',
     },
-
     ${d.nodes.map(n => {
       let factoryName = d.factoryName(n);
       let factoryIdl = d.factoryIdl(factoryName);
@@ -224,7 +227,6 @@ return `\
       }
       return `${factoryName}: kEnumerableProperty,`;
     }).join('')}
-
     listener: kEnumerableProperty,
     destination: kEnumerableProperty,
     sampleRate: kEnumerableProperty,

@@ -30,14 +30,22 @@ module.exports = (jsExport, _nativeBinding) => {
     #listener = null;
     #destination = null;
 
-    constructor(napiObj) {
-      super(napiObj);
+    constructor(options) {
+      // Make constructor "private"
+      if (
+        (typeof options !== 'object') ||
+        !(kNapiObj in options)
+      ) {
+        throw new TypeError('Illegal constructor');
+      }
 
-      this[kNapiObj] = napiObj;
+      super();
+
+      this[kNapiObj] = options[kNapiObj];
 
       this.#listener = null; // lazily instanciated
       this.#destination = new jsExport.AudioDestinationNode(this, {
-        [kNapiObj]: napiObj.destination,
+        [kNapiObj]: this[kNapiObj].destination,
       });
     }
 
@@ -375,7 +383,6 @@ module.exports = (jsExport, _nativeBinding) => {
       configurable: true,
       value: 'BaseAudioContext',
     },
-
     createAnalyser: kEnumerableProperty,
     createBufferSource: kEnumerableProperty,
     createBiquadFilter: kEnumerableProperty,
@@ -391,7 +398,6 @@ module.exports = (jsExport, _nativeBinding) => {
     createPanner: kEnumerableProperty,
     createStereoPanner: kEnumerableProperty,
     createWaveShaper: kEnumerableProperty,
-
     listener: kEnumerableProperty,
     destination: kEnumerableProperty,
     sampleRate: kEnumerableProperty,
