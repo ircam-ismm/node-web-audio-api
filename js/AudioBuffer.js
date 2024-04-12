@@ -33,8 +33,36 @@ module.exports = (_jsExport, nativeBinding) => {
         //     required unsigned long length;
         //     required float sampleRate;
         // };
+        const parsedOptions = {};
+
+        if (options.numberOfChannels !== undefined) {
+          parsedOptions.numberOfChannels = conversions['unsigned long'](options.numberOfChannels, {
+            enforceRange: true,
+            context: `Failed to construct 'AudioBuffer': Failed to read the 'numberOfChannels' property from AudioBufferOptions: numberOfCHannels`,
+          });
+        } else {
+          parsedOptions.numberOfChannels = 1;
+        }
+
+        if (options.length === undefined) {
+          throw new TypeError(`Failed to construct 'AudioBuffer': Failed to read the 'numberOfChannels' property from AudioBufferOptions: required member is undefined`);
+        }
+
+        parsedOptions.length = conversions['unsigned long'](options.length, {
+          enforceRange: true,
+          context: `Failed to construct 'AudioBuffer': Failed to read the 'length' property from AudioBufferOptions: length`,
+        });
+
+        if (options.sampleRate === undefined) {
+          throw new TypeError(`Failed to construct 'AudioBuffer': Failed to read the 'numberOfChannels' property from AudioBufferOptions: required member is undefined`);
+        }
+
+        parsedOptions.sampleRate = conversions['float'](options.sampleRate, {
+          context: `Failed to construct 'AudioBuffer': Failed to read the 'sampleRate' property from AudioBufferOptions: sampleRate`,
+        });
+
         try {
-          this[kNapiObj] = new nativeBinding.AudioBuffer(options);
+          this[kNapiObj] = new nativeBinding.AudioBuffer(parsedOptions);
         } catch (err) {
           throwSanitizedError(err);
         }

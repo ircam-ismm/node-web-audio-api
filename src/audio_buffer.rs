@@ -51,45 +51,39 @@ impl NapiAudioBuffer {
 #[js_function(1)]
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
-    // JS wrapper guarantees we have an option object
-    let options_js = ctx.get::<JsObject>(0)?;
-    // created by decodeAudioData (to be cleaned)
-    if options_js.has_own_property("__internal_caller__")? {
+
+    let js_options = ctx.get::<JsObject>(0)?;
+
+    if js_options.has_own_property("__internal_caller__")? {
+        // Internal caller
+        // - BaseAudioContext::decodeAudioData
+        // - OfflineAudioContext::startRendering
         let napi_node = NapiAudioBuffer(None);
         ctx.env.wrap(&mut js_this, napi_node)?;
     } else {
-        let some_number_of_channels_js = options_js.get::<&str, JsNumber>("numberOfChannels")?;
-        let number_of_channels = if let Some(number_of_channels_js) = some_number_of_channels_js {
-            number_of_channels_js.get_double()? as usize
-        } else {
-            1
-        };
+        // Public API
+        let number_of_channels = js_options
+            .get::<&str, JsNumber>("numberOfChannels")?
+            .unwrap()
+            .get_double()? as usize;
 
-        let some_length_js = options_js.get::<&str, JsNumber>("length")?;
-        if some_length_js.is_none() {
-            return Err(napi::Error::new(
-                napi::Status::InvalidArg,
-                "TypeError - Failed to construct 'AudioBuffer': Failed to read the 'length' property from 'AudioBufferOptions': Required member is undefined.".to_string(),
-            ));
-        }
-        let length = some_length_js.unwrap().get_double()? as usize;
+        let length = js_options
+            .get::<&str, JsNumber>("length")?
+            .unwrap()
+            .get_double()? as usize;
 
-        let some_sample_rate_js = options_js.get::<&str, JsNumber>("sampleRate")?;
-        if some_sample_rate_js.is_none() {
-            return Err(napi::Error::new(
-                napi::Status::InvalidArg, // error code
-                "TypeError - Failed to construct 'AudioBuffer': Failed to read the 'sampleRate' property from 'AudioBufferOptions': Required member is undefined."
-                    .to_string(),
-            ));
-        }
-        let sample_rate = some_sample_rate_js.unwrap().get_double()? as f32;
+        let sample_rate = js_options
+            .get::<&str, JsNumber>("sampleRate")?
+            .unwrap()
+            .get_double()? as f32;
 
-        let audio_buffer = AudioBuffer::new(AudioBufferOptions {
+        let options = AudioBufferOptions {
             number_of_channels,
             length,
             sample_rate,
-        });
+        };
 
+        let audio_buffer = AudioBuffer::new(options);
         let napi_node = NapiAudioBuffer(Some(audio_buffer));
         ctx.env.wrap(&mut js_this, napi_node)?
     }

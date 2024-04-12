@@ -62,7 +62,7 @@ module.exports = (jsExport, nativeBinding) => {
 
       // required options
       if (typeof options !== 'object' || (options && options.mediaStream === undefined)) {
-        throw new TypeError('Failed to construct \'MediaStreamAudioSourceNode\': Failed to read the \'mediaStream\'\' property from MediaStreamAudioSourceOptions: Required member is undefined');
+        throw new TypeError('Failed to construct \'MediaStreamAudioSourceNode\': Failed to read the \'mediaStream\' property from MediaStreamAudioSourceOptions: Required member is undefined');
       }
 
       parsedOptions.mediaStream = options.mediaStream;
