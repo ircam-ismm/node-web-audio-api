@@ -24,13 +24,8 @@ const {
 const {
   kNapiObj,
 } = require('./lib/symbols.js');
-const {
-  kNativeAudioBuffer,
-} = require('./AudioBuffer.js');
 
-const AudioListener = require('./AudioListener.js');
-
-module.exports = (jsExport /*, nativeBinding */ ) => {
+module.exports = (jsExport, _nativeBinding) => {
   class BaseAudioContext extends EventTarget {
     #listener = null;
     #destination = null;
@@ -41,7 +36,9 @@ module.exports = (jsExport /*, nativeBinding */ ) => {
       this[kNapiObj] = napiObj;
 
       this.#listener = null; // lazily instanciated
-      this.#destination = new jsExport.AudioDestinationNode(this, napiObj.destination);
+      this.#destination = new jsExport.AudioDestinationNode(this, {
+        [kNapiObj]: napiObj.destination,
+      });
     }
 
     get listener() {
@@ -50,7 +47,7 @@ module.exports = (jsExport /*, nativeBinding */ ) => {
       }
 
       if (this.#listener === null) {
-        this.#listener = new AudioListener(this[kNapiObj].listener);
+        this.#listener = new jsExport.AudioListener(this[kNapiObj].listener);
       }
 
       return this.#listener;
@@ -129,7 +126,7 @@ module.exports = (jsExport /*, nativeBinding */ ) => {
       try {
         const nativeAudioBuffer = this[kNapiObj].decodeAudioData(arrayBuffer);
         const audioBuffer = new jsExport.AudioBuffer({
-          [kNativeAudioBuffer]: nativeAudioBuffer,
+          [kNapiObj]: nativeAudioBuffer,
         });
 
         if (isFunction(decodeSuccessCallback)) {

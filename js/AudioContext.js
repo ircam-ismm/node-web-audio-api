@@ -245,11 +245,9 @@ module.exports = function(jsExport, nativeBinding) {
         throw new TypeError(`Failed to execute 'createMediaStreamSource' on 'AudioContext': 1 argument required, but only ${arguments.length} present`);
       }
 
-      const options = {};
-
-      if (mediaStream !== undefined) {
-        options.mediaStream = mediaStream;
-      }
+      const options = {
+        mediaStream,
+      };
 
       return new jsExport.MediaStreamAudioSourceNode(this, options);
     }

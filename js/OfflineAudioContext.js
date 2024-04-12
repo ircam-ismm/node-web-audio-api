@@ -1,13 +1,22 @@
 const conversions = require('webidl-conversions');
 
-const { bridgeEventTarget } = require('./lib/events.js');
-const { DOMException, throwSanitizedError } = require('./lib/errors.js');
 const {
-  isFunction, isPlainObject, isPositiveInt, isPositiveNumber, kEnumerableProperty
+  bridgeEventTarget,
+} = require('./lib/events.js');
+const {
+  DOMException,
+  throwSanitizedError,
+} = require('./lib/errors.js');
+const {
+  isFunction,
+  isPlainObject,
+  isPositiveInt,
+  isPositiveNumber,
+  kEnumerableProperty,
 } = require('./lib/utils.js');
-const { kNapiObj } = require('./lib/symbols.js');
-
-const { kNativeAudioBuffer } = require('./AudioBuffer.js');
+const {
+  kNapiObj
+} = require('./lib/symbols.js');
 
 // constructor(OfflineAudioContextOptions contextOptions);
 // constructor(unsigned long numberOfChannels, unsigned long length, float sampleRate);
@@ -110,7 +119,7 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
         throwSanitizedError(err);
       }
 
-      const audioBuffer = new jsExport.AudioBuffer({ [kNativeAudioBuffer]: nativeAudioBuffer });
+      const audioBuffer = new jsExport.AudioBuffer({ [kNapiObj]: nativeAudioBuffer });
 
       // We dispatch the complete event manually to simplify the sharing of the
       // `AudioBuffer` instance. This also simplifies code on the rust side as

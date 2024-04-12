@@ -6,8 +6,7 @@ const { isFunction, kEnumerableProperty } = require('./lib/utils.js');
 const { throwSanitizedError } = require('./lib/errors.js');
 
 const AudioParam = require('./AudioParam.js');
-const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
-const { kNapiObj } = require('./lib/symbols.js');
+const { kNapiObj, kAudioBuffer } = require('./lib/symbols.js');
 const { bridgeEventTarget } = require('./lib/events.js');
 /* eslint-enable no-unused-vars */
 
@@ -175,7 +174,7 @@ module.exports = (jsExport, nativeBinding) => {
           }
 
           // unwrap napi audio buffer
-          parsedOptions.${optionName} = options.${optionName}[kNativeAudioBuffer];
+          parsedOptions.${optionName} = options.${optionName}[kNapiObj];
         } else {
           parsedOptions.${optionName} = ${defaultValue};
         }
@@ -490,12 +489,12 @@ ${d.attributes(d.node).map(attr => {
       if (value === null) {
         console.warn("Setting the '${d.name(attr)}' property on '${d.name(d.node)}' to 'null' is not supported yet");
         return;
-      } else if (!(kNativeAudioBuffer in value)) {
+      } else if (!(kNapiObj in value)) {
         throw new TypeError("Failed to set the '${d.name(attr)}' property on '${d.name(d.node)}': Failed to convert value to '${type}'");
       }
 
       try {
-        this[kNapiObj].${d.name(attr)} = value[kNativeAudioBuffer];
+        this[kNapiObj].${d.name(attr)} = value[kNapiObj];
       } catch (err) {
         throwSanitizedError(err);
       }

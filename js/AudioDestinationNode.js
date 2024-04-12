@@ -3,14 +3,14 @@ const { kEnumerableProperty } = require('./lib/utils.js');
 const AudioNode = require('./AudioNode.js');
 
 class AudioDestinationNode extends AudioNode {
-  constructor(context, napiObj) {
+  constructor(context, options) {
     // Make constructor "private"
     // @todo - this is not very solid, but does the job for now
-    if (napiObj['Symbol.toStringTag'] !== 'AudioDestinationNode') {
+    if (!(kNapiObj in options) || options[kNapiObj]['Symbol.toStringTag'] !== 'AudioDestinationNode') {
       throw new TypeError('Illegal constructor');
     }
 
-    super(context, napiObj);
+    super(context, options[kNapiObj]);
   }
 
   get maxChannelCount() {

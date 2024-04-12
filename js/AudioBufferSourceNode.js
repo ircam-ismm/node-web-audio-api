@@ -32,11 +32,8 @@ const {
 
 const AudioParam = require('./AudioParam.js');
 const {
-  kNativeAudioBuffer,
-  kAudioBuffer,
-} = require('./AudioBuffer.js');
-const {
   kNapiObj,
+  kAudioBuffer,
 } = require('./lib/symbols.js');
 const {
   bridgeEventTarget,
@@ -75,7 +72,7 @@ module.exports = (jsExport, nativeBinding) => {
           }
 
           // unwrap napi audio buffer
-          parsedOptions.buffer = options.buffer[kNativeAudioBuffer];
+          parsedOptions.buffer = options.buffer[kNapiObj];
         } else {
           parsedOptions.buffer = null;
         }
@@ -179,12 +176,12 @@ module.exports = (jsExport, nativeBinding) => {
       if (value === null) {
         console.warn('Setting the \'buffer\' property on \'AudioBufferSourceNode\' to \'null\' is not supported yet');
         return;
-      } else if (!(kNativeAudioBuffer in value)) {
+      } else if (!(kNapiObj in value)) {
         throw new TypeError('Failed to set the \'buffer\' property on \'AudioBufferSourceNode\': Failed to convert value to \'AudioBuffer\'');
       }
 
       try {
-        this[kNapiObj].buffer = value[kNativeAudioBuffer];
+        this[kNapiObj].buffer = value[kNapiObj];
       } catch (err) {
         throwSanitizedError(err);
       }

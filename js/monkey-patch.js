@@ -22,7 +22,7 @@ module.exports = function monkeyPatch(nativeBinding) {
   // --------------------------------------------------------------------------
   // Monkey Patch Web Audio API
   // --------------------------------------------------------------------------
-  jsExport.BaseAudioContext = require('./BaseAudioContext.js')(jsExport);
+  jsExport.BaseAudioContext = require('./BaseAudioContext.js')(jsExport, nativeBinding);
   jsExport.AudioContext = require('./AudioContext.js')(jsExport, nativeBinding);
   jsExport.OfflineAudioContext = require('./OfflineAudioContext.js')(jsExport, nativeBinding);
 
@@ -50,7 +50,7 @@ module.exports = function monkeyPatch(nativeBinding) {
   jsExport.AudioListener = require('./AudioListener.js');
 
   jsExport.PeriodicWave = require('./PeriodicWave.js')(jsExport, nativeBinding);
-  jsExport.AudioBuffer = require('./AudioBuffer.js').AudioBuffer(nativeBinding.AudioBuffer);
+  jsExport.AudioBuffer = require('./AudioBuffer.js')(jsExport, nativeBinding);
 
   // --------------------------------------------------------------------------
   // Promisify MediaDevices API
