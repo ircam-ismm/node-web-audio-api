@@ -400,8 +400,9 @@ ${d.attributes(d.node).map(attr => {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
       }
 
-      // Weirdly wpt pretends that when set to -1 it should throw IndexSizeError, not a TypeError...
-      // For now let's just cast it to Number without further checks
+      // @fixme - wpt pretends that when set to -1, this should throw IndexSizeError, not a TypeError.
+      // For now let's just cast it to Number without further checks, and let Rust do the job
+      // as 0 is an invalid value too
       // value = conversions['${type}'](value, {
       //   enforceRange: true,
       //   context: \`Failed to set the '${d.name(attr)}' property on '${d.name(d.node)}': Value\`

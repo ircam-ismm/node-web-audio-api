@@ -114,8 +114,9 @@ module.exports = (_jsExport, nativeBinding) => {
         throw new TypeError(`Failed to execute 'copyFromChannel' on 'AudioBuffer': parameter 1 is not of type 'Float32Array'`);
       }
 
-      // rust implementation uses a usize so this check must be done here
-      // weirdly `conversions['unsigned long'](-1);` returns `4294967295``
+      // Rust implementation uses a usize which will clamp -1 to 0, and spec requires
+      // an IndexSizeError rather than a TypeError, so this check must be done here.
+      // cf. note on AnalyzerNode::fftSize
       if (channelNumber < 0) {
         throw new DOMException(`Failed to execute 'copyFromChannel' on 'AudioBuffer': channelNumber must equal or greater than 0`, 'IndexSizeError');
       }
@@ -123,10 +124,6 @@ module.exports = (_jsExport, nativeBinding) => {
       channelNumber = conversions['unsigned long'](channelNumber, {
         context: `Failed to execute 'copyFromChannel' on 'AudioBuffer': channelNumber`,
       });
-
-      if (channelNumber < 0) {
-        throw new DOMException(`Failed to execute 'copyFromChannel' on 'AudioBuffer': bufferOffset must equal or greater than 0`, 'IndexSizeError');
-      }
 
       bufferOffset = conversions['unsigned long'](bufferOffset, {
         context: `Failed to execute 'copyFromChannel' on 'AudioBuffer': bufferOffset`,
@@ -152,8 +149,9 @@ module.exports = (_jsExport, nativeBinding) => {
         throw new TypeError(`Failed to execute 'copyToChannel' on 'AudioBuffer': source is not of type 'Float32Array'`);
       }
 
-      // rust implementation uses a usize so this check must be done here
-      // weirdly `conversions['unsigned long'](-1);` returns `4294967295``
+      // Rust implementation uses a usize which will clamp -1 to 0, and spec requires
+      // an IndexSizeError rather than a TypeError, so this check must be done here.
+      // cf. note on AnalyzerNode::fftSize
       if (channelNumber < 0) {
         throw new DOMException(`Failed to execute 'copyToChannel' on 'AudioBuffer': channelNumber must equal or greater than 0`, 'IndexSizeError');
       }
@@ -161,10 +159,6 @@ module.exports = (_jsExport, nativeBinding) => {
       channelNumber = conversions['unsigned long'](channelNumber, {
         context: `Failed to execute 'copyToChannel' on 'AudioBuffer': channelNumber`,
       });
-
-      if (channelNumber < 0) {
-        throw new DOMException(`Failed to execute 'copyToChannel' on 'AudioBuffer': bufferOffset must equal or greater than 0`, 'IndexSizeError');
-      }
 
       bufferOffset = conversions['unsigned long'](bufferOffset, {
         context: `Failed to execute 'copyToChannel' on 'AudioBuffer': bufferOffset`,
@@ -186,8 +180,9 @@ module.exports = (_jsExport, nativeBinding) => {
         throw new TypeError(`Failed to execute 'getChannelData' on 'AudioBuffer': 1 argument required, but only ${arguments.length} present`);
       }
 
-      // rust implementation uses a usize so this check must be done here
-      // and spec requires an IndexSizeError rather than a TypeError
+      // Rust implementation uses a usize which will clamp -1 to 0, and spec requires
+      // an IndexSizeError rather than a TypeError, so this check must be done here.
+      // cf. note on AnalyzerNode::fftSize
       if (channel < 0) {
         throw new DOMException(`Failed to execute 'getChannelData' on 'AudioBuffer': channel must equal or greater than 0`, 'IndexSizeError');
       }
@@ -231,27 +226,6 @@ module.exports = (_jsExport, nativeBinding) => {
     copyToChannel: kEnumerableProperty,
     getChannelData: kEnumerableProperty,
   });
-
-  Object.defineProperties(AudioBuffer.prototype.copyToChannel, {
-    length: {
-      __proto__: null,
-      writable: false,
-      enumerable: false,
-      configurable: true,
-      value: 2,
-    },
-  });
-
-  Object.defineProperties(AudioBuffer.prototype.copyFromChannel, {
-    length: {
-      __proto__: null,
-      writable: false,
-      enumerable: false,
-      configurable: true,
-      value: 2,
-    },
-  });
-
 
   return AudioBuffer;
 };

@@ -16,7 +16,7 @@ impl ${d.napiName(d.node)} {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
         ${(function() {
             let attributes = d.attributes(d.node)
-                .filter(attr => attr.name !== 'mediaStream')
+                .filter(attr => attr.name !== "mediaStream")
                 .map(attr => `
                     Property::new("${attr.name}")?
                         .with_getter(get_${d.slug(attr)})${attr.readonly === false ? `
@@ -28,7 +28,7 @@ impl ${d.napiName(d.node)} {
                     Property::new("${method.name}")?.with_method(${d.slug(method)})
                 `);
 
-            if (d.parent(d.node) === 'AudioScheduledSourceNode') {
+            if (d.parent(d.node) === "AudioScheduledSourceNode") {
                 // AudioScheduledSourceNode interface
                 methods.push(`Property::new("start")?.with_method(start)`);
                 methods.push(`Property::new("stop")?.with_method(stop)`);
@@ -163,7 +163,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let ${slug}: &[${targetType}] = ${simple_slug}_value.as_ref();
     let ${slug} = ${slug}.to_vec();
                             `;
-                        // - WevashaperOptions::curve
+                        // - WaveShaperOptions::curve
                         } else {
                             return `
     let ${simple_slug}_js = js_options.get::<&str, JsUnknown>("${optionName}")?.unwrap();
@@ -190,8 +190,8 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // Parse AudioNodeOptions
     // --------------------------------------------------------\
             `;
-            // if the node options object has required member, e.g. IIRFilterNodeOptions
-            // it does not implement Default, then we need to grab the default
+            // If the node options object has required member, e.g. IIRFilterNodeOptions,
+            // then it does not implement Default. In this case we need to grab the default
             // directly from AudioNodeOptions
             if (hasRequiredMember) {
                 parseOptions += `

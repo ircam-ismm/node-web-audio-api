@@ -139,8 +139,9 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
       }
 
-      // Weirdly wpt pretends that when set to -1 it should throw IndexSizeError, not a TypeError...
-      // For now let's just cast it to Number without further checks
+      // @fixme - wpt pretends that when set to -1, this should throw IndexSizeError, not a TypeError.
+      // For now let's just cast it to Number without further checks, and let Rust do the job
+      // as 0 is an invalid value too
       // value = conversions['unsigned long'](value, {
       //   enforceRange: true,
       //   context: `Failed to set the 'fftSize' property on 'AnalyserNode': Value`

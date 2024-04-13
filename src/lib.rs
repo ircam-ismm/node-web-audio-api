@@ -184,11 +184,11 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     // expose media devices
     exports.set_named_property("mediaDevices", media_devices)?;
 
-    let mut store = env.create_object()?;
-
     // ----------------------------------------------------------------
     // Store constructors for classes that need to be created from within Rust code
     // ----------------------------------------------------------------
+    let mut store = env.create_object()?;
+
     let napi_class = NapiAudioParam::create_js_class(&env)?;
     store.set_named_property("AudioParam", napi_class)?;
 

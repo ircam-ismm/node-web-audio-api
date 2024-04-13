@@ -223,7 +223,7 @@ generatedNodes.sort().forEach((name, index) => {
   audioNodes.push(nodeIdl);
 });
 
-// Process other nodes and objects that require the list of generate AudioNodes
+// Generate files that require the list of generated AudioNode
 ['audio_node', 'lib'].forEach(src => {
   const input = path.join(rsTemplates, `${src}.tmpl.rs`);
   const output = path.join(rsOutput, `${src}.rs`);
