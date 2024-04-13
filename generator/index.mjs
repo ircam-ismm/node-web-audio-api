@@ -10,9 +10,8 @@ import compile from 'template-literal';
 import beautify from 'js-beautify/js/index.js';
 import { ESLint } from 'eslint';
 
-let supportedNodes = [
-  // - template are crashing because it has no ctor defined in IDL (to be fixed)
-  // 'AudioDestinationNode',
+const generatedNodes = [
+  // @fixme - template is crashing for nodes that have a private constructor (e.g. AudioDestinationNode)
   `AnalyserNode`,
   `AudioBufferSourceNode`,
   `BiquadFilterNode`,
@@ -26,18 +25,17 @@ let supportedNodes = [
   `IIRFilterNode`,
   `MediaStreamAudioSourceNode`,
   `OscillatorNode`,
-  `PannerNode`, // review rs wise, lots of inconsistencies
+  `PannerNode`,
   `StereoPannerNode`,
   `WaveShaperNode`,
 ];
 
-
-// DO NOT OVERRIDE FROM SCRIPT
-// Online context only (written manually for now)
-// 'MediaStreamAudioSourceNode',
+// list of supported nodes, for factory methods, etc.
+const audioNodes = [];
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// @todo - read idl from wpt directory
 const idl = fs.readFileSync(path.join(__dirname, 'web-audio.idl')).toString();
 const tree = parse(idl);
 
@@ -153,7 +151,7 @@ const utils = {
     let idl = utils.findInTree('BaseAudioContext').members.find(m => m.name === name);
 
     if (!idl) {
-      console.warn(`!!!!! couldn't find idl for factory ${name} in BaseAudioContext`);
+      console.warn(`[warning] factory IDL '${name}' not found in BaseAudioContext`);
     }
 
     return idl;
@@ -194,8 +192,6 @@ const utils = {
   },
 };
 
-let audioNodes = [];
-
 // For stats
 const parsed = new Set();
 const ignored = new Set();
@@ -205,52 +201,44 @@ function findInTree(name) {
 }
 
 console.log('-------------------------------------------------------------');
-console.log('## generating rs files');
+console.log('## Generate rs files');
 console.log('-------------------------------------------------------------');
 
 let rsTemplates = path.join(__dirname, 'rs');
 let rsOutput = path.join(process.cwd(), 'src');
 
-{ // Generate AudioNodes
-  const nodesCodeTmpl = fs.readFileSync(path.join(rsTemplates, `audio_nodes.tmpl.rs`), 'utf8');
-  const nodesTmpl = compile(nodesCodeTmpl);
+generatedNodes.sort().forEach((name, index) => {
+  const nodeIdl = findInTree(name);
+  const input = path.join(rsTemplates, `audio_nodes.tmpl.rs`);
+  const output = path.join(rsOutput, `${utils.slug(nodeIdl)}.rs`);
 
-  supportedNodes.sort().forEach((name, index) => {
-    const nodeIdl = findInTree(name);
-    const pathname = path.join(rsOutput, `${utils.slug(nodeIdl)}.rs`);
-    console.log(`> generating file: ${path.relative(process.cwd(), pathname)}`);
+  console.log(`- ${path.relative(process.cwd(), output)}`);
 
-    const code = nodesTmpl({
-      node: nodeIdl,
-      tree,
-      ...utils
-    });
+  const codeTmpl = fs.readFileSync(input, 'utf8');
+  const tmpl = compile(codeTmpl);
+  const code = tmpl({ node: nodeIdl, tree, ...utils });
 
-    fs.writeFileSync(pathname, generatedPrefix(code));
-
-    audioNodes.push(nodeIdl);
-  });
-}
+  fs.writeFileSync(output, generatedPrefix(code));
+  // add to the list of supported nodes
+  audioNodes.push(nodeIdl);
+});
 
 // Process other nodes and objects that require the list of generate AudioNodes
 ['audio_node', 'lib'].forEach(src => {
-  const pathname = path.join(rsOutput, `${src}.rs`);
-  console.log(`> generating file: ${path.relative(process.cwd(), pathname)}`);
+  const input = path.join(rsTemplates, `${src}.tmpl.rs`);
+  const output = path.join(rsOutput, `${src}.rs`);
 
-  const codeTmpl = fs.readFileSync(path.join(rsTemplates, `${src}.tmpl.rs`), 'utf8');
+  console.log(`- ${path.relative(process.cwd(), output)}`);
+
+  const codeTmpl = fs.readFileSync(input, 'utf8');
   const tmpl = compile(codeTmpl);
+  const code = tmpl({ nodes: audioNodes, tree, ...utils });
 
-  const code = tmpl({
-    nodes: audioNodes,
-    tree,
-    ...utils,
-  });
-
-  fs.writeFileSync(pathname, generatedPrefix(code));
+  fs.writeFileSync(output, generatedPrefix(code));
 });
 
 console.log('-------------------------------------------------------------');
-console.log('## generating js files');
+console.log('## Generate js files');
 console.log('-------------------------------------------------------------');
 
 let jsTemplates = path.join(__dirname, 'js');
@@ -286,79 +274,47 @@ async function beautifyAndLint(pathname, code) {
   fs.writeFileSync(pathname, output);
 }
 
-// create the mjs export file
-{
-  console.log('> generating file: index.mjs (esm re-export)');
-  const codeTempl = fs.readFileSync(path.join(jsTemplates, `index.tmpl.mjs`), 'utf8');
-  const tmpl = compile(codeTempl);
-  const code = tmpl({
-    nodes: audioNodes,
-    ...utils,
-  });
+// Generate files that require the list of generated AudioNode
+['index', 'monkey-patch', 'BaseAudioContext'].forEach(src => {
+  let input;
+  let output;
+  // index.tmpl.js generates the ES module re-export
+  if (src === 'index') {
+    input = path.join(jsTemplates, `${src}.tmpl.mjs`);
+    output = path.join(process.cwd(), `${src}.mjs`);
+  } else {
+    input = path.join(jsTemplates, `${src}.tmpl.js`);
+    output = path.join(jsOutput, `${src}.js`);
+  }
 
-  beautifyAndLint(path.join(process.cwd(), 'index.mjs'), generatedPrefix(code));
-}
+  console.log(`- ${path.relative(process.cwd(), output)}`);
 
-{
-  console.log('> generating file: monkey-patch.js');
-  const codeTmpl = fs.readFileSync(path.join(jsTemplates, `monkey-patch.tmpl.js`), 'utf8');
+  const codeTmpl = fs.readFileSync(input, 'utf8');
   const tmpl = compile(codeTmpl);
-  const code = tmpl({
-    nodes: audioNodes,
-    ...utils,
-  });
+  const code = tmpl({ nodes: audioNodes, ...utils });
 
-  beautifyAndLint(path.join(jsOutput, 'monkey-patch.js'), generatedPrefix(code));
-}
-
-{
-  const src = 'BaseAudioContext';
-  const pathname = path.join(jsOutput, `${src}.js`);
-  console.log(`> generating file: ${path.relative(process.cwd(), pathname)}`);
-
-  const codeTmpl = fs.readFileSync(path.join(jsTemplates, `${src}.tmpl.js`), 'utf8');
-  const tmpl = compile(codeTmpl);
-
-  const code = tmpl({
-    nodes: audioNodes,
-    ...utils,
-  });
-
-  beautifyAndLint(pathname, generatedPrefix(code));
-}
-
-['AudioParam', 'AudioNode'].forEach((src) => {
-  const nodeIdl = findInTree(src);
-  const pathname = path.join(jsOutput, `${src}.js`);
-  console.log(`> generating file: ${path.relative(process.cwd(), pathname)}`);
-
-  const codeTmpl = fs.readFileSync(path.join(jsTemplates, `${src}.tmpl.js`), 'utf8');
-  const tmpl = compile(codeTmpl);
-
-  const code = tmpl({
-    node: nodeIdl,
-    tree,
-    ...utils,
-  });
-
-  beautifyAndLint(pathname, generatedPrefix(code));
+  beautifyAndLint(output, generatedPrefix(code));
 });
 
-supportedNodes.forEach((name, index) => {
-  const nodeIdl = findInTree(name);
-  const pathname = path.join(jsOutput, `${utils.name(nodeIdl)}.js`);
-  console.log(`> generating file: ${path.relative(process.cwd(), pathname)}`);
+['AudioParam', 'AudioNode'].concat(generatedNodes).forEach(src => {
+  const nodeIdl = findInTree(src);
+  let input;
 
-  const codeTmpl = fs.readFileSync(path.join(jsTemplates, `AudioNodes.tmpl.js`), 'utf8');
+  if (['AudioParam', 'AudioNode'].includes(src)) {
+    input = path.join(jsTemplates, `${src}.tmpl.js`);
+  } else {
+    input = path.join(jsTemplates, `AudioNodes.tmpl.js`);
+  }
+
+  const output = path.join(jsOutput, `${src}.js`);
+
+  console.log(`- ${path.relative(process.cwd(), output)}`);
+
+  const codeTmpl = fs.readFileSync(input, 'utf8');
   const tmpl = compile(codeTmpl);
+  const code = tmpl({ node: nodeIdl, tree, ...utils });
 
-  const code = tmpl({
-    node: nodeIdl,
-    tree,
-    ...utils
-  });
-
-  beautifyAndLint(pathname, generatedPrefix(code));
+  beautifyAndLint(output, generatedPrefix(code));
 });
 
 console.log('');
