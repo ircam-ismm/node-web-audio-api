@@ -5,7 +5,6 @@ const {
 } = require('./lib/errors.js');
 const {
   isFunction,
-  isPlainObject,
   kEnumerableProperty
 } = require('./lib/utils.js');
 const {
@@ -63,13 +62,9 @@ module.exports = function(jsExport, nativeBinding) {
 
           targetOptions.sinkId = 'none';
         } else {
-          try {
-            targetOptions.sinkId = conversions['DOMString'](sinkId, {
-              context: `Failed to construct 'AudioContext': Failed to read the 'sinkId' property from AudioNodeOptions:  Failed to read the 'type' property from 'AudioSinkOptions': The provided value (${sinkId})`,
-            });
-          } catch (err) {
-            throw throwSanitizedError(err);
-          }
+          targetOptions.sinkId = conversions['DOMString'](sinkId, {
+            context: `Failed to construct 'AudioContext': Failed to read the 'sinkId' property from AudioNodeOptions:  Failed to read the 'type' property from 'AudioSinkOptions': The provided value (${sinkId})`,
+          });
         }
       } else {
         targetOptions.sinkId = '';
@@ -207,10 +202,9 @@ module.exports = function(jsExport, nativeBinding) {
 
       let targetSinkId = '';
 
-      if (isPlainObject(sinkId)) {
+      if (typeof sinkId === 'object') {
         if (!('type' in sinkId) || sinkId.type !== 'none') {
           throw new TypeError(`Failed to execute 'setSinkId' on 'AudioContext': Failed to read the 'type' property from 'AudioSinkOptions': The provided value '${sinkId.type}' is not a valid enum value of type AudioSinkType.`);
-          return Promise.reject(err);
         }
 
         targetSinkId = 'none';

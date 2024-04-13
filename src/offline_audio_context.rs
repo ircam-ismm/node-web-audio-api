@@ -84,8 +84,8 @@ impl NapiOfflineAudioContext {
     }
 
     // We need to clean things around so that the js object can be garbage collected.
-    // But we also need to wait so that the previous tsfn.call is executed,
-    // this is not clean, but don't see how to implement that properly right now.
+    // But we also need to wait so that the previous tsfn.call is executed.
+    // This is not clean, but don't see how to implement that properly right now.
 
     // no ended events for nodes that are created by OfflineAudioContext
     // remove directive once implemented

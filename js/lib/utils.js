@@ -1,7 +1,3 @@
-exports.isPlainObject = function isPlainObject(obj) {
-  return Object.prototype.toString.call(obj) === '[object Object]';
-};
-
 exports.isFunction = function isFunction(val) {
   return Object.prototype.toString.call(val) == '[object Function]' ||
     Object.prototype.toString.call(val) == '[object AsyncFunction]';
