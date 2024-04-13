@@ -28,7 +28,8 @@ pub(crate) fn to_byte_slice<'a>(floats: &'a [f32]) -> &'a [u8] {
     unsafe { std::slice::from_raw_parts(floats.as_ptr() as *const _, floats.len() * 4) }
 }
 
-// private
+#[macro_use]
+mod base_audio_context;
 #[macro_use]
 mod audio_node;
 

@@ -11,7 +11,8 @@ pub(crate) fn to_byte_slice<'a>(floats: &'a [f32]) -> &'a [u8] {
     }
 }
 
-// private
+#[macro_use]
+mod base_audio_context;
 #[macro_use]
 mod audio_node;
 

@@ -38,7 +38,7 @@ impl NapiAudioParam {
 
     pub fn unwrap(&self) -> &AudioParam {
         if self.0.is_none() {
-            panic!("AudioParam - invalid unwrap call, inner AudioBuffer not yet set");
+            panic!("AudioParam - invalid unwrap call, inner AudioParam not yet set");
         } else {
             self.0.as_ref().unwrap()
         }

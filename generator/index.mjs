@@ -233,26 +233,6 @@ let rsOutput = path.join(process.cwd(), 'src');
   });
 }
 
-{ // parse AudioContext
-  const audioContextCodeTmpl = fs.readFileSync(path.join(rsTemplates, 'audio_context.tmpl.rs'), 'utf8');
-  const audioContextTmpl = compile(audioContextCodeTmpl);
-
-  ['AudioContext', 'OfflineAudioContext'].forEach((name, index) => {
-    const nodeIdl = findInTree(name);
-    const pathname = path.join(rsOutput, `${utils.slug(nodeIdl)}.rs`);
-    console.log(`> generating file: ${path.relative(process.cwd(), pathname)}`);
-
-    const code = audioContextTmpl({
-      node: nodeIdl,
-      nodes: audioNodes,
-      tree,
-      ...utils
-    });
-
-    fs.writeFileSync(pathname, generatedPrefix(code));
-  });
-}
-
 // process other nodes and objects
 ['audio_param', 'audio_node', 'lib'].forEach(src => {
   const pathname = path.join(rsOutput, `${src}.rs`);
