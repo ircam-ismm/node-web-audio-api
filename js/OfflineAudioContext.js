@@ -9,9 +9,6 @@ const {
 } = require('./lib/errors.js');
 const {
   isFunction,
-  isPlainObject,
-  isPositiveInt,
-  isPositiveNumber,
   kEnumerableProperty,
 } = require('./lib/utils.js');
 const {
@@ -35,36 +32,46 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
 
       // https://webaudio.github.io/web-audio-api/#dom-offlineaudiocontext-constructor-contextoptions-contextoptions
       if (arguments.length === 1) {
-        if (!isPlainObject(args[0])) {
-          throw new TypeError(`Failed to construct 'OfflineAudioContext': The provided value is not of type 'OfflineAudioContextOptions'`);
+        const options = args[0];
+
+        if (typeof options !== 'object') {
+          throw new TypeError(`Failed to construct 'OfflineAudioContext': argument 1 is not of type 'OfflineAudioContextOptions'`);
         }
 
-        let { length, sampleRate, numberOfChannels } = args[0];
-
-        if (length === undefined) {
+        if (options.length === undefined) {
           throw new TypeError(`Failed to construct 'OfflineAudioContext': Failed to read the 'length' property from 'OfflineAudioContextOptions': Required member is undefined.`);
         }
 
-        if (sampleRate === undefined) {
+        if (options.sampleRate === undefined) {
           throw new TypeError(`Failed to construct 'OfflineAudioContext': Failed to read the 'sampleRate' property from 'OfflineAudioContextOptions': Required member is undefined.`);
         }
 
-        if (numberOfChannels === undefined) {
-          numberOfChannels = 1;
+        if (options.numberOfChannels === undefined) {
+          options.numberOfChannels = 1;
         }
 
-        args = [numberOfChannels, length, sampleRate];
+        args = [
+          options.numberOfChannels,
+          options.length,
+          options.sampleRate
+        ];
       }
 
-      const [numberOfChannels, length, sampleRate] = args;
+      let [numberOfChannels, length, sampleRate] = args;
 
-      if (!isPositiveInt(numberOfChannels)) {
-        throw new TypeError(`Failed to construct 'OfflineAudioContext': Invalid value for numberOfChannels: ${numberOfChannels}`);
-      } else if (!isPositiveInt(length)) {
-        throw new DOMException(`Failed to construct 'OfflineAudioContext': Invalid value for length: ${length}`, 'NotSupportedError');
-      } else if (!isPositiveNumber(sampleRate)) {
-        throw new TypeError(`Failed to construct 'OfflineAudioContext': Invalid value for sampleRate: ${sampleRate}`);
-      }
+      numberOfChannels = conversions['unsigned long'](numberOfChannels, {
+        enforceRange: true,
+        context: `Failed to construct 'OfflineAudioContext': Failed to read the 'numberOfChannels' property from OfflineContextOptions; The provided value (${numberOfChannels})`
+      });
+
+      length = conversions['unsigned long'](length, {
+        enforceRange: true,
+        context: `Failed to construct 'OfflineAudioContext': Failed to read the 'length' property from OfflineContextOptions; The provided value (${length})`
+      });
+
+      sampleRate = conversions['float'](sampleRate, {
+        context: `Failed to construct 'OfflineAudioContext': Failed to read the 'sampleRate' property from OfflineContextOptions; The provided value (${sampleRate})`
+      });
 
       let napiObj;
 

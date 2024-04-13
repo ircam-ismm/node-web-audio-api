@@ -1,9 +1,19 @@
 const conversions = require("webidl-conversions");
 
-const { throwSanitizedError } = require('./lib/errors.js');
-const { isFunction, isPlainObject, kEnumerableProperty } = require('./lib/utils.js');
-const { kNapiObj } = require('./lib/symbols.js');
-const { bridgeEventTarget } = require('./lib/events.js');
+const {
+  throwSanitizedError,
+} = require('./lib/errors.js');
+const {
+  isFunction,
+  isPlainObject,
+  kEnumerableProperty
+} = require('./lib/utils.js');
+const {
+  kNapiObj,
+} = require('./lib/symbols.js');
+const {
+  bridgeEventTarget,
+} = require('./lib/events.js');
 
 let contextId = 0;
 

@@ -116,9 +116,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // -------------------------------------------------
     // Parse options and create OfflineAudioContext
     // -------------------------------------------------
-    let number_of_channels = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()? as usize;
-    let length = ctx.get::<JsObject>(1)?.coerce_to_number()?.get_double()? as usize;
-    let sample_rate = ctx.get::<JsObject>(2)?.coerce_to_number()?.get_double()? as f32;
+    let number_of_channels = ctx.get::<JsNumber>(0)?.get_double()? as usize;
+    let length = ctx.get::<JsNumber>(1)?.get_double()? as usize;
+    let sample_rate = ctx.get::<JsNumber>(2)?.get_double()? as f32;
 
     let audio_context = OfflineAudioContext::new(number_of_channels, length, sample_rate);
 
