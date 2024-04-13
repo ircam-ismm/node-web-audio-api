@@ -24,13 +24,8 @@ use web_audio_api::{AudioParam, AutomationRate};
 pub(crate) struct NapiAudioParam(Option<AudioParam>);
 
 impl NapiAudioParam {
-    // pub fn new(audio_param: AudioParam) -> Self {
-    //     Self(audio_param)
-    // }
-
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
         let interface = [
-            // Attributes
             Property::new("automationRate")?
                 .with_getter(get_automation_rate)
                 .with_setter(set_automation_rate),
@@ -40,7 +35,6 @@ impl NapiAudioParam {
             Property::new("value")?
                 .with_getter(get_value)
                 .with_setter(set_value),
-            // Methods
             Property::new("setValueAtTime")?.with_method(set_value_at_time),
             Property::new("linearRampToValueAtTime")?.with_method(linear_ramp_to_value_at_time),
             Property::new("exponentialRampToValueAtTime")?
@@ -81,7 +75,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 
-// Attributes
 #[js_function]
 fn get_automation_rate(ctx: CallContext) -> Result<JsString> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -167,7 +160,6 @@ fn set_value(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 
-// Methods
 #[js_function(2)]
 fn set_value_at_time(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
