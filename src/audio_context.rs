@@ -119,57 +119,48 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // -------------------------------------------------
     // Parse options and create AudioContext
     // -------------------------------------------------
-    let options_js: Option<JsObject> = ctx.try_get::<JsObject>(0)?.into();
-    let audio_context_options = if let Some(options) = options_js {
-        // LatencyHint
-        let latency_hint = if let Some(latency_hint_js) =
-            options.get::<&str, Either<JsString, JsNumber>>("latencyHint")?
-        {
-            match latency_hint_js {
-                Either::A(js_string) => {
-                    let uf8_category = js_string.into_utf8()?.into_owned()?;
-                    let category = &uf8_category[..];
+    let js_options = ctx.get::<JsObject>(0)?;
 
-                    match category {
-                        "interactive" => AudioContextLatencyCategory::Interactive,
-                        "balanced" => AudioContextLatencyCategory::Balanced,
-                        "playback" => AudioContextLatencyCategory::Playback,
-                        _ => AudioContextLatencyCategory::Interactive, // default
-                    }
-                }
-                Either::B(js_number) => {
-                    let latency = js_number.get_double()?;
-                    AudioContextLatencyCategory::Custom(latency)
-                }
+    let latency_hint_js = js_options
+        .get::<&str, Either<JsString, JsNumber>>("latencyHint")?
+        .unwrap();
+    let latency_hint = match latency_hint_js {
+        Either::A(js_string) => {
+            let uf8_category = js_string.into_utf8()?.into_owned()?;
+            let category = &uf8_category[..];
+
+            match category {
+                "interactive" => AudioContextLatencyCategory::Interactive,
+                "balanced" => AudioContextLatencyCategory::Balanced,
+                "playback" => AudioContextLatencyCategory::Playback,
+                _ => unreachable!(),
             }
-        } else {
-            AudioContextLatencyCategory::Interactive
-        };
-
-        let sample_rate =
-            if let Some(sample_rate_js) = options.get::<&str, JsNumber>("sampleRate")? {
-                let sample_rate = sample_rate_js.get_double()? as f32;
-                Some(sample_rate)
-            } else {
-                None
-            };
-
-        let sink_id_js = options.get::<&str, JsString>("sinkId")?;
-        let sink_id = if let Some(sink_id_js) = sink_id_js {
-            let sink_id_utf8 = sink_id_js.into_utf8()?.into_owned()?;
-            sink_id_utf8.as_str().to_string()
-        } else {
-            String::new()
-        };
-
-        AudioContextOptions {
-            latency_hint,
-            sample_rate,
-            sink_id,
-            ..Default::default()
         }
-    } else {
-        AudioContextOptions::default()
+        Either::B(js_number) => {
+            let latency = js_number.get_double()?;
+            AudioContextLatencyCategory::Custom(latency)
+        }
+    };
+
+    let sample_rate_js = js_options.get::<&str, JsUnknown>("sampleRate")?.unwrap();
+    let sample_rate = match sample_rate_js.get_type()? {
+        ValueType::Number => {
+            let sample_rate = sample_rate_js.coerce_to_number()?.get_double()? as f32;
+            Some(sample_rate)
+        }
+        ValueType::Null => None,
+        _ => unreachable!(),
+    };
+
+    let sink_id_js = js_options.get::<&str, JsString>("sinkId")?.unwrap();
+    let sink_id_utf8 = sink_id_js.into_utf8()?.into_owned()?;
+    let sink_id = sink_id_utf8.as_str().to_string();
+
+    let audio_context_options = AudioContextOptions {
+        latency_hint,
+        sample_rate,
+        sink_id,
+        ..Default::default()
     };
 
     let audio_context = AudioContext::new(audio_context_options);

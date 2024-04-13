@@ -38,7 +38,7 @@ impl ${d.napiName(d.node)} {
                 Property::new("state")?.with_getter(get_state),
                 Property::new("decodeAudioData")?.with_method(decode_audio_data),
 
-                ${d.name(d.node) === 'AudioContext' ?
+                ${d.name(d.node) === "AudioContext" ?
                     `
                 // ----------------------------------------------------
                 // Methods and attributes specific to AudioContext
@@ -106,66 +106,55 @@ impl ${d.napiName(d.node)} {
     }
 }
 
-${d.name(d.node) === 'AudioContext' ? `#[js_function(1)]` : `#[js_function(3)]`}
+${d.name(d.node) === "AudioContext" ? `#[js_function(1)]` : `#[js_function(3)]`}
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
-    ${d.name(d.node) === 'AudioContext' ?
+    ${d.name(d.node) === "AudioContext" ?
         `
     // -------------------------------------------------
     // Parse options and create AudioContext
     // -------------------------------------------------
-    let options_js: Option<JsObject> = ctx.try_get::<JsObject>(0)?.into();
-    let audio_context_options = if let Some(options) = options_js {
-        // LatencyHint
-        let latency_hint = if let Some(latency_hint_js) =
-            options.get::<&str, Either<JsString, JsNumber>>("latencyHint")?
-        {
-            match latency_hint_js {
-                Either::A(js_string) => {
-                    let uf8_category = js_string.into_utf8()?.into_owned()?;
-                    let category = &uf8_category[..];
+    let js_options = ctx.get::<JsObject>(0)?;
 
-                    match category {
-                        "interactive" => AudioContextLatencyCategory::Interactive,
-                        "balanced" => AudioContextLatencyCategory::Balanced,
-                        "playback" => AudioContextLatencyCategory::Playback,
-                        _ => AudioContextLatencyCategory::Interactive, // default
-                    }
-                }
-                Either::B(js_number) => {
-                    let latency = js_number.get_double()?;
-                    AudioContextLatencyCategory::Custom(latency)
-                }
+    let latency_hint_js = js_options.get::<&str, Either<JsString, JsNumber>>("latencyHint")?.unwrap();
+    let latency_hint = match latency_hint_js {
+        Either::A(js_string) => {
+            let uf8_category = js_string.into_utf8()?.into_owned()?;
+            let category = &uf8_category[..];
+
+            match category {
+                "interactive" => AudioContextLatencyCategory::Interactive,
+                "balanced" => AudioContextLatencyCategory::Balanced,
+                "playback" => AudioContextLatencyCategory::Playback,
+                _ => unreachable!(),
             }
-        } else {
-            AudioContextLatencyCategory::Interactive
-        };
-
-        let sample_rate =
-            if let Some(sample_rate_js) = options.get::<&str, JsNumber>("sampleRate")? {
-                let sample_rate = sample_rate_js.get_double()? as f32;
-                Some(sample_rate)
-            } else {
-                None
-            };
-
-        let sink_id_js = options.get::<&str, JsString>("sinkId")?;
-        let sink_id = if let Some(sink_id_js) = sink_id_js {
-            let sink_id_utf8 = sink_id_js.into_utf8()?.into_owned()?;
-            sink_id_utf8.as_str().to_string()
-        } else {
-            String::new()
-        };
-
-        AudioContextOptions {
-            latency_hint,
-            sample_rate,
-            sink_id,
-            ..Default::default()
         }
-    } else {
-        AudioContextOptions::default()
+        Either::B(js_number) => {
+            let latency = js_number.get_double()?;
+            AudioContextLatencyCategory::Custom(latency)
+        }
+    };
+
+    let sample_rate_js = js_options.get::<&str, JsUnknown>("sampleRate")?.unwrap();
+    let sample_rate = match sample_rate_js.get_type()? {
+        ValueType::Number => {
+            let sample_rate = sample_rate_js.coerce_to_number()?.get_double()? as f32;
+            Some(sample_rate)
+        },
+        ValueType::Null => None,
+        _ => unreachable!(),
+    };
+
+    let sink_id_js = js_options.get::<&str, JsString>("sinkId")?.unwrap();
+    let sink_id_utf8 = sink_id_js.into_utf8()?.into_owned()?;
+    let sink_id = sink_id_utf8.as_str().to_string();
+
+    let audio_context_options = AudioContextOptions {
+        latency_hint,
+        sample_rate,
+        sink_id,
+        ..Default::default()
     };
 
     let audio_context = ${d.name(d.node)}::new(audio_context_options);
@@ -306,7 +295,7 @@ fn decode_audio_data(ctx: CallContext) -> Result<JsObject> {
     }
 }
 
-${d.name(d.node) === 'AudioContext' ?
+${d.name(d.node) === "AudioContext" ?
     `
 // ----------------------------------------------------
 // Methods and attributes specific to AudioContext

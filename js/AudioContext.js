@@ -20,66 +20,59 @@ let contextId = 0;
 const kProcessId = Symbol('processId');
 const kKeepAwakeId = Symbol('keepAwakeId');
 
-// constructor (optional AudioContextOptions contextOptions = {});
-// readonly attribute double baseLatency;
-// readonly attribute double outputLatency;
-// [SecureContext] readonly attribute (DOMString or AudioSinkInfo) sinkId;
-// [SecureContext] readonly attribute AudioRenderCapacity renderCapacity;
-// attribute EventHandler onsinkchange;
-// AudioTimestamp getOutputTimestamp ();
-// Promise<undefined> resume ();
-// Promise<undefined> suspend ();
-// Promise<undefined> close ();
-// [SecureContext] Promise<undefined> setSinkId ((DOMString or AudioSinkOptions) sinkId);
-// MediaElementAudioSourceNode createMediaElementSource (HTMLMediaElement mediaElement);
-// MediaStreamAudioSourceNode createMediaStreamSource (MediaStream mediaStream);
-// MediaStreamTrackAudioSourceNode createMediaStreamTrackSource (
-//     MediaStreamTrack mediaStreamTrack);
-// MediaStreamAudioDestinationNode createMediaStreamDestination ();
-
 module.exports = function(jsExport, nativeBinding) {
 
   class AudioContext extends jsExport.BaseAudioContext {
     #sinkId = '';
 
     constructor(options = {}) {
-      if (!isPlainObject(options)) {
+      if (typeof options !== 'object') {
         throw new TypeError(`Failed to construct 'AudioContext': The provided value is not of type 'AudioContextOptions'`);
       }
 
-      // @todo - check AudioNodeOptions
-      // dictionary AudioContextOptions {
-      //     (AudioContextLatencyCategory or double) latencyHint = "interactive";
-      //     float sampleRate;
-      //     (DOMString or AudioSinkOptions) sinkId;
-      //     (AudioContextRenderSizeCategory or unsigned long) renderSizeHint = "default";
-      // };
+      let targetOptions = {};
 
-      const targetOptions = Object.assign({}, options);
+      if (options.latencyHint !== undefined) {
+        if (['balanced', 'interactive', 'playback'].includes(options.latencyHint)) {
+          targetOptions.latencyHint = conversions['DOMString'](options.latencyHint);
+        } else {
+          targetOptions.latencyHint = conversions['double'](options.latencyHint, {
+            context: `Failed to construct 'AudioContext': Failed to read the 'sinkId' property from AudioNodeOptions: The provided value (${options.latencyHint})`,
+          });
+        }
+      } else {
+        targetOptions.latencyHint = 'interactive';
+      }
 
-      let targetSinkId = '';
+      if (options.sampleRate !== undefined) {
+        targetOptions.sampleRate = conversions['float'](options.sampleRate, {
+          context: `Failed to construct 'AudioContext': Failed to read the 'sinkId' property from AudioNodeOptions: The provided value (${options.sampleRate})`,
+        });
+      } else {
+        targetOptions.sampleRate = null;
+      }
 
       if (options.sinkId !== undefined) {
         const sinkId = options.sinkId;
 
-        if (isPlainObject(sinkId)) {
-          if (!('type' in sinkId) || sinkId.type !== 'none') {
-            const err = TypeError(`Failed to construct 'AudioContext': Failed to read the 'sinkId' property from AudioNodeOptions: Failed to read the 'type' property from 'AudioSinkOptions': The provided value '${sinkId.type}' is not a valid enum value of type AudioSinkType.`);
-            return Promise.reject(err);
+        if (typeof options.sinkId === 'object') {
+          // https://webaudio.github.io/web-audio-api/#enumdef-audiosinktype
+          if (!('type' in options.sinkId) || options.sinkId.type !== 'none') {
+            throw TypeError(`Failed to construct 'AudioContext': Failed to read the 'sinkId' property from AudioNodeOptions: Failed to read the 'type' property from 'AudioSinkOptions': The provided value (${sinkId.type}) is not a valid enum value of type AudioSinkType.`);
           }
 
-          targetSinkId = 'none';
+          targetOptions.sinkId = 'none';
         } else {
           try {
-            targetSinkId = conversions['DOMString'](sinkId, {
-              context: `Failed to construct 'AudioContext': Failed to read the 'sinkId' property from AudioNodeOptions:  Failed to read the 'type' property from 'AudioSinkOptions': The provided value '${sinkId}'`,
+            targetOptions.sinkId = conversions['DOMString'](sinkId, {
+              context: `Failed to construct 'AudioContext': Failed to read the 'sinkId' property from AudioNodeOptions:  Failed to read the 'type' property from 'AudioSinkOptions': The provided value (${sinkId})`,
             });
           } catch (err) {
             throw throwSanitizedError(err);
           }
         }
-
-        targetOptions.sinkId = targetSinkId;
+      } else {
+        targetOptions.sinkId = '';
       }
 
       let napiObj;
@@ -92,8 +85,8 @@ module.exports = function(jsExport, nativeBinding) {
 
       super({ [kNapiObj]: napiObj });
 
-      if (options.sinkId) {
-        this.#sinkId = sinkId;
+      if (options.sinkId !== undefined) {
+        this.#sinkId = options.sinkId;
       }
 
       // Bridge Rust native event to Node EventTarget
