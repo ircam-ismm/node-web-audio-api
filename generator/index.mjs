@@ -196,7 +196,7 @@ const utils = {
 
 let audioNodes = [];
 
-// for stats
+// For stats
 const parsed = new Set();
 const ignored = new Set();
 
@@ -211,11 +211,10 @@ console.log('-------------------------------------------------------------');
 let rsTemplates = path.join(__dirname, 'rs');
 let rsOutput = path.join(process.cwd(), 'src');
 
-{ // parse AudioNodes
+{ // Generate AudioNodes
   const nodesCodeTmpl = fs.readFileSync(path.join(rsTemplates, `audio_nodes.tmpl.rs`), 'utf8');
   const nodesTmpl = compile(nodesCodeTmpl);
 
-  // process audio nodes
   supportedNodes.sort().forEach((name, index) => {
     const nodeIdl = findInTree(name);
     const pathname = path.join(rsOutput, `${utils.slug(nodeIdl)}.rs`);
@@ -233,8 +232,8 @@ let rsOutput = path.join(process.cwd(), 'src');
   });
 }
 
-// process other nodes and objects
-['audio_param', 'audio_node', 'lib'].forEach(src => {
+// Process other nodes and objects that require the list of generate AudioNodes
+['audio_node', 'lib'].forEach(src => {
   const pathname = path.join(rsOutput, `${src}.rs`);
   console.log(`> generating file: ${path.relative(process.cwd(), pathname)}`);
 
