@@ -6,19 +6,6 @@ const { kNapiObj } = require('./lib/symbols.js');
 
 const AudioParam = require('./AudioParam.js');
 
-// interface AudioListener {
-//     readonly attribute AudioParam positionX;
-//     readonly attribute AudioParam positionY;
-//     readonly attribute AudioParam positionZ;
-//     readonly attribute AudioParam forwardX;
-//     readonly attribute AudioParam forwardY;
-//     readonly attribute AudioParam forwardZ;
-//     readonly attribute AudioParam upX;
-//     readonly attribute AudioParam upY;
-//     readonly attribute AudioParam upZ;
-//     undefined setPosition (float x, float y, float z);
-//     undefined setOrientation (float x, float y, float z, float xUp, float yUp, float zUp);
-// };
 class AudioListener {
   #positionX = null;
   #positionY = null;
@@ -30,27 +17,30 @@ class AudioListener {
   #upY = null;
   #upZ = null;
 
-  constructor(napiObj) {
+  constructor(options) {
     // Make constructor "private"
-    // @todo - this is not very solid, but does the job for now
-    if (napiObj['Symbol.toStringTag'] !== 'AudioListener') {
+    if (
+      (typeof options !== 'object')
+      || !(kNapiObj in options)
+      || options[kNapiObj]['Symbol.toStringTag'] !== 'AudioListener'
+    ) {
       throw new TypeError('Illegal constructor');
     }
 
     Object.defineProperty(this, kNapiObj, {
-      value: napiObj,
+      value: options[kNapiObj],
       ...kHiddenProperty,
     });
 
-    this.#positionX = new AudioParam(napiObj.positionX);
-    this.#positionY = new AudioParam(napiObj.positionY);
-    this.#positionZ = new AudioParam(napiObj.positionZ);
-    this.#forwardX = new AudioParam(napiObj.forwardX);
-    this.#forwardY = new AudioParam(napiObj.forwardY);
-    this.#forwardZ = new AudioParam(napiObj.forwardZ);
-    this.#upX = new AudioParam(napiObj.upX);
-    this.#upY = new AudioParam(napiObj.upY);
-    this.#upZ = new AudioParam(napiObj.upZ);
+    this.#positionX = new AudioParam({ [kNapiObj]: this[kNapiObj].positionX });
+    this.#positionY = new AudioParam({ [kNapiObj]: this[kNapiObj].positionY });
+    this.#positionZ = new AudioParam({ [kNapiObj]: this[kNapiObj].positionZ });
+    this.#forwardX = new AudioParam({ [kNapiObj]: this[kNapiObj].forwardX });
+    this.#forwardY = new AudioParam({ [kNapiObj]: this[kNapiObj].forwardY });
+    this.#forwardZ = new AudioParam({ [kNapiObj]: this[kNapiObj].forwardZ });
+    this.#upX = new AudioParam({ [kNapiObj]: this[kNapiObj].upX });
+    this.#upY = new AudioParam({ [kNapiObj]: this[kNapiObj].upY });
+    this.#upZ = new AudioParam({ [kNapiObj]: this[kNapiObj].upZ });
   }
 
   get positionX() {

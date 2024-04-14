@@ -1,8 +1,5 @@
-
 module.exports.kNapiObj = Symbol('node-web-audio-api:napi-obj');
-module.exports.kNativeAudioParam = Symbol('node-web-audio-api:audio-param');
-
-module.exports.kJsContext = Symbol('node-web-audio-api:js-context');
+module.exports.kAudioBuffer = Symbol('node-web-audio-api:audio-buffer');
 // this needs to be shared with Rust ide
 module.exports.kDispatchEvent = Symbol.for('node-web-audio-api:napi-dispatch-event');
 

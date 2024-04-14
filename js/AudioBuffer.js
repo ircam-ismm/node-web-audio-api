@@ -1,12 +1,20 @@
 const conversions = require("webidl-conversions");
 
-const { throwSanitizedError, DOMException } = require('./lib/errors.js');
-const { kEnumerableProperty, kHiddenProperty } = require('./lib/utils.js');
+const {
+  throwSanitizedError,
+  DOMException
+} = require('./lib/errors.js');
+const {
+  kEnumerableProperty,
+  kHiddenProperty,
+} = require('./lib/utils.js');
+const {
+  kNapiObj,
+  kAudioBuffer,
+} = require('./lib/symbols.js');
 
-const kNativeAudioBuffer = Symbol('node-web-audio-api:native-audio-buffer');
-const kAudioBuffer = Symbol('node-web-audio-api:audio-buffer');
 
-module.exports.AudioBuffer = (NativeAudioBuffer) => {
+module.exports = (_jsExport, nativeBinding) => {
   class AudioBuffer {
     constructor(options) {
       if (arguments.length < 1) {
@@ -17,22 +25,59 @@ module.exports.AudioBuffer = (NativeAudioBuffer) => {
         throw new TypeError("Failed to construct 'AudioBuffer': argument 1 is not of type 'AudioBufferOptions'");
       }
 
-      if (kNativeAudioBuffer in options) {
+      if (kNapiObj in options) {
         // internal constructor for `startRendering` and `decodeAudioData` cases
-        Object.defineProperty(this, kNativeAudioBuffer, {
-          value: options[kNativeAudioBuffer],
+        Object.defineProperty(this, kNapiObj, {
+          value: options[kNapiObj],
           ...kHiddenProperty,
         });
       } else {
-        // regular public constructor
-        try {
-          Object.defineProperty(this, kNativeAudioBuffer, {
-            value: new NativeAudioBuffer(options),
-            ...kHiddenProperty,
+        // Regular public constructor
+        // dictionary AudioBufferOptions {
+        //     unsigned long numberOfChannels = 1;
+        //     required unsigned long length;
+        //     required float sampleRate;
+        // };
+        const parsedOptions = {};
+
+        if (options.numberOfChannels !== undefined) {
+          parsedOptions.numberOfChannels = conversions['unsigned long'](options.numberOfChannels, {
+            enforceRange: true,
+            context: `Failed to construct 'AudioBuffer': Failed to read the 'numberOfChannels' property from AudioBufferOptions: numberOfCHannels`,
           });
+        } else {
+          parsedOptions.numberOfChannels = 1;
+        }
+
+        if (options.length === undefined) {
+          throw new TypeError(`Failed to construct 'AudioBuffer': Failed to read the 'numberOfChannels' property from AudioBufferOptions: required member is undefined`);
+        }
+
+        parsedOptions.length = conversions['unsigned long'](options.length, {
+          enforceRange: true,
+          context: `Failed to construct 'AudioBuffer': Failed to read the 'length' property from AudioBufferOptions: length`,
+        });
+
+        if (options.sampleRate === undefined) {
+          throw new TypeError(`Failed to construct 'AudioBuffer': Failed to read the 'numberOfChannels' property from AudioBufferOptions: required member is undefined`);
+        }
+
+        parsedOptions.sampleRate = conversions['float'](options.sampleRate, {
+          context: `Failed to construct 'AudioBuffer': Failed to read the 'sampleRate' property from AudioBufferOptions: sampleRate`,
+        });
+
+        let napiObj;
+
+        try {
+          napiObj = new nativeBinding.AudioBuffer(parsedOptions);
         } catch (err) {
           throwSanitizedError(err);
         }
+
+        Object.defineProperty(this, kNapiObj, {
+          value: napiObj,
+          ...kHiddenProperty,
+        });
       }
     }
 
@@ -41,7 +86,7 @@ module.exports.AudioBuffer = (NativeAudioBuffer) => {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'");
       }
 
-      return this[kNativeAudioBuffer].sampleRate;
+      return this[kNapiObj].sampleRate;
     }
 
     get duration() {
@@ -49,7 +94,7 @@ module.exports.AudioBuffer = (NativeAudioBuffer) => {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'");
       }
 
-      return this[kNativeAudioBuffer].duration;
+      return this[kNapiObj].duration;
     }
 
     get length() {
@@ -57,7 +102,7 @@ module.exports.AudioBuffer = (NativeAudioBuffer) => {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'");
       }
 
-      return this[kNativeAudioBuffer].length;
+      return this[kNapiObj].length;
     }
 
     get numberOfChannels() {
@@ -65,7 +110,7 @@ module.exports.AudioBuffer = (NativeAudioBuffer) => {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'");
       }
 
-      return this[kNativeAudioBuffer].numberOfChannels;
+      return this[kNapiObj].numberOfChannels;
     }
 
     copyFromChannel(destination, channelNumber, bufferOffset = 0) {
@@ -73,26 +118,31 @@ module.exports.AudioBuffer = (NativeAudioBuffer) => {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'");
       }
 
+      if (arguments.length < 2) {
+        throw new TypeError(`Failed to execute 'copyFromChannel' on 'AudioBuffer': 2 argument required, but only ${arguments.length} present`);
+      }
+
       if (!(destination instanceof Float32Array)) {
         throw new TypeError(`Failed to execute 'copyFromChannel' on 'AudioBuffer': parameter 1 is not of type 'Float32Array'`);
       }
 
-      // rust implementation uses a usize so this check must be done here
-      // weirdly `conversions['unsigned long'](-1);` returns `4294967295``
+      // Rust implementation uses a usize which will clamp -1 to 0, and spec requires
+      // an IndexSizeError rather than a TypeError, so this check must be done here.
+      // cf. note on AnalyzerNode::fftSize
       if (channelNumber < 0) {
         throw new DOMException(`Failed to execute 'copyFromChannel' on 'AudioBuffer': channelNumber must equal or greater than 0`, 'IndexSizeError');
       }
 
-      channelNumber = conversions['unsigned long'](channelNumber);
+      channelNumber = conversions['unsigned long'](channelNumber, {
+        context: `Failed to execute 'copyFromChannel' on 'AudioBuffer': channelNumber`,
+      });
 
-      if (channelNumber < 0) {
-        throw new DOMException(`Failed to execute 'copyFromChannel' on 'AudioBuffer': bufferOffset must equal or greater than 0`, 'IndexSizeError');
-      }
-
-      bufferOffset = conversions['unsigned long'](bufferOffset);
+      bufferOffset = conversions['unsigned long'](bufferOffset, {
+        context: `Failed to execute 'copyFromChannel' on 'AudioBuffer': bufferOffset`,
+      });
 
       try {
-        this[kNativeAudioBuffer].copyFromChannel(destination, channelNumber, bufferOffset);
+        this[kNapiObj].copyFromChannel(destination, channelNumber, bufferOffset);
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -103,26 +153,31 @@ module.exports.AudioBuffer = (NativeAudioBuffer) => {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'");
       }
 
-      if (!(source instanceof Float32Array)) {
-        throw new TypeError(`Failed to execute 'copyToChannel' on 'AudioBuffer': parameter 1 is not of type 'Float32Array'`);
+      if (arguments.length < 2) {
+        throw new TypeError(`Failed to execute 'copyToChannel' on 'AudioBuffer': 2 argument required, but only ${arguments.length} present`);
       }
 
-      // rust implementation uses a usize so this check must be done here
-      // weirdly `conversions['unsigned long'](-1);` returns `4294967295``
+      if (!(source instanceof Float32Array)) {
+        throw new TypeError(`Failed to execute 'copyToChannel' on 'AudioBuffer': source is not of type 'Float32Array'`);
+      }
+
+      // Rust implementation uses a usize which will clamp -1 to 0, and spec requires
+      // an IndexSizeError rather than a TypeError, so this check must be done here.
+      // cf. note on AnalyzerNode::fftSize
       if (channelNumber < 0) {
         throw new DOMException(`Failed to execute 'copyToChannel' on 'AudioBuffer': channelNumber must equal or greater than 0`, 'IndexSizeError');
       }
 
-      channelNumber = conversions['unsigned long'](channelNumber);
+      channelNumber = conversions['unsigned long'](channelNumber, {
+        context: `Failed to execute 'copyToChannel' on 'AudioBuffer': channelNumber`,
+      });
 
-      if (channelNumber < 0) {
-        throw new DOMException(`Failed to execute 'copyToChannel' on 'AudioBuffer': bufferOffset must equal or greater than 0`, 'IndexSizeError');
-      }
-
-      bufferOffset = conversions['unsigned long'](bufferOffset);
+      bufferOffset = conversions['unsigned long'](bufferOffset, {
+        context: `Failed to execute 'copyToChannel' on 'AudioBuffer': bufferOffset`,
+      });
 
       try {
-        this[kNativeAudioBuffer].copyToChannel(source, channelNumber, bufferOffset);
+        this[kNapiObj].copyToChannel(source, channelNumber, bufferOffset);
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -133,16 +188,23 @@ module.exports.AudioBuffer = (NativeAudioBuffer) => {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'");
       }
 
-      // rust implementation uses a usize so this check must be done here
-      // weirdly `conversions['unsigned long'](-1);` returns `4294967295``
+      if (arguments.length < 1) {
+        throw new TypeError(`Failed to execute 'getChannelData' on 'AudioBuffer': 1 argument required, but only ${arguments.length} present`);
+      }
+
+      // Rust implementation uses a usize which will clamp -1 to 0, and spec requires
+      // an IndexSizeError rather than a TypeError, so this check must be done here.
+      // cf. note on AnalyzerNode::fftSize
       if (channel < 0) {
         throw new DOMException(`Failed to execute 'getChannelData' on 'AudioBuffer': channel must equal or greater than 0`, 'IndexSizeError');
       }
 
-      channel = conversions['unsigned long'](channel);
+      channel = conversions['unsigned long'](channel, {
+        context: `Failed to execute 'getChannelData' on 'AudioBuffer': channel`,
+      });
 
       try {
-        return this[kNativeAudioBuffer].getChannelData(channel);
+        return this[kNapiObj].getChannelData(channel);
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -180,7 +242,4 @@ module.exports.AudioBuffer = (NativeAudioBuffer) => {
   return AudioBuffer;
 };
 
-// so that AudioBufferSourceNode and ConvolverNode can retrieve the wrapped value to `super` class
-module.exports.kNativeAudioBuffer = kNativeAudioBuffer;
-module.exports.kAudioBuffer = kAudioBuffer;
 

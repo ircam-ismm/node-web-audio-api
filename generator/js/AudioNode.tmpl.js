@@ -1,19 +1,36 @@
-const { throwSanitizedError } = require('./lib/errors.js');
-const { kNapiObj, kNativeAudioParam } = require('./lib/symbols.js');
-const { kEnumerableProperty, kHiddenProperty } = require('./lib/utils.js');
+const conversions = require("webidl-conversions");
+
+const {
+  throwSanitizedError,
+} = require('./lib/errors.js');
+const {
+  kEnumerableProperty,
+  kHiddenProperty,
+} = require('./lib/utils.js');
+const {
+  kNapiObj
+} = require('./lib/symbols.js');
 
 const AudioParam = require('./AudioParam.js');
 
 class AudioNode extends EventTarget {
   #context = null;
 
-  constructor(context, napiObj) {
-    super(napiObj);
+  constructor(context, options) {
+    // Make constructor "private"
+    if (
+      (typeof options !== 'object')
+      || !(kNapiObj in options)
+    ) {
+      throw new TypeError('Illegal constructor');
+    }
+
+    super(options[kNapiObj]);
 
     this.#context = context;
 
     Object.defineProperty(this, kNapiObj, {
-      value: napiObj,
+      value: options[kNapiObj],
       ...kHiddenProperty,
     });
   }
@@ -23,7 +40,10 @@ class AudioNode extends EventTarget {
   }
 
 ${d.attributes(d.node).filter(attr => d.name(attr) !== 'context').map(attr => {
-return `
+  let getter = ``;
+  let setter = ``;
+
+  getter = `
   get ${d.name(attr)}() {
     if (!(this instanceof AudioNode)) {
       throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioNode'");
@@ -31,13 +51,46 @@ return `
 
     return this[kNapiObj].${d.name(attr)};
   }
-`}).join('')}
+  `;
 
-${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
-return `
+  if (!attr.readonly) {
+    const type = attr.idlType.idlType;
+
+    switch (type) {
+      case 'unsigned long': {
+        setter = `
   set ${d.name(attr)}(value) {
     if (!(this instanceof AudioNode)) {
       throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioNode'");
+    }
+
+    value = conversions['${type}'](value, {
+      context: \`Failed to set the '${d.name(attr)}' property on '${d.name(d.node)}': Value\`
+    });
+
+    try {
+      this[kNapiObj].${d.name(attr)} = value;
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+  }
+        `;
+        break;
+      }
+      case 'ChannelCountMode':
+      case 'ChannelInterpretation': {
+        const typeIdl = d.findInTree(type);
+        const values = JSON.stringify(typeIdl.values.map(e => e.value));
+
+        setter = `
+  set ${d.name(attr)}(value) {
+    if (!(this instanceof AudioNode)) {
+      throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioNode'");
+    }
+
+    if (!${values}.includes(value)) {
+      console.warn(\`Failed to set the '${d.name(attr)}' property on '${d.name(d.node)}': Value '\${value}' is not a valid '${type}' enum value\`);
+      return;
     }
 
     try {
@@ -46,7 +99,18 @@ return `
       throwSanitizedError(err);
     }
   }
-`}).join('')}
+        `;
+        break;
+      }
+      default: {
+        console.log(`Warning: Unhandled type '${type}' in setters`);
+        break;
+      }
+    }
+  }
+
+  return `${getter}${setter}`;
+}).join('')}
 
   // ------------------------------------------------------
   // connect / disconnect
@@ -71,7 +135,7 @@ return `
 
     // note that audio listener params are not wrapped
     if (args[0] instanceof AudioParam) {
-      args[0] = args[0][kNativeAudioParam];
+      args[0] = args[0][kNapiObj];
     }
 
     if (args[0] instanceof AudioNode) {
@@ -103,7 +167,7 @@ return `
     }
 
     if (args[0] instanceof AudioParam) {
-      args[0] = args[0][kNativeAudioParam];
+      args[0] = args[0][kNapiObj];
     }
 
     if (args[0] instanceof AudioNode) {
@@ -136,11 +200,9 @@ Object.defineProperties(AudioNode.prototype, {
     configurable: true,
     value: 'AudioNode',
   },
-
   ${d.attributes(d.node).map(attr => {
     return `${d.name(attr)}: kEnumerableProperty,`;
   }).join('')}
-
   connect: kEnumerableProperty,
   disconnect: kEnumerableProperty,
 });

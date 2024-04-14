@@ -33,36 +33,11 @@ pub(crate) struct NapiIIRFilterNode(IIRFilterNode);
 
 impl NapiIIRFilterNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
-        env.define_class(
-            "IIRFilterNode",
-            constructor,
-            &[
-                // Attributes
+        let interface = audio_node_interface![
+            Property::new("getFrequencyResponse")?.with_method(get_frequency_response)
+        ];
 
-                // Methods
-                Property::new("getFrequencyResponse")?
-                    .with_method(get_frequency_response)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                // AudioNode interface
-                Property::new("channelCount")?
-                    .with_getter(get_channel_count)
-                    .with_setter(set_channel_count),
-                Property::new("channelCountMode")?
-                    .with_getter(get_channel_count_mode)
-                    .with_setter(set_channel_count_mode),
-                Property::new("channelInterpretation")?
-                    .with_getter(get_channel_interpretation)
-                    .with_setter(set_channel_interpretation),
-                Property::new("numberOfInputs")?.with_getter(get_number_of_inputs),
-                Property::new("numberOfOutputs")?.with_getter(get_number_of_outputs),
-                Property::new("connect")?
-                    .with_method(connect)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                Property::new("disconnect")?
-                    .with_method(disconnect)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-            ],
-        )
+        env.define_class("IIRFilterNode", constructor, &interface)
     }
 
     // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
@@ -77,7 +52,10 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
     let js_audio_context = ctx.get::<JsObject>(0)?;
 
-    // parse options
+    // --------------------------------------------------------
+    // Parse IIRFilterOptions
+    // by bindings construction all fields are populated on the JS side
+    // --------------------------------------------------------
     let js_options = ctx.get::<JsObject>(1)?;
 
     let feedforward_js = js_options
@@ -92,7 +70,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let feedback: &[f64] = feedback_value.as_ref();
     let feedback = feedback.to_vec();
 
-    // can't create default from IIRFilterOptions
+    // --------------------------------------------------------
+    // Parse AudioNodeOptions
+    // --------------------------------------------------------
     let audio_node_options_default = AudioNodeOptions::default();
 
     let some_channel_count_js = js_options.get::<&str, JsObject>("channelCount")?;
@@ -138,6 +118,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         audio_node_options_default.channel_interpretation
     };
 
+    // --------------------------------------------------------
+    // Create IIRFilterOptions object
+    // --------------------------------------------------------
     let options = IIRFilterOptions {
         feedforward,
         feedback,
@@ -148,12 +131,14 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         },
     };
 
+    // --------------------------------------------------------
+    // Create native IIRFilterNode
+    // --------------------------------------------------------
     let audio_context_name =
         js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
     let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
     let audio_context_str = &audio_context_utf8_name[..];
 
-    // create native node
     let native_node = match audio_context_str {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
@@ -170,6 +155,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         &_ => unreachable!(),
     };
 
+    // --------------------------------------------------------
+    // Finalize instance creation
+    // --------------------------------------------------------
     js_this.define_properties(&[
         Property::new("context")?
             .with_value(&js_audio_context)
@@ -187,139 +175,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 
-// -------------------------------------------------
-// AudioNode Interface
-// -------------------------------------------------
-#[js_function]
-fn get_channel_count(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiIIRFilterNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let channel_count = node.channel_count() as f64;
-
-    ctx.env.create_double(channel_count)
-}
-
-#[js_function(1)]
-fn set_channel_count(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiIIRFilterNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let channel_count = ctx.get::<JsNumber>(0)?.get_double()? as usize;
-    node.set_channel_count(channel_count);
-
-    ctx.env.get_undefined()
-}
-
-#[js_function]
-fn get_channel_count_mode(ctx: CallContext) -> Result<JsString> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiIIRFilterNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = node.channel_count_mode();
-    let value_str = match value {
-        ChannelCountMode::Max => "max",
-        ChannelCountMode::ClampedMax => "clamped-max",
-        ChannelCountMode::Explicit => "explicit",
-    };
-
-    ctx.env.create_string(value_str)
-}
-
-#[js_function(1)]
-fn set_channel_count_mode(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiIIRFilterNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let js_str = ctx.get::<JsString>(0)?;
-    let utf8_str = js_str.into_utf8()?.into_owned()?;
-    let value = match utf8_str.as_str() {
-        "max" => ChannelCountMode::Max,
-        "clamped-max" => ChannelCountMode::ClampedMax,
-        "explicit" => ChannelCountMode::Explicit,
-        _ => panic!("TypeError - The provided value '{:?}' is not a valid enum value of type ChannelCountMode", utf8_str.as_str()),
-    };
-    node.set_channel_count_mode(value);
-
-    ctx.env.get_undefined()
-}
-
-#[js_function]
-fn get_channel_interpretation(ctx: CallContext) -> Result<JsString> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiIIRFilterNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = node.channel_interpretation();
-    let value_str = match value {
-        ChannelInterpretation::Speakers => "speakers",
-        ChannelInterpretation::Discrete => "discrete",
-    };
-
-    ctx.env.create_string(value_str)
-}
-
-#[js_function(1)]
-fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiIIRFilterNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let js_str = ctx.get::<JsString>(0)?;
-    let utf8_str = js_str.into_utf8()?.into_owned()?;
-    let value = match utf8_str.as_str() {
-        "speakers" => ChannelInterpretation::Speakers,
-        "discrete" => ChannelInterpretation::Discrete,
-        _ => panic!("TypeError - The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", utf8_str.as_str()),
-    };
-    node.set_channel_interpretation(value);
-
-    ctx.env.get_undefined()
-}
-
-#[js_function]
-fn get_number_of_inputs(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiIIRFilterNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let number_of_inputs = node.number_of_inputs() as f64;
-
-    ctx.env.create_double(number_of_inputs)
-}
-
-#[js_function]
-fn get_number_of_outputs(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiIIRFilterNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let number_of_outputs = node.number_of_outputs() as f64;
-
-    ctx.env.create_double(number_of_outputs)
-}
-
-// -------------------------------------------------
-// connect / disconnect macros
-// -------------------------------------------------
-connect_method!(NapiIIRFilterNode);
-disconnect_method!(NapiIIRFilterNode);
-
-// -------------------------------------------------
-// AudioScheduledSourceNode Interface
-// -------------------------------------------------
-
-// -------------------------------------------------
-// GETTERS
-// -------------------------------------------------
-
-// -------------------------------------------------
-// SETTERS
-// -------------------------------------------------
+audio_node_impl!(NapiIIRFilterNode);
 
 // -------------------------------------------------
 // METHODS
@@ -329,8 +185,6 @@ disconnect_method!(NapiIIRFilterNode);
 fn get_frequency_response(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiIIRFilterNode>(&js_this)?;
-    // avoid warnings while we don't support all methods
-    #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
     let mut frequency_hz_js = ctx.get::<JsTypedArray>(0)?.into_value()?;

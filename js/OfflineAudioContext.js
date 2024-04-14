@@ -1,11 +1,19 @@
-const { bridgeEventTarget } = require('./lib/events.js');
-const { DOMException, throwSanitizedError } = require('./lib/errors.js');
-const {
-  isFunction, isPlainObject, isPositiveInt, isPositiveNumber, kEnumerableProperty
-} = require('./lib/utils.js');
-const { kNapiObj } = require('./lib/symbols.js');
+const conversions = require('webidl-conversions');
 
-const { kNativeAudioBuffer } = require('./AudioBuffer.js');
+const {
+  bridgeEventTarget,
+} = require('./lib/events.js');
+const {
+  DOMException,
+  throwSanitizedError,
+} = require('./lib/errors.js');
+const {
+  isFunction,
+  kEnumerableProperty,
+} = require('./lib/utils.js');
+const {
+  kNapiObj
+} = require('./lib/symbols.js');
 
 // constructor(OfflineAudioContextOptions contextOptions);
 // constructor(unsigned long numberOfChannels, unsigned long length, float sampleRate);
@@ -24,36 +32,46 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
 
       // https://webaudio.github.io/web-audio-api/#dom-offlineaudiocontext-constructor-contextoptions-contextoptions
       if (arguments.length === 1) {
-        if (!isPlainObject(args[0])) {
-          throw new TypeError(`Failed to construct 'OfflineAudioContext': The provided value is not of type 'OfflineAudioContextOptions'`);
+        const options = args[0];
+
+        if (typeof options !== 'object') {
+          throw new TypeError(`Failed to construct 'OfflineAudioContext': argument 1 is not of type 'OfflineAudioContextOptions'`);
         }
 
-        let { length, sampleRate, numberOfChannels } = args[0];
-
-        if (length === undefined) {
+        if (options.length === undefined) {
           throw new TypeError(`Failed to construct 'OfflineAudioContext': Failed to read the 'length' property from 'OfflineAudioContextOptions': Required member is undefined.`);
         }
 
-        if (sampleRate === undefined) {
+        if (options.sampleRate === undefined) {
           throw new TypeError(`Failed to construct 'OfflineAudioContext': Failed to read the 'sampleRate' property from 'OfflineAudioContextOptions': Required member is undefined.`);
         }
 
-        if (numberOfChannels === undefined) {
-          numberOfChannels = 1;
+        if (options.numberOfChannels === undefined) {
+          options.numberOfChannels = 1;
         }
 
-        args = [numberOfChannels, length, sampleRate];
+        args = [
+          options.numberOfChannels,
+          options.length,
+          options.sampleRate
+        ];
       }
 
-      const [numberOfChannels, length, sampleRate] = args;
+      let [numberOfChannels, length, sampleRate] = args;
 
-      if (!isPositiveInt(numberOfChannels)) {
-        throw new TypeError(`Failed to construct 'OfflineAudioContext': Invalid value for numberOfChannels: ${numberOfChannels}`);
-      } else if (!isPositiveInt(length)) {
-        throw new DOMException(`Failed to construct 'OfflineAudioContext': Invalid value for length: ${length}`, 'NotSupportedError');
-      } else if (!isPositiveNumber(sampleRate)) {
-        throw new TypeError(`Failed to construct 'OfflineAudioContext': Invalid value for sampleRate: ${sampleRate}`);
-      }
+      numberOfChannels = conversions['unsigned long'](numberOfChannels, {
+        enforceRange: true,
+        context: `Failed to construct 'OfflineAudioContext': Failed to read the 'numberOfChannels' property from OfflineContextOptions; The provided value (${numberOfChannels})`
+      });
+
+      length = conversions['unsigned long'](length, {
+        enforceRange: true,
+        context: `Failed to construct 'OfflineAudioContext': Failed to read the 'length' property from OfflineContextOptions; The provided value (${length})`
+      });
+
+      sampleRate = conversions['float'](sampleRate, {
+        context: `Failed to construct 'OfflineAudioContext': Failed to read the 'sampleRate' property from OfflineContextOptions; The provided value (${sampleRate})`
+      });
 
       let napiObj;
 
@@ -63,7 +81,7 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
         throwSanitizedError(err);
       }
 
-      super(napiObj);
+      super({ [kNapiObj]: napiObj });
     }
 
     get length() {
@@ -108,7 +126,7 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
         throwSanitizedError(err);
       }
 
-      const audioBuffer = new jsExport.AudioBuffer({ [kNativeAudioBuffer]: nativeAudioBuffer });
+      const audioBuffer = new jsExport.AudioBuffer({ [kNapiObj]: nativeAudioBuffer });
 
       // We dispatch the complete event manually to simplify the sharing of the
       // `AudioBuffer` instance. This also simplifies code on the rust side as
@@ -145,6 +163,10 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
       if (arguments.length < 1) {
         throw new TypeError(`Failed to execute 'suspend' on 'OfflineAudioContext': 1 argument required, but only ${arguments.length} present`);
       }
+
+      suspendTime = conversions['double'](suspendTime, {
+        context: `Failed to execute 'suspend' on 'OfflineAudioContext': argument 1`,
+      });
 
       try {
         await this[kNapiObj].suspend(suspendTime);

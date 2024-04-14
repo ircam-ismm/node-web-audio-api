@@ -131,10 +131,9 @@ Cargo.lock
 
 *.env
 
-src-manual
-dummy.mjs
-
+# Working files
 TODOS.md
-
+NOTES.md
+run-wpt.*
 all-check.sh
 tests/junk.mjs

@@ -29,14 +29,9 @@ const {
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
-
-const AudioParam = require('./AudioParam.js');
-const {
-  kNativeAudioBuffer,
-  kAudioBuffer,
-} = require('./AudioBuffer.js');
 const {
   kNapiObj,
+  kAudioBuffer,
 } = require('./lib/symbols.js');
 const {
   bridgeEventTarget,
@@ -59,7 +54,7 @@ module.exports = (jsExport, nativeBinding) => {
       }
 
       // parsed version of the option to be passed to NAPI
-      const parsedOptions = Object.assign({}, options);
+      const parsedOptions = {};
 
       if (options && typeof options !== 'object') {
         throw new TypeError('Failed to construct \'MediaStreamAudioSourceNode\': argument 2 is not of type \'MediaStreamAudioSourceOptions\'');
@@ -67,7 +62,7 @@ module.exports = (jsExport, nativeBinding) => {
 
       // required options
       if (typeof options !== 'object' || (options && options.mediaStream === undefined)) {
-        throw new TypeError('Failed to construct \'MediaStreamAudioSourceNode\': Failed to read the \'mediaStream\'\' property from MediaStreamAudioSourceOptions: Required member is undefined');
+        throw new TypeError('Failed to construct \'MediaStreamAudioSourceNode\': Failed to read the \'mediaStream\' property from MediaStreamAudioSourceOptions: Required member is undefined');
       }
 
       parsedOptions.mediaStream = options.mediaStream;
@@ -80,7 +75,9 @@ module.exports = (jsExport, nativeBinding) => {
         throwSanitizedError(err);
       }
 
-      super(context, napiObj);
+      super(context, {
+        [kNapiObj]: napiObj,
+      });
 
     }
 

@@ -29,14 +29,9 @@ const {
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
-
-const AudioParam = require('./AudioParam.js');
-const {
-  kNativeAudioBuffer,
-  kAudioBuffer,
-} = require('./AudioBuffer.js');
 const {
   kNapiObj,
+  kAudioBuffer,
 } = require('./lib/symbols.js');
 const {
   bridgeEventTarget,
@@ -61,13 +56,13 @@ module.exports = (jsExport, nativeBinding) => {
       }
 
       // parsed version of the option to be passed to NAPI
-      const parsedOptions = Object.assign({}, options);
+      const parsedOptions = {};
 
       if (options && typeof options !== 'object') {
         throw new TypeError('Failed to construct \'DelayNode\': argument 2 is not of type \'DelayOptions\'');
       }
 
-      if (options && 'maxDelayTime' in options) {
+      if (options && options.maxDelayTime !== undefined) {
         parsedOptions.maxDelayTime = conversions['double'](options.maxDelayTime, {
           context: `Failed to construct 'DelayNode': Failed to read the 'maxDelayTime' property from DelayOptions: The provided value (${options.maxDelayTime}})`,
         });
@@ -75,12 +70,31 @@ module.exports = (jsExport, nativeBinding) => {
         parsedOptions.maxDelayTime = 1;
       }
 
-      if (options && 'delayTime' in options) {
+      if (options && options.delayTime !== undefined) {
         parsedOptions.delayTime = conversions['double'](options.delayTime, {
           context: `Failed to construct 'DelayNode': Failed to read the 'delayTime' property from DelayOptions: The provided value (${options.delayTime}})`,
         });
       } else {
         parsedOptions.delayTime = 0;
+      }
+
+      if (options && options.channelCount !== undefined) {
+        parsedOptions.channelCount = conversions['unsigned long'](options.channelCount, {
+          enforceRange: true,
+          context: `Failed to construct 'DelayNode': Failed to read the 'channelCount' property from DelayOptions: The provided value '${options.channelCount}'`,
+        });
+      }
+
+      if (options && options.channelCountMode !== undefined) {
+        parsedOptions.channelCountMode = conversions['DOMString'](options.channelCountMode, {
+          context: `Failed to construct 'DelayNode': Failed to read the 'channelCount' property from DelayOptions: The provided value '${options.channelCountMode}'`,
+        });
+      }
+
+      if (options && options.channelInterpretation !== undefined) {
+        parsedOptions.channelInterpretation = conversions['DOMString'](options.channelInterpretation, {
+          context: `Failed to construct 'DelayNode': Failed to read the 'channelInterpretation' property from DelayOptions: The provided value '${options.channelInterpretation}'`,
+        });
       }
 
       let napiObj;
@@ -91,9 +105,13 @@ module.exports = (jsExport, nativeBinding) => {
         throwSanitizedError(err);
       }
 
-      super(context, napiObj);
+      super(context, {
+        [kNapiObj]: napiObj,
+      });
 
-      this.#delayTime = new AudioParam(this[kNapiObj].delayTime);
+      this.#delayTime = new jsExport.AudioParam({
+        [kNapiObj]: this[kNapiObj].delayTime,
+      });
     }
 
     get delayTime() {

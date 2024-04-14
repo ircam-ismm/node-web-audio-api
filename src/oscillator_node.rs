@@ -33,47 +33,17 @@ pub(crate) struct NapiOscillatorNode(OscillatorNode);
 
 impl NapiOscillatorNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
-        env.define_class(
-            "OscillatorNode",
-            constructor,
-            &[
-                // Attributes
-                Property::new("type")?
-                    .with_getter(get_type)
-                    .with_setter(set_type)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                // Methods
-                Property::new("setPeriodicWave")?
-                    .with_method(set_periodic_wave)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                // AudioNode interface
-                Property::new("channelCount")?
-                    .with_getter(get_channel_count)
-                    .with_setter(set_channel_count),
-                Property::new("channelCountMode")?
-                    .with_getter(get_channel_count_mode)
-                    .with_setter(set_channel_count_mode),
-                Property::new("channelInterpretation")?
-                    .with_getter(get_channel_interpretation)
-                    .with_setter(set_channel_interpretation),
-                Property::new("numberOfInputs")?.with_getter(get_number_of_inputs),
-                Property::new("numberOfOutputs")?.with_getter(get_number_of_outputs),
-                Property::new("connect")?
-                    .with_method(connect)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                Property::new("disconnect")?
-                    .with_method(disconnect)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                // AudioScheduledSourceNode interface
-                Property::new("start")?
-                    .with_method(start)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                Property::new("stop")?
-                    .with_method(stop)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                Property::new("__initEventTarget__")?.with_method(init_event_target),
-            ],
-        )
+        let interface = audio_node_interface![
+            Property::new("type")?
+                .with_getter(get_type)
+                .with_setter(set_type),
+            Property::new("setPeriodicWave")?.with_method(set_periodic_wave),
+            Property::new("start")?.with_method(start),
+            Property::new("stop")?.with_method(stop),
+            Property::new("__initEventTarget__")?.with_method(init_event_target)
+        ];
+
+        env.define_class("OscillatorNode", constructor, &interface)
     }
 
     // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
@@ -88,7 +58,10 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
     let js_audio_context = ctx.get::<JsObject>(0)?;
 
-    // parse options
+    // --------------------------------------------------------
+    // Parse OscillatorOptions
+    // by bindings construction all fields are populated on the JS side
+    // --------------------------------------------------------
     let js_options = ctx.get::<JsObject>(1)?;
 
     let type_js = js_options.get::<&str, JsString>("type")?.unwrap();
@@ -123,6 +96,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         _ => unreachable!(),
     };
 
+    // --------------------------------------------------------
+    // Parse AudioNodeOptions
+    // --------------------------------------------------------
     let node_defaults = OscillatorOptions::default();
     let audio_node_options_default = node_defaults.audio_node_options;
 
@@ -169,6 +145,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         audio_node_options_default.channel_interpretation
     };
 
+    // --------------------------------------------------------
+    // Create OscillatorOptions object
+    // --------------------------------------------------------
     let options = OscillatorOptions {
         type_,
         frequency,
@@ -181,12 +160,14 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         },
     };
 
+    // --------------------------------------------------------
+    // Create native OscillatorNode
+    // --------------------------------------------------------
     let audio_context_name =
         js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
     let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
     let audio_context_str = &audio_context_utf8_name[..];
 
-    // create native node
     let native_node = match audio_context_str {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
@@ -203,18 +184,30 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         &_ => unreachable!(),
     };
 
+    // --------------------------------------------------------
+    // Bind AudioParam to JS object
+    // --------------------------------------------------------
+    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+    let ctor: JsFunction = store.get_named_property("AudioParam")?;
+
     let native_param = native_node.frequency().clone();
-    let napi_param = NapiAudioParam::new(native_param);
-    let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
-    ctx.env.wrap(&mut js_obj, napi_param)?;
+    let js_obj = ctor.new_instance(&[&js_this])?;
+    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_obj)?;
+    napi_obj.wrap(native_param);
+    // ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("frequency", &js_obj)?;
 
     let native_param = native_node.detune().clone();
-    let napi_param = NapiAudioParam::new(native_param);
-    let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
-    ctx.env.wrap(&mut js_obj, napi_param)?;
+    let js_obj = ctor.new_instance(&[&js_this])?;
+    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_obj)?;
+    napi_obj.wrap(native_param);
+    // ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("detune", &js_obj)?;
 
+    // --------------------------------------------------------
+    // Finalize instance creation
+    // --------------------------------------------------------
     js_this.define_properties(&[
         Property::new("context")?
             .with_value(&js_audio_context)
@@ -232,146 +225,19 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 
-// -------------------------------------------------
-// AudioNode Interface
-// -------------------------------------------------
-#[js_function]
-fn get_channel_count(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let channel_count = node.channel_count() as f64;
-
-    ctx.env.create_double(channel_count)
-}
-
-#[js_function(1)]
-fn set_channel_count(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let channel_count = ctx.get::<JsNumber>(0)?.get_double()? as usize;
-    node.set_channel_count(channel_count);
-
-    ctx.env.get_undefined()
-}
-
-#[js_function]
-fn get_channel_count_mode(ctx: CallContext) -> Result<JsString> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = node.channel_count_mode();
-    let value_str = match value {
-        ChannelCountMode::Max => "max",
-        ChannelCountMode::ClampedMax => "clamped-max",
-        ChannelCountMode::Explicit => "explicit",
-    };
-
-    ctx.env.create_string(value_str)
-}
-
-#[js_function(1)]
-fn set_channel_count_mode(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let js_str = ctx.get::<JsString>(0)?;
-    let utf8_str = js_str.into_utf8()?.into_owned()?;
-    let value = match utf8_str.as_str() {
-        "max" => ChannelCountMode::Max,
-        "clamped-max" => ChannelCountMode::ClampedMax,
-        "explicit" => ChannelCountMode::Explicit,
-        _ => panic!("TypeError - The provided value '{:?}' is not a valid enum value of type ChannelCountMode", utf8_str.as_str()),
-    };
-    node.set_channel_count_mode(value);
-
-    ctx.env.get_undefined()
-}
-
-#[js_function]
-fn get_channel_interpretation(ctx: CallContext) -> Result<JsString> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = node.channel_interpretation();
-    let value_str = match value {
-        ChannelInterpretation::Speakers => "speakers",
-        ChannelInterpretation::Discrete => "discrete",
-    };
-
-    ctx.env.create_string(value_str)
-}
-
-#[js_function(1)]
-fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let js_str = ctx.get::<JsString>(0)?;
-    let utf8_str = js_str.into_utf8()?.into_owned()?;
-    let value = match utf8_str.as_str() {
-        "speakers" => ChannelInterpretation::Speakers,
-        "discrete" => ChannelInterpretation::Discrete,
-        _ => panic!("TypeError - The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", utf8_str.as_str()),
-    };
-    node.set_channel_interpretation(value);
-
-    ctx.env.get_undefined()
-}
-
-#[js_function]
-fn get_number_of_inputs(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let number_of_inputs = node.number_of_inputs() as f64;
-
-    ctx.env.create_double(number_of_inputs)
-}
-
-#[js_function]
-fn get_number_of_outputs(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let number_of_outputs = node.number_of_outputs() as f64;
-
-    ctx.env.create_double(number_of_outputs)
-}
-
-// -------------------------------------------------
-// connect / disconnect macros
-// -------------------------------------------------
-connect_method!(NapiOscillatorNode);
-disconnect_method!(NapiOscillatorNode);
+audio_node_impl!(NapiOscillatorNode);
 
 // -------------------------------------------------
 // AudioScheduledSourceNode Interface
 // -------------------------------------------------
-
 #[js_function(1)]
 fn start(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    match ctx.length {
-        0 => node.start(),
-        1 => {
-            let when = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
-            node.start_at(when);
-        }
-        _ => (),
-    }
+    let when = ctx.get::<JsNumber>(0)?.get_double()?;
+    node.start_at(when);
 
     ctx.env.get_undefined()
 }
@@ -382,20 +248,14 @@ fn stop(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    match ctx.length {
-        0 => node.stop(),
-        1 => {
-            let when = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()?;
-            node.stop_at(when);
-        }
-        _ => (),
-    };
+    let when = ctx.get::<JsNumber>(0)?.get_double()?;
+    node.stop_at(when);
 
     ctx.env.get_undefined()
 }
 
 // ----------------------------------------------------
-// Private Event Target initialization
+// EventTarget initialization - cf. js/utils/events.js
 // ----------------------------------------------------
 #[js_function]
 fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
@@ -456,7 +316,7 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
 }
 
 // -------------------------------------------------
-// GETTERS
+// Getters / Setters
 // -------------------------------------------------
 
 #[js_function(0)]
@@ -477,10 +337,6 @@ fn get_type(ctx: CallContext) -> Result<JsString> {
     ctx.env.create_string(js_value)
 }
 
-// -------------------------------------------------
-// SETTERS
-// -------------------------------------------------
-
 #[js_function(1)]
 fn set_type(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -495,7 +351,7 @@ fn set_type(ctx: CallContext) -> Result<JsUndefined> {
         "sawtooth" => OscillatorType::Sawtooth,
         "triangle" => OscillatorType::Triangle,
         "custom" => OscillatorType::Custom,
-        _ => return ctx.env.get_undefined(),
+        _ => unreachable!(),
     };
 
     node.set_type(value);
@@ -511,8 +367,6 @@ fn set_type(ctx: CallContext) -> Result<JsUndefined> {
 fn set_periodic_wave(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiOscillatorNode>(&js_this)?;
-    // avoid warnings while we don't support all methods
-    #[allow(unused_variables)]
     let node = napi_node.unwrap();
 
     let periodic_wave_js = ctx.get::<JsObject>(0)?;

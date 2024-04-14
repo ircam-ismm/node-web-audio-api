@@ -2,70 +2,105 @@ const conversions = require("webidl-conversions");
 
 const { toSanitizedSequence } = require('./lib/cast.js');
 const { throwSanitizedError } = require('./lib/errors.js');
+
 const { kEnumerableProperty, kHiddenProperty } = require('./lib/utils.js');
-const { kNativeAudioParam } = require('./lib/symbols.js');
+const { kNapiObj } = require('./lib/symbols.js');
 
 class AudioParam {
-  constructor(nativeAudioParam) {
-    if (nativeAudioParam['Symbol.toStringTag'] !== 'AudioParam') {
+  constructor(options) {
+    // Make constructor "private"
+    if (
+      (typeof options !== 'object')
+      || !(kNapiObj in options)
+      || options[kNapiObj]['Symbol.toStringTag'] !== 'AudioParam'
+    ) {
       throw new TypeError('Illegal constructor');
     }
 
-    Object.defineProperty(this, kNativeAudioParam, {
-      value: nativeAudioParam,
+    Object.defineProperty(this, kNapiObj, {
+      value: options[kNapiObj],
       ...kHiddenProperty,
     });
   }
-  // getters
+
 ${d.attributes(d.node).map(attr => {
-  return `
+  let getter = ``;
+  let setter = ``;
+
+  getter = `
   get ${d.name(attr)}() {
     if (!(this instanceof AudioParam)) {
       throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioParam'");
     }
 
-    return this[kNativeAudioParam].${d.name(attr)};
+    return this[kNapiObj].${d.name(attr)};
   }
-`}).join('')}
-  // setters
-${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
-  // float or AutomationRate
-  const type = attr.idlType.idlType;
-  const castType = type === 'float' ? 'float' : 'string';
+  `;
 
-  return `
+  if (!attr.readonly) {
+    const type = attr.idlType.idlType;
+
+    switch (type) {
+      case 'float': {
+        setter = `
   set ${d.name(attr)}(value) {
     if (!(this instanceof AudioParam)) {
       throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioParam'");
     }
 
-    ${type === 'float' ? `
     value = conversions['${type}'](value, {
       context: \`Failed to set the '${d.name(attr)}' property on '${d.name(d.node)}': The provided ${type} value\`,
     });
-    ` : ``}
 
     try {
-      this[kNativeAudioParam].${d.name(attr)} = value;
+      this[kNapiObj].${d.name(attr)} = value;
     } catch (err) {
       throwSanitizedError(err);
     }
   }
-`}).join('')}
-  // methods
-${d.methods(d.node, false)
-  .reduce((acc, method) => {
-    // dedup method names
-    if (!acc.find(i => d.name(i) === d.name(method))) {
-      acc.push(method)
+        `;
+        break;
+      }
+      case 'AutomationRate': {
+        const typeIdl = d.findInTree(type);
+        const values = JSON.stringify(typeIdl.values.map(e => e.value));
+
+        setter = `
+  set ${d.name(attr)}(value) {
+    if (!(this instanceof AudioParam)) {
+      throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioParam'");
     }
-    return acc;
-  }, []).map(method => {
+
+    if (!${values}.includes(value)) {
+      console.warn(\`Failed to set the '${d.name(attr)}' property on '${d.name(d.node)}': Value '\${value}' is not a valid '${type}' enum value\`);
+      return;
+    }
+
+    try {
+      this[kNapiObj].${d.name(attr)} = value;
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+  }
+        `;
+        break;
+      }
+      default: {
+        console.log(`Warning: Unhandled type '${type}' in setters`);
+        break;
+      }
+    }
+  }
+
+  return `${getter}${setter}`;
+}).join('')}
+
+${d.methods(d.node, false).map(method => {
     const numRequired = d.minRequiredArgs(method);
     const argumentNames = method.arguments.filter(arg => arg.optional === false).map(d.name);
     // make sure we can assume that all arguments are required
     if (argumentNames.length !== method.arguments.length) {
-      console.log(`> Warning: optionnal argument for ${d.name(method)}`)
+      console.log(`Warning: Unhandled optionnal argument for ${d.name(method)}`)
     }
 
     return `
@@ -111,7 +146,7 @@ ${d.methods(d.node, false)
     }).join('')}
 
     try {
-      this[kNativeAudioParam].${d.name(method)}(${argumentNames.join(', ')});
+      this[kNapiObj].${d.name(method)}(${argumentNames.join(', ')});
     } catch (err) {
       throwSanitizedError(err);
     }
@@ -140,21 +175,12 @@ Object.defineProperties(AudioParam.prototype, {
     configurable: true,
     value: 'AudioParam',
   },
-
   ${d.attributes(d.node).map(attr => {
     return `${d.name(attr)}: kEnumerableProperty,`;
   }).join('')}
-
-  ${d.methods(d.node, false).reduce((acc, method) => {
-    // dedup method names
-    if (!acc.find(i => d.name(i) === d.name(method))) {
-      acc.push(method)
-    }
-    return acc;
-  }, []).map(method => {
+  ${d.methods(d.node, false).map(method => {
     return `${d.name(method)}: kEnumerableProperty,`;
   }).join('')}
-
 });
 
 

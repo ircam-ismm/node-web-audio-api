@@ -29,14 +29,9 @@ const {
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
-
-const AudioParam = require('./AudioParam.js');
-const {
-  kNativeAudioBuffer,
-  kAudioBuffer,
-} = require('./AudioBuffer.js');
 const {
   kNapiObj,
+  kAudioBuffer,
 } = require('./lib/symbols.js');
 const {
   bridgeEventTarget,
@@ -59,21 +54,22 @@ module.exports = (jsExport, nativeBinding) => {
       }
 
       // parsed version of the option to be passed to NAPI
-      const parsedOptions = Object.assign({}, options);
+      const parsedOptions = {};
 
       if (options && typeof options !== 'object') {
         throw new TypeError('Failed to construct \'AnalyserNode\': argument 2 is not of type \'AnalyserOptions\'');
       }
 
-      if (options && 'fftSize' in options) {
+      if (options && options.fftSize !== undefined) {
         parsedOptions.fftSize = conversions['unsigned long'](options.fftSize, {
+          enforceRange: true,
           context: `Failed to construct 'AnalyserNode': Failed to read the 'fftSize' property from AnalyserOptions: The provided value (${options.fftSize}})`,
         });
       } else {
         parsedOptions.fftSize = 2048;
       }
 
-      if (options && 'maxDecibels' in options) {
+      if (options && options.maxDecibels !== undefined) {
         parsedOptions.maxDecibels = conversions['double'](options.maxDecibels, {
           context: `Failed to construct 'AnalyserNode': Failed to read the 'maxDecibels' property from AnalyserOptions: The provided value (${options.maxDecibels}})`,
         });
@@ -81,7 +77,7 @@ module.exports = (jsExport, nativeBinding) => {
         parsedOptions.maxDecibels = -30;
       }
 
-      if (options && 'minDecibels' in options) {
+      if (options && options.minDecibels !== undefined) {
         parsedOptions.minDecibels = conversions['double'](options.minDecibels, {
           context: `Failed to construct 'AnalyserNode': Failed to read the 'minDecibels' property from AnalyserOptions: The provided value (${options.minDecibels}})`,
         });
@@ -89,12 +85,31 @@ module.exports = (jsExport, nativeBinding) => {
         parsedOptions.minDecibels = -100;
       }
 
-      if (options && 'smoothingTimeConstant' in options) {
+      if (options && options.smoothingTimeConstant !== undefined) {
         parsedOptions.smoothingTimeConstant = conversions['double'](options.smoothingTimeConstant, {
           context: `Failed to construct 'AnalyserNode': Failed to read the 'smoothingTimeConstant' property from AnalyserOptions: The provided value (${options.smoothingTimeConstant}})`,
         });
       } else {
         parsedOptions.smoothingTimeConstant = 0.8;
+      }
+
+      if (options && options.channelCount !== undefined) {
+        parsedOptions.channelCount = conversions['unsigned long'](options.channelCount, {
+          enforceRange: true,
+          context: `Failed to construct 'AnalyserNode': Failed to read the 'channelCount' property from AnalyserOptions: The provided value '${options.channelCount}'`,
+        });
+      }
+
+      if (options && options.channelCountMode !== undefined) {
+        parsedOptions.channelCountMode = conversions['DOMString'](options.channelCountMode, {
+          context: `Failed to construct 'AnalyserNode': Failed to read the 'channelCount' property from AnalyserOptions: The provided value '${options.channelCountMode}'`,
+        });
+      }
+
+      if (options && options.channelInterpretation !== undefined) {
+        parsedOptions.channelInterpretation = conversions['DOMString'](options.channelInterpretation, {
+          context: `Failed to construct 'AnalyserNode': Failed to read the 'channelInterpretation' property from AnalyserOptions: The provided value '${options.channelInterpretation}'`,
+        });
       }
 
       let napiObj;
@@ -105,7 +120,9 @@ module.exports = (jsExport, nativeBinding) => {
         throwSanitizedError(err);
       }
 
-      super(context, napiObj);
+      super(context, {
+        [kNapiObj]: napiObj,
+      });
 
     }
 
@@ -115,6 +132,29 @@ module.exports = (jsExport, nativeBinding) => {
       }
 
       return this[kNapiObj].fftSize;
+    }
+
+    set fftSize(value) {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
+      // @fixme - wpt pretends that when set to -1, this should throw IndexSizeError, not a TypeError.
+      // For now let's just cast it to Number without further checks, and let Rust do the job
+      // as 0 is an invalid value too
+      // value = conversions['unsigned long'](value, {
+      //   enforceRange: true,
+      //   context: `Failed to set the 'fftSize' property on 'AnalyserNode': Value`
+      // });
+      value = conversions['unrestricted double'](value, {
+        context: `Failed to set the 'fftSize' property on 'AnalyserNode': Value`,
+      });
+
+      try {
+        this[kNapiObj].fftSize = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
     }
 
     get frequencyBinCount() {
@@ -133,12 +173,44 @@ module.exports = (jsExport, nativeBinding) => {
       return this[kNapiObj].minDecibels;
     }
 
+    set minDecibels(value) {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
+      value = conversions['double'](value, {
+        context: `Failed to set the 'minDecibels' property on 'AnalyserNode': Value`,
+      });
+
+      try {
+        this[kNapiObj].minDecibels = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
+
     get maxDecibels() {
       if (!(this instanceof AnalyserNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
       }
 
       return this[kNapiObj].maxDecibels;
+    }
+
+    set maxDecibels(value) {
+      if (!(this instanceof AnalyserNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
+      }
+
+      value = conversions['double'](value, {
+        context: `Failed to set the 'maxDecibels' property on 'AnalyserNode': Value`,
+      });
+
+      try {
+        this[kNapiObj].maxDecibels = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
     }
 
     get smoothingTimeConstant() {
@@ -149,46 +221,14 @@ module.exports = (jsExport, nativeBinding) => {
       return this[kNapiObj].smoothingTimeConstant;
     }
 
-    set fftSize(value) {
-      if (!(this instanceof AnalyserNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
-      }
-
-      try {
-        this[kNapiObj].fftSize = value;
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
-    set minDecibels(value) {
-      if (!(this instanceof AnalyserNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
-      }
-
-      try {
-        this[kNapiObj].minDecibels = value;
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
-    set maxDecibels(value) {
-      if (!(this instanceof AnalyserNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
-      }
-
-      try {
-        this[kNapiObj].maxDecibels = value;
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
     set smoothingTimeConstant(value) {
       if (!(this instanceof AnalyserNode)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AnalyserNode\'');
       }
+
+      value = conversions['double'](value, {
+        context: `Failed to set the 'smoothingTimeConstant' property on 'AnalyserNode': Value`,
+      });
 
       try {
         this[kNapiObj].smoothingTimeConstant = value;

@@ -29,14 +29,9 @@ const {
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
-
-const AudioParam = require('./AudioParam.js');
-const {
-  kNativeAudioBuffer,
-  kAudioBuffer,
-} = require('./AudioBuffer.js');
 const {
   kNapiObj,
+  kAudioBuffer,
 } = require('./lib/symbols.js');
 const {
   bridgeEventTarget,
@@ -61,13 +56,13 @@ module.exports = (jsExport, nativeBinding) => {
       }
 
       // parsed version of the option to be passed to NAPI
-      const parsedOptions = Object.assign({}, options);
+      const parsedOptions = {};
 
       if (options && typeof options !== 'object') {
         throw new TypeError('Failed to construct \'ConstantSourceNode\': argument 2 is not of type \'ConstantSourceOptions\'');
       }
 
-      if (options && 'offset' in options) {
+      if (options && options.offset !== undefined) {
         parsedOptions.offset = conversions['float'](options.offset, {
           context: `Failed to construct 'ConstantSourceNode': Failed to read the 'offset' property from ConstantSourceOptions: The provided value (${options.offset}})`,
         });
@@ -83,12 +78,16 @@ module.exports = (jsExport, nativeBinding) => {
         throwSanitizedError(err);
       }
 
-      super(context, napiObj);
+      super(context, {
+        [kNapiObj]: napiObj,
+      });
 
       // Bridge Rust native event to Node EventTarget
       bridgeEventTarget(this);
 
-      this.#offset = new AudioParam(this[kNapiObj].offset);
+      this.#offset = new jsExport.AudioParam({
+        [kNapiObj]: this[kNapiObj].offset,
+      });
     }
 
     get offset() {

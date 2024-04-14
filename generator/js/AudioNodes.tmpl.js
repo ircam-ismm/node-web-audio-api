@@ -1,14 +1,23 @@
 
 /* eslint-disable no-unused-vars */
 const conversions = require("webidl-conversions");
-const { toSanitizedSequence } = require('./lib/cast.js');
-const { isFunction, kEnumerableProperty } = require('./lib/utils.js');
-const { throwSanitizedError } = require('./lib/errors.js');
-
-const AudioParam = require('./AudioParam.js');
-const { kNativeAudioBuffer, kAudioBuffer } = require('./AudioBuffer.js');
-const { kNapiObj } = require('./lib/symbols.js');
-const { bridgeEventTarget } = require('./lib/events.js');
+const {
+  toSanitizedSequence,
+} = require('./lib/cast.js');
+const {
+  isFunction,
+  kEnumerableProperty,
+} = require('./lib/utils.js');
+const {
+  throwSanitizedError,
+} = require('./lib/errors.js');
+const {
+  kNapiObj,
+  kAudioBuffer,
+} = require('./lib/symbols.js');
+const {
+  bridgeEventTarget,
+} = require('./lib/events.js');
 /* eslint-enable no-unused-vars */
 
 const ${d.parent(d.node)} = require('./${d.parent(d.node)}.js');
@@ -33,7 +42,7 @@ module.exports = (jsExport, nativeBinding) => {
       }())}
 
       ${(function() {
-        // handle audio context
+        // handle argument 1: audio context
         const arg = d.constructor(d.node).arguments[0];
         const argType = d.memberType(arg);
 
@@ -42,10 +51,10 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError(\`Failed to construct '${d.name(d.node)}': argument 1 is not of type ${argType}\`);
       }
           `;
-        // }
       }())}
+
       // parsed version of the option to be passed to NAPI
-      const parsedOptions = Object.assign({}, options);
+      const parsedOptions = {};
 
       ${(function() {
         // handle argument 2: options
@@ -71,7 +80,7 @@ module.exports = (jsExport, nativeBinding) => {
           checkMember += `
       // required options
       if (typeof options !== 'object' || (options && options.${optionName} === undefined)) {
-        throw new TypeError("Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}'' property from ${optionsType}: Required member is undefined");
+        throw new TypeError("Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: Required member is undefined");
       }
           `
           }
@@ -79,11 +88,23 @@ module.exports = (jsExport, nativeBinding) => {
           switch (type) {
             case 'boolean':
             case 'float':
-            case 'double':
+            case 'double': {
+              checkMember += `
+      if (options && options.${optionName} !== undefined) {
+        parsedOptions.${optionName} = conversions['${type}'](options.${optionName}, {
+          context: \`Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value (\${options.${optionName}}})\`,
+        });
+      } else {
+        parsedOptions.${optionName} = ${defaultValue.value};
+      }
+              `;
+              break;
+            }
             case 'unsigned long': {
               checkMember += `
-      if (options && '${optionName}' in options) {
+      if (options && options.${optionName} !== undefined) {
         parsedOptions.${optionName} = conversions['${type}'](options.${optionName}, {
+          enforceRange: true,
           context: \`Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value (\${options.${optionName}}})\`,
         });
       } else {
@@ -98,6 +119,11 @@ module.exports = (jsExport, nativeBinding) => {
             case 'PanningModelType':
             case 'DistanceModelType':
             case 'OverSampleType': {
+              // https://webidl.spec.whatwg.org/#idl-enums
+              // Note: In the JavaScript binding, assignment of an invalid string value
+              // to an attribute is ignored, while passing such a value in other contexts
+              // (for example as an operation argument) results in an exception being thrown.
+
               const typeIdl = d.findInTree(type);
               // check assumptions on parsing
               if (typeIdl.type !== 'enum') {
@@ -108,15 +134,17 @@ module.exports = (jsExport, nativeBinding) => {
                 throw new Error(`${type} default value is not a string`);
               }
 
-              const values = JSON.stringify(typeIdl.values.map(e => e.value))
+              const values = JSON.stringify(typeIdl.values.map(e => e.value));
 
               checkMember += `
-      if (options && '${optionName}' in options) {
+      if (options && options.${optionName} !== undefined) {
         if (!${values}.includes(options.${optionName})) {
           throw new TypeError(\`Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value '\${options.${optionName}}' is not a valid enum value of type ${type}\`);
         }
 
-        parsedOptions.${optionName} = options.${optionName};
+        parsedOptions.${optionName} = conversions['DOMString'](options.${optionName}, {
+          context: \`Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value '\${options.${optionName}}'\`,
+        });
       } else {
         parsedOptions.${optionName} = '${defaultValue.value}';
       }
@@ -134,7 +162,7 @@ module.exports = (jsExport, nativeBinding) => {
             }
             case 'PeriodicWave': {
               checkMember += `
-      if (options && '${optionName}' in options) {
+      if (options && options.${optionName} !== undefined) {
         if (!(options.${optionName} instanceof jsExport.PeriodicWave)) {
           throw new TypeError(\`Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value '\${options.${optionName}}' is not an instance of ${type}\`);
         }
@@ -149,15 +177,16 @@ module.exports = (jsExport, nativeBinding) => {
             // audio buffer requires special handling because of its wrapper
             case 'AudioBuffer': {
               checkMember += `
-      if (options && '${optionName}' in options) {
+      if (options && options.${optionName} !== undefined) {
         if (options.${optionName} !== null) {
-          // if (!(kNativeAudioBuffer in options.${optionName})) {
           if (!(options.${optionName} instanceof jsExport.AudioBuffer)) {
             throw new TypeError("Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value cannot be converted to 'AudioBuffer'");
           }
 
           // unwrap napi audio buffer
-          parsedOptions.${optionName} = options.${optionName}[kNativeAudioBuffer];
+          parsedOptions.${optionName} = options.${optionName}[kNapiObj];
+        } else {
+          parsedOptions.${optionName} = ${defaultValue};
         }
       } else {
         parsedOptions.${optionName} = ${defaultValue};
@@ -186,7 +215,7 @@ module.exports = (jsExport, nativeBinding) => {
 
               // if the value is required, it should have failed earlier
               checkMember += `
-      if (options && '${optionName}' in options) {
+      if (options && options.${optionName} !== undefined) {
         try {
           parsedOptions.${optionName} = toSanitizedSequence(options.${optionName}, ${targetType});
         } catch (err) {
@@ -219,6 +248,31 @@ module.exports = (jsExport, nativeBinding) => {
           `;
         }
 
+        // audio node options
+        if (d.parent(optionsIdl) === 'AudioNodeOptions') {
+          // Real check is done on rust side, let's just convert values to proper IDL type
+          checkOptions += `
+        if (options && options.channelCount !== undefined) {
+          parsedOptions.channelCount = conversions['unsigned long'](options.channelCount, {
+            enforceRange: true,
+            context: \`Failed to construct '${d.name(d.node)}': Failed to read the 'channelCount' property from ${optionsType}: The provided value '\${options.channelCount}'\`,
+          });
+        }
+
+        if (options && options.channelCountMode !== undefined) {
+          parsedOptions.channelCountMode = conversions['DOMString'](options.channelCountMode, {
+            context: \`Failed to construct '${d.name(d.node)}': Failed to read the 'channelCount' property from ${optionsType}: The provided value '\${options.channelCountMode}'\`,
+          });
+        }
+
+        if (options && options.channelInterpretation !== undefined) {
+          parsedOptions.channelInterpretation = conversions['DOMString'](options.channelInterpretation, {
+            context: \`Failed to construct '${d.name(d.node)}': Failed to read the 'channelInterpretation' property from ${optionsType}: The provided value '\${options.channelInterpretation}'\`,
+          });
+        }
+          `;
+        }
+
         return checkOptions;
       }())}
 
@@ -230,7 +284,7 @@ module.exports = (jsExport, nativeBinding) => {
         throwSanitizedError(err);
       }
 
-      super(context, napiObj);
+      super(context, { [kNapiObj]: napiObj });
 
       ${(function() {
         // handle special options cases
@@ -252,7 +306,7 @@ module.exports = (jsExport, nativeBinding) => {
         value: null,
       });
 
-      if (options && '${optionName}' in options) {
+      if (options && options.${optionName} !== undefined) {
         this[kAudioBuffer] = options.${optionName};
       }
             `;
@@ -266,29 +320,39 @@ module.exports = (jsExport, nativeBinding) => {
 
       ${d.audioParams(d.node).map(param => {
         return `
-      this.#${d.name(param)} = new AudioParam(this[kNapiObj].${d.name(param)});`;
+      this.#${d.name(param)} = new jsExport.AudioParam({
+        [kNapiObj]: this[kNapiObj].${d.name(param)},
+      });`;
       }).join('')}
     }
 
 ${d.audioParams(d.node).map(param => {
   return `
-  get ${d.name(param)}() {
-    if (!(this instanceof ${d.name(d.node)})) {
-      throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
-    }
+    get ${d.name(param)}() {
+      if (!(this instanceof ${d.name(d.node)})) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
+      }
 
-    return this.#${d.name(param)};
-  }
+      return this.#${d.name(param)};
+    }
   `;
 }).join('')}
 
 ${d.attributes(d.node).map(attr => {
   // ------------------------------------------------------
-  // Getters
+  // Getters / Setters
   // ------------------------------------------------------
-  switch (d.memberType(attr)) {
+  const type = attr.idlType.idlType;
+
+  let getter = ``;
+  let setter = ``;
+
+  switch (type) {
+    // @todo - other special cases
+    // - Float32Array
+    // - MediaStream
     case 'AudioBuffer': {
-      return `
+      getter = `
     get ${d.name(attr)}() {
       if (!(this instanceof ${d.name(d.node)})) {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
@@ -300,7 +364,7 @@ ${d.attributes(d.node).map(attr => {
       break;
     }
     default: {
-      return `
+      getter = `
     get ${d.name(attr)}() {
       if (!(this instanceof ${d.name(d.node)})) {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
@@ -312,43 +376,88 @@ ${d.attributes(d.node).map(attr => {
       break;
     }
   }
-}).join('')}
 
-${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
   // ------------------------------------------------------
   // Setters
   // ------------------------------------------------------
-  switch (d.memberType(attr)) {
-    case 'AudioBuffer': {
-      return `
-    // @todo - should be able to set to null afterward
+  if (!attr.readonly) {
+    // nullable:
+    // - Float32Array - WaveshaperNode::curve
+    // - AudioBuffer - AudiobufferSourceNode::buffer & ConvolverNode::buffer
+    const nullable = attr.idlType.nullable;
+
+    switch (type) {
+      case 'boolean':
+      case 'float':
+      case 'double': {
+        setter = `
     set ${d.name(attr)}(value) {
       if (!(this instanceof ${d.name(d.node)})) {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
       }
 
-      if (value === null) {
-        return;
-      } else if (!(kNativeAudioBuffer in value)) {
-        throw new TypeError("Failed to set the 'buffer' property on 'AudioBufferSourceNode': Failed to convert value to 'AudioBuffer'");
-      }
+      value = conversions['${type}'](value, {
+        context: \`Failed to set the '${d.name(attr)}' property on '${d.name(d.node)}': Value\`
+      });
 
       try {
-        this[kNapiObj].${d.name(attr)} = value[kNativeAudioBuffer];
+        this[kNapiObj].${d.name(attr)} = value;
       } catch (err) {
         throwSanitizedError(err);
       }
-
-      this[kAudioBuffer] = value;
     }
-      `;
-      break;
-    }
-    default: {
-      return `
+        `;
+        break;
+      }
+      case 'unsigned long': {
+        // - Analyser::fftSize
+        setter = `
     set ${d.name(attr)}(value) {
       if (!(this instanceof ${d.name(d.node)})) {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
+      }
+
+      // @fixme - wpt pretends that when set to -1, this should throw IndexSizeError, not a TypeError.
+      // For now let's just cast it to Number without further checks, and let Rust do the job
+      // as 0 is an invalid value too
+      // value = conversions['${type}'](value, {
+      //   enforceRange: true,
+      //   context: \`Failed to set the '${d.name(attr)}' property on '${d.name(d.node)}': Value\`
+      // });
+      value = conversions['unrestricted double'](value, {
+        context: \`Failed to set the '${d.name(attr)}' property on '${d.name(d.node)}': Value\`
+      });
+
+      try {
+        this[kNapiObj].${d.name(attr)} = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
+        `;
+        break;
+      }
+      case 'BiquadFilterType':
+      case 'OscillatorType':
+      case 'PanningModelType':
+      case 'DistanceModelType':
+      case 'OverSampleType': {
+        // https://webidl.spec.whatwg.org/#idl-enums
+        // Note: In the JavaScript binding, assignment of an invalid string value
+        // to an attribute is ignored, while passing such a value in other contexts
+        // (for example as an operation argument) results in an exception being thrown.
+        const typeIdl = d.findInTree(type);
+        const values = JSON.stringify(typeIdl.values.map(e => e.value));
+
+        setter = `
+    set ${d.name(attr)}(value) {
+      if (!(this instanceof ${d.name(d.node)})) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
+      }
+
+      if (!${values}.includes(value)) {
+        console.warn(\`Failed to set the '${d.name(attr)}' property on '${d.name(d.node)}': Value '\${value}' is not a valid '${type}' enum value\`);
+        return;
       }
 
       try {
@@ -357,71 +466,114 @@ ${d.attributes(d.node).filter(attr => !attr.readonly).map(attr => {
         throwSanitizedError(err);
       }
     }
-      `;
-      break;
-    }
-  }
-}).join('')}
-
-${d.methods(d.node, false)
-  // dedup method names
-  .reduce((acc, method) => {
-    if (!acc.find(i => d.name(i) === d.name(method))) {
-      acc.push(method)
-    }
-    return acc;
-  }, [])
-  // filter AudioScheduledSourceNode methods to prevent re-throwing errors
-  .filter(method => d.name(method) !== 'start' && d.name(method) !== 'stop')
-  .map(method => {
-    const numRequired = d.minRequiredArgs(method);
-    const argumentNames = method.arguments.filter(arg => arg.optional === false).map(d.name);
-    // make sure we can assume that all arguments are required
-    if (argumentNames.length !== method.arguments.length) {
-      console.log(`> Warning: optionnal argument for ${d.name(method)}`)
-    }
-
-    return `
-    ${d.name(method)}(${argumentNames.join(', ')}) {
+        `;
+        break;
+      }
+      case 'Float32Array': {
+        // - WaveShaperNode::curve
+        // @todo - should be able to set back to null
+        setter = `
+    set ${d.name(attr)}(value) {
       if (!(this instanceof ${d.name(d.node)})) {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
       }
 
+      if (value === null) {
+        console.warn("Setting the '${d.name(attr)}' property on '${d.name(d.node)}' to 'null' is not supported yet");
+        return;
+      } else if (!(value instanceof ${type})) {
+        throw new TypeError("Failed to set the '${d.name(attr)}' property on '${d.name(d.node)}': Value is not a valid '${type}' value");
+      }
+
+      try {
+        this[kNapiObj].${d.name(attr)} = value;
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+    }
+        `;
+        break;
+      }
+      case 'AudioBuffer': {
+        // - AudioBufferSourceNode::buffer
+        // - ConvolverNode::buffer
+        // @todo - should be able to set back to null
+        setter = `
+    set ${d.name(attr)}(value) {
+      if (!(this instanceof ${d.name(d.node)})) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
+      }
+
+      if (value === null) {
+        console.warn("Setting the '${d.name(attr)}' property on '${d.name(d.node)}' to 'null' is not supported yet");
+        return;
+      } else if (!(kNapiObj in value)) {
+        throw new TypeError("Failed to set the '${d.name(attr)}' property on '${d.name(d.node)}': Failed to convert value to '${type}'");
+      }
+
+      try {
+        this[kNapiObj].${d.name(attr)} = value[kNapiObj];
+      } catch (err) {
+        throwSanitizedError(err);
+      }
+
+      this[kAudioBuffer] = value;
+    }
+        `;
+        break;
+      }
+      default: {
+        console.log(`Warning: Unhandled type '${type}' in setters`);
+        break;
+      }
+    }
+  }
+
+  return `${getter}${setter}`;
+}).join('')}
+
+${d.methods(d.node, false).map(method => {
+    const numRequired = d.minRequiredArgs(method);
+    const args = method.arguments;
+
+    return `
+    ${d.name(method)}(${args.map(arg => arg.optional ? `${arg.name} = ${arg.default !== null ? arg.default.value : 'null'}` : arg.name).join(', ')}) {
+      if (!(this instanceof ${d.name(d.node)})) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
+      }
+
+      ${numRequired > 0 ? `
       if (arguments.length < ${numRequired}) {
         throw new TypeError(\`Failed to execute '${d.name(method)}' on '${d.name(d.node)}': ${numRequired} argument required, but only \${arguments.length}\ present\`);
-      }
+      }` : ``}
 
       ${method.arguments.map((argument, index) => {
         const name = d.name(argument);
         const type = argument.idlType.idlType;
 
+        let argCheck = ``;
+
         switch (type) {
-          case 'float': {
-            return `
+          case 'float':
+          case 'double': {
+            argCheck += `
       ${name} = conversions['${type}'](${name}, {
         context: \`Failed to execute '${d.name(method)}' on '${d.name(d.node)}': Parameter ${index + 1}\`,
       });
             `;
             break;
           }
-          case 'Float32Array': {
-            return `
-      if (!(${name} instanceof Float32Array)) {
-        throw new TypeError(\`Failed to execute '${d.name(method)}' on '${d.name(d.node)}': Parameter ${index + 1} is not of type 'Float32Array'\`);
-      }
-            `;
-            break;
-          }
+          case 'Float32Array':
           case 'Uint8Array': {
-            return `
-      if (!(${name} instanceof Uint8Array)) {
-        throw new TypeError(\`Failed to execute '${d.name(method)}' on '${d.name(d.node)}': Parameter ${index + 1} is not of type 'Uint8Array'\`);
+            argCheck += `
+      if (!(${name} instanceof ${type})) {
+        throw new TypeError(\`Failed to execute '${d.name(method)}' on '${d.name(d.node)}': Parameter ${index + 1} is not of type '${type}'\`);
       }
             `;
             break;
           }
           case 'PeriodicWave': {
-            return `
+            argCheck += `
       if (!(${name} instanceof jsExport.PeriodicWave)) {
         throw new TypeError(\`Failed to execute '${d.name(method)}' on '${d.name(d.node)}': Parameter ${index + 1} is not of type 'PeriodicWave'\`);
       }
@@ -435,10 +587,22 @@ ${d.methods(d.node, false)
             break;
           }
         }
+
+        // if argument is optionnal, cf. AudioBufferSourceNode::start, do the
+        // conversion only if argument is different from default value
+        if (argument.optional) {
+          const defaultValue = argument.default !== null ? argument.default.value : null;
+
+          argCheck = `
+      if (${name} !== ${defaultValue}) { ${argCheck} }
+          `;
+        }
+
+        return argCheck;
       }).join('')}
 
       try {
-        return this[kNapiObj].${d.name(method)}(${argumentNames.join(', ')});
+        return this[kNapiObj].${d.name(method)}(${args.map(arg => arg.name).join(', ')});
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -476,19 +640,9 @@ ${(function() {
     ${d.attributes(d.node).map(attr => {
       return `${d.name(attr)}: kEnumerableProperty,`;
     }).join('')}
-    ${d.methods(d.node, false)
-      .reduce((acc, method) => {
-        // dedup method names
-        if (!acc.find(i => d.name(i) === d.name(method))) {
-          acc.push(method)
-        }
-        return acc;
-      }, [])
-      // filter AudioScheduledSourceNode methods to prevent re-throwing errors
-      .filter(method => d.name(method) !== 'start' && d.name(method) !== 'stop')
-      .map(method => {
-        return `${d.name(method)}: kEnumerableProperty,`;
-      }).join('')}
+    ${d.methods(d.node, false).map(method => {
+      return `${d.name(method)}: kEnumerableProperty,`;
+    }).join('')}
   });
   `;
 }())}

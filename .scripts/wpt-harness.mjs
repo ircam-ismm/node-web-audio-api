@@ -25,7 +25,7 @@ const options = program.opts();
 const INDENT_SIZE = 2;
 
 function indent(string, times) {
-  const prefix = " ".repeat(times);
+  const prefix = ' '.repeat(times);
   return string.split("\n").map(l => prefix + l).join("\n");
 }
 
@@ -69,6 +69,9 @@ const setup = window => {
   window.Error = Error;
   window.DOMException = DOMException;
   window.Float32Array = Float32Array;
+  window.Float64Array = Float64Array;
+  window.Uint8Array = Uint8Array;
+  window.ArrayBuffer = ArrayBuffer;
   window.EventTarget = EventTarget;
   window.Promise = Promise;
 }

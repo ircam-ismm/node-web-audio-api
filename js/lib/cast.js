@@ -1,4 +1,3 @@
-
 exports.toSanitizedSequence = function toSanitizedSequence(data, targetCtor) {
   if (
     (data.buffer && data.buffer instanceof ArrayBuffer)

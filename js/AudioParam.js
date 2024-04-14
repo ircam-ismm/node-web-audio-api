@@ -25,68 +25,39 @@ const {
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
+
 const {
   kEnumerableProperty,
   kHiddenProperty,
 } = require('./lib/utils.js');
 const {
-  kNativeAudioParam,
+  kNapiObj,
 } = require('./lib/symbols.js');
 
 class AudioParam {
-  constructor(nativeAudioParam) {
-    if (nativeAudioParam['Symbol.toStringTag'] !== 'AudioParam') {
+  constructor(options) {
+    // Make constructor "private"
+    if (
+      (typeof options !== 'object') ||
+      !(kNapiObj in options) ||
+      options[kNapiObj]['Symbol.toStringTag'] !== 'AudioParam'
+    ) {
       throw new TypeError('Illegal constructor');
     }
 
-    Object.defineProperty(this, kNativeAudioParam, {
-      value: nativeAudioParam,
+    Object.defineProperty(this, kNapiObj, {
+      value: options[kNapiObj],
       ...kHiddenProperty,
     });
   }
-  // getters
 
   get value() {
     if (!(this instanceof AudioParam)) {
       throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioParam\'');
     }
 
-    return this[kNativeAudioParam].value;
+    return this[kNapiObj].value;
   }
-
-  get automationRate() {
-    if (!(this instanceof AudioParam)) {
-      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioParam\'');
-    }
-
-    return this[kNativeAudioParam].automationRate;
-  }
-
-  get defaultValue() {
-    if (!(this instanceof AudioParam)) {
-      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioParam\'');
-    }
-
-    return this[kNativeAudioParam].defaultValue;
-  }
-
-  get minValue() {
-    if (!(this instanceof AudioParam)) {
-      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioParam\'');
-    }
-
-    return this[kNativeAudioParam].minValue;
-  }
-
-  get maxValue() {
-    if (!(this instanceof AudioParam)) {
-      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioParam\'');
-    }
-
-    return this[kNativeAudioParam].maxValue;
-  }
-
-  // setters
 
   set value(value) {
     if (!(this instanceof AudioParam)) {
@@ -98,10 +69,18 @@ class AudioParam {
     });
 
     try {
-      this[kNativeAudioParam].value = value;
+      this[kNapiObj].value = value;
     } catch (err) {
       throwSanitizedError(err);
     }
+  }
+
+  get automationRate() {
+    if (!(this instanceof AudioParam)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioParam\'');
+    }
+
+    return this[kNapiObj].automationRate;
   }
 
   set automationRate(value) {
@@ -109,14 +88,41 @@ class AudioParam {
       throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioParam\'');
     }
 
+    if (!['a-rate', 'k-rate'].includes(value)) {
+      console.warn(`Failed to set the 'automationRate' property on 'AudioParam': Value '${value}' is not a valid 'AutomationRate' enum value`);
+      return;
+    }
+
     try {
-      this[kNativeAudioParam].automationRate = value;
+      this[kNapiObj].automationRate = value;
     } catch (err) {
       throwSanitizedError(err);
     }
   }
 
-  // methods
+  get defaultValue() {
+    if (!(this instanceof AudioParam)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioParam\'');
+    }
+
+    return this[kNapiObj].defaultValue;
+  }
+
+  get minValue() {
+    if (!(this instanceof AudioParam)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioParam\'');
+    }
+
+    return this[kNapiObj].minValue;
+  }
+
+  get maxValue() {
+    if (!(this instanceof AudioParam)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioParam\'');
+    }
+
+    return this[kNapiObj].maxValue;
+  }
 
   setValueAtTime(value, startTime) {
     if (!(this instanceof AudioParam)) {
@@ -136,7 +142,7 @@ class AudioParam {
     });
 
     try {
-      this[kNativeAudioParam].setValueAtTime(value, startTime);
+      this[kNapiObj].setValueAtTime(value, startTime);
     } catch (err) {
       throwSanitizedError(err);
     }
@@ -162,7 +168,7 @@ class AudioParam {
     });
 
     try {
-      this[kNativeAudioParam].linearRampToValueAtTime(value, endTime);
+      this[kNapiObj].linearRampToValueAtTime(value, endTime);
     } catch (err) {
       throwSanitizedError(err);
     }
@@ -188,7 +194,7 @@ class AudioParam {
     });
 
     try {
-      this[kNativeAudioParam].exponentialRampToValueAtTime(value, endTime);
+      this[kNapiObj].exponentialRampToValueAtTime(value, endTime);
     } catch (err) {
       throwSanitizedError(err);
     }
@@ -218,7 +224,7 @@ class AudioParam {
     });
 
     try {
-      this[kNativeAudioParam].setTargetAtTime(target, startTime, timeConstant);
+      this[kNapiObj].setTargetAtTime(target, startTime, timeConstant);
     } catch (err) {
       throwSanitizedError(err);
     }
@@ -250,7 +256,7 @@ class AudioParam {
     });
 
     try {
-      this[kNativeAudioParam].setValueCurveAtTime(values, startTime, duration);
+      this[kNapiObj].setValueCurveAtTime(values, startTime, duration);
     } catch (err) {
       throwSanitizedError(err);
     }
@@ -272,7 +278,7 @@ class AudioParam {
     });
 
     try {
-      this[kNativeAudioParam].cancelScheduledValues(cancelTime);
+      this[kNapiObj].cancelScheduledValues(cancelTime);
     } catch (err) {
       throwSanitizedError(err);
     }
@@ -294,7 +300,7 @@ class AudioParam {
     });
 
     try {
-      this[kNativeAudioParam].cancelAndHoldAtTime(cancelTime);
+      this[kNapiObj].cancelAndHoldAtTime(cancelTime);
     } catch (err) {
       throwSanitizedError(err);
     }
@@ -322,13 +328,11 @@ Object.defineProperties(AudioParam.prototype, {
     configurable: true,
     value: 'AudioParam',
   },
-
   value: kEnumerableProperty,
   automationRate: kEnumerableProperty,
   defaultValue: kEnumerableProperty,
   minValue: kEnumerableProperty,
   maxValue: kEnumerableProperty,
-
   setValueAtTime: kEnumerableProperty,
   linearRampToValueAtTime: kEnumerableProperty,
   exponentialRampToValueAtTime: kEnumerableProperty,
@@ -336,7 +340,6 @@ Object.defineProperties(AudioParam.prototype, {
   setValueCurveAtTime: kEnumerableProperty,
   cancelScheduledValues: kEnumerableProperty,
   cancelAndHoldAtTime: kEnumerableProperty,
-
 });
 
 module.exports = AudioParam;

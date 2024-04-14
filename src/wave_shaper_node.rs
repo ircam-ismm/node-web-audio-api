@@ -33,41 +33,16 @@ pub(crate) struct NapiWaveShaperNode(WaveShaperNode);
 
 impl NapiWaveShaperNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
-        env.define_class(
-            "WaveShaperNode",
-            constructor,
-            &[
-                // Attributes
-                Property::new("curve")?
-                    .with_getter(get_curve)
-                    .with_setter(set_curve)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                Property::new("oversample")?
-                    .with_getter(get_oversample)
-                    .with_setter(set_oversample)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                // Methods
+        let interface = audio_node_interface![
+            Property::new("curve")?
+                .with_getter(get_curve)
+                .with_setter(set_curve),
+            Property::new("oversample")?
+                .with_getter(get_oversample)
+                .with_setter(set_oversample)
+        ];
 
-                // AudioNode interface
-                Property::new("channelCount")?
-                    .with_getter(get_channel_count)
-                    .with_setter(set_channel_count),
-                Property::new("channelCountMode")?
-                    .with_getter(get_channel_count_mode)
-                    .with_setter(set_channel_count_mode),
-                Property::new("channelInterpretation")?
-                    .with_getter(get_channel_interpretation)
-                    .with_setter(set_channel_interpretation),
-                Property::new("numberOfInputs")?.with_getter(get_number_of_inputs),
-                Property::new("numberOfOutputs")?.with_getter(get_number_of_outputs),
-                Property::new("connect")?
-                    .with_method(connect)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-                Property::new("disconnect")?
-                    .with_method(disconnect)
-                    .with_property_attributes(PropertyAttributes::Enumerable),
-            ],
-        )
+        env.define_class("WaveShaperNode", constructor, &interface)
     }
 
     // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
@@ -82,7 +57,10 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
     let js_audio_context = ctx.get::<JsObject>(0)?;
 
-    // parse options
+    // --------------------------------------------------------
+    // Parse WaveShaperOptions
+    // by bindings construction all fields are populated on the JS side
+    // --------------------------------------------------------
     let js_options = ctx.get::<JsObject>(1)?;
 
     let curve_js = js_options.get::<&str, JsUnknown>("curve")?.unwrap();
@@ -104,6 +82,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         _ => unreachable!(),
     };
 
+    // --------------------------------------------------------
+    // Parse AudioNodeOptions
+    // --------------------------------------------------------
     let node_defaults = WaveShaperOptions::default();
     let audio_node_options_default = node_defaults.audio_node_options;
 
@@ -150,6 +131,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         audio_node_options_default.channel_interpretation
     };
 
+    // --------------------------------------------------------
+    // Create WaveShaperOptions object
+    // --------------------------------------------------------
     let options = WaveShaperOptions {
         curve,
         oversample,
@@ -160,12 +144,14 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         },
     };
 
+    // --------------------------------------------------------
+    // Create native WaveShaperNode
+    // --------------------------------------------------------
     let audio_context_name =
         js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
     let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
     let audio_context_str = &audio_context_utf8_name[..];
 
-    // create native node
     let native_node = match audio_context_str {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
@@ -182,6 +168,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         &_ => unreachable!(),
     };
 
+    // --------------------------------------------------------
+    // Finalize instance creation
+    // --------------------------------------------------------
     js_this.define_properties(&[
         Property::new("context")?
             .with_value(&js_audio_context)
@@ -199,147 +188,51 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 
-// -------------------------------------------------
-// AudioNode Interface
-// -------------------------------------------------
-#[js_function]
-fn get_channel_count(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiWaveShaperNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let channel_count = node.channel_count() as f64;
-
-    ctx.env.create_double(channel_count)
-}
-
-#[js_function(1)]
-fn set_channel_count(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiWaveShaperNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let channel_count = ctx.get::<JsNumber>(0)?.get_double()? as usize;
-    node.set_channel_count(channel_count);
-
-    ctx.env.get_undefined()
-}
-
-#[js_function]
-fn get_channel_count_mode(ctx: CallContext) -> Result<JsString> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiWaveShaperNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = node.channel_count_mode();
-    let value_str = match value {
-        ChannelCountMode::Max => "max",
-        ChannelCountMode::ClampedMax => "clamped-max",
-        ChannelCountMode::Explicit => "explicit",
-    };
-
-    ctx.env.create_string(value_str)
-}
-
-#[js_function(1)]
-fn set_channel_count_mode(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiWaveShaperNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let js_str = ctx.get::<JsString>(0)?;
-    let utf8_str = js_str.into_utf8()?.into_owned()?;
-    let value = match utf8_str.as_str() {
-        "max" => ChannelCountMode::Max,
-        "clamped-max" => ChannelCountMode::ClampedMax,
-        "explicit" => ChannelCountMode::Explicit,
-        _ => panic!("TypeError - The provided value '{:?}' is not a valid enum value of type ChannelCountMode", utf8_str.as_str()),
-    };
-    node.set_channel_count_mode(value);
-
-    ctx.env.get_undefined()
-}
-
-#[js_function]
-fn get_channel_interpretation(ctx: CallContext) -> Result<JsString> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiWaveShaperNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = node.channel_interpretation();
-    let value_str = match value {
-        ChannelInterpretation::Speakers => "speakers",
-        ChannelInterpretation::Discrete => "discrete",
-    };
-
-    ctx.env.create_string(value_str)
-}
-
-#[js_function(1)]
-fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiWaveShaperNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let js_str = ctx.get::<JsString>(0)?;
-    let utf8_str = js_str.into_utf8()?.into_owned()?;
-    let value = match utf8_str.as_str() {
-        "speakers" => ChannelInterpretation::Speakers,
-        "discrete" => ChannelInterpretation::Discrete,
-        _ => panic!("TypeError - The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", utf8_str.as_str()),
-    };
-    node.set_channel_interpretation(value);
-
-    ctx.env.get_undefined()
-}
-
-#[js_function]
-fn get_number_of_inputs(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiWaveShaperNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let number_of_inputs = node.number_of_inputs() as f64;
-
-    ctx.env.create_double(number_of_inputs)
-}
-
-#[js_function]
-fn get_number_of_outputs(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiWaveShaperNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let number_of_outputs = node.number_of_outputs() as f64;
-
-    ctx.env.create_double(number_of_outputs)
-}
+audio_node_impl!(NapiWaveShaperNode);
 
 // -------------------------------------------------
-// connect / disconnect macros
-// -------------------------------------------------
-connect_method!(NapiWaveShaperNode);
-disconnect_method!(NapiWaveShaperNode);
-
-// -------------------------------------------------
-// AudioScheduledSourceNode Interface
-// -------------------------------------------------
-
-// -------------------------------------------------
-// GETTERS
+// Getters / Setters
 // -------------------------------------------------
 
 #[js_function(0)]
 fn get_curve(ctx: CallContext) -> Result<JsUnknown> {
     let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiWaveShaperNode>(&js_this)?;
+    let node = napi_node.unwrap();
 
-    if js_this.has_named_property("__curve__")? {
-        Ok(js_this
-            .get_named_property::<JsObject>("__curve__")?
+    let value = node.curve();
+
+    if let Some(arr_f32) = value {
+        let length = arr_f32.len();
+        let arr_u8 = crate::to_byte_slice(arr_f32);
+
+        Ok(ctx
+            .env
+            .create_arraybuffer_with_data(arr_u8.to_vec())
+            .map(|array_buffer| {
+                array_buffer
+                    .into_raw()
+                    .into_typedarray(TypedArrayType::Float32, length, 0)
+            })
+            .unwrap()?
             .into_unknown())
     } else {
         Ok(ctx.env.get_null()?.into_unknown())
     }
+}
+
+#[js_function(1)]
+fn set_curve(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiWaveShaperNode>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let js_obj = ctx.get::<JsTypedArray>(0)?;
+    let buffer = js_obj.into_value()?;
+    let buffer_ref: &[f32] = buffer.as_ref();
+    node.set_curve(buffer_ref.to_vec());
+
+    ctx.env.get_undefined()
 }
 
 #[js_function(0)]
@@ -358,29 +251,6 @@ fn get_oversample(ctx: CallContext) -> Result<JsString> {
     ctx.env.create_string(js_value)
 }
 
-// -------------------------------------------------
-// SETTERS
-// -------------------------------------------------
-
-#[js_function(1)]
-fn set_curve(ctx: CallContext) -> Result<JsUndefined> {
-    let mut js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiWaveShaperNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let js_obj = ctx.get::<JsTypedArray>(0)?;
-    let buffer = js_obj.into_value()?;
-    let buffer_ref: &[f32] = buffer.as_ref();
-    // @todo - remove this vec![]
-    node.set_curve(buffer_ref.to_vec());
-    // weird but seems we can have twice the same owned value...
-    let js_obj = ctx.get::<JsTypedArray>(0)?;
-    // store in "private" field for getter (not very clean, to review)
-    js_this.set_named_property("__curve__", js_obj)?;
-
-    ctx.env.get_undefined()
-}
-
 #[js_function(1)]
 fn set_oversample(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
@@ -393,14 +263,10 @@ fn set_oversample(ctx: CallContext) -> Result<JsUndefined> {
         "none" => OverSampleType::None,
         "2x" => OverSampleType::X2,
         "4x" => OverSampleType::X4,
-        _ => return ctx.env.get_undefined(),
+        _ => unreachable!(),
     };
 
     node.set_oversample(value);
 
     ctx.env.get_undefined()
 }
-
-// -------------------------------------------------
-// METHODS
-// -------------------------------------------------

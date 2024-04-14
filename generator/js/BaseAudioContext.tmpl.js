@@ -1,24 +1,38 @@
-const { isFunction, kEnumerableProperty, kHiddenProperty } = require('./lib/utils.js');
-const { kNapiObj } = require('./lib/symbols.js');
-const { kNativeAudioBuffer } = require('./AudioBuffer.js');
+const {
+  isFunction,
+  kEnumerableProperty,
+  kHiddenProperty,
+} = require('./lib/utils.js');
+const {
+  kNapiObj,
+} = require('./lib/symbols.js');
 
-const AudioListener = require('./AudioListener.js')
-
-module.exports = (jsExport /*, nativeBinding */) => {
+module.exports = (jsExport, _nativeBinding) => {
   class BaseAudioContext extends EventTarget {
     #listener = null;
     #destination = null;
 
-    constructor(napiObj) {
-      super(napiObj);
+    constructor(options) {
+      // Make constructor "private"
+      if (
+        (typeof options !== 'object') ||
+        !(kNapiObj in options)
+      ) {
+        throw new TypeError('Illegal constructor');
+      }
+
+
+      super();
 
       Object.defineProperty(this, kNapiObj, {
-        value: napiObj,
+        value: options[kNapiObj],
         ...kHiddenProperty,
       });
 
       this.#listener = null; // lazily instanciated
-      this.#destination = new jsExport.AudioDestinationNode(this, napiObj.destination);
+      this.#destination = new jsExport.AudioDestinationNode(this, {
+        [kNapiObj]: this[kNapiObj].destination,
+      });
     }
 
     get listener() {
@@ -27,7 +41,9 @@ module.exports = (jsExport /*, nativeBinding */) => {
       }
 
       if (this.#listener === null) {
-        this.#listener = new AudioListener(this[kNapiObj].listener);
+        this.#listener = new jsExport.AudioListener({
+          [kNapiObj]: this[kNapiObj].listener,
+        });
       }
 
       return this.#listener;
@@ -90,7 +106,7 @@ module.exports = (jsExport /*, nativeBinding */) => {
     // when decodeErrorCallback is present the program will crash in an
     // unexpected manner
     // cf. https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-decodeaudiodata
-    decodeAudioData(arrayBuffer, decodeSuccessCallback = undefined, decodeErrorCallback = undefined) {
+    async decodeAudioData(arrayBuffer, decodeSuccessCallback = undefined, decodeErrorCallback = undefined) {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
       }
@@ -105,18 +121,18 @@ module.exports = (jsExport /*, nativeBinding */) => {
 
       try {
         const nativeAudioBuffer = this[kNapiObj].decodeAudioData(arrayBuffer);
-        const audioBuffer = new jsExport.AudioBuffer({ [kNativeAudioBuffer]: nativeAudioBuffer });
+        const audioBuffer = new jsExport.AudioBuffer({ [kNapiObj]: nativeAudioBuffer });
 
         if (isFunction(decodeSuccessCallback)) {
           decodeSuccessCallback(audioBuffer);
         } else {
-          return Promise.resolve(audioBuffer);
+          return audioBuffer;
         }
       } catch (err) {
         if (isFunction(decodeErrorCallback)) {
           decodeErrorCallback(err);
         } else {
-          return Promise.reject(err);
+          throw err;
         }
       }
     }
@@ -172,18 +188,15 @@ module.exports = (jsExport /*, nativeBinding */) => {
     // --------------------------------------------------------------------
     // Factory Methods (use the patched AudioNodes)
     // --------------------------------------------------------------------
-${d.nodes.map(n => {
-  let factoryName = d.factoryName(n);
-  let factoryIdl = d.factoryIdl(factoryName);
+    ${d.nodes.map(n => {
+      let factoryName = d.factoryName(n);
+      let factoryIdl = d.factoryIdl(factoryName);
+      // createMediaStreamSource is online AudioContext only
+      if (factoryIdl === undefined) { return ``; }
 
-  // createMediaStreamSource is online AudioContext only
-  if (factoryIdl === undefined) {
-    return ``;
-  }
+      let args = factoryIdl.arguments;
 
-  let args = factoryIdl.arguments;
-
-return `\
+      return `\
     ${d.factoryName(n)}(${args.map(arg => arg.optional ? `${arg.name} = ${arg.default.value}` : arg.name).join(', ')}) {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
@@ -193,8 +206,8 @@ return `\
 
       return new jsExport.${d.name(n)}(this, options);
     }
-`
-  }).join('\n')}
+      `}).join('\n')
+    }
   }
 
   Object.defineProperties(BaseAudioContext, {
@@ -215,7 +228,6 @@ return `\
       configurable: true,
       value: 'BaseAudioContext',
     },
-
     ${d.nodes.map(n => {
       let factoryName = d.factoryName(n);
       let factoryIdl = d.factoryIdl(factoryName);
@@ -226,7 +238,6 @@ return `\
       }
       return `${factoryName}: kEnumerableProperty,`;
     }).join('')}
-
     listener: kEnumerableProperty,
     destination: kEnumerableProperty,
     sampleRate: kEnumerableProperty,

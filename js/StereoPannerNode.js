@@ -29,14 +29,9 @@ const {
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
-
-const AudioParam = require('./AudioParam.js');
-const {
-  kNativeAudioBuffer,
-  kAudioBuffer,
-} = require('./AudioBuffer.js');
 const {
   kNapiObj,
+  kAudioBuffer,
 } = require('./lib/symbols.js');
 const {
   bridgeEventTarget,
@@ -61,18 +56,37 @@ module.exports = (jsExport, nativeBinding) => {
       }
 
       // parsed version of the option to be passed to NAPI
-      const parsedOptions = Object.assign({}, options);
+      const parsedOptions = {};
 
       if (options && typeof options !== 'object') {
         throw new TypeError('Failed to construct \'StereoPannerNode\': argument 2 is not of type \'StereoPannerOptions\'');
       }
 
-      if (options && 'pan' in options) {
+      if (options && options.pan !== undefined) {
         parsedOptions.pan = conversions['float'](options.pan, {
           context: `Failed to construct 'StereoPannerNode': Failed to read the 'pan' property from StereoPannerOptions: The provided value (${options.pan}})`,
         });
       } else {
         parsedOptions.pan = 0;
+      }
+
+      if (options && options.channelCount !== undefined) {
+        parsedOptions.channelCount = conversions['unsigned long'](options.channelCount, {
+          enforceRange: true,
+          context: `Failed to construct 'StereoPannerNode': Failed to read the 'channelCount' property from StereoPannerOptions: The provided value '${options.channelCount}'`,
+        });
+      }
+
+      if (options && options.channelCountMode !== undefined) {
+        parsedOptions.channelCountMode = conversions['DOMString'](options.channelCountMode, {
+          context: `Failed to construct 'StereoPannerNode': Failed to read the 'channelCount' property from StereoPannerOptions: The provided value '${options.channelCountMode}'`,
+        });
+      }
+
+      if (options && options.channelInterpretation !== undefined) {
+        parsedOptions.channelInterpretation = conversions['DOMString'](options.channelInterpretation, {
+          context: `Failed to construct 'StereoPannerNode': Failed to read the 'channelInterpretation' property from StereoPannerOptions: The provided value '${options.channelInterpretation}'`,
+        });
       }
 
       let napiObj;
@@ -83,9 +97,13 @@ module.exports = (jsExport, nativeBinding) => {
         throwSanitizedError(err);
       }
 
-      super(context, napiObj);
+      super(context, {
+        [kNapiObj]: napiObj,
+      });
 
-      this.#pan = new AudioParam(this[kNapiObj].pan);
+      this.#pan = new jsExport.AudioParam({
+        [kNapiObj]: this[kNapiObj].pan,
+      });
     }
 
     get pan() {

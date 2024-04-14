@@ -29,14 +29,9 @@ const {
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
-
-const AudioParam = require('./AudioParam.js');
-const {
-  kNativeAudioBuffer,
-  kAudioBuffer,
-} = require('./AudioBuffer.js');
 const {
   kNapiObj,
+  kAudioBuffer,
 } = require('./lib/symbols.js');
 const {
   bridgeEventTarget,
@@ -65,13 +60,13 @@ module.exports = (jsExport, nativeBinding) => {
       }
 
       // parsed version of the option to be passed to NAPI
-      const parsedOptions = Object.assign({}, options);
+      const parsedOptions = {};
 
       if (options && typeof options !== 'object') {
         throw new TypeError('Failed to construct \'DynamicsCompressorNode\': argument 2 is not of type \'DynamicsCompressorOptions\'');
       }
 
-      if (options && 'attack' in options) {
+      if (options && options.attack !== undefined) {
         parsedOptions.attack = conversions['float'](options.attack, {
           context: `Failed to construct 'DynamicsCompressorNode': Failed to read the 'attack' property from DynamicsCompressorOptions: The provided value (${options.attack}})`,
         });
@@ -79,7 +74,7 @@ module.exports = (jsExport, nativeBinding) => {
         parsedOptions.attack = 0.003;
       }
 
-      if (options && 'knee' in options) {
+      if (options && options.knee !== undefined) {
         parsedOptions.knee = conversions['float'](options.knee, {
           context: `Failed to construct 'DynamicsCompressorNode': Failed to read the 'knee' property from DynamicsCompressorOptions: The provided value (${options.knee}})`,
         });
@@ -87,7 +82,7 @@ module.exports = (jsExport, nativeBinding) => {
         parsedOptions.knee = 30;
       }
 
-      if (options && 'ratio' in options) {
+      if (options && options.ratio !== undefined) {
         parsedOptions.ratio = conversions['float'](options.ratio, {
           context: `Failed to construct 'DynamicsCompressorNode': Failed to read the 'ratio' property from DynamicsCompressorOptions: The provided value (${options.ratio}})`,
         });
@@ -95,7 +90,7 @@ module.exports = (jsExport, nativeBinding) => {
         parsedOptions.ratio = 12;
       }
 
-      if (options && 'release' in options) {
+      if (options && options.release !== undefined) {
         parsedOptions.release = conversions['float'](options.release, {
           context: `Failed to construct 'DynamicsCompressorNode': Failed to read the 'release' property from DynamicsCompressorOptions: The provided value (${options.release}})`,
         });
@@ -103,12 +98,31 @@ module.exports = (jsExport, nativeBinding) => {
         parsedOptions.release = 0.25;
       }
 
-      if (options && 'threshold' in options) {
+      if (options && options.threshold !== undefined) {
         parsedOptions.threshold = conversions['float'](options.threshold, {
           context: `Failed to construct 'DynamicsCompressorNode': Failed to read the 'threshold' property from DynamicsCompressorOptions: The provided value (${options.threshold}})`,
         });
       } else {
         parsedOptions.threshold = -24;
+      }
+
+      if (options && options.channelCount !== undefined) {
+        parsedOptions.channelCount = conversions['unsigned long'](options.channelCount, {
+          enforceRange: true,
+          context: `Failed to construct 'DynamicsCompressorNode': Failed to read the 'channelCount' property from DynamicsCompressorOptions: The provided value '${options.channelCount}'`,
+        });
+      }
+
+      if (options && options.channelCountMode !== undefined) {
+        parsedOptions.channelCountMode = conversions['DOMString'](options.channelCountMode, {
+          context: `Failed to construct 'DynamicsCompressorNode': Failed to read the 'channelCount' property from DynamicsCompressorOptions: The provided value '${options.channelCountMode}'`,
+        });
+      }
+
+      if (options && options.channelInterpretation !== undefined) {
+        parsedOptions.channelInterpretation = conversions['DOMString'](options.channelInterpretation, {
+          context: `Failed to construct 'DynamicsCompressorNode': Failed to read the 'channelInterpretation' property from DynamicsCompressorOptions: The provided value '${options.channelInterpretation}'`,
+        });
       }
 
       let napiObj;
@@ -119,13 +133,25 @@ module.exports = (jsExport, nativeBinding) => {
         throwSanitizedError(err);
       }
 
-      super(context, napiObj);
+      super(context, {
+        [kNapiObj]: napiObj,
+      });
 
-      this.#threshold = new AudioParam(this[kNapiObj].threshold);
-      this.#knee = new AudioParam(this[kNapiObj].knee);
-      this.#ratio = new AudioParam(this[kNapiObj].ratio);
-      this.#attack = new AudioParam(this[kNapiObj].attack);
-      this.#release = new AudioParam(this[kNapiObj].release);
+      this.#threshold = new jsExport.AudioParam({
+        [kNapiObj]: this[kNapiObj].threshold,
+      });
+      this.#knee = new jsExport.AudioParam({
+        [kNapiObj]: this[kNapiObj].knee,
+      });
+      this.#ratio = new jsExport.AudioParam({
+        [kNapiObj]: this[kNapiObj].ratio,
+      });
+      this.#attack = new jsExport.AudioParam({
+        [kNapiObj]: this[kNapiObj].attack,
+      });
+      this.#release = new jsExport.AudioParam({
+        [kNapiObj]: this[kNapiObj].release,
+      });
     }
 
     get threshold() {

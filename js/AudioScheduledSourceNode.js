@@ -1,21 +1,4 @@
-// -------------------------------------------------------------------------- //
-// -------------------------------------------------------------------------- //
-//                                                                            //
-//                                                                            //
-//                                                                            //
-//    ██╗    ██╗ █████╗ ██████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗               //
-//    ██║    ██║██╔══██╗██╔══██╗████╗  ██║██║████╗  ██║██╔════╝               //
-//    ██║ █╗ ██║███████║██████╔╝██╔██╗ ██║██║██╔██╗ ██║██║  ███╗              //
-//    ██║███╗██║██╔══██║██╔══██╗██║╚██╗██║██║██║╚██╗██║██║   ██║              //
-//    ╚███╔███╔╝██║  ██║██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝              //
-//     ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝               //
-//                                                                            //
-//                                                                            //
-//    - This file has been generated ---------------------------              //
-//                                                                            //
-//                                                                            //
-// -------------------------------------------------------------------------- //
-// -------------------------------------------------------------------------- //
+const conversions = require('webidl-conversions');
 
 const {
   throwSanitizedError,
@@ -31,8 +14,18 @@ const {
 const AudioNode = require('./AudioNode.js');
 
 class AudioScheduledSourceNode extends AudioNode {
-  constructor(context, napiObj) {
-    super(context, napiObj);
+  #onended = null;
+
+  constructor(context, options) {
+    // Make constructor "private"
+    if (
+      (typeof options !== 'object')
+      || !(kNapiObj in options)
+    ) {
+      throw new TypeError('Illegal constructor');
+    }
+
+    super(context, options);
   }
 
   get onended() {
@@ -40,7 +33,7 @@ class AudioScheduledSourceNode extends AudioNode {
       throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioScheduledSourceNode\'');
     }
 
-    return this._onended || null;
+    return this.#onended;
   }
 
   set onended(value) {
@@ -49,34 +42,41 @@ class AudioScheduledSourceNode extends AudioNode {
     }
 
     if (isFunction(value) || value === null) {
-      this._onended = value;
+      this.#onended = value;
     }
   }
 
-  start(...args) {
+  start(when = 0) {
     if (!(this instanceof AudioScheduledSourceNode)) {
       throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioScheduledSourceNode\'');
     }
 
+    when = conversions['double'](when, {
+      context: `Failed to execute 'start' on 'AudioScheduledSourceNode': Parameter 1`,
+    });
+
     try {
-      return this[kNapiObj].start(...args);
+      return this[kNapiObj].start(when);
     } catch (err) {
       throwSanitizedError(err);
     }
   }
 
-  stop(...args) {
+  stop(when = 0) {
     if (!(this instanceof AudioScheduledSourceNode)) {
       throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioScheduledSourceNode\'');
     }
 
+    when = conversions['double'](when, {
+      context: `Failed to execute 'stop' on 'AudioScheduledSourceNode': Parameter 1`,
+    });
+
     try {
-      return this[kNapiObj].stop(...args);
+      return this[kNapiObj].stop(when);
     } catch (err) {
       throwSanitizedError(err);
     }
   }
-
 }
 
 Object.defineProperties(AudioScheduledSourceNode, {
@@ -97,31 +97,9 @@ Object.defineProperties(AudioScheduledSourceNode.prototype, {
     configurable: true,
     value: 'AudioScheduledSourceNode',
   },
-
   onended: kEnumerableProperty,
-
   start: kEnumerableProperty,
   stop: kEnumerableProperty,
-});
-
-Object.defineProperties(AudioScheduledSourceNode.prototype.start, {
-  length: {
-    __proto__: null,
-    writable: false,
-    enumerable: false,
-    configurable: true,
-    value: 0,
-  },
-});
-
-Object.defineProperties(AudioScheduledSourceNode.prototype.stop, {
-  length: {
-    __proto__: null,
-    writable: false,
-    enumerable: false,
-    configurable: true,
-    value: 0,
-  },
 });
 
 module.exports = AudioScheduledSourceNode;

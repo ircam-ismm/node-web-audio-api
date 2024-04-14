@@ -29,14 +29,9 @@ const {
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
-
-const AudioParam = require('./AudioParam.js');
-const {
-  kNativeAudioBuffer,
-  kAudioBuffer,
-} = require('./AudioBuffer.js');
 const {
   kNapiObj,
+  kAudioBuffer,
 } = require('./lib/symbols.js');
 const {
   bridgeEventTarget,
@@ -59,7 +54,7 @@ module.exports = (jsExport, nativeBinding) => {
       }
 
       // parsed version of the option to be passed to NAPI
-      const parsedOptions = Object.assign({}, options);
+      const parsedOptions = {};
 
       if (options && typeof options !== 'object') {
         throw new TypeError('Failed to construct \'IIRFilterNode\': argument 2 is not of type \'IIRFilterOptions\'');
@@ -67,10 +62,10 @@ module.exports = (jsExport, nativeBinding) => {
 
       // required options
       if (typeof options !== 'object' || (options && options.feedforward === undefined)) {
-        throw new TypeError('Failed to construct \'IIRFilterNode\': Failed to read the \'feedforward\'\' property from IIRFilterOptions: Required member is undefined');
+        throw new TypeError('Failed to construct \'IIRFilterNode\': Failed to read the \'feedforward\' property from IIRFilterOptions: Required member is undefined');
       }
 
-      if (options && 'feedforward' in options) {
+      if (options && options.feedforward !== undefined) {
         try {
           parsedOptions.feedforward = toSanitizedSequence(options.feedforward, Float64Array);
         } catch (err) {
@@ -82,10 +77,10 @@ module.exports = (jsExport, nativeBinding) => {
 
       // required options
       if (typeof options !== 'object' || (options && options.feedback === undefined)) {
-        throw new TypeError('Failed to construct \'IIRFilterNode\': Failed to read the \'feedback\'\' property from IIRFilterOptions: Required member is undefined');
+        throw new TypeError('Failed to construct \'IIRFilterNode\': Failed to read the \'feedback\' property from IIRFilterOptions: Required member is undefined');
       }
 
-      if (options && 'feedback' in options) {
+      if (options && options.feedback !== undefined) {
         try {
           parsedOptions.feedback = toSanitizedSequence(options.feedback, Float64Array);
         } catch (err) {
@@ -93,6 +88,25 @@ module.exports = (jsExport, nativeBinding) => {
         }
       } else {
         parsedOptions.feedback = null;
+      }
+
+      if (options && options.channelCount !== undefined) {
+        parsedOptions.channelCount = conversions['unsigned long'](options.channelCount, {
+          enforceRange: true,
+          context: `Failed to construct 'IIRFilterNode': Failed to read the 'channelCount' property from IIRFilterOptions: The provided value '${options.channelCount}'`,
+        });
+      }
+
+      if (options && options.channelCountMode !== undefined) {
+        parsedOptions.channelCountMode = conversions['DOMString'](options.channelCountMode, {
+          context: `Failed to construct 'IIRFilterNode': Failed to read the 'channelCount' property from IIRFilterOptions: The provided value '${options.channelCountMode}'`,
+        });
+      }
+
+      if (options && options.channelInterpretation !== undefined) {
+        parsedOptions.channelInterpretation = conversions['DOMString'](options.channelInterpretation, {
+          context: `Failed to construct 'IIRFilterNode': Failed to read the 'channelInterpretation' property from IIRFilterOptions: The provided value '${options.channelInterpretation}'`,
+        });
       }
 
       let napiObj;
@@ -103,7 +117,9 @@ module.exports = (jsExport, nativeBinding) => {
         throwSanitizedError(err);
       }
 
-      super(context, napiObj);
+      super(context, {
+        [kNapiObj]: napiObj,
+      });
 
     }
 

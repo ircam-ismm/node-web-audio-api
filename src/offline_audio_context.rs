@@ -1,28 +1,7 @@
-// -------------------------------------------------------------------------- //
-// -------------------------------------------------------------------------- //
-//                                                                            //
-//                                                                            //
-//                                                                            //
-//    ██╗    ██╗ █████╗ ██████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗               //
-//    ██║    ██║██╔══██╗██╔══██╗████╗  ██║██║████╗  ██║██╔════╝               //
-//    ██║ █╗ ██║███████║██████╔╝██╔██╗ ██║██║██╔██╗ ██║██║  ███╗              //
-//    ██║███╗██║██╔══██║██╔══██╗██║╚██╗██║██║██║╚██╗██║██║   ██║              //
-//    ╚███╔███╔╝██║  ██║██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝              //
-//     ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝               //
-//                                                                            //
-//                                                                            //
-//    - This file has been generated ---------------------------              //
-//                                                                            //
-//                                                                            //
-// -------------------------------------------------------------------------- //
-// -------------------------------------------------------------------------- //
-
 use std::collections::HashMap;
 use std::io::Cursor;
 use std::sync::{Arc, Mutex};
 
-#[allow(unused_imports)]
-// @todo - remove directive once OfflineAudioContext events are implemented
 use napi::threadsafe_function::{
     ThreadSafeCallContext, ThreadsafeFunction, ThreadsafeFunctionCallMode,
 };
@@ -30,8 +9,6 @@ use napi::*;
 use napi_derive::js_function;
 use uuid::Uuid;
 use web_audio_api::context::*;
-#[allow(unused_imports)]
-// @todo - remove directive once OfflineAudioContext events are implemented
 use web_audio_api::Event;
 
 use crate::*;
@@ -53,29 +30,16 @@ pub(crate) struct NapiOfflineAudioContext {
 
 impl NapiOfflineAudioContext {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
-        env.define_class(
-            "OfflineAudioContext",
-            constructor,
-            &[
-                Property::new("currentTime")?.with_getter(get_current_time),
-                Property::new("sampleRate")?.with_getter(get_sample_rate),
-                Property::new("listener")?.with_getter(get_listener),
-                Property::new("state")?.with_getter(get_state),
-                Property::new("decodeAudioData")?.with_method(decode_audio_data),
-                // @todo - move to js?
-                Property::new("createPeriodicWave")?.with_method(create_periodic_wave),
-                Property::new("createBuffer")?.with_method(create_buffer),
-                // ----------------------------------------------------
-                // Methods and attributes specifc to OfflineAudioContext
-                // ----------------------------------------------------
-                Property::new("length")?.with_getter(get_length),
-                Property::new("startRendering")?.with_method(start_rendering),
-                Property::new("resume")?.with_method(resume),
-                Property::new("suspend")?.with_method(suspend),
-                // private
-                Property::new("__initEventTarget__")?.with_method(init_event_target),
-            ],
-        )
+        let interface = base_audio_context_interface![
+            Property::new("length")?.with_getter(get_length),
+            Property::new("startRendering")?.with_method(start_rendering),
+            Property::new("resume")?.with_method(resume),
+            Property::new("suspend")?.with_method(suspend),
+            // [non spec] Bind with JS EventTarget
+            Property::new("__initEventTarget__")?.with_method(init_event_target)
+        ];
+
+        env.define_class("OfflineAudioContext", constructor, &interface)
     }
 
     pub fn unwrap(&self) -> &OfflineAudioContext {
@@ -91,12 +55,8 @@ impl NapiOfflineAudioContext {
     }
 
     // We need to clean things around so that the js object can be garbage collected.
-    // But we also need to wait so that the previous tsfn.call is executed,
-    // this is not clean, but don't see how to implement that properly right now.
-
-    // no ended events for nodes that are created by OfflineAudioContext
-    // remove directive once implemented
-    #[allow(dead_code)]
+    // But we also need to wait so that the previous tsfn.call is executed.
+    // This is not clean, but don't see how to implement that properly right now.
     pub fn clear_thread_safe_listener(&self, store_id: String) {
         std::thread::sleep(std::time::Duration::from_millis(1));
         let mut tsfn_store = self.tsfn_store.lock().unwrap();
@@ -123,9 +83,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // -------------------------------------------------
     // Parse options and create OfflineAudioContext
     // -------------------------------------------------
-    let number_of_channels = ctx.get::<JsObject>(0)?.coerce_to_number()?.get_double()? as usize;
-    let length = ctx.get::<JsObject>(1)?.coerce_to_number()?.get_double()? as usize;
-    let sample_rate = ctx.get::<JsObject>(2)?.coerce_to_number()?.get_double()? as f32;
+    let number_of_channels = ctx.get::<JsNumber>(0)?.get_double()? as usize;
+    let length = ctx.get::<JsNumber>(1)?.get_double()? as usize;
+    let sample_rate = ctx.get::<JsNumber>(2)?.get_double()? as f32;
 
     let audio_context = OfflineAudioContext::new(number_of_channels, length, sample_rate);
 
@@ -145,12 +105,8 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_property_attributes(PropertyAttributes::Static),
     ])?;
 
-    // test symbol as property name
-    // let test_symbol = ctx.env.symbol_for("test").unwrap();
-    // js_this.set_property(test_symbol, &ctx.env.create_string("test").unwrap())?;
-
     // -------------------------------------------------
-    // Bind AudioDestination
+    // Bind AudioDestination - requires Symbol.toStringTag
     // -------------------------------------------------
     let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
     let store: JsObject = ctx.env.get_reference_value(store_ref)?;
@@ -161,149 +117,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 
-#[js_function]
-fn get_current_time(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let obj = napi_obj.unwrap();
-
-    let current_time = obj.current_time();
-    ctx.env.create_double(current_time)
-}
-
-#[js_function]
-fn get_sample_rate(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let obj = napi_obj.unwrap();
-
-    let sample_rate = obj.sample_rate() as f64;
-    ctx.env.create_double(sample_rate)
-}
-
-// use a getter so we can lazily create the listener on first call and retrieve it afterward
-#[js_function]
-fn get_listener(ctx: CallContext) -> Result<JsObject> {
-    let mut js_this = ctx.this_unchecked::<JsObject>();
-
-    // reproduce lazy instanciation strategy from rust crate
-    if js_this.has_named_property("__listener__").ok().unwrap() {
-        js_this.get_named_property("__listener__")
-    } else {
-        let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
-        let store: JsObject = ctx.env.get_reference_value(store_ref)?;
-        let ctor: JsFunction = store.get_named_property("AudioListener")?;
-        let js_obj = ctor.new_instance(&[&js_this])?;
-        js_this.set_named_property("__listener__", &js_obj)?;
-
-        Ok(js_obj)
-    }
-}
-
-#[js_function]
-fn get_state(ctx: CallContext) -> Result<JsString> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let obj = napi_obj.unwrap();
-
-    let state = obj.state();
-    let state_str = match state {
-        AudioContextState::Suspended => "suspended",
-        AudioContextState::Running => "running",
-        AudioContextState::Closed => "closed",
-    };
-
-    ctx.env.create_string(state_str)
-}
-
-// ----------------------------------------------------
-// METHODS
-// ----------------------------------------------------
-
-// @todo - async version
-#[js_function(1)]
-fn decode_audio_data(ctx: CallContext) -> Result<JsObject> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let context = napi_obj.unwrap();
-
-    let js_buffer = ctx.get::<JsArrayBuffer>(0)?.into_value()?;
-    let cursor = Cursor::new(js_buffer.to_vec());
-    let audio_buffer = context.decode_audio_data_sync(cursor);
-
-    match audio_buffer {
-        Ok(audio_buffer) => {
-            // create js audio buffer instance
-            let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
-            let store: JsObject = ctx.env.get_reference_value(store_ref)?;
-            let ctor: JsFunction = store.get_named_property("AudioBuffer")?;
-            let mut options = ctx.env.create_object()?;
-            options.set("__internal_caller__", ctx.env.get_null())?;
-
-            // populate with audio buffer
-            let js_audio_buffer = ctor.new_instance(&[options])?;
-            let napi_audio_buffer = ctx.env.unwrap::<NapiAudioBuffer>(&js_audio_buffer)?;
-            napi_audio_buffer.populate(audio_buffer);
-
-            Ok(js_audio_buffer)
-        }
-        Err(e) => Err(napi::Error::from_reason(e.to_string())),
-    }
-}
-
-#[js_function(3)]
-fn create_buffer(ctx: CallContext) -> Result<JsObject> {
-    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
-    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
-    let ctor: JsFunction = store.get_named_property("AudioBuffer")?;
-
-    let number_of_channels = ctx.get::<JsNumber>(0)?;
-    let length = ctx.get::<JsNumber>(1)?;
-    let sample_rate = ctx.get::<JsNumber>(2)?;
-
-    let mut options = ctx.env.create_object()?;
-    options.set("numberOfChannels", number_of_channels)?;
-    options.set("length", length)?;
-    options.set("sampleRate", sample_rate)?;
-
-    ctor.new_instance(&[options])
-}
-
-#[js_function(3)]
-fn create_periodic_wave(ctx: CallContext) -> Result<JsObject> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-
-    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
-    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
-    let ctor: JsFunction = store.get_named_property("PeriodicWave")?;
-
-    let real = ctx.get::<JsTypedArray>(0)?;
-    let imag = ctx.get::<JsTypedArray>(1)?;
-    // this differ slightly from the spec
-    let disable_normalization = match ctx.try_get::<JsObject>(2)? {
-        Either::A(constraints_js) => {
-            if let Some(disable_nomalization) =
-                constraints_js.get::<&str, JsBoolean>("disableNormalization")?
-            {
-                disable_nomalization
-            } else {
-                ctx.env.get_boolean(false)?
-            }
-        }
-        Either::B(_) => ctx.env.get_boolean(false)?,
-    };
-
-    let mut options = ctx.env.create_object()?;
-    options.set("real", real)?;
-    options.set("imag", imag)?;
-    options.set("disableNormalization", disable_normalization)?;
-
-    ctor.new_instance(&[js_this, options])
-}
-
-// ----------------------------------------------------
-// Methods and attributes specific to OfflineAudioContext
-// ----------------------------------------------------
+base_audio_context_impl!(NapiOfflineAudioContext);
 
 #[js_function]
 fn get_length(ctx: CallContext) -> Result<JsNumber> {
@@ -365,14 +179,7 @@ fn suspend(ctx: CallContext) -> Result<JsObject> {
     let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
     let clone = Arc::clone(&napi_obj.context);
 
-    let when = match ctx.try_get::<JsNumber>(0)? {
-        Either::A(value) => value.get_double()?,
-        Either::B(_) => {
-            let msg =
-                "TypeError - Failed to suspend 'OfflineAudioContext': argument 1 is not a number";
-            return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-        }
-    };
+    let when = ctx.get::<JsNumber>(0)?.get_double()?;
 
     ctx.env.execute_tokio_future(
         async move {
@@ -383,10 +190,9 @@ fn suspend(ctx: CallContext) -> Result<JsObject> {
     )
 }
 
-// ----------------------------------------------------
-// Private Event Target initialization
-// @todo - to be finished
-// ----------------------------------------------------
+// ----------------------------------------------------------
+// [non spec] Bind with JS EventTarget
+// ----------------------------------------------------------
 #[js_function]
 fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
