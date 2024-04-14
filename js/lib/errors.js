@@ -4,55 +4,6 @@ const path = require('path');
 const internalPath = path.join('node-web-audio-api', 'js');
 const internalRe = new RegExp(internalPath);
 
-// from wpt/resources/tesharness.js (line 2226)
-const nameCodeMap = {
-  IndexSizeError: 1,
-  HierarchyRequestError: 3,
-  WrongDocumentError: 4,
-  InvalidCharacterError: 5,
-  NoModificationAllowedError: 7,
-  NotFoundError: 8,
-  NotSupportedError: 9,
-  InUseAttributeError: 10,
-  InvalidStateError: 11,
-  SyntaxError: 12,
-  InvalidModificationError: 13,
-  NamespaceError: 14,
-  InvalidAccessError: 15,
-  TypeMismatchError: 17,
-  SecurityError: 18,
-  NetworkError: 19,
-  AbortError: 20,
-  URLMismatchError: 21,
-  QuotaExceededError: 22,
-  TimeoutError: 23,
-  InvalidNodeTypeError: 24,
-  DataCloneError: 25,
-
-  EncodingError: 0,
-  NotReadableError: 0,
-  UnknownError: 0,
-  ConstraintError: 0,
-  DataError: 0,
-  TransactionInactiveError: 0,
-  ReadOnlyError: 0,
-  VersionError: 0,
-  OperationError: 0,
-  NotAllowedError: 0,
-  OptOutError: 0,
-};
-
-class DOMException extends Error {
-  constructor(message, name) {
-    super(message);
-
-    this.name = name;
-    this.code = nameCodeMap[this.name];
-  }
-}
-
-exports.DOMException = DOMException;
-
 function overrideStack(originalError, newError) {
   // override previous error message
   const stack = originalError.stack.replace(originalError.message, newError.message);
