@@ -8,7 +8,6 @@ import * as nodeWebAudioAPI from '../index.mjs';
 // mocks
 import createXMLHttpRequest from './wpt-mock/XMLHttpRequest.js';
 import createFetch from './wpt-mock/fetch.js';
-import { DOMException } from '../js/lib/errors.js';
 
 program
   .option('--list', 'List the name of the test files')

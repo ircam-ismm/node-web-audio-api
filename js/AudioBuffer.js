@@ -2,7 +2,6 @@ const conversions = require("webidl-conversions");
 
 const {
   throwSanitizedError,
-  DOMException
 } = require('./lib/errors.js');
 const {
   kEnumerableProperty,

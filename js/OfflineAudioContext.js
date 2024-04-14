@@ -4,7 +4,6 @@ const {
   bridgeEventTarget,
 } = require('./lib/events.js');
 const {
-  DOMException,
   throwSanitizedError,
 } = require('./lib/errors.js');
 const {

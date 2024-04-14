@@ -25,9 +25,6 @@ const {
 const {
   kNapiObj,
 } = require('./lib/symbols.js');
-const {
-  DOMException,
-} = require('./lib/errors.js');
 
 module.exports = (jsExport, _nativeBinding) => {
   class BaseAudioContext extends EventTarget {
