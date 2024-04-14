@@ -127,7 +127,7 @@ const reporter = {
   },
   pass: message => {
     numPass += 1;
-    // console.log(chalk.dim(indent(chalk.green("√ ") + message, INDENT_SIZE)));
+    console.log(chalk.dim(indent(chalk.green("√ ") + message, INDENT_SIZE)));
   },
   fail: message => {
     if (/threw "[^\"]*Error" instead of/.test(message)) {
@@ -139,7 +139,7 @@ const reporter = {
     }
   },
   reportStack: stack => {
-    // console.log(chalk.dim(indent(stack, INDENT_SIZE * 2)))
+    console.log(chalk.dim(indent(stack, INDENT_SIZE * 2)))
   },
 };
 
