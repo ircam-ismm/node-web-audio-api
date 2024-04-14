@@ -10,6 +10,7 @@ const {
 const {
   kNapiObj,
   kAudioBuffer,
+  kCustomInspect,
 } = require('./lib/symbols.js');
 
 
@@ -207,6 +208,10 @@ module.exports = (_jsExport, nativeBinding) => {
       } catch (err) {
         throwSanitizedError(err);
       }
+    }
+
+    [kCustomInspect](depth, inspectOptions, inspect) {
+      return `${this[Symbol.toStringTag]} { numberOfChannels: ${this.numberOfChannels}, sampleRate: ${this.sampleRate}, duration: ${this.duration} }`;
     }
   }
 
