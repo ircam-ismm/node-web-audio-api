@@ -42,9 +42,6 @@ const nameCodeMap = {
   OptOutError: 0,
 };
 
-exports.nameCodeMap = nameCodeMap;
-
-
 class DOMException extends Error {
   constructor(message, name) {
     super(message);

@@ -6,6 +6,9 @@ const {
 const {
   kNapiObj,
 } = require('./lib/symbols.js');
+const {
+  DOMException
+} = require('./lib/errors.js')
 
 module.exports = (jsExport, _nativeBinding) => {
   class BaseAudioContext extends EventTarget {
@@ -120,7 +123,7 @@ module.exports = (jsExport, _nativeBinding) => {
       }
 
       try {
-        const nativeAudioBuffer = this[kNapiObj].decodeAudioData(arrayBuffer);
+        const nativeAudioBuffer = await this[kNapiObj].decodeAudioData(arrayBuffer);
         const audioBuffer = new jsExport.AudioBuffer({ [kNapiObj]: nativeAudioBuffer });
 
         if (isFunction(decodeSuccessCallback)) {
@@ -129,10 +132,12 @@ module.exports = (jsExport, _nativeBinding) => {
           return audioBuffer;
         }
       } catch (err) {
+        const error = new DOMException(\`Failed to execute 'decodeAudioData': \${err.message}\`, 'EncodingError');
+
         if (isFunction(decodeErrorCallback)) {
-          decodeErrorCallback(err);
+          decodeErrorCallback(error);
         } else {
-          throw err;
+          throw error;
         }
       }
     }
