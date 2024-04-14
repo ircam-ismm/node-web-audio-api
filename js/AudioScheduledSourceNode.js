@@ -1,4 +1,5 @@
 const conversions = require('webidl-conversions');
+
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
