@@ -344,17 +344,16 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
             });
         }
         "OfflineAudioContext" => {
-            // do nothing for now as the listeners are never cleaned up which
-            // prevent the process to close properly
+            let napi_context = ctx
+                .env
+                .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
+            let store_id = napi_context.store_thread_safe_listener(tsfn.clone());
+            let napi_context = napi_context.clone();
 
-            // let napi_context = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
-            // let store_id = napi_context.store_thread_safe_listener(tsfn.clone());
-            // let napi_context = napi_context.clone();
-
-            // node.set_onended(move |e| {
-            //     tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
-            //     napi_context.clear_thread_safe_listener(store_id);
-            // });
+            node.set_onended(move |e| {
+                tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
+                napi_context.clear_thread_safe_listener(store_id);
+            });
         }
         &_ => unreachable!(),
     };

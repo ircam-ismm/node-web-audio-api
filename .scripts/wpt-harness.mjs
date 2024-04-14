@@ -145,12 +145,16 @@ const reporter = {
 // Run test suite
 // -------------------------------------------------------
 try {
+  console.time('> wpt duration');
+
   const failures = await wptRunner(testsPath, { rootURL, setup, filter, reporter });
 
   console.log(`\n  ${chalk.bold.underline('RESULTS:')}`);
   console.log(chalk.bold(`  - # pass: ${numPass}`));
   console.log(chalk.bold(`  - # fail: ${numFail}`));
   console.log(chalk.bold(`  - # type error issues: ${typeErrorFail}`));
+
+  console.timeEnd('> wpt duration');
 
   process.exit(failures);
 } catch (e) {

@@ -2,50 +2,26 @@ import { AudioContext, OfflineAudioContext } from '../index.mjs';
 
 const offline = new OfflineAudioContext(1, 48000, 48000);
 
-offline.addEventListener('statechange', (e) => {
-  console.log('> statechange event state:', offline.state);
-});
-
 offline.addEventListener('complete', (e) => {
-  console.log('> complete event:', e.renderedBuffer);
+  console.log('+ complete event:', e.renderedBuffer.toString());
 });
 
 offline.suspend(128 / 48000).then(async () => {
   const osc = offline.createOscillator();
   osc.connect(offline.destination);
   osc.frequency.value = 220;
-  osc.start(0);
+  osc.start(0.);
+  osc.stop(1.);
 
   await offline.resume();
 });
 
 // offline.startRendering().then(audioBuffer => console.log(audioBuffer));
 const buffer = await offline.startRendering();
-console.log('buffer duration:', buffer.duration);
+console.log('+ buffer duration:', buffer.duration);
 
-// dirty check the audio buffer
-const channelData = buffer.getChannelData(0);
-
-for (let i = 0; i < 48000; i++) {
-  // before suspend the graph is empty
-  if (i < 128) {
-    if (channelData[i] !== 0) {
-      throw new Error('should be zero');
-    }
-  // first sine sample is zero
-  } else if (i === 128) {
-    if (channelData[i] !== 0) {
-      throw new Error('should be zero');
-    }
-  } else {
-    // should ha ve a sine wave, hopefully without zero values :)
-    if (channelData[i] === 0) {
-      throw new Error(`should not be zero ${i}`);
-    }
-  }
-}
-
-console.log('> playback computed buffer in loop, should hear a small silent gap in the middle');
+console.log('')
+console.log('> Playback computed buffer in loop, should hear a small silent gap in the middle');
 
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const online = new AudioContext({ latencyHint });
