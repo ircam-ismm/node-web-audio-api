@@ -138,7 +138,7 @@ module.exports = (jsExport, _nativeBinding) => {
       }
 
       try {
-        const nativeAudioBuffer = this[kNapiObj].decodeAudioData(arrayBuffer);
+        const nativeAudioBuffer = await this[kNapiObj].decodeAudioData(arrayBuffer);
         const audioBuffer = new jsExport.AudioBuffer({
           [kNapiObj]: nativeAudioBuffer,
         });
