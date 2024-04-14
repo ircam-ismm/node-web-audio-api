@@ -20,6 +20,7 @@
 const {
   isFunction,
   kEnumerableProperty,
+  kHiddenProperty,
 } = require('./lib/utils.js');
 const {
   kNapiObj,
@@ -41,7 +42,10 @@ module.exports = (jsExport, _nativeBinding) => {
 
       super();
 
-      this[kNapiObj] = options[kNapiObj];
+      Object.defineProperty(this, kNapiObj, {
+        value: options[kNapiObj],
+        ...kHiddenProperty,
+      });
 
       this.#listener = null; // lazily instanciated
       this.#destination = new jsExport.AudioDestinationNode(this, {

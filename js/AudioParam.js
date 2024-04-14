@@ -25,8 +25,10 @@ const {
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
+
 const {
   kEnumerableProperty,
+  kHiddenProperty,
 } = require('./lib/utils.js');
 const {
   kNapiObj,
@@ -43,7 +45,10 @@ class AudioParam {
       throw new TypeError('Illegal constructor');
     }
 
-    this[kNapiObj] = options[kNapiObj];
+    Object.defineProperty(this, kNapiObj, {
+      value: options[kNapiObj],
+      ...kHiddenProperty,
+    });
   }
 
   get value() {

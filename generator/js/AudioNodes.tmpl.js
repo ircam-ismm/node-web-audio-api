@@ -1,11 +1,23 @@
 
 /* eslint-disable no-unused-vars */
 const conversions = require("webidl-conversions");
-const { toSanitizedSequence } = require('./lib/cast.js');
-const { isFunction, kEnumerableProperty } = require('./lib/utils.js');
-const { throwSanitizedError } = require('./lib/errors.js');
-const { kNapiObj, kAudioBuffer } = require('./lib/symbols.js');
-const { bridgeEventTarget } = require('./lib/events.js');
+const {
+  toSanitizedSequence,
+} = require('./lib/cast.js');
+const {
+  isFunction,
+  kEnumerableProperty,
+} = require('./lib/utils.js');
+const {
+  throwSanitizedError,
+} = require('./lib/errors.js');
+const {
+  kNapiObj,
+  kAudioBuffer,
+} = require('./lib/symbols.js');
+const {
+  bridgeEventTarget,
+} = require('./lib/events.js');
 /* eslint-enable no-unused-vars */
 
 const ${d.parent(d.node)} = require('./${d.parent(d.node)}.js');
@@ -287,7 +299,12 @@ module.exports = (jsExport, nativeBinding) => {
           if (type === 'AudioBuffer') {
             return `
       // keep the wrapped AudioBuffer around
-      this[kAudioBuffer] = null;
+      Object.defineProperty(this, kAudioBuffer, {
+        __proto__: null,
+        enumerable: false,
+        writable: true,
+        value: null,
+      });
 
       if (options && options.${optionName} !== undefined) {
         this[kAudioBuffer] = options.${optionName};

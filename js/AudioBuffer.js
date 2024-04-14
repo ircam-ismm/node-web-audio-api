@@ -5,12 +5,14 @@ const {
   DOMException
 } = require('./lib/errors.js');
 const {
-  kEnumerableProperty
+  kEnumerableProperty,
+  kHiddenProperty,
 } = require('./lib/utils.js');
 const {
   kNapiObj,
   kAudioBuffer,
 } = require('./lib/symbols.js');
+
 
 module.exports = (_jsExport, nativeBinding) => {
   class AudioBuffer {
@@ -25,7 +27,10 @@ module.exports = (_jsExport, nativeBinding) => {
 
       if (kNapiObj in options) {
         // internal constructor for `startRendering` and `decodeAudioData` cases
-        this[kNapiObj] = options[kNapiObj];
+        Object.defineProperty(this, kNapiObj, {
+          value: options[kNapiObj],
+          ...kHiddenProperty,
+        });
       } else {
         // Regular public constructor
         // dictionary AudioBufferOptions {
@@ -61,11 +66,18 @@ module.exports = (_jsExport, nativeBinding) => {
           context: `Failed to construct 'AudioBuffer': Failed to read the 'sampleRate' property from AudioBufferOptions: sampleRate`,
         });
 
+        let napiObj;
+
         try {
-          this[kNapiObj] = new nativeBinding.AudioBuffer(parsedOptions);
+          napiObj = new nativeBinding.AudioBuffer(parsedOptions);
         } catch (err) {
           throwSanitizedError(err);
         }
+
+        Object.defineProperty(this, kNapiObj, {
+          value: napiObj,
+          ...kHiddenProperty,
+        });
       }
     }
 

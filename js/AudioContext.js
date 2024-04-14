@@ -16,9 +16,6 @@ const {
 
 let contextId = 0;
 
-const kProcessId = Symbol('processId');
-const kKeepAwakeId = Symbol('keepAwakeId');
-
 module.exports = function(jsExport, nativeBinding) {
 
   class AudioContext extends jsExport.BaseAudioContext {
@@ -91,20 +88,22 @@ module.exports = function(jsExport, nativeBinding) {
       // prevent garbage collection and process exit
       const id = contextId++;
       // store in process to prevent garbage collection
-      const processId = Symbol(`__AudioContext_${id}`);
-      process[processId] = this;
-      // keep process symbol around to delete later
-      this[kProcessId] = processId;
+      const kAudioContextId = Symbol(`node-web-audio-api:audio-context-${id}`);
+      Object.defineProperty(process, kAudioContextId, {
+        __proto__: null,
+        enumerable: false,
+        configurable: true,
+        value: this,
+      });
       // keep process awake until context is closed
       const keepAwakeId = setInterval(() => {}, 10 * 1000);
-      this[kKeepAwakeId] = keepAwakeId;
 
       // clear on close
       this.addEventListener('statechange', () => {
         if (this.state === 'closed') {
           // allow to garbage collect the context and to the close the process
-          delete process[this[kProcessId]];
-          clearTimeout(this[kKeepAwakeId]);
+          delete process[kAudioContextId];
+          clearTimeout(keepAwakeId);
         }
       });
     }

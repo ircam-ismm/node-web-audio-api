@@ -1,24 +1,11 @@
 const conversions = require("webidl-conversions");
 
 const { throwSanitizedError } = require('./lib/errors.js');
-const { kEnumerableProperty } = require('./lib/utils.js');
+const { kEnumerableProperty, kHiddenProperty } = require('./lib/utils.js');
 const { kNapiObj } = require('./lib/symbols.js');
 
 const AudioParam = require('./AudioParam.js');
 
-// interface AudioListener {
-//     readonly attribute AudioParam positionX;
-//     readonly attribute AudioParam positionY;
-//     readonly attribute AudioParam positionZ;
-//     readonly attribute AudioParam forwardX;
-//     readonly attribute AudioParam forwardY;
-//     readonly attribute AudioParam forwardZ;
-//     readonly attribute AudioParam upX;
-//     readonly attribute AudioParam upY;
-//     readonly attribute AudioParam upZ;
-//     undefined setPosition (float x, float y, float z);
-//     undefined setOrientation (float x, float y, float z, float xUp, float yUp, float zUp);
-// };
 class AudioListener {
   #positionX = null;
   #positionY = null;
@@ -40,7 +27,10 @@ class AudioListener {
       throw new TypeError('Illegal constructor');
     }
 
-    this[kNapiObj] = options[kNapiObj];
+    Object.defineProperty(this, kNapiObj, {
+      value: options[kNapiObj],
+      ...kHiddenProperty,
+    });
 
     this.#positionX = new AudioParam({ [kNapiObj]: this[kNapiObj].positionX });
     this.#positionY = new AudioParam({ [kNapiObj]: this[kNapiObj].positionY });

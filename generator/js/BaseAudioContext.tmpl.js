@@ -1,5 +1,11 @@
-const { isFunction, kEnumerableProperty } = require('./lib/utils.js');
-const { kNapiObj } = require('./lib/symbols.js');
+const {
+  isFunction,
+  kEnumerableProperty,
+  kHiddenProperty,
+} = require('./lib/utils.js');
+const {
+  kNapiObj,
+} = require('./lib/symbols.js');
 
 module.exports = (jsExport, _nativeBinding) => {
   class BaseAudioContext extends EventTarget {
@@ -15,9 +21,13 @@ module.exports = (jsExport, _nativeBinding) => {
         throw new TypeError('Illegal constructor');
       }
 
+
       super();
 
-      this[kNapiObj] = options[kNapiObj];
+      Object.defineProperty(this, kNapiObj, {
+        value: options[kNapiObj],
+        ...kHiddenProperty,
+      });
 
       this.#listener = null; // lazily instanciated
       this.#destination = new jsExport.AudioDestinationNode(this, {
@@ -186,7 +196,7 @@ module.exports = (jsExport, _nativeBinding) => {
 
       let args = factoryIdl.arguments;
 
-    return `\
+      return `\
     ${d.factoryName(n)}(${args.map(arg => arg.optional ? `${arg.name} = ${arg.default.value}` : arg.name).join(', ')}) {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
@@ -196,7 +206,8 @@ module.exports = (jsExport, _nativeBinding) => {
 
       return new jsExport.${d.name(n)}(this, options);
     }
-    `}).join('\n')}
+      `}).join('\n')
+    }
   }
 
   Object.defineProperties(BaseAudioContext, {

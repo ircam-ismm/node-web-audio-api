@@ -23,11 +23,12 @@ const {
   throwSanitizedError,
 } = require('./lib/errors.js');
 const {
+  kEnumerableProperty,
+  kHiddenProperty,
+} = require('./lib/utils.js');
+const {
   kNapiObj,
 } = require('./lib/symbols.js');
-const {
-  kEnumerableProperty,
-} = require('./lib/utils.js');
 
 const AudioParam = require('./AudioParam.js');
 
@@ -46,7 +47,11 @@ class AudioNode extends EventTarget {
     super(options[kNapiObj]);
 
     this.#context = context;
-    this[kNapiObj] = options[kNapiObj];
+
+    Object.defineProperty(this, kNapiObj, {
+      value: options[kNapiObj],
+      ...kHiddenProperty,
+    });
   }
 
   get context() {
