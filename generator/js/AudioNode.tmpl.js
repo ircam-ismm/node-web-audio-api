@@ -214,11 +214,11 @@ ${d.attributes(d.node).filter(attr => d.name(attr) !== 'context').map(attr => {
         const destination = args[0][kNapiObj];
         const output = conversions['unsigned long'](args[1], {
           enforceRange: true,
-          context: "Failed to execute 'connect' on 'AudioNode':",
+          context: "Failed to execute 'disconnect' on 'AudioNode':",
         });
         const input = conversions['unsigned long'](args[2], {
           enforceRange: true,
-          context: "Failed to execute 'connect' on 'AudioNode':",
+          context: "Failed to execute 'disconnect' on 'AudioNode':",
         });
 
         try {
@@ -234,7 +234,7 @@ ${d.attributes(d.node).filter(attr => d.name(attr) !== 'context').map(attr => {
         const destination = args[0][kNapiObj];
         const output = conversions['unsigned long'](args[1], {
           enforceRange: true,
-          context: "Failed to execute 'connect' on 'AudioNode':",
+          context: "Failed to execute 'disconnect' on 'AudioNode':",
         });
 
         try {
@@ -257,7 +257,7 @@ ${d.attributes(d.node).filter(attr => d.name(attr) !== 'context').map(attr => {
       } else if (Number.isFinite(args[0])) {
         const output = conversions['unsigned long'](args[0], {
           enforceRange: true,
-          context: "Failed to execute 'connect' on 'AudioNode':",
+          context: "Failed to execute 'disconnect' on 'AudioNode':",
         });
 
         try {

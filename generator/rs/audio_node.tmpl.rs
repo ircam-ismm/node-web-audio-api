@@ -158,7 +158,7 @@ macro_rules! audio_node_impl {
                         .unwrap::<$crate::audio_param::NapiAudioParam>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     native_src.connect_from_output_to_input(native_dest, output, input);
-                    // proper return value is hanlded on JS side
+                    // proper return value is handled on JS side
                     ctx.env.get_undefined()
                 }
                 "AudioDestinationNode" => {
@@ -169,7 +169,7 @@ macro_rules! audio_node_impl {
                     )?;
                     let native_dest = napi_dest.unwrap();
                     native_src.connect_from_output_to_input(native_dest, output, input);
-                    // proper return value is hanlded on JS side
+                    // proper return value is handled on JS side
                     ctx.env.get_undefined()
                 }
                 ${d.nodes.map(n => { return `"${d.name(n)}" => {
@@ -178,7 +178,7 @@ macro_rules! audio_node_impl {
                         .unwrap::<$crate::${d.slug(n)}::${d.napiName(n)}>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     native_src.connect_from_output_to_input(native_dest, output, input);
-                    // proper return value is hanlded on JS side
+                    // proper return value is handled on JS side
                     ctx.env.get_undefined()
                 }
                 `}).join('')}
