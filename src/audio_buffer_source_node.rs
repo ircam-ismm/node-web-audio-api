@@ -17,10 +17,11 @@
 // -------------------------------------------------------------------------- //
 // -------------------------------------------------------------------------- //
 
-use crate::*;
 use napi::*;
 use napi_derive::js_function;
 use web_audio_api::node::*;
+
+use crate::*;
 
 pub(crate) struct NapiAudioBufferSourceNode(AudioBufferSourceNode);
 
@@ -234,6 +235,7 @@ fn stop(ctx: CallContext) -> Result<JsUndefined> {
 // ----------------------------------------------------
 #[js_function]
 fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
+    use crate::utils::WebAudioEventType;
     use napi::threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunctionCallMode};
     use web_audio_api::Event;
 
@@ -254,34 +256,39 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
         .unwrap();
     let js_func = js_this.get_property(dispatch_event_symbol).unwrap();
 
-    let tsfn =
-        ctx.env
-            .create_threadsafe_function(&js_func, 0, |ctx: ThreadSafeCallContext<Event>| {
-                let event_type = ctx.env.create_string(ctx.value.type_)?;
-                Ok(vec![event_type])
-            })?;
+    let tsfn = ctx.env.create_threadsafe_function(
+        &js_func,
+        0,
+        |ctx: ThreadSafeCallContext<WebAudioEventType>| {
+            let native_event = ctx.value.unwrap_event();
+            let event_type = ctx.env.create_string(native_event.type_)?;
+            Ok(vec![event_type])
+        },
+    )?;
 
     match audio_context_str {
         "AudioContext" => {
             let napi_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
-            let store_id = napi_context.store_thread_safe_listener(tsfn.clone());
+            let store_id = napi_context.tsfn_store().add(tsfn.clone());
             let napi_context = napi_context.clone();
 
             node.set_onended(move |e| {
-                tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
-                napi_context.clear_thread_safe_listener(store_id);
+                let event = WebAudioEventType::from(e);
+                tsfn.call(Ok(event), ThreadsafeFunctionCallMode::NonBlocking);
+                napi_context.tsfn_store().delete(store_id);
             });
         }
         "OfflineAudioContext" => {
             let napi_context = ctx
                 .env
                 .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
-            let store_id = napi_context.store_thread_safe_listener(tsfn.clone());
+            let store_id = napi_context.tsfn_store().add(tsfn.clone());
             let napi_context = napi_context.clone();
 
-            node.set_onended(move |e| {
-                tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
-                napi_context.clear_thread_safe_listener(store_id);
+            node.set_onended(move |e: Event| {
+                let event = WebAudioEventType::from(e);
+                tsfn.call(Ok(event), ThreadsafeFunctionCallMode::NonBlocking);
+                napi_context.tsfn_store().delete(store_id);
             });
         }
         &_ => unreachable!(),

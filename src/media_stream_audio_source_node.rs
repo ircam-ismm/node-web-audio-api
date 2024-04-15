@@ -17,10 +17,11 @@
 // -------------------------------------------------------------------------- //
 // -------------------------------------------------------------------------- //
 
-use crate::*;
 use napi::*;
 use napi_derive::js_function;
 use web_audio_api::node::*;
+
+use crate::*;
 
 pub(crate) struct NapiMediaStreamAudioSourceNode(MediaStreamAudioSourceNode);
 
