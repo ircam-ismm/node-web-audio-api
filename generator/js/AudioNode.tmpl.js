@@ -112,15 +112,6 @@ ${d.attributes(d.node).filter(attr => d.name(attr) !== 'context').map(attr => {
   return `${getter}${setter}`;
 }).join('')}
 
-  // ------------------------------------------------------
-  // connect / disconnect
-  // ------------------------------------------------------
-
-  // AudioNode connect (AudioNode destinationNode,
-  //                    optional unsigned long output = 0,
-  //                    optional unsigned long input = 0);
-  // undefined connect (AudioParam destinationParam, optional unsigned long output = 0);
-
   connect(...args) {
     if (!(this instanceof AudioNode)) {
       throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioNode'");
@@ -186,23 +177,6 @@ ${d.attributes(d.node).filter(attr => d.name(attr) !== 'context').map(attr => {
     // return given destination
     return args[0];
   }
-
-  // @todo
-  // undefined disconnect ();
-  // undefined disconnect (unsigned long output);
-  // undefined disconnect (AudioNode destinationNode);
-  // undefined disconnect (AudioNode destinationNode, unsigned long output);
-  // undefined disconnect (AudioNode destinationNode,
-  //                       unsigned long output,
-  //                       unsigned long input);
-  // undefined disconnect (AudioParam destinationParam);
-  // undefined disconnect (AudioParam destinationParam, unsigned long output);
-
-  // disconnect
-  // disconnect_dest
-  // disconnect_output
-  // disconnect_dest_from_output
-  // disconnect_dest_from_output_to_input
 
   disconnect(...args) {
     if (!(this instanceof AudioNode)) {
@@ -299,6 +273,7 @@ Object.defineProperties(AudioNode.prototype, {
     configurable: true,
     value: 'AudioNode',
   },
+
   ${d.attributes(d.node).map(attr => {
     return `${d.name(attr)}: kEnumerableProperty,`;
   }).join('')}
