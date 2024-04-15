@@ -200,7 +200,7 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
             let store_id = napi_context.tsfn_store().add(tsfn.clone());
             let napi_context = napi_context.clone();
 
-            node.set_onended(move |e| {
+            node.set_onended(move |e: Event| {
                 let event = WebAudioEventType::from(e);
                 tsfn.call(Ok(event), ThreadsafeFunctionCallMode::NonBlocking);
                 napi_context.tsfn_store().delete(store_id);

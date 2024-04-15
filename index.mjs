@@ -40,6 +40,7 @@ export const {
   PeriodicWave,
   AudioBuffer,
   // generated supported nodes
+  ScriptProcessorNode,
   AnalyserNode,
   AudioBufferSourceNode,
   BiquadFilterNode,

@@ -206,6 +206,15 @@ macro_rules! audio_node_impl {
 
                     Ok(js_dest)
                 }
+                "ScriptProcessorNode" => {
+                    let napi_dest = ctx
+                        .env
+                        .unwrap::<$crate::script_processor_node::NapiScriptProcessorNode>(&js_dest)?;
+                    let native_dest = napi_dest.unwrap();
+                    let _res = native_src.connect_at(native_dest, output as usize, input as usize);
+
+                    Ok(js_dest)
+                }
                 "AnalyserNode" => {
                     let napi_dest = ctx
                         .env
@@ -399,6 +408,13 @@ macro_rules! audio_node_impl {
                                 .unwrap::<$crate::audio_destination_node::NapiAudioDestinationNode>(
                                 &js_dest,
                             )?;
+                            let native_dest = napi_dest.unwrap();
+                            native_src.disconnect_from(native_dest);
+                        }
+                        "ScriptProcessorNode" => {
+                            let napi_dest = ctx
+                                .env
+                                .unwrap::<$crate::script_processor_node::NapiScriptProcessorNode>(&js_dest)?;
                             let native_dest = napi_dest.unwrap();
                             native_src.disconnect_from(native_dest);
                         }

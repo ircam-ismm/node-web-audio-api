@@ -46,6 +46,8 @@ mod offline_audio_context;
 use crate::offline_audio_context::NapiOfflineAudioContext;
 // Generated audio nodes
 
+mod script_processor_node;
+use crate::script_processor_node::NapiScriptProcessorNode;
 mod analyser_node;
 use crate::analyser_node::NapiAnalyserNode;
 mod audio_buffer_source_node;
@@ -118,6 +120,9 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     // ----------------------------------------------------------------
     // Generated audio nodes
     // ----------------------------------------------------------------
+
+    let napi_class = NapiScriptProcessorNode::create_js_class(&env)?;
+    exports.set_named_property("ScriptProcessorNode", napi_class)?;
 
     let napi_class = NapiAnalyserNode::create_js_class(&env)?;
     exports.set_named_property("AnalyserNode", napi_class)?;
