@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use crate::*;
 use napi::*;
 use napi_derive::js_function;
@@ -148,14 +150,18 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
         1,
         |ctx: ThreadSafeCallContext<Arc<Mutex<AudioProcessingEvent>>>| {
             // let native_event = ctx.value.unwrap_audio_processing_event();
-            let event = ctx.value;
+            let event = ctx.value.lock().unwrap();
             // let lock = event.
             let event_type = ctx.env.create_string("audioprocessing")?;
-            let _playback_time = ctx.env.create_double(event.playback_time)?;
+            let playback_time = ctx.env.create_double(event.playback_time)?;
             // @todo - input_buffer
             // @todo - output_buffer
 
-            Ok(vec![event_type])
+            let mut arg = ctx.env.create_object()?;
+            arg.set_named_property("type", event_type)?;
+            arg.set_named_property("playbackTime", playback_time)?;
+
+            Ok(vec![arg])
         },
     )?;
 
