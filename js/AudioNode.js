@@ -224,11 +224,11 @@ class AudioNode extends EventTarget {
         const destination = args[0][kNapiObj];
         const output = conversions['unsigned long'](args[1], {
           enforceRange: true,
-          context: 'Failed to execute \'connect\' on \'AudioNode\':',
+          context: 'Failed to execute \'disconnect\' on \'AudioNode\':',
         });
         const input = conversions['unsigned long'](args[2], {
           enforceRange: true,
-          context: 'Failed to execute \'connect\' on \'AudioNode\':',
+          context: 'Failed to execute \'disconnect\' on \'AudioNode\':',
         });
 
         try {
@@ -244,7 +244,7 @@ class AudioNode extends EventTarget {
         const destination = args[0][kNapiObj];
         const output = conversions['unsigned long'](args[1], {
           enforceRange: true,
-          context: 'Failed to execute \'connect\' on \'AudioNode\':',
+          context: 'Failed to execute \'disconnect\' on \'AudioNode\':',
         });
 
         try {
@@ -267,7 +267,7 @@ class AudioNode extends EventTarget {
       } else if (Number.isFinite(args[0])) {
         const output = conversions['unsigned long'](args[0], {
           enforceRange: true,
-          context: 'Failed to execute \'connect\' on \'AudioNode\':',
+          context: 'Failed to execute \'disconnect\' on \'AudioNode\':',
         });
 
         try {
@@ -309,6 +309,7 @@ Object.defineProperties(AudioNode.prototype, {
     configurable: true,
     value: 'AudioNode',
   },
+
   context: kEnumerableProperty,
   numberOfInputs: kEnumerableProperty,
   numberOfOutputs: kEnumerableProperty,

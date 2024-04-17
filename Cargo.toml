@@ -13,8 +13,8 @@ crate-type = ["cdylib"]
 napi = {version="2.15", features=["napi9", "tokio_rt"]}
 napi-derive = "2.15"
 uuid = {version="1.6.1", features = ["v4", "fast-rng"]}
-# web-audio-api = "1.0.0-rc.4"
-web-audio-api = { path = "../web-audio-api-rs" }
+web-audio-api = "1.0.0-rc.5"
+# web-audio-api = { path = "../web-audio-api-rs" }
 
 [target.'cfg(all(any(windows, unix), target_arch = "x86_64", not(target_env = "musl")))'.dependencies]
 mimalloc = {version = "0.1"}

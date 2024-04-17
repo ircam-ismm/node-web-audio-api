@@ -177,7 +177,7 @@ macro_rules! audio_node_impl {
                         .unwrap::<$crate::audio_param::NapiAudioParam>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     native_src.connect_from_output_to_input(native_dest, output, input);
-                    // proper return value is hanlded on JS side
+                    // proper return value is handled on JS side
                     ctx.env.get_undefined()
                 }
                 "AudioDestinationNode" => {
@@ -188,7 +188,7 @@ macro_rules! audio_node_impl {
                     )?;
                     let native_dest = napi_dest.unwrap();
                     native_src.connect_from_output_to_input(native_dest, output, input);
-                    // proper return value is hanlded on JS side
+                    // proper return value is handled on JS side
                     ctx.env.get_undefined()
                 }
                 "AnalyserNode" => {
@@ -197,7 +197,7 @@ macro_rules! audio_node_impl {
                         .unwrap::<$crate::analyser_node::NapiAnalyserNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     native_src.connect_from_output_to_input(native_dest, output, input);
-                    // proper return value is hanlded on JS side
+                    // proper return value is handled on JS side
                     ctx.env.get_undefined()
                 }
                 "AudioBufferSourceNode" => {
@@ -206,7 +206,7 @@ macro_rules! audio_node_impl {
                         .unwrap::<$crate::audio_buffer_source_node::NapiAudioBufferSourceNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     native_src.connect_from_output_to_input(native_dest, output, input);
-                    // proper return value is hanlded on JS side
+                    // proper return value is handled on JS side
                     ctx.env.get_undefined()
                 }
                 "BiquadFilterNode" => {
@@ -215,7 +215,7 @@ macro_rules! audio_node_impl {
                         .unwrap::<$crate::biquad_filter_node::NapiBiquadFilterNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     native_src.connect_from_output_to_input(native_dest, output, input);
-                    // proper return value is hanlded on JS side
+                    // proper return value is handled on JS side
                     ctx.env.get_undefined()
                 }
                 "ChannelMergerNode" => {
@@ -224,7 +224,7 @@ macro_rules! audio_node_impl {
                         .unwrap::<$crate::channel_merger_node::NapiChannelMergerNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     native_src.connect_from_output_to_input(native_dest, output, input);
-                    // proper return value is hanlded on JS side
+                    // proper return value is handled on JS side
                     ctx.env.get_undefined()
                 }
                 "ChannelSplitterNode" => {
@@ -233,7 +233,7 @@ macro_rules! audio_node_impl {
                         .unwrap::<$crate::channel_splitter_node::NapiChannelSplitterNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     native_src.connect_from_output_to_input(native_dest, output, input);
-                    // proper return value is hanlded on JS side
+                    // proper return value is handled on JS side
                     ctx.env.get_undefined()
                 }
                 "ConstantSourceNode" => {
@@ -242,7 +242,7 @@ macro_rules! audio_node_impl {
                         .unwrap::<$crate::constant_source_node::NapiConstantSourceNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     native_src.connect_from_output_to_input(native_dest, output, input);
-                    // proper return value is hanlded on JS side
+                    // proper return value is handled on JS side
                     ctx.env.get_undefined()
                 }
                 "ConvolverNode" => {
@@ -251,7 +251,7 @@ macro_rules! audio_node_impl {
                         .unwrap::<$crate::convolver_node::NapiConvolverNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     native_src.connect_from_output_to_input(native_dest, output, input);
-                    // proper return value is hanlded on JS side
+                    // proper return value is handled on JS side
                     ctx.env.get_undefined()
                 }
                 "DelayNode" => {
@@ -260,7 +260,7 @@ macro_rules! audio_node_impl {
                         .unwrap::<$crate::delay_node::NapiDelayNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     native_src.connect_from_output_to_input(native_dest, output, input);
-                    // proper return value is hanlded on JS side
+                    // proper return value is handled on JS side
                     ctx.env.get_undefined()
                 }
                 "DynamicsCompressorNode" => {
@@ -269,7 +269,7 @@ macro_rules! audio_node_impl {
                         .unwrap::<$crate::dynamics_compressor_node::NapiDynamicsCompressorNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     native_src.connect_from_output_to_input(native_dest, output, input);
-                    // proper return value is hanlded on JS side
+                    // proper return value is handled on JS side
                     ctx.env.get_undefined()
                 }
                 "GainNode" => {
@@ -278,7 +278,7 @@ macro_rules! audio_node_impl {
                         .unwrap::<$crate::gain_node::NapiGainNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     native_src.connect_from_output_to_input(native_dest, output, input);
-                    // proper return value is hanlded on JS side
+                    // proper return value is handled on JS side
                     ctx.env.get_undefined()
                 }
                 "IIRFilterNode" => {
@@ -287,7 +287,7 @@ macro_rules! audio_node_impl {
                         .unwrap::<$crate::iir_filter_node::NapiIIRFilterNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     native_src.connect_from_output_to_input(native_dest, output, input);
-                    // proper return value is hanlded on JS side
+                    // proper return value is handled on JS side
                     ctx.env.get_undefined()
                 }
                 "MediaStreamAudioSourceNode" => {
@@ -296,7 +296,7 @@ macro_rules! audio_node_impl {
                         .unwrap::<$crate::media_stream_audio_source_node::NapiMediaStreamAudioSourceNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     native_src.connect_from_output_to_input(native_dest, output, input);
-                    // proper return value is hanlded on JS side
+                    // proper return value is handled on JS side
                     ctx.env.get_undefined()
                 }
                 "OscillatorNode" => {
@@ -305,7 +305,7 @@ macro_rules! audio_node_impl {
                         .unwrap::<$crate::oscillator_node::NapiOscillatorNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     native_src.connect_from_output_to_input(native_dest, output, input);
-                    // proper return value is hanlded on JS side
+                    // proper return value is handled on JS side
                     ctx.env.get_undefined()
                 }
                 "PannerNode" => {
@@ -314,7 +314,7 @@ macro_rules! audio_node_impl {
                         .unwrap::<$crate::panner_node::NapiPannerNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     native_src.connect_from_output_to_input(native_dest, output, input);
-                    // proper return value is hanlded on JS side
+                    // proper return value is handled on JS side
                     ctx.env.get_undefined()
                 }
                 "StereoPannerNode" => {
@@ -323,7 +323,7 @@ macro_rules! audio_node_impl {
                         .unwrap::<$crate::stereo_panner_node::NapiStereoPannerNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     native_src.connect_from_output_to_input(native_dest, output, input);
-                    // proper return value is hanlded on JS side
+                    // proper return value is handled on JS side
                     ctx.env.get_undefined()
                 }
                 "WaveShaperNode" => {
@@ -332,7 +332,7 @@ macro_rules! audio_node_impl {
                         .unwrap::<$crate::wave_shaper_node::NapiWaveShaperNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
                     native_src.connect_from_output_to_input(native_dest, output, input);
-                    // proper return value is hanlded on JS side
+                    // proper return value is handled on JS side
                     ctx.env.get_undefined()
                 }
 
