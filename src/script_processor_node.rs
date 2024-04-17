@@ -145,26 +145,27 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
         .unwrap();
     let js_func = js_this.get_property(dispatch_event_symbol).unwrap();
 
-    let tsfn =
-        ctx.env
-            .create_threadsafe_function(&js_func, 1, |ctx: ThreadSafeCallContext<()>| {
-                println!("coucou");
-                // let native_event = ctx.value.unwrap_audio_processing_event();
-                // let event = ctx.value.lock().unwrap();
-                // // let lock = event.
-                // let event_type = ctx.env.create_string("audioprocessing")?;
-                // let playback_time = ctx.env.create_double(event.playback_time)?;
-                // // @todo - input_buffer
-                // // @todo - output_buffer
-                // println!("{:?}", event.playback_time);
-                // println!("{:?}", event.input_buffer);
-                // println!("{:?}", event.output_buffer);
-                // let mut arg = ctx.env.create_object()?;
-                // arg.set_named_property("type", event_type)?;
-                // arg.set_named_property("playbackTime", playback_time)?;
-                let type_ = "audioprocessing";
-                Ok(vec![type_])
-            })?;
+    let tsfn = ctx.env.create_threadsafe_function(
+        &js_func,
+        0,
+        |ctx: ThreadSafeCallContext<Arc<Mutex<AudioProcessingEvent>>>| {
+            // let native_event = ctx.value.unwrap_audio_processing_event();
+            let event = ctx.value.lock().unwrap();
+            // // let lock = event.
+            let event_type = ctx.env.create_string("audioprocessing")?;
+            let playback_time = ctx.env.create_double(event.playback_time)?;
+            // // @todo - input_buffer
+            // // @todo - output_buffer
+            // println!("{:?}", event.playback_time);
+            // println!("{:?}", event.input_buffer);
+            // println!("{:?}", event.output_buffer);
+            let mut arg = ctx.env.create_object()?;
+            arg.set_named_property("type", event_type)?;
+            arg.set_named_property("playbackTime", playback_time)?;
+
+            Ok(vec![arg])
+        },
+    )?;
 
     // @note - we have no hint to clear the listener from the tsfn store
     // cf. napi_unref_threadsafe_function (?)
@@ -177,7 +178,7 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
             node.set_onaudioprocess(move |e| {
                 // println!("coucou");
                 // let event = WebAudioEventType::from(e);
-                tsfn.call(Ok(()), ThreadsafeFunctionCallMode::Blocking);
+                tsfn.call(Ok(e.clone()), ThreadsafeFunctionCallMode::Blocking);
             });
         }
         "OfflineAudioContext" => {
@@ -189,7 +190,7 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
 
             node.set_onaudioprocess(move |e| {
                 // let event = WebAudioEventType::from(e);
-                tsfn.call(Ok(()), ThreadsafeFunctionCallMode::Blocking);
+                tsfn.call(Ok(e.clone()), ThreadsafeFunctionCallMode::Blocking);
             });
         }
         &_ => unreachable!(),

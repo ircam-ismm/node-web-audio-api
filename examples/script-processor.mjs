@@ -5,7 +5,6 @@ const audioContext = new AudioContext({ latencyHint });
 
 const sine = new OscillatorNode(audioContext);
 sine.frequency.value = 200;
-sine.connect(audioContext.destination);
 sine.start();
 
 const scriptProcessor = new ScriptProcessorNode(audioContext);
@@ -14,5 +13,6 @@ scriptProcessor.addEventListener('audioprocess', e => {
   console.log(e.inputBuffer);
   console.log(e.outputBuffer);
 });
-scriptProcessor.connect(audioContext.destination);
+
+sine.connect(scriptProcessor).connect(audioContext.destination);
 

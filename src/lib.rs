@@ -100,7 +100,7 @@ static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
 #[module_exports]
 fn init(mut exports: JsObject, env: Env) -> Result<()> {
     // Do not print panic messages, handle through JS errors
-    std::panic::set_hook(Box::new(|_panic_info| {}));
+    // std::panic::set_hook(Box::new(|_panic_info| {}));
 
     let napi_class = NapiAudioContext::create_js_class(&env)?;
     exports.set_named_property("AudioContext", napi_class)?;

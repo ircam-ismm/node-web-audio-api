@@ -7,6 +7,13 @@ const { isFunction } = require('./utils.js');
 module.exports.bridgeEventTarget = function bridgeEventTarget(jsObj) {
     // Finalize event registration on Rust side
   jsObj[kNapiObj][kDispatchEvent] = (err, eventType) => {
+    if (err) {
+      console.log(err);
+      return;
+    }
+
+    console.log(eventType);
+
     const event = new Event(eventType);
     // call attribute first if exists
     if (isFunction(jsObj[`on${event.type}`])) {

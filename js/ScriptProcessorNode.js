@@ -49,8 +49,9 @@ module.exports = (jsExport, nativeBinding) => {
       // createScriptProcessor(bufferSize = 256, numberOfInputChannels = 2, numberOfOutputChannels = 2)
       // all unsigned long, all optional
       parsedOptions.bufferSize = 256;
-      parsedOptions.numberOfInputChannels = 2;
-      parsedOptions.numberOfOutputChannels = 2;
+      parsedOptions.numberOfInputChannels = 1;
+      // @note - this crashes when set to 2
+      parsedOptions.numberOfOutputChannels = 1;
       //
       // if (options && options.gain !== undefined) {
       //   parsedOptions.gain = conversions['float'](options.gain, {
