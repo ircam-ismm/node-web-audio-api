@@ -146,9 +146,10 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
     let tsfn = ctx.env.create_threadsafe_function(
         &js_func,
         1,
-        |ctx: ThreadSafeCallContext<AudioProcessingEvent>| {
+        |ctx: ThreadSafeCallContext<Arc<Mutex<AudioProcessingEvent>>>| {
             // let native_event = ctx.value.unwrap_audio_processing_event();
             let event = ctx.value;
+            // let lock = event.
             let event_type = ctx.env.create_string("audioprocessing")?;
             let _playback_time = ctx.env.create_double(event.playback_time)?;
             // @todo - input_buffer
