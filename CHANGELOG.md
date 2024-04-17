@@ -1,3 +1,10 @@
+## v0.19.0 (17/04/2024)
+
+- Update upstream crate to [1.0.0-rc.5](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-0430--100-rc5-2024-04-15)
+- Provide JS facades with proper inheritance chain for all exposed interfaces
+- Implement all AudioNode connect / disconnect alternatives
+- Improve compliance and error handling
+
 ## v0.18.0 (13/03/2024)
 
 - Fix `MediaStreamAudioSourceNode`
