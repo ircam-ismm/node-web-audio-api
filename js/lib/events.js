@@ -17,8 +17,13 @@ module.exports.bridgeEventTarget = function bridgeEventTarget(jsObj, payload) {
 
     if (eventType === 'audioprocess') {
       event.playbackTime = eventOrType.playbackTime;
-      event.inputBuffer = new payload.AudioBuffer(eventOrType.inputBuffer);
-      event.outputBuffer = new payload.AudioBuffer(eventOrType.outputBuffer);
+
+      event.inputBuffer = new payload.AudioBuffer({
+        [kNapiObj]: eventOrType.inputBuffer
+      });
+      event.outputBuffer = new payload.AudioBuffer({
+        [kNapiObj]: eventOrType.outputBuffer
+      });
     }
     // call attribute first if exists
     if (isFunction(jsObj[`on${eventType}`])) {

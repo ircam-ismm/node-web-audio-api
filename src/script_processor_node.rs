@@ -164,7 +164,7 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
 
             let js_input_buffer = ctor.new_instance(&[options])?;
             let napi_input_buffer = ctx.env.unwrap::<NapiAudioBuffer>(&js_input_buffer)?;
-            // grab the input buffer from event so we don't need to clone the it
+            // grab input buffer from event to give it Napi AudioBuffer
             let input_tumbstone = AudioBuffer::from(vec![vec![]], 48_000.);
             let input_buffer = std::mem::replace(&mut event.input_buffer, input_tumbstone);
             napi_input_buffer.populate(input_buffer);
@@ -175,10 +175,9 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
 
             let js_output_buffer = ctor.new_instance(&[options])?;
             let napi_output_buffer = ctx.env.unwrap::<NapiAudioBuffer>(&js_output_buffer)?;
-            // grab the output buffer from event so we don't need to clone the it
+            // grab output buffer from event to give it Napi AudioBuffer
             let output_tumbstone = AudioBuffer::from(vec![vec![]], 48_000.);
             let output_buffer = std::mem::replace(&mut event.output_buffer, output_tumbstone);
-            println!("0. before js call ({:?}):", &output_buffer);
             napi_output_buffer.populate(output_buffer);
 
             // create js event
@@ -199,11 +198,6 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
             )?;
 
             let mut output_buffer = napi_output_buffer.take();
-            let mut test = [0.; 10];
-            output_buffer.copy_from_channel(&mut test, 0);
-            println!("2. after js call ({:?}): {:?}", &output_buffer, test);
-
-            // put back the output audio buffer into the rust event
             std::mem::swap(&mut event.output_buffer, &mut output_buffer);
 
             Ok(())

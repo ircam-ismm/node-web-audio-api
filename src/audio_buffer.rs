@@ -152,10 +152,6 @@ fn copy_to_channel(ctx: CallContext) -> Result<JsUndefined> {
 
     obj.copy_to_channel_with_offset(source, channel_number, offset);
 
-    let mut test = [0.; 10];
-    obj.copy_from_channel(&mut test, 0);
-    println!("1. inside copy to channel ({:?}): {:?}", &obj, test);
-
     ctx.env.get_undefined()
 }
 
