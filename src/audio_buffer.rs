@@ -38,8 +38,15 @@ impl NapiAudioBuffer {
         }
     }
 
+    // @todo - rename to `insert`
     pub fn populate(&mut self, audio_buffer: AudioBuffer) {
         self.0 = Some(audio_buffer);
+    }
+
+    pub fn take(&mut self) -> AudioBuffer {
+        self.0
+            .take()
+            .expect("Invalid AudioBuffer.take() call, should be populated")
     }
 }
 
@@ -144,6 +151,10 @@ fn copy_to_channel(ctx: CallContext) -> Result<JsUndefined> {
     let offset = ctx.get::<JsNumber>(2)?.get_double()? as usize;
 
     obj.copy_to_channel_with_offset(source, channel_number, offset);
+
+    let mut test = [0.; 10];
+    obj.copy_from_channel(&mut test, 0);
+    println!("1. inside copy to channel ({:?}): {:?}", &obj, test);
 
     ctx.env.get_undefined()
 }

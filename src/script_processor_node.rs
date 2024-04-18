@@ -1,5 +1,3 @@
-use std::sync::{Arc, Mutex};
-
 use crate::*;
 use napi::*;
 use napi_derive::js_function;
@@ -125,8 +123,8 @@ fn get_buffer_size(ctx: CallContext) -> Result<JsNumber> {
 #[js_function]
 fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
     // use crate::utils::WebAudioEventType;
-    use napi::threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunctionCallMode};
-    use web_audio_api::AudioProcessingEvent;
+    use crate::utils::{ThreadSafeCallContext, ThreadsafeFunction, ThreadsafeFunctionCallMode};
+    use web_audio_api::{AudioBuffer, AudioProcessingEvent};
 
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiScriptProcessorNode>(&js_this)?;
@@ -143,27 +141,72 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
         .env
         .symbol_for("node-web-audio-api:napi-dispatch-event")
         .unwrap();
-    let js_func = js_this.get_property(dispatch_event_symbol).unwrap();
+    let js_func: JsFunction = js_this.get_property(dispatch_event_symbol).unwrap();
 
-    let tsfn = ctx.env.create_threadsafe_function(
-        &js_func,
+    let tsfn = ThreadsafeFunction::create(
+        ctx.env.raw(),
+        unsafe { js_func.raw() },
         0,
-        |ctx: ThreadSafeCallContext<Arc<Mutex<AudioProcessingEvent>>>| {
+        move |ctx: ThreadSafeCallContext<AudioProcessingEvent>| {
             // let native_event = ctx.value.unwrap_audio_processing_event();
-            let event = ctx.value.lock().unwrap();
-            // // let lock = event.
-            let event_type = ctx.env.create_string("audioprocessing")?;
+            let mut event = ctx.value;
+            let event_type = ctx.env.create_string("audioprocess")?;
             let playback_time = ctx.env.create_double(event.playback_time)?;
-            // // @todo - input_buffer
-            // // @todo - output_buffer
-            // println!("{:?}", event.playback_time);
-            // println!("{:?}", event.input_buffer);
-            // println!("{:?}", event.output_buffer);
-            let mut arg = ctx.env.create_object()?;
-            arg.set_named_property("type", event_type)?;
-            arg.set_named_property("playbackTime", playback_time)?;
 
-            Ok(vec![arg])
+            // // input buffer
+            let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
+            let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+            let ctor: JsFunction = store.get_named_property("AudioBuffer")?;
+
+            // populate with audio buffer
+            let mut options = ctx.env.create_object()?;
+            options.set("__internal_caller__", ctx.env.get_null())?;
+
+            let js_input_buffer = ctor.new_instance(&[options])?;
+            let napi_input_buffer = ctx.env.unwrap::<NapiAudioBuffer>(&js_input_buffer)?;
+            // grab the input buffer from event so we don't need to clone the it
+            let input_tumbstone = AudioBuffer::from(vec![vec![]], 48_000.);
+            let input_buffer = std::mem::replace(&mut event.input_buffer, input_tumbstone);
+            napi_input_buffer.populate(input_buffer);
+
+            // ...
+            let mut options = ctx.env.create_object()?;
+            options.set("__internal_caller__", ctx.env.get_null())?;
+
+            let js_output_buffer = ctor.new_instance(&[options])?;
+            let napi_output_buffer = ctx.env.unwrap::<NapiAudioBuffer>(&js_output_buffer)?;
+            // grab the output buffer from event so we don't need to clone the it
+            let output_tumbstone = AudioBuffer::from(vec![vec![]], 48_000.);
+            let output_buffer = std::mem::replace(&mut event.output_buffer, output_tumbstone);
+            println!("0. before js call ({:?}):", &output_buffer);
+            napi_output_buffer.populate(output_buffer);
+
+            // create js event
+            let mut js_event = ctx.env.create_object()?;
+            js_event.set_named_property("type", event_type)?;
+            js_event.set_named_property("playbackTime", playback_time)?;
+            js_event.set_named_property("inputBuffer", js_input_buffer)?;
+            js_event.set_named_property("outputBuffer", js_output_buffer)?;
+
+            // execute javascript callback
+            ctx.callback.call(
+                None,
+                &[
+                    // follow node.js convention: 1rst argument is error
+                    ctx.env.get_undefined()?.into_unknown(),
+                    js_event.into_unknown(),
+                ],
+            )?;
+
+            let mut output_buffer = napi_output_buffer.take();
+            let mut test = [0.; 10];
+            output_buffer.copy_from_channel(&mut test, 0);
+            println!("2. after js call ({:?}): {:?}", &output_buffer, test);
+
+            // put back the output audio buffer into the rust event
+            std::mem::swap(&mut event.output_buffer, &mut output_buffer);
+
+            Ok(())
         },
     )?;
 
@@ -176,9 +219,7 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
             // let napi_context = napi_context.clone();
 
             node.set_onaudioprocess(move |e| {
-                // println!("coucou");
-                // let event = WebAudioEventType::from(e);
-                tsfn.call(Ok(e.clone()), ThreadsafeFunctionCallMode::Blocking);
+                tsfn.call(e, ThreadsafeFunctionCallMode::Blocking);
             });
         }
         "OfflineAudioContext" => {
@@ -190,7 +231,7 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
 
             node.set_onaudioprocess(move |e| {
                 // let event = WebAudioEventType::from(e);
-                tsfn.call(Ok(e.clone()), ThreadsafeFunctionCallMode::Blocking);
+                tsfn.call(e, ThreadsafeFunctionCallMode::Blocking);
             });
         }
         &_ => unreachable!(),

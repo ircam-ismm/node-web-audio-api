@@ -92,7 +92,9 @@ module.exports = (jsExport, nativeBinding) => {
         [kNapiObj]: napiObj,
       });
 
-      bridgeEventTarget(this);
+      bridgeEventTarget(this, {
+        AudioBuffer: jsExport.AudioBuffer,
+      });
     }
 
     get bufferSize() {
@@ -104,16 +106,16 @@ module.exports = (jsExport, nativeBinding) => {
     }
 
     get onaudioprocess() {
-      if (!(this instanceof AudioScheduledSourceNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioScheduledSourceNode\'');
+      if (!(this instanceof ScriptProcessorNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'ScriptProcessorNode\'');
       }
 
       return this.#onaudioprocess;
     }
 
     set onaudioprocess(value) {
-      if (!(this instanceof AudioScheduledSourceNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioScheduledSourceNode\'');
+      if (!(this instanceof ScriptProcessorNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'ScriptProcessorNode\'');
       }
 
       if (isFunction(value) || value === null) {

@@ -1,6 +1,9 @@
 mod tsfn_store;
 pub(crate) use tsfn_store::*;
 
+mod thread_safe_function;
+pub(crate) use thread_safe_function::*;
+
 // cf. https://users.rust-lang.org/t/vec-f32-to-u8/21522/7
 #[allow(clippy::needless_lifetimes)]
 pub(crate) fn to_byte_slice<'a>(floats: &'a [f32]) -> &'a [u8] {
