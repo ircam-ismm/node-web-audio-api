@@ -2,8 +2,13 @@ import { AudioContext, OfflineAudioContext } from '../index.mjs';
 
 const offline = new OfflineAudioContext(1, 48000, 48000);
 
+
+let aResult = null;
+let bResult = null;
+
 offline.addEventListener('complete', (e) => {
   console.log('+ complete event:', e.renderedBuffer.toString());
+  aResult = e.renderedBuffer;
 });
 
 offline.suspend(128 / 48000).then(async () => {
@@ -20,20 +25,26 @@ offline.suspend(128 / 48000).then(async () => {
 const buffer = await offline.startRendering();
 console.log('+ buffer duration:', buffer.duration);
 
-console.log('')
-console.log('> Playback computed buffer in loop, should hear a small silent gap in the middle');
+bResult = buffer;
 
-const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
-const online = new AudioContext({ latencyHint });
+await new Promise(resolve => setTimeout(resolve, 100));
 
-const src = online.createBufferSource();
+console.log(aResult === bResult);
+
+// console.log('')
+// console.log('> Playback computed buffer in loop, should hear a small silent gap in the middle');
+
+// const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
+// const online = new AudioContext({ latencyHint });
+
+// const src = online.createBufferSource();
+// // src.loop = true;
+// src.buffer = aResult;
 // src.loop = true;
-src.buffer = buffer;
-src.loop = true;
-src.connect(online.destination);
-src.start();
+// src.connect(online.destination);
+// src.start();
 
-await new Promise(resolve => setTimeout(resolve, 2000));
+// await new Promise(resolve => setTimeout(resolve, 2000));
 
-console.log('close context');
-await online.close();
+// console.log('close context');
+// await online.close();

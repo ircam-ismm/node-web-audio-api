@@ -6,6 +6,10 @@ const require = createRequire(import.meta.url);
 
 const nativeModule = require('./index.cjs');
 export const {
+  // events
+  OfflineAudioCompletionEvent,
+
+  // manually written nodes
   BaseAudioContext,
   AudioContext,
   OfflineAudioContext,
@@ -18,7 +22,7 @@ export const {
 
   PeriodicWave,
   AudioBuffer,
-  // generated supported nodes
+  // generated nodes
 ${d.nodes.map(n => `  ${d.name(n)},`).join('\n')}
 
   // helper methods

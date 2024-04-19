@@ -9,7 +9,7 @@ use napi::*;
 use napi_derive::js_function;
 use uuid::Uuid;
 use web_audio_api::context::*;
-use web_audio_api::Event;
+use web_audio_api::{Event, OfflineAudioCompletionEvent};
 
 use crate::*;
 
@@ -34,9 +34,7 @@ impl NapiOfflineAudioContext {
             Property::new("length")?.with_getter(get_length),
             Property::new("startRendering")?.with_method(start_rendering),
             Property::new("resume")?.with_method(resume),
-            Property::new("suspend")?.with_method(suspend),
-            // [non spec] Bind with JS EventTarget
-            Property::new("__initEventTarget__")?.with_method(init_event_target)
+            Property::new("suspend")?.with_method(suspend)
         ];
 
         env.define_class("OfflineAudioContext", constructor, &interface)
@@ -66,6 +64,7 @@ impl NapiOfflineAudioContext {
         }
     }
 
+    #[allow(dead_code)]
     pub fn clear_all_thread_safe_listeners(&self) {
         std::thread::sleep(std::time::Duration::from_millis(1));
         let mut tsfn_store = self.tsfn_store.lock().unwrap();
@@ -132,21 +131,73 @@ fn get_length(ctx: CallContext) -> Result<JsNumber> {
 #[js_function]
 fn start_rendering(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let clone = Arc::clone(&napi_obj.context);
+    let napi_context = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
+    let context = napi_context.unwrap();
+
+    let k_onstatechange = get_symbol_for(ctx.env, "node-web-audio-api:onstatechange");
+    let statechange_cb = js_this.get_property(k_onstatechange).unwrap();
+    let mut statechange_tsfn = ctx.env.create_threadsafe_function(
+        &statechange_cb,
+        0,
+        |ctx: ThreadSafeCallContext<Event>| {
+            let mut event = ctx.env.create_object()?;
+            let event_type = ctx.env.create_string(ctx.value.type_)?;
+            event.set_named_property("type", event_type)?;
+
+            Ok(vec![event])
+        },
+    )?;
+
+    let k_oncomplete = get_symbol_for(ctx.env, "node-web-audio-api:oncomplete");
+    let complete_cb = js_this.get_property(k_oncomplete).unwrap();
+    let mut complete_tsfn = ctx.env.create_threadsafe_function(
+        &complete_cb,
+        0,
+        |ctx: ThreadSafeCallContext<OfflineAudioCompletionEvent>| {
+            let raw_event = ctx.value;
+            let mut event = ctx.env.create_object()?;
+
+            let event_type = ctx.env.create_string("complete")?;
+            event.set_named_property("type", event_type)?;
+
+            // @fixme: this event is propagated before `startRedering` fulfills
+            // which is probaly wrong, so let's propagate the JS audio buffer
+            // and let JS handle the race condition
+            let ctor = get_class_ctor(&ctx.env, "AudioBuffer")?;
+            let js_audio_buffer = ctor.new_instance(&[ctx.env.get_null()?])?;
+            let napi_audio_buffer = ctx.env.unwrap::<NapiAudioBuffer>(&js_audio_buffer)?;
+            napi_audio_buffer.insert(raw_event.rendered_buffer);
+
+            event.set_named_property("renderedBuffer", js_audio_buffer)?;
+
+            Ok(vec![event])
+        },
+    )?;
+
+    // unref tsfn so they do not prevent the process to exit
+    let _ = statechange_tsfn.unref(ctx.env);
+    let _ = complete_tsfn.unref(ctx.env);
+
+    context.set_onstatechange(move |e| {
+        statechange_tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
+    });
+
+    context.set_oncomplete(move |e| {
+        complete_tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
+    });
+
+    // everything is setup, do "real" rendering job
+    let context_clone = Arc::clone(&napi_context.context);
 
     ctx.env.execute_tokio_future(
         async move {
-            let audio_buffer = clone.start_rendering().await;
+            let audio_buffer = context_clone.start_rendering().await;
             Ok(audio_buffer)
         },
         |&mut env, audio_buffer| {
-            // create js audio buffer instance
-            let store_ref: &mut napi::Ref<()> = env.get_instance_data()?.unwrap();
-            let store: JsObject = env.get_reference_value(store_ref)?;
-            let ctor: JsFunction = store.get_named_property("AudioBuffer")?;
+            // create Napi audio buffer from native audio buffer
+            let ctor = get_class_ctor(&env, "AudioBuffer")?;
             let js_audio_buffer = ctor.new_instance(&[env.get_null()?])?;
-            // populate with audio buffer
             let napi_audio_buffer = env.unwrap::<NapiAudioBuffer>(&js_audio_buffer)?;
             napi_audio_buffer.insert(audio_buffer);
 
@@ -185,41 +236,4 @@ fn suspend(ctx: CallContext) -> Result<JsObject> {
         },
         |&mut env, _val| env.get_undefined(),
     )
-}
-
-// ----------------------------------------------------------
-// [non spec] Bind with JS EventTarget
-// ----------------------------------------------------------
-#[js_function]
-fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_context = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let context = napi_context.unwrap();
-
-    let dispatch_event_symbol = ctx
-        .env
-        .symbol_for("node-web-audio-api:napi-dispatch-event")
-        .unwrap();
-    let js_func = js_this.get_property(dispatch_event_symbol).unwrap();
-
-    let tsfn =
-        ctx.env
-            .create_threadsafe_function(&js_func, 0, |ctx: ThreadSafeCallContext<Event>| {
-                let event_type = ctx.env.create_string(ctx.value.type_)?;
-                Ok(vec![event_type])
-            })?;
-
-    let _ = napi_context.store_thread_safe_listener(tsfn.clone());
-
-    context.set_onstatechange(move |e| {
-        tsfn.call(Ok(e), ThreadsafeFunctionCallMode::NonBlocking);
-    });
-
-    let napi_context = napi_context.clone();
-
-    context.set_oncomplete(move |_e| {
-        napi_context.clear_all_thread_safe_listeners();
-    });
-
-    ctx.env.get_undefined()
 }
