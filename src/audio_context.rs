@@ -38,8 +38,9 @@ impl NapiAudioContext {
             Property::new("resume")?.with_method(resume),
             Property::new("suspend")?.with_method(suspend),
             Property::new("close")?.with_method(close),
-            // [non spec] Bind with JS EventTarget
-            Property::new("__initEventTarget__")?.with_method(init_event_target)
+            // [non spec] workaround to listen for `sinkchange` and `statechange` events
+            // This must be called from JS ctor as we don't have an initial `resume` call
+            Property::new("listen_to_events")?.with_method(listen_to_events)
         ];
 
         env.define_class("AudioContext", constructor, &interface)
@@ -252,50 +253,53 @@ fn close(ctx: CallContext) -> Result<JsObject> {
     )
 }
 
-// ----------------------------------------------------------
-// [non spec] Bind with JS EventTarget
-// ----------------------------------------------------------
+// Workaround to bind the `sinkchange` and `statechange` events to EventTarget.
+// This must be called from JS facade ctor as the JS handler are added to the Napi
+// object after its instantiation, and that we don't have any initial `resume` call.
 #[js_function]
-fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
+fn listen_to_events(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_context = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
     let context = napi_context.unwrap();
 
-    let dispatch_event_symbol = ctx
-        .env
-        .symbol_for("node-web-audio-api:napi-dispatch-event")
-        .unwrap();
-    let js_func = js_this.get_property(dispatch_event_symbol).unwrap();
+    let k_onsinkchange = get_symbol_for(ctx.env, "node-web-audio-api:onsinkchange");
+    let sinkchange_cb = js_this.get_property(k_onsinkchange).unwrap();
+    let mut sinkchange_tsfn = ctx.env.create_threadsafe_function(
+        &sinkchange_cb,
+        0,
+        |ctx: ThreadSafeCallContext<Event>| {
+            let mut event = ctx.env.create_object()?;
+            let event_type = ctx.env.create_string(ctx.value.type_)?;
+            event.set_named_property("type", event_type)?;
+            Ok(vec![event])
+        },
+    )?;
 
-    let tsfn =
-        ctx.env
-            .create_threadsafe_function(&js_func, 0, |ctx: ThreadSafeCallContext<Event>| {
-                let event_type = ctx.env.create_string(ctx.value.type_)?;
-                Ok(vec![event_type])
-            })?;
+    let k_onstatechange = get_symbol_for(ctx.env, "node-web-audio-api:onstatechange");
+    let statechange_cb = js_this.get_property(k_onstatechange).unwrap();
+    let mut statechange_tsfn = ctx.env.create_threadsafe_function(
+        &statechange_cb,
+        0,
+        |ctx: ThreadSafeCallContext<Event>| {
+            let mut event = ctx.env.create_object()?;
+            let event_type = ctx.env.create_string(ctx.value.type_)?;
+            event.set_named_property("type", event_type)?;
 
-    let _ = napi_context.store_thread_safe_listener(tsfn.clone());
+            Ok(vec![event])
+        },
+    )?;
 
-    {
-        let tsfn = tsfn.clone();
-        let napi_context = napi_context.clone();
+    // unref tsfn so they do not prevent the process to exit
+    let _ = sinkchange_tsfn.unref(ctx.env);
+    let _ = statechange_tsfn.unref(ctx.env);
 
-        context.set_onstatechange(move |e| {
-            tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
+    context.set_onsinkchange(move |e| {
+        sinkchange_tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
+    });
 
-            if napi_context.unwrap().state() == AudioContextState::Closed {
-                napi_context.clear_all_thread_safe_listeners();
-            }
-        });
-    }
-
-    {
-        let tsfn = tsfn.clone();
-
-        context.set_onsinkchange(move |e| {
-            tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
-        });
-    }
+    context.set_onstatechange(move |e| {
+        statechange_tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
+    });
 
     ctx.env.get_undefined()
 }
