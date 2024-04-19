@@ -92,14 +92,11 @@ macro_rules! base_audio_context_impl {
                             let store_ref: &mut napi::Ref<()> = env.get_instance_data()?.unwrap();
                             let store: JsObject = env.get_reference_value(store_ref)?;
                             let ctor: JsFunction = store.get_named_property("AudioBuffer")?;
-                            let mut options = env.create_object()?;
-                            options.set("__internal_caller__", env.get_null())?;
-
-                            // populate with audio buffer
-                            let js_audio_buffer = ctor.new_instance(&[options])?;
+                            let js_audio_buffer = ctor.new_instance(&[env.get_null()?])?;
+                            // populate with native audio buffer
                             let napi_audio_buffer =
                                 env.unwrap::<NapiAudioBuffer>(&js_audio_buffer)?;
-                            napi_audio_buffer.populate(audio_buffer);
+                            napi_audio_buffer.insert(audio_buffer);
 
                             Ok(js_audio_buffer)
                         }
