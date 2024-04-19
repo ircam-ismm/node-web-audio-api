@@ -70,6 +70,7 @@ impl NapiAudioContext {
         }
     }
 
+    #[allow(dead_code)]
     pub fn clear_all_thread_safe_listeners(&self) {
         std::thread::sleep(std::time::Duration::from_millis(1));
         let mut tsfn_store = self.tsfn_store.lock().unwrap();
