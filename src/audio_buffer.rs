@@ -23,22 +23,29 @@ impl NapiAudioBuffer {
     }
 
     pub fn unwrap(&self) -> &AudioBuffer {
+        // for debug purpose
         if self.0.is_none() {
-            panic!("AudioBuffer - invalid unwrap call, inner AudioBuffer not yet set");
-        } else {
-            self.0.as_ref().unwrap()
+            panic!("AudioBuffer - Invalid unwrap() call, inner AudioBuffer not yet set");
         }
+
+        self.0.as_ref().unwrap()
     }
 
     pub fn unwrap_mut(&mut self) -> &mut AudioBuffer {
+        // for debug purpose
         if self.0.is_none() {
-            panic!("AudioBuffer - invalid unwrap call, inner AudioBuffer not yet set");
-        } else {
-            self.0.as_mut().unwrap()
+            panic!("AudioBuffer - Invalid unwrap_mut() call, inner AudioBuffer not yet set");
         }
+
+        self.0.as_mut().unwrap()
     }
 
-    pub fn populate(&mut self, audio_buffer: AudioBuffer) {
+    pub fn insert(&mut self, audio_buffer: AudioBuffer) {
+        // for debug purpose
+        if self.0.is_some() {
+            panic!("AudioBuffer - Invalid insert() call, inner AudioBuffer already set");
+        }
+
         self.0 = Some(audio_buffer);
     }
 }

@@ -96,7 +96,7 @@ macro_rules! base_audio_context_impl {
                             // populate with native audio buffer
                             let napi_audio_buffer =
                                 env.unwrap::<NapiAudioBuffer>(&js_audio_buffer)?;
-                            napi_audio_buffer.populate(audio_buffer);
+                            napi_audio_buffer.insert(audio_buffer);
 
                             Ok(js_audio_buffer)
                         }
