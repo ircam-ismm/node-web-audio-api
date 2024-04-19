@@ -208,10 +208,8 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
         },
     )?;
 
-    // @note - we have no hint to clear the listener from the tsfn store when
-    // the node is deleted from the graph. For now, this will be deleted only
-    // when the context is closed.
-    // cf. napi_unref_threadsafe_function (?)
+    // @problem - we have no way to clear the listener, so the process is not
+    // exited even when the context is closed...
     match audio_context_str {
         "AudioContext" => {
             // let napi_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
