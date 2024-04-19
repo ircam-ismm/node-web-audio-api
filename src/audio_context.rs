@@ -38,8 +38,9 @@ impl NapiAudioContext {
             Property::new("resume")?.with_method(resume),
             Property::new("suspend")?.with_method(suspend),
             Property::new("close")?.with_method(close),
-            // [non spec] workaround to listen for `sinkchange` and `statechange` events
-            // This must be called from JS ctor as we don't have an initial `resume` call
+            // Workaround to bind the `sinkchange` and `statechange` events to EventTarget.
+            // This must be called from JS facade ctor as the JS handler are added to the Napi
+            // object after its instantiation, and that we don't have any initial `resume` call.
             Property::new("listen_to_events")?.with_method(listen_to_events)
         ];
 
