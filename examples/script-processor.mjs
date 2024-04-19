@@ -1,5 +1,5 @@
-import { AudioContext, GainNode, OscillatorNode, ScriptProcessorNode } from '../index.mjs';
-import { kNapiObj } from '../js/lib/symbols.js'
+import { AudioContext, OscillatorNode, ScriptProcessorNode } from '../index.mjs';
+import { sleep } from '@ircam/sc-utils';
 
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });
@@ -7,16 +7,15 @@ const audioContext = new AudioContext({ latencyHint });
 const sine = new OscillatorNode(audioContext);
 sine.frequency.value = 200;
 
-const scriptProcessor = new ScriptProcessorNode(audioContext);
-const buffer = new Float32Array(scriptProcessor.bufferSize);
-scriptProcessor.addEventListener('audioprocess', e => {
-  e.inputBuffer.copyFromChannel(buffer, 0);
-  // add noise
-  for (let i = 0; i < buffer.length; i++) {
-    buffer[i] += Math.random() * 2 - 1;
-  }
+const scriptProcessor = audioContext.createScriptProcessor();
 
-  e.outputBuffer.copyToChannel(buffer, 0);
+scriptProcessor.addEventListener('audioprocess', e => {
+  const input = e.inputBuffer.getChannelData(0);
+  const output = e.outputBuffer.getChannelData(0);
+
+  for (let i = 0; i < output.length; i++) {
+    output[i] = input[i] + Math.random() * 2 - 1;
+  }
 });
 
 sine

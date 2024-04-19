@@ -50,11 +50,6 @@ impl NapiAudioBuffer {
     }
 }
 
-// dictionary AudioBufferOptions {
-//   unsigned long numberOfChannels = 1;
-//   required unsigned long length;
-//   required float sampleRate;
-// };
 #[js_function(1)]
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
@@ -65,6 +60,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         // Internal caller
         // - BaseAudioContext::decodeAudioData
         // - OfflineAudioContext::startRendering
+        // - AudioProcessingEvent::{inputBuffer, outputBuffer}
         let napi_node = NapiAudioBuffer(None);
         ctx.env.wrap(&mut js_this, napi_node)?;
     } else {

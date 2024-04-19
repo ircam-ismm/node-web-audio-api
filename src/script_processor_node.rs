@@ -123,8 +123,10 @@ fn get_buffer_size(ctx: CallContext) -> Result<JsNumber> {
 #[js_function]
 fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
     // use crate::utils::WebAudioEventType;
-    use crate::utils::{ThreadSafeCallContext, ThreadsafeFunction, ThreadsafeFunctionCallMode};
-    use web_audio_api::{AudioBuffer, AudioProcessingEvent};
+    use crate::utils::{
+        ThreadSafeCallContext, ThreadsafeFunction, ThreadsafeFunctionCallMode, WebAudioEventType,
+    };
+    use web_audio_api::AudioBuffer;
 
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<NapiScriptProcessorNode>(&js_this)?;
@@ -147,9 +149,8 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
         ctx.env.raw(),
         unsafe { js_func.raw() },
         0,
-        move |ctx: ThreadSafeCallContext<AudioProcessingEvent>| {
-            // let native_event = ctx.value.unwrap_audio_processing_event();
-            let mut event = ctx.value;
+        move |ctx: ThreadSafeCallContext<WebAudioEventType>| {
+            let mut event = ctx.value.unwrap_audio_processing_event();
             let event_type = ctx.env.create_string("audioprocess")?;
             let playback_time = ctx.env.create_double(event.playback_time)?;
 
@@ -188,14 +189,16 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
             js_event.set_named_property("outputBuffer", js_output_buffer)?;
 
             // execute javascript callback
-            ctx.callback.call(
-                None,
-                &[
-                    // follow node.js convention: 1rst argument is error
-                    ctx.env.get_undefined()?.into_unknown(),
-                    js_event.into_unknown(),
-                ],
-            )?;
+            ctx.callback
+                .expect("Invalid JS callback for audioprocess event")
+                .call(
+                    None,
+                    &[
+                        // follow node.js convention: 1rst argument is error
+                        ctx.env.get_undefined()?.into_unknown(),
+                        js_event.into_unknown(),
+                    ],
+                )?;
 
             let mut output_buffer = napi_output_buffer.take();
             std::mem::swap(&mut event.output_buffer, &mut output_buffer);
@@ -204,28 +207,27 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
         },
     )?;
 
-    // @note - we have no hint to clear the listener from the tsfn store
+    // @note - we have no hint to clear the listener from the tsfn store when
+    // the node is deleted from the graph. For now, this will be deleted only
+    // when the context is closed.
     // cf. napi_unref_threadsafe_function (?)
     match audio_context_str {
         "AudioContext" => {
             // let napi_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
-            // let store_id = napi_context.tsfn_store().add(tsfn.clone());
-            // let napi_context = napi_context.clone();
+            // let _ = napi_context.tsfn_store().add(tsfn.clone());
 
             node.set_onaudioprocess(move |e| {
-                tsfn.call(e, ThreadsafeFunctionCallMode::Blocking);
+                let event = WebAudioEventType::from(e);
+                tsfn.call(event, ThreadsafeFunctionCallMode::NonBlocking);
             });
         }
         "OfflineAudioContext" => {
-            // let napi_context = ctx
-            //     .env
-            //     .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
-            // let store_id = napi_context.tsfn_store().add(tsfn.clone());
-            // let napi_context = napi_context.clone();
+            // let napi_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
+            // let _ = napi_context.tsfn_store().add(tsfn.clone());
 
             node.set_onaudioprocess(move |e| {
-                // let event = WebAudioEventType::from(e);
-                tsfn.call(e, ThreadsafeFunctionCallMode::Blocking);
+                let event = WebAudioEventType::from(e);
+                tsfn.call(event, ThreadsafeFunctionCallMode::NonBlocking);
             });
         }
         &_ => unreachable!(),

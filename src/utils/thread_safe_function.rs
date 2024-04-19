@@ -1,31 +1,27 @@
-// cf. https://github.com/napi-rs/napi-rs/issues/1307
-// cf. https://github.com/NomicFoundation/hardhat/blob/7087f3407ae46aa80e61b24b0a4a81f264993768/crates/rethnet_evm_napi/src/threadsafe_function.rs
+// cf. https://github.com/parcel-bundler/lightningcss/blob/master/napi/src/threadsafe_function.rs
 
 // Fork of threadsafe_function from napi-rs that allows calling JS function manually rather than
 // only returning args. This enables us to use the return value of the function.
 
 #![allow(clippy::single_component_path_imports)]
 
-use std::{
-    convert::Into,
-    ffi::CString,
-    marker::PhantomData,
-    os::raw::c_void,
-    ptr,
-    sync::{
-        atomic::{AtomicBool, AtomicUsize, Ordering},
-        Arc,
-    },
-};
+use std::convert::Into;
+use std::ffi::CString;
+use std::marker::PhantomData;
+use std::os::raw::c_void;
+use std::ptr;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::Arc;
 
-use napi::{check_status, sys, Env, JsError, JsFunction, NapiValue, Result, Status};
+use napi::{check_status, sys, Env, Result, Status};
+use napi::{JsError, JsFunction, NapiValue};
 
 /// ThreadSafeFunction Context object
 /// the `value` is the value passed to `call` method
 pub struct ThreadSafeCallContext<T: 'static> {
     pub env: Env,
     pub value: T,
-    pub callback: JsFunction,
+    pub callback: Option<JsFunction>,
 }
 
 #[repr(u8)]
@@ -233,7 +229,7 @@ unsafe extern "C" fn call_js_cb<T: 'static, R>(
     R: 'static + Send + FnMut(ThreadSafeCallContext<T>) -> Result<()>,
 {
     // env and/or callback can be null when shutting down
-    if raw_env.is_null() || js_callback.is_null() {
+    if raw_env.is_null() {
         return;
     }
 
@@ -247,7 +243,11 @@ unsafe extern "C" fn call_js_cb<T: 'static, R>(
         (ctx)(ThreadSafeCallContext {
             env: Env::from_raw(raw_env),
             value: v,
-            callback: JsFunction::from_raw(raw_env, js_callback).unwrap(), // TODO: unwrap
+            callback: if js_callback.is_null() {
+                None
+            } else {
+                Some(JsFunction::from_raw(raw_env, js_callback).unwrap()) // TODO: unwrap
+            },
         })
     });
 

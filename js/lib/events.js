@@ -4,7 +4,7 @@ const { isFunction } = require('./utils.js');
 /**
  * Listen for events from Rust, and bridge them to Node EventTarget paradigm
  */
-module.exports.bridgeEventTarget = function bridgeEventTarget(jsObj, payload) {
+module.exports.bridgeEventTarget = function bridgeEventTarget(jsObj, jsExport) {
     // Finalize event registration on Rust side
   jsObj[kNapiObj][kDispatchEvent] = (err, eventOrType) => {
     if (err) {
@@ -17,22 +17,23 @@ module.exports.bridgeEventTarget = function bridgeEventTarget(jsObj, payload) {
 
     if (eventType === 'audioprocess') {
       event.playbackTime = eventOrType.playbackTime;
-
-      event.inputBuffer = new payload.AudioBuffer({
-        [kNapiObj]: eventOrType.inputBuffer
+      event.inputBuffer = new jsExport.AudioBuffer({
+        [kNapiObj]: eventOrType.inputBuffer,
       });
-      event.outputBuffer = new payload.AudioBuffer({
-        [kNapiObj]: eventOrType.outputBuffer
+      event.outputBuffer = new jsExport.AudioBuffer({
+        [kNapiObj]: eventOrType.outputBuffer,
       });
     }
-    // call attribute first if exists
+
+    // call attribute first if it exists
     if (isFunction(jsObj[`on${eventType}`])) {
       jsObj[`on${eventType}`](event);
     }
 
-    // then distach to add event listeners
+    // then distach to listeners registered though addEventListener
     jsObj.dispatchEvent(event);
   }
+
   // ask Rust to register `kDispatchEvent` as listener
   jsObj[kNapiObj].__initEventTarget__();
 }

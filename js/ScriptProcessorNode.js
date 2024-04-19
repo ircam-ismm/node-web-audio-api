@@ -37,46 +37,60 @@ module.exports = (jsExport, nativeBinding) => {
       }
 
       // parsed version of the option to be passed to NAPI
-      const parsedOptions = {
-
-      };
+      const parsedOptions = {};
 
       if (options && typeof options !== 'object') {
-        throw new TypeError('Failed to construct \'ScriptProcessorNode\': argument 2 is not of type \'GainOptions\'');
+        throw new TypeError('Failed to construct \'ScriptProcessorNode\': argument 2 is not of type \'ScriptProcessorNodeOptions\'');
       }
 
-      // @todo
-      // createScriptProcessor(bufferSize = 256, numberOfInputChannels = 2, numberOfOutputChannels = 2)
-      // all unsigned long, all optional
-      parsedOptions.bufferSize = 256;
-      parsedOptions.numberOfInputChannels = 1;
-      // @note - this crashes when set to 2
-      parsedOptions.numberOfOutputChannels = 1;
-      //
-      // if (options && options.gain !== undefined) {
-      //   parsedOptions.gain = conversions['float'](options.gain, {
-      //     context: `Failed to construct 'ScriptProcessorNode': Failed to read the 'gain' property from GainOptions: The provided value (${options.gain}})`,
-      //   });
-      // } else {
-      //   parsedOptions.gain = 1.0;
-      // }
+      // IDL defines bufferSize default value as 0
+      // cf. https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createscriptprocessor
+      // > If it’s not passed in, or if the value is 0, then the implementation
+      // > will choose the best buffer size for the given environment, which will
+      // > be constant power of 2 throughout the lifetime of the node.
+      if (options && options.bufferSize !== undefined && options.bufferSize !== 0) {
+        parsedOptions.bufferSize = conversions['unsigned long'](options.bufferSize, {
+          enforceRange: true,
+          context: `Failed to construct 'ScriptProcessorNode': Failed to read the 'bufferSize' property from ScriptProcessorNodeOptions: The provided value '${options.bufferSize}'`,
+        });
+      } else {
+        parsedOptions.bufferSize = 256;
+      }
+
+      if (options && options.numberOfInputChannels !== undefined) {
+        parsedOptions.numberOfInputChannels = conversions['unsigned long'](options.numberOfInputChannels, {
+          enforceRange: true,
+          context: `Failed to construct 'ScriptProcessorNode': Failed to read the 'numberOfInputChannels' property from ScriptProcessorNodeOptions: The provided value '${options.numberOfInputChannels}'`,
+        });
+      } else {
+        parsedOptions.numberOfInputChannels = 2;
+      }
+
+      if (options && options.numberOfOutputChannels !== undefined) {
+        parsedOptions.numberOfOutputChannels = conversions['unsigned long'](options.numberOfOutputChannels, {
+          enforceRange: true,
+          context: `Failed to construct 'ScriptProcessorNode': Failed to read the 'numberOfOutputChannels' property from ScriptProcessorNodeOptions: The provided value '${options.numberOfOutputChannels}'`,
+        });
+      } else {
+        parsedOptions.numberOfOutputChannels = 2;
+      }
 
       if (options && options.channelCount !== undefined) {
         parsedOptions.channelCount = conversions['unsigned long'](options.channelCount, {
           enforceRange: true,
-          context: `Failed to construct 'ScriptProcessorNode': Failed to read the 'channelCount' property from GainOptions: The provided value '${options.channelCount}'`,
+          context: `Failed to construct 'ScriptProcessorNode': Failed to read the 'channelCount' property from ScriptProcessorNodeOptions: The provided value '${options.channelCount}'`,
         });
       }
 
       if (options && options.channelCountMode !== undefined) {
         parsedOptions.channelCountMode = conversions['DOMString'](options.channelCountMode, {
-          context: `Failed to construct 'ScriptProcessorNode': Failed to read the 'channelCount' property from GainOptions: The provided value '${options.channelCountMode}'`,
+          context: `Failed to construct 'ScriptProcessorNode': Failed to read the 'channelCount' property from ScriptProcessorNodeOptions: The provided value '${options.channelCountMode}'`,
         });
       }
 
       if (options && options.channelInterpretation !== undefined) {
         parsedOptions.channelInterpretation = conversions['DOMString'](options.channelInterpretation, {
-          context: `Failed to construct 'ScriptProcessorNode': Failed to read the 'channelInterpretation' property from GainOptions: The provided value '${options.channelInterpretation}'`,
+          context: `Failed to construct 'ScriptProcessorNode': Failed to read the 'channelInterpretation' property from ScriptProcessorNodeOptions: The provided value '${options.channelInterpretation}'`,
         });
       }
 
@@ -92,9 +106,7 @@ module.exports = (jsExport, nativeBinding) => {
         [kNapiObj]: napiObj,
       });
 
-      bridgeEventTarget(this, {
-        AudioBuffer: jsExport.AudioBuffer,
-      });
+      bridgeEventTarget(this, jsExport);
     }
 
     get bufferSize() {
@@ -131,7 +143,7 @@ module.exports = (jsExport, nativeBinding) => {
       writable: false,
       enumerable: false,
       configurable: true,
-      value: 1,
+      value: 0,
     },
   });
 
@@ -143,7 +155,8 @@ module.exports = (jsExport, nativeBinding) => {
       configurable: true,
       value: 'ScriptProcessorNode',
     },
-    gain: kEnumerableProperty,
+    bufferSize: kEnumerableProperty,
+    onaudioprocess: kEnumerableProperty,
 
   });
 
