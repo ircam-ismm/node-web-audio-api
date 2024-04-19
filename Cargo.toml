@@ -12,7 +12,6 @@ crate-type = ["cdylib"]
 [dependencies]
 napi = {version="2.15", features=["napi9", "tokio_rt"]}
 napi-derive = "2.15"
-uuid = {version="1.6.1", features = ["v4", "fast-rng"]}
 # web-audio-api = "1.0.0-rc.5"
 web-audio-api = { path = "../web-audio-api-rs" }
 

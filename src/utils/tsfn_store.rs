@@ -1,8 +1,8 @@
-use std::collections::HashMap;
+use std::collections::hash_map::{DefaultHasher, HashMap};
+use std::hash::Hasher;
 use std::sync::{Arc, Mutex};
 
 use napi::threadsafe_function::ThreadsafeFunction;
-use uuid::Uuid;
 use web_audio_api::{AudioProcessingEvent, ErrorEvent, Event, OfflineAudioCompletionEvent};
 
 pub(crate) enum WebAudioEventType {
@@ -71,7 +71,7 @@ impl WebAudioEventType {
 
 #[derive(Clone)]
 pub(crate) struct TsfnStore {
-    store: Arc<Mutex<HashMap<String, ThreadsafeFunction<WebAudioEventType>>>>,
+    store: Arc<Mutex<HashMap<u64, ThreadsafeFunction<WebAudioEventType>>>>,
 }
 
 impl TsfnStore {
@@ -82,12 +82,16 @@ impl TsfnStore {
     }
 
     // called from main thread
-    pub fn add(&self, tsfn: ThreadsafeFunction<WebAudioEventType>) -> String {
+    pub fn add(&self, tsfn: ThreadsafeFunction<WebAudioEventType>) -> u64 {
         let mut store = self.store.lock().unwrap();
-        let uuid = Uuid::new_v4();
-        store.insert(uuid.to_string(), tsfn);
 
-        uuid.to_string()
+        let mut hasher = DefaultHasher::new();
+        std::ptr::hash(&tsfn, &mut hasher);
+        let uuid = hasher.finish();
+
+        store.insert(uuid, tsfn);
+
+        uuid
     }
 
     // We need to clean things around so that the js object can be garbage collected.
@@ -95,7 +99,7 @@ impl TsfnStore {
     // This is not clean, but don't see how to implement that properly right now.
     //
     // called from EventLoop thread
-    pub fn delete(&self, store_id: String) {
+    pub fn delete(&self, store_id: u64) {
         std::thread::sleep(std::time::Duration::from_millis(1));
         let mut store = self.store.lock().unwrap();
 

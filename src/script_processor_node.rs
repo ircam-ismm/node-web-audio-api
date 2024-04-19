@@ -182,6 +182,7 @@ fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
             napi_output_buffer.populate(output_buffer);
 
             // create js event
+            // @todo - find a way to reuse the same instance
             let mut js_event = ctx.env.create_object()?;
             js_event.set_named_property("type", event_type)?;
             js_event.set_named_property("playbackTime", playback_time)?;
