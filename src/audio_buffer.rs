@@ -43,49 +43,50 @@ impl NapiAudioBuffer {
     }
 }
 
-// dictionary AudioBufferOptions {
-//   unsigned long numberOfChannels = 1;
-//   required unsigned long length;
-//   required float sampleRate;
-// };
 #[js_function(1)]
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
-    let js_options = ctx.get::<JsObject>(0)?;
+    let js_options = ctx.get::<JsUnknown>(0)?;
 
-    if js_options.has_own_property("__internal_caller__")? {
-        // Internal caller
-        // - BaseAudioContext::decodeAudioData
-        // - OfflineAudioContext::startRendering
-        let napi_node = NapiAudioBuffer(None);
-        ctx.env.wrap(&mut js_this, napi_node)?;
-    } else {
-        // Public API
-        let number_of_channels = js_options
-            .get::<&str, JsNumber>("numberOfChannels")?
-            .unwrap()
-            .get_double()? as usize;
+    match js_options.get_type()? {
+        ValueType::Null => {
+            // Internal caller
+            // - BaseAudioContext::decodeAudioData
+            // - OfflineAudioContext::startRendering
+            let napi_node = NapiAudioBuffer(None);
+            ctx.env.wrap(&mut js_this, napi_node)?;
+        }
+        ValueType::Object => {
+            // Public API
+            let js_options = js_options.coerce_to_object()?;
 
-        let length = js_options
-            .get::<&str, JsNumber>("length")?
-            .unwrap()
-            .get_double()? as usize;
+            let number_of_channels = js_options
+                .get::<&str, JsNumber>("numberOfChannels")?
+                .unwrap()
+                .get_double()? as usize;
 
-        let sample_rate = js_options
-            .get::<&str, JsNumber>("sampleRate")?
-            .unwrap()
-            .get_double()? as f32;
+            let length = js_options
+                .get::<&str, JsNumber>("length")?
+                .unwrap()
+                .get_double()? as usize;
 
-        let options = AudioBufferOptions {
-            number_of_channels,
-            length,
-            sample_rate,
-        };
+            let sample_rate = js_options
+                .get::<&str, JsNumber>("sampleRate")?
+                .unwrap()
+                .get_double()? as f32;
 
-        let audio_buffer = AudioBuffer::new(options);
-        let napi_node = NapiAudioBuffer(Some(audio_buffer));
-        ctx.env.wrap(&mut js_this, napi_node)?
+            let options = AudioBufferOptions {
+                number_of_channels,
+                length,
+                sample_rate,
+            };
+
+            let audio_buffer = AudioBuffer::new(options);
+            let napi_node = NapiAudioBuffer(Some(audio_buffer));
+            ctx.env.wrap(&mut js_this, napi_node)?
+        }
+        _ => unreachable!(),
     }
 
     ctx.env.get_undefined()
