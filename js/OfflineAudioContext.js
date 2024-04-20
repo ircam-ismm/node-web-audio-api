@@ -18,7 +18,6 @@ const {
 } = require('./lib/symbols.js');
 
 module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
-  console.log(jsExport);
   class OfflineAudioContext extends jsExport.BaseAudioContext {
     #renderedBuffer = null;
 
