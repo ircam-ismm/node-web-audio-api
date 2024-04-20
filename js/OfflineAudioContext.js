@@ -1,7 +1,6 @@
 const conversions = require('webidl-conversions');
 
 const {
-  bridgeEventTarget,
   propagateEvent,
 } = require('./lib/events.js');
 const {

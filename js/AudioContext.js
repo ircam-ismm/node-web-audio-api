@@ -13,7 +13,6 @@ const {
   kOnSinkChange,
 } = require('./lib/symbols.js');
 const {
-  bridgeEventTarget,
   propagateEvent,
 } = require('./lib/events.js');
 

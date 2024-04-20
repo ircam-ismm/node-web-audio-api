@@ -4,7 +4,6 @@ const {
   throwSanitizedError,
 } = require('./lib/errors.js');
 const {
-  bridgeEventTarget,
   propagateEvent,
 } = require('./lib/events.js');
 const {
@@ -36,7 +35,7 @@ class AudioScheduledSourceNode extends AudioNode {
     // It will be effectively registered on rust side when `start` is called
     this[kNapiObj][kOnEnded] = (err, rawEvent) => {
       if (typeof rawEvent !== 'object' && !('type' in rawEvent)) {
-        throw new TypeError('Invalid [kOnStateChange] Invocation: rawEvent should have a type property');
+        throw new TypeError('Invalid [kOnEnded] Invocation: rawEvent should have a type property');
       }
 
       const event = new Event(rawEvent.type);
