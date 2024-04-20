@@ -25,11 +25,11 @@ use web_audio_api::node::*;
 pub(crate) struct NapiChannelMergerNode(ChannelMergerNode);
 
 // for debug purpose
-// impl Drop for NapiChannelMergerNode {
-//     fn drop(&mut self) {
-//         println!("NAPI: NapiChannelMergerNode dropped");
-//     }
-// }
+impl Drop for NapiChannelMergerNode {
+    fn drop(&mut self) {
+        println!("NAPI: NapiChannelMergerNode dropped");
+    }
+}
 
 impl NapiChannelMergerNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -38,7 +38,7 @@ impl NapiChannelMergerNode {
         env.define_class("ChannelMergerNode", constructor, &interface)
     }
 
-    // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
+    // @note: this is used in audio_node.rs for the connect / disconnect macros
     pub fn unwrap(&mut self) -> &mut ChannelMergerNode {
         &mut self.0
     }

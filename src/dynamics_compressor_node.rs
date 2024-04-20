@@ -25,11 +25,11 @@ use web_audio_api::node::*;
 pub(crate) struct NapiDynamicsCompressorNode(DynamicsCompressorNode);
 
 // for debug purpose
-// impl Drop for NapiDynamicsCompressorNode {
-//     fn drop(&mut self) {
-//         println!("NAPI: NapiDynamicsCompressorNode dropped");
-//     }
-// }
+impl Drop for NapiDynamicsCompressorNode {
+    fn drop(&mut self) {
+        println!("NAPI: NapiDynamicsCompressorNode dropped");
+    }
+}
 
 impl NapiDynamicsCompressorNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -39,7 +39,7 @@ impl NapiDynamicsCompressorNode {
         env.define_class("DynamicsCompressorNode", constructor, &interface)
     }
 
-    // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
+    // @note: this is used in audio_node.rs for the connect / disconnect macros
     pub fn unwrap(&mut self) -> &mut DynamicsCompressorNode {
         &mut self.0
     }

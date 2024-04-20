@@ -25,11 +25,11 @@ use web_audio_api::node::*;
 pub(crate) struct NapiGainNode(GainNode);
 
 // for debug purpose
-// impl Drop for NapiGainNode {
-//     fn drop(&mut self) {
-//         println!("NAPI: NapiGainNode dropped");
-//     }
-// }
+impl Drop for NapiGainNode {
+    fn drop(&mut self) {
+        println!("NAPI: NapiGainNode dropped");
+    }
+}
 
 impl NapiGainNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -38,7 +38,7 @@ impl NapiGainNode {
         env.define_class("GainNode", constructor, &interface)
     }
 
-    // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
+    // @note: this is used in audio_node.rs for the connect / disconnect macros
     pub fn unwrap(&mut self) -> &mut GainNode {
         &mut self.0
     }

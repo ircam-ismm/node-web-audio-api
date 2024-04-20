@@ -25,11 +25,11 @@ use web_audio_api::node::*;
 pub(crate) struct NapiMediaStreamAudioSourceNode(MediaStreamAudioSourceNode);
 
 // for debug purpose
-// impl Drop for NapiMediaStreamAudioSourceNode {
-//     fn drop(&mut self) {
-//         println!("NAPI: NapiMediaStreamAudioSourceNode dropped");
-//     }
-// }
+impl Drop for NapiMediaStreamAudioSourceNode {
+    fn drop(&mut self) {
+        println!("NAPI: NapiMediaStreamAudioSourceNode dropped");
+    }
+}
 
 impl NapiMediaStreamAudioSourceNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -38,7 +38,7 @@ impl NapiMediaStreamAudioSourceNode {
         env.define_class("MediaStreamAudioSourceNode", constructor, &interface)
     }
 
-    // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
+    // @note: this is used in audio_node.rs for the connect / disconnect macros
     pub fn unwrap(&mut self) -> &mut MediaStreamAudioSourceNode {
         &mut self.0
     }

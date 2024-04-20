@@ -33,9 +33,6 @@ const {
   kNapiObj,
   kAudioBuffer,
 } = require('./lib/symbols.js');
-const {
-  bridgeEventTarget,
-} = require('./lib/events.js');
 /* eslint-enable no-unused-vars */
 
 const AudioScheduledSourceNode = require('./AudioScheduledSourceNode.js');
@@ -141,9 +138,6 @@ module.exports = (jsExport, nativeBinding) => {
       if (options && options.buffer !== undefined) {
         this[kAudioBuffer] = options.buffer;
       }
-
-      // Bridge Rust native event to Node EventTarget
-      bridgeEventTarget(this);
 
       this.#playbackRate = new jsExport.AudioParam({
         [kNapiObj]: this[kNapiObj].playbackRate,

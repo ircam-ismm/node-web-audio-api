@@ -25,11 +25,11 @@ use web_audio_api::node::*;
 pub(crate) struct NapiWaveShaperNode(WaveShaperNode);
 
 // for debug purpose
-// impl Drop for NapiWaveShaperNode {
-//     fn drop(&mut self) {
-//         println!("NAPI: NapiWaveShaperNode dropped");
-//     }
-// }
+impl Drop for NapiWaveShaperNode {
+    fn drop(&mut self) {
+        println!("NAPI: NapiWaveShaperNode dropped");
+    }
+}
 
 impl NapiWaveShaperNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -45,7 +45,7 @@ impl NapiWaveShaperNode {
         env.define_class("WaveShaperNode", constructor, &interface)
     }
 
-    // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
+    // @note: this is used in audio_node.rs for the connect / disconnect macros
     pub fn unwrap(&mut self) -> &mut WaveShaperNode {
         &mut self.0
     }

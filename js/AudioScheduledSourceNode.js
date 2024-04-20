@@ -4,11 +4,16 @@ const {
   throwSanitizedError,
 } = require('./lib/errors.js');
 const {
+  bridgeEventTarget,
+  propagateEvent,
+} = require('./lib/events.js');
+const {
   isFunction,
   kEnumerableProperty,
 } = require('./lib/utils.js');
 const {
   kNapiObj,
+  kOnEnded,
 } = require('./lib/symbols.js');
 
 const AudioNode = require('./AudioNode.js');
@@ -26,6 +31,20 @@ class AudioScheduledSourceNode extends AudioNode {
     }
 
     super(context, options);
+
+    // Add function to Napi object to bridge from Rust events to JS EventTarget
+    // It will be effectively registered on rust side when `start` is called
+    this[kNapiObj][kOnEnded] = (err, rawEvent) => {
+      if (typeof rawEvent !== 'object' && !('type' in rawEvent)) {
+        throw new TypeError('Invalid [kOnStateChange] Invocation: rawEvent should have a type property');
+      }
+
+      this[kNapiObj][kOnEnded] = null;
+      // this[kNapiObj]['clear_ended_callback']();
+
+      const event = new Event(rawEvent.type);
+      propagateEvent(this, event);
+    }
   }
 
   get onended() {
