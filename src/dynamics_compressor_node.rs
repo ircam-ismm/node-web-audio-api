@@ -25,11 +25,11 @@ use web_audio_api::node::*;
 pub(crate) struct NapiDynamicsCompressorNode(DynamicsCompressorNode);
 
 // for debug purpose
-impl Drop for NapiDynamicsCompressorNode {
-    fn drop(&mut self) {
-        println!("NAPI: NapiDynamicsCompressorNode dropped");
-    }
-}
+// impl Drop for NapiDynamicsCompressorNode {
+//     fn drop(&mut self) {
+//         println!("NAPI: NapiDynamicsCompressorNode dropped");
+//     }
+// }
 
 impl NapiDynamicsCompressorNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {

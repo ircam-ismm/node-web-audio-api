@@ -25,11 +25,11 @@ use web_audio_api::node::*;
 pub(crate) struct NapiStereoPannerNode(StereoPannerNode);
 
 // for debug purpose
-impl Drop for NapiStereoPannerNode {
-    fn drop(&mut self) {
-        println!("NAPI: NapiStereoPannerNode dropped");
-    }
-}
+// impl Drop for NapiStereoPannerNode {
+//     fn drop(&mut self) {
+//         println!("NAPI: NapiStereoPannerNode dropped");
+//     }
+// }
 
 impl NapiStereoPannerNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {

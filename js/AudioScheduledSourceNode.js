@@ -39,9 +39,6 @@ class AudioScheduledSourceNode extends AudioNode {
         throw new TypeError('Invalid [kOnStateChange] Invocation: rawEvent should have a type property');
       }
 
-      this[kNapiObj][kOnEnded] = null;
-      // this[kNapiObj]['clear_ended_callback']();
-
       const event = new Event(rawEvent.type);
       propagateEvent(this, event);
     }

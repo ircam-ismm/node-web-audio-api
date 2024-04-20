@@ -6,11 +6,11 @@ use crate::*;
 pub(crate) struct ${d.napiName(d.node)}(${d.name(d.node)});
 
 // for debug purpose
-impl Drop for ${d.napiName(d.node)} {
-    fn drop(&mut self) {
-        println!("NAPI: ${d.napiName(d.node)} dropped");
-    }
-}
+// impl Drop for ${d.napiName(d.node)} {
+//     fn drop(&mut self) {
+//         println!("NAPI: ${d.napiName(d.node)} dropped");
+//     }
+// }
 
 impl ${d.napiName(d.node)} {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
@@ -31,7 +31,6 @@ impl ${d.napiName(d.node)} {
             if (d.parent(d.node) === "AudioScheduledSourceNode") {
                 methods.push(`Property::new("start")?.with_method(start)`);
                 methods.push(`Property::new("stop")?.with_method(stop)`);
-                methods.push(`Property::new("clear_ended_callback")?.with_method(clear_ended_callback)`);
             }
 
             let interface = attributes.concat(methods);
@@ -333,8 +332,6 @@ fn listen_to_ended_event(
     js_this: &JsObject,
     node: &mut ${d.name(d.node)},
 ) -> Result<()> {
-    use std::sync::{Arc, Mutex};
-
     use napi::threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunctionCallMode};
     use web_audio_api::Event;
 
@@ -353,30 +350,13 @@ fn listen_to_ended_event(
     )?;
 
     // unref tsfn so they do not prevent the process to exit
-    // let _ = ended_tsfn.unref(env);
-    let ended_tsfn_mutex = Arc::new(Mutex::new(ended_tsfn.clone()));
+    let _ = ended_tsfn.unref(env);
 
     node.set_onended(move |e| {
         ended_tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
-        // even with unref, if the tsfn is not aborted, the node cannot
-        // be garbage collected
-        std::thread::sleep(std::time::Duration::from_micros(100));
-        let ended_tsfn = ended_tsfn_mutex.lock().unwrap();
-        let _ = ended_tsfn.clone().abort();
     });
 
     Ok(())
-}
-
-#[js_function]
-fn clear_ended_callback(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    // node.clear_onended();
-
-    ctx.env.get_undefined()
 }
         `;
 

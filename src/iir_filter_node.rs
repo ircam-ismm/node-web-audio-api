@@ -25,11 +25,11 @@ use web_audio_api::node::*;
 pub(crate) struct NapiIIRFilterNode(IIRFilterNode);
 
 // for debug purpose
-impl Drop for NapiIIRFilterNode {
-    fn drop(&mut self) {
-        println!("NAPI: NapiIIRFilterNode dropped");
-    }
-}
+// impl Drop for NapiIIRFilterNode {
+//     fn drop(&mut self) {
+//         println!("NAPI: NapiIIRFilterNode dropped");
+//     }
+// }
 
 impl NapiIIRFilterNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {

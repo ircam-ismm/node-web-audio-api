@@ -25,11 +25,11 @@ use web_audio_api::node::*;
 pub(crate) struct NapiMediaStreamAudioSourceNode(MediaStreamAudioSourceNode);
 
 // for debug purpose
-impl Drop for NapiMediaStreamAudioSourceNode {
-    fn drop(&mut self) {
-        println!("NAPI: NapiMediaStreamAudioSourceNode dropped");
-    }
-}
+// impl Drop for NapiMediaStreamAudioSourceNode {
+//     fn drop(&mut self) {
+//         println!("NAPI: NapiMediaStreamAudioSourceNode dropped");
+//     }
+// }
 
 impl NapiMediaStreamAudioSourceNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {

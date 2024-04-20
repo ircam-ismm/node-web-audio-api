@@ -44,6 +44,7 @@ impl NapiOfflineAudioContext {
         &self.context
     }
 
+    #[allow(dead_code)]
     pub fn store_thread_safe_listener(&self, tsfn: ThreadsafeFunction<Event>) -> String {
         let mut tsfn_store = self.tsfn_store.lock().unwrap();
         let uuid = Uuid::new_v4();
@@ -55,6 +56,7 @@ impl NapiOfflineAudioContext {
     // We need to clean things around so that the js object can be garbage collected.
     // But we also need to wait so that the previous tsfn.call is executed.
     // This is not clean, but don't see how to implement that properly right now.
+    #[allow(dead_code)]
     pub fn clear_thread_safe_listener(&self, store_id: String) {
         std::thread::sleep(std::time::Duration::from_millis(1));
         let mut tsfn_store = self.tsfn_store.lock().unwrap();

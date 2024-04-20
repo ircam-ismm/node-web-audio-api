@@ -25,18 +25,17 @@ use web_audio_api::node::*;
 pub(crate) struct NapiConstantSourceNode(ConstantSourceNode);
 
 // for debug purpose
-impl Drop for NapiConstantSourceNode {
-    fn drop(&mut self) {
-        println!("NAPI: NapiConstantSourceNode dropped");
-    }
-}
+// impl Drop for NapiConstantSourceNode {
+//     fn drop(&mut self) {
+//         println!("NAPI: NapiConstantSourceNode dropped");
+//     }
+// }
 
 impl NapiConstantSourceNode {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
         let interface = audio_node_interface![
             Property::new("start")?.with_method(start),
-            Property::new("stop")?.with_method(stop),
-            Property::new("clear_ended_callback")?.with_method(clear_ended_callback)
+            Property::new("stop")?.with_method(stop)
         ];
 
         env.define_class("ConstantSourceNode", constructor, &interface)
@@ -134,8 +133,6 @@ fn listen_to_ended_event(
     js_this: &JsObject,
     node: &mut ConstantSourceNode,
 ) -> Result<()> {
-    use std::sync::{Arc, Mutex};
-
     use napi::threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunctionCallMode};
     use web_audio_api::Event;
 
@@ -151,30 +148,13 @@ fn listen_to_ended_event(
         })?;
 
     // unref tsfn so they do not prevent the process to exit
-    // let _ = ended_tsfn.unref(env);
-    let ended_tsfn_mutex = Arc::new(Mutex::new(ended_tsfn.clone()));
+    let _ = ended_tsfn.unref(env);
 
     node.set_onended(move |e| {
         ended_tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
-        // even with unref, if the tsfn is not aborted, the node cannot
-        // be garbage collected
-        std::thread::sleep(std::time::Duration::from_micros(100));
-        let ended_tsfn = ended_tsfn_mutex.lock().unwrap();
-        let _ = ended_tsfn.clone().abort();
     });
 
     Ok(())
-}
-
-#[js_function]
-fn clear_ended_callback(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiConstantSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    // node.clear_onended();
-
-    ctx.env.get_undefined()
 }
 
 #[js_function(1)]
