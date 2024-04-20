@@ -16,7 +16,6 @@ offline.suspend(128 / 48000).then(async () => {
   await offline.resume();
 });
 
-// offline.startRendering().then(audioBuffer => console.log(audioBuffer));
 const buffer = await offline.startRendering();
 console.log('+ buffer duration:', buffer.duration);
 
@@ -27,7 +26,6 @@ const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 
 const online = new AudioContext({ latencyHint });
 
 const src = online.createBufferSource();
-// src.loop = true;
 src.buffer = buffer;
 src.loop = true;
 src.connect(online.destination);
@@ -35,5 +33,5 @@ src.start();
 
 await new Promise(resolve => setTimeout(resolve, 2000));
 
-console.log('close context');
+console.log('+ close context');
 await online.close();

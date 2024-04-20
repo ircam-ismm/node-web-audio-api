@@ -38,7 +38,7 @@ impl NapiChannelMergerNode {
         env.define_class("ChannelMergerNode", constructor, &interface)
     }
 
-    // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
+    // @note: this is used in audio_node.rs for the connect / disconnect macros
     pub fn unwrap(&mut self) -> &mut ChannelMergerNode {
         &mut self.0
     }

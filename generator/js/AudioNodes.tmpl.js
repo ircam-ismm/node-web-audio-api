@@ -15,9 +15,6 @@ const {
   kNapiObj,
   kAudioBuffer,
 } = require('./lib/symbols.js');
-const {
-  bridgeEventTarget,
-} = require('./lib/events.js');
 /* eslint-enable no-unused-vars */
 
 const ${d.parent(d.node)} = require('./${d.parent(d.node)}.js');
@@ -313,10 +310,6 @@ module.exports = (jsExport, nativeBinding) => {
           }
         }).join('');
       }())}
-
-      ${d.parent(d.node) === 'AudioScheduledSourceNode' ? `
-      // Bridge Rust native event to Node EventTarget
-      bridgeEventTarget(this);` : ``}
 
       ${d.audioParams(d.node).map(param => {
         return `

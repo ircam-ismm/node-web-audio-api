@@ -38,7 +38,7 @@ impl NapiChannelSplitterNode {
         env.define_class("ChannelSplitterNode", constructor, &interface)
     }
 
-    // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
+    // @note: this is used in audio_node.rs for the connect / disconnect macros
     pub fn unwrap(&mut self) -> &mut ChannelSplitterNode {
         &mut self.0
     }

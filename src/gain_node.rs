@@ -38,7 +38,7 @@ impl NapiGainNode {
         env.define_class("GainNode", constructor, &interface)
     }
 
-    // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
+    // @note: this is used in audio_node.rs for the connect / disconnect macros
     pub fn unwrap(&mut self) -> &mut GainNode {
         &mut self.0
     }

@@ -33,9 +33,6 @@ const {
   kNapiObj,
   kAudioBuffer,
 } = require('./lib/symbols.js');
-const {
-  bridgeEventTarget,
-} = require('./lib/events.js');
 /* eslint-enable no-unused-vars */
 
 const AudioNode = require('./AudioNode.js');

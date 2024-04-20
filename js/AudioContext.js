@@ -9,9 +9,11 @@ const {
 } = require('./lib/utils.js');
 const {
   kNapiObj,
+  kOnStateChange,
+  kOnSinkChange,
 } = require('./lib/symbols.js');
 const {
-  bridgeEventTarget,
+  propagateEvent,
 } = require('./lib/events.js');
 
 let contextId = 0;
@@ -81,8 +83,29 @@ module.exports = function(jsExport, nativeBinding) {
         this.#sinkId = options.sinkId;
       }
 
-      // Bridge Rust native event to Node EventTarget
-      bridgeEventTarget(this);
+      // Add function to Napi object to bridge from Rust events to JS EventTarget
+      this[kNapiObj][kOnStateChange] = (err, rawEvent) => {
+        if (typeof rawEvent !== 'object' && !('type' in rawEvent)) {
+          throw new TypeError('Invalid [kOnStateChange] Invocation: rawEvent should have a type property');
+        }
+
+        const event = new Event(rawEvent.type);
+        propagateEvent(this, event);
+      }
+
+      this[kNapiObj][kOnSinkChange] = (err, rawEvent) => {
+        if (typeof rawEvent !== 'object' && !('type' in rawEvent)) {
+          throw new TypeError('Invalid [kOnSinkChange] Invocation: rawEvent should have a type property');
+        }
+
+        const event = new Event(rawEvent.type);
+        propagateEvent(this, event);
+      }
+
+      // Workaround to bind the `sinkchange` and `statechange` events to EventTarget.
+      // This must be called from JS facade ctor as the JS handler are added to the Napi
+      // object after its instantiation, and that we don't have any initial `resume` call.
+      this[kNapiObj].listen_to_events();
 
       // @todo - check if this is still required
       // prevent garbage collection and process exit

@@ -29,10 +29,8 @@ impl ${d.napiName(d.node)} {
                 `);
 
             if (d.parent(d.node) === "AudioScheduledSourceNode") {
-                // AudioScheduledSourceNode interface
                 methods.push(`Property::new("start")?.with_method(start)`);
                 methods.push(`Property::new("stop")?.with_method(stop)`);
-                methods.push(`Property::new("__initEventTarget__")?.with_method(init_event_target)`);
             }
 
             let interface = attributes.concat(methods);
@@ -45,7 +43,7 @@ impl ${d.napiName(d.node)} {
         env.define_class("${d.name(d.node)}", constructor, &interface)
     }
 
-    // @note: this is also used in audio_node.tmpl.rs for the connect / disconnect macros
+    // @note: this is used in audio_node.rs for the connect / disconnect macros
     pub fn unwrap(&mut self) -> &mut ${d.name(d.node)} {
         &mut self.0
     }
@@ -328,7 +326,38 @@ ${(function() {
         let methods = `
 // -------------------------------------------------
 // AudioScheduledSourceNode Interface
-// -------------------------------------------------\
+// -------------------------------------------------
+fn listen_to_ended_event(
+    env: &Env,
+    js_this: &JsObject,
+    node: &mut ${d.name(d.node)},
+) -> Result<()> {
+    use napi::threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunctionCallMode};
+    use web_audio_api::Event;
+
+    let k_onended = get_symbol_for(env, "node-web-audio-api:onended");
+    let ended_cb = js_this.get_property(k_onended).unwrap();
+    let mut ended_tsfn = env.create_threadsafe_function(
+        &ended_cb,
+        0,
+        |ctx: ThreadSafeCallContext<Event>| {
+            let mut event = ctx.env.create_object()?;
+            let event_type = ctx.env.create_string(ctx.value.type_)?;
+            event.set_named_property("type", event_type)?;
+
+            Ok(vec![event])
+        },
+    )?;
+
+    // unref tsfn so they do not prevent the process to exit
+    let _ = ended_tsfn.unref(env);
+
+    node.set_onended(move |e| {
+        ended_tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
+    });
+
+    Ok(())
+}
         `;
 
         if (d.name(d.node) !== "AudioBufferSourceNode") {
@@ -338,6 +367,8 @@ fn start(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
     let node = napi_node.unwrap();
+
+    listen_to_ended_event(ctx.env, &js_this, node)?;
 
     let when = ctx.get::<JsNumber>(0)?.get_double()?;
     node.start_at(when);
@@ -352,6 +383,8 @@ fn start(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
     let node = napi_node.unwrap();
+
+    listen_to_ended_event(ctx.env, &js_this, node)?;
 
     let when = ctx.get::<JsNumber>(0)?.get_double()?;
 
@@ -385,62 +418,6 @@ fn stop(ctx: CallContext) -> Result<JsUndefined> {
 
     let when = ctx.get::<JsNumber>(0)?.get_double()?;
     node.stop_at(when);
-
-    ctx.env.get_undefined()
-}
-        `;
-
-        methods += `
-// ----------------------------------------------------
-// EventTarget initialization - cf. js/utils/events.js
-// ----------------------------------------------------
-#[js_function]
-fn init_event_target(ctx: CallContext) -> Result<JsUndefined> {
-    use napi::threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunctionCallMode};
-    use web_audio_api::Event;
-
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    // garb the napi audio context
-    let js_audio_context: JsObject = js_this.get_named_property("context")?;
-    let audio_context_name =
-        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
-    let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
-    let audio_context_str = &audio_context_utf8_name[..];
-
-    let dispatch_event_symbol = ctx.env.symbol_for("node-web-audio-api:napi-dispatch-event").unwrap();
-    let js_func = js_this.get_property(dispatch_event_symbol).unwrap();
-
-    let tsfn = ctx.env.create_threadsafe_function(&js_func, 0, |ctx: ThreadSafeCallContext<Event>| {
-        let event_type = ctx.env.create_string(ctx.value.type_)?;
-        Ok(vec![event_type])
-    })?;
-
-    match audio_context_str {
-        "AudioContext" => {
-            let napi_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
-            let store_id = napi_context.store_thread_safe_listener(tsfn.clone());
-            let napi_context = napi_context.clone();
-
-            node.set_onended(move |e| {
-                tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
-                napi_context.clear_thread_safe_listener(store_id);
-            });
-        }
-        "OfflineAudioContext" => {
-            let napi_context = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
-            let store_id = napi_context.store_thread_safe_listener(tsfn.clone());
-            let napi_context = napi_context.clone();
-
-            node.set_onended(move |e| {
-                tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
-                napi_context.clear_thread_safe_listener(store_id);
-            });
-        }
-        &_ => unreachable!(),
-    };
 
     ctx.env.get_undefined()
 }
