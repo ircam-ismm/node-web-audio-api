@@ -61,63 +61,61 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         &_ => panic!("not supported"),
     };
 
-    // bind audio params
-    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
-    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
-    let ctor: JsFunction = store.get_named_property("AudioParam")?;
-
+    // --------------------------------------------------------
+    // Bind AudioParam to JS object
+    // --------------------------------------------------------
     let native_param = native_node.position_x().clone();
-    let js_obj = ctor.new_instance(&[&js_this])?;
-    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_obj)?;
-    napi_obj.wrap(native_param);
+    let napi_param = NapiAudioParam::new(native_param);
+    let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
+    ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("positionX", &js_obj)?;
 
     let native_param = native_node.position_y().clone();
-    let js_obj = ctor.new_instance(&[&js_this])?;
-    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_obj)?;
-    napi_obj.wrap(native_param);
+    let napi_param = NapiAudioParam::new(native_param);
+    let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
+    ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("positionY", &js_obj)?;
 
     let native_param = native_node.position_z().clone();
-    let js_obj = ctor.new_instance(&[&js_this])?;
-    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_obj)?;
-    napi_obj.wrap(native_param);
+    let napi_param = NapiAudioParam::new(native_param);
+    let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
+    ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("positionZ", &js_obj)?;
 
     let native_param = native_node.forward_x().clone();
-    let js_obj = ctor.new_instance(&[&js_this])?;
-    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_obj)?;
-    napi_obj.wrap(native_param);
+    let napi_param = NapiAudioParam::new(native_param);
+    let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
+    ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("forwardX", &js_obj)?;
 
     let native_param = native_node.forward_y().clone();
-    let js_obj = ctor.new_instance(&[&js_this])?;
-    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_obj)?;
-    napi_obj.wrap(native_param);
+    let napi_param = NapiAudioParam::new(native_param);
+    let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
+    ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("forwardY", &js_obj)?;
 
     let native_param = native_node.forward_z().clone();
-    let js_obj = ctor.new_instance(&[&js_this])?;
-    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_obj)?;
-    napi_obj.wrap(native_param);
+    let napi_param = NapiAudioParam::new(native_param);
+    let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
+    ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("forwardZ", &js_obj)?;
 
     let native_param = native_node.up_x().clone();
-    let js_obj = ctor.new_instance(&[&js_this])?;
-    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_obj)?;
-    napi_obj.wrap(native_param);
+    let napi_param = NapiAudioParam::new(native_param);
+    let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
+    ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("upX", &js_obj)?;
 
     let native_param = native_node.up_y().clone();
-    let js_obj = ctor.new_instance(&[&js_this])?;
-    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_obj)?;
-    napi_obj.wrap(native_param);
+    let napi_param = NapiAudioParam::new(native_param);
+    let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
+    ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("upY", &js_obj)?;
 
     let native_param = native_node.up_z().clone();
-    let js_obj = ctor.new_instance(&[&js_this])?;
-    let napi_obj = ctx.env.unwrap::<NapiAudioParam>(&js_obj)?;
-    napi_obj.wrap(native_param);
+    let napi_param = NapiAudioParam::new(native_param);
+    let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
+    ctx.env.wrap(&mut js_obj, napi_param)?;
     js_this.set_named_property("upZ", &js_obj)?;
 
     // finalize instance creation

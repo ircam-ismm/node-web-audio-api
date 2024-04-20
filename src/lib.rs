@@ -200,9 +200,6 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     // ----------------------------------------------------------------
     let mut store = env.create_object()?;
 
-    let napi_class = NapiAudioParam::create_js_class(&env)?;
-    store.set_named_property("AudioParam", napi_class)?;
-
     let napi_class = NapiAudioDestinationNode::create_js_class(&env)?;
     store.set_named_property("AudioDestinationNode", napi_class)?;
 
