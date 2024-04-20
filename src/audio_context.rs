@@ -1,25 +1,16 @@
-use std::collections::HashMap;
 use std::io::Cursor;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
-use napi::threadsafe_function::{
-    ThreadSafeCallContext, ThreadsafeFunction, ThreadsafeFunctionCallMode,
-};
+use napi::threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunctionCallMode};
 use napi::*;
 use napi_derive::js_function;
-use uuid::Uuid;
 use web_audio_api::context::*;
 use web_audio_api::Event;
 
 use crate::*;
 
 #[derive(Clone)]
-pub(crate) struct NapiAudioContext {
-    context: Arc<AudioContext>,
-    // store all ThreadsafeFunction created for listening to events
-    // so that they can be aborted when the context is closed
-    tsfn_store: Arc<Mutex<HashMap<String, ThreadsafeFunction<Event>>>>,
-}
+pub(crate) struct NapiAudioContext(Arc<AudioContext>);
 
 // for debug purpose
 // impl Drop for NapiAudioContext {
@@ -48,39 +39,7 @@ impl NapiAudioContext {
     }
 
     pub fn unwrap(&self) -> &AudioContext {
-        &self.context
-    }
-
-    #[allow(dead_code)]
-    pub fn store_thread_safe_listener(&self, tsfn: ThreadsafeFunction<Event>) -> String {
-        let mut tsfn_store = self.tsfn_store.lock().unwrap();
-        let uuid = Uuid::new_v4();
-        tsfn_store.insert(uuid.to_string(), tsfn);
-
-        uuid.to_string()
-    }
-
-    // We need to clean things around so that the js object can be garbage collected.
-    // But we also need to wait so that the previous tsfn.call is executed.
-    // This is not clean, but don't see how to implement that properly right now.
-    #[allow(dead_code)]
-    pub fn clear_thread_safe_listener(&self, store_id: String) {
-        std::thread::sleep(std::time::Duration::from_millis(1));
-        let mut tsfn_store = self.tsfn_store.lock().unwrap();
-
-        if let Some(tsfn) = tsfn_store.remove(&store_id) {
-            let _ = tsfn.abort();
-        }
-    }
-
-    #[allow(dead_code)]
-    pub fn clear_all_thread_safe_listeners(&self) {
-        std::thread::sleep(std::time::Duration::from_millis(1));
-        let mut tsfn_store = self.tsfn_store.lock().unwrap();
-
-        for (_, tsfn) in tsfn_store.drain() {
-            let _ = tsfn.abort();
-        }
+        &self.0
     }
 }
 
@@ -140,10 +99,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // -------------------------------------------------
     // Wrap context
     // -------------------------------------------------
-    let napi_audio_context = NapiAudioContext {
-        context: Arc::new(audio_context),
-        tsfn_store: Arc::new(HashMap::new().into()),
-    };
+    let napi_audio_context = NapiAudioContext(Arc::new(audio_context));
     ctx.env.wrap(&mut js_this, napi_audio_context)?;
 
     js_this.define_properties(&[Property::new("Symbol.toStringTag")?
@@ -215,12 +171,12 @@ fn set_sink_id(ctx: CallContext) -> Result<JsUndefined> {
 #[js_function]
 fn resume(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
-    let clone = Arc::clone(&napi_obj.context);
+    let napi_context = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
+    let context_clone = Arc::clone(&napi_context.0);
 
     ctx.env.execute_tokio_future(
         async move {
-            clone.resume().await;
+            context_clone.resume().await;
             Ok(())
         },
         |&mut env, _val| env.get_undefined(),
@@ -230,12 +186,12 @@ fn resume(ctx: CallContext) -> Result<JsObject> {
 #[js_function]
 fn suspend(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
-    let clone = Arc::clone(&napi_obj.context);
+    let napi_context = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
+    let context_clone = Arc::clone(&napi_context.0);
 
     ctx.env.execute_tokio_future(
         async move {
-            clone.suspend().await;
+            context_clone.suspend().await;
             Ok(())
         },
         |&mut env, _val| env.get_undefined(),
@@ -245,12 +201,12 @@ fn suspend(ctx: CallContext) -> Result<JsObject> {
 #[js_function]
 fn close(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
-    let clone = Arc::clone(&napi_obj.context);
+    let napi_context = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
+    let context_clone = Arc::clone(&napi_context.0);
 
     ctx.env.execute_tokio_future(
         async move {
-            clone.close().await;
+            context_clone.close().await;
             Ok(())
         },
         |&mut env, _val| env.get_undefined(),
@@ -259,7 +215,8 @@ fn close(ctx: CallContext) -> Result<JsObject> {
 
 // Workaround to bind the `sinkchange` and `statechange` events to EventTarget.
 // This must be called from JS facade ctor as the JS handler are added to the Napi
-// object after its instantiation, and that we don't have any initial `resume` call.
+// object after its instantiation, that we don't have any initial `resume` call,
+// and in any case the statechange event should be called when audio device is ready.
 #[js_function]
 fn listen_to_events(ctx: CallContext) -> Result<JsUndefined> {
     let js_this = ctx.this_unchecked::<JsObject>();
