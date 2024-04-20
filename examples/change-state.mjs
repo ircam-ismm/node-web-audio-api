@@ -15,10 +15,10 @@ audioContext.onstatechange = event => {
   console.log('onstatechange (called first):', event);
 };
 
-// const sine = audioContext.createOscillator();
-// sine.connect(audioContext.destination);
-// sine.frequency.value = 200;
-// sine.start();
+const sine = audioContext.createOscillator();
+sine.connect(audioContext.destination);
+sine.frequency.value = 200;
+sine.start();
 
 console.log('> Playback for 1 seconds');
 await new Promise(resolve => setTimeout(resolve, 1000));
