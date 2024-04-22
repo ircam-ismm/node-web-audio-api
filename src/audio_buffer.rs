@@ -48,6 +48,12 @@ impl NapiAudioBuffer {
 
         self.0 = Some(audio_buffer);
     }
+
+    pub fn take(&mut self) -> AudioBuffer {
+        self.0
+            .take()
+            .expect("Invalid AudioBuffer.take() call, should be populated")
+    }
 }
 
 #[js_function(1)]
@@ -61,6 +67,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             // Internal caller
             // - BaseAudioContext::decodeAudioData
             // - OfflineAudioContext::startRendering
+            // - AudioProcessingEvent::{inputBuffer, outputBuffer}
             let napi_node = NapiAudioBuffer(None);
             ctx.env.wrap(&mut js_this, napi_node)?;
         }

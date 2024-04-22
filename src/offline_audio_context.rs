@@ -92,7 +92,7 @@ fn start_rendering(ctx: CallContext) -> Result<JsObject> {
     let napi_context = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
     let context = napi_context.unwrap();
 
-    let k_onstatechange = get_symbol_for(ctx.env, "node-web-audio-api:onstatechange");
+    let k_onstatechange = crate::utils::get_symbol_for(ctx.env, "node-web-audio-api:onstatechange");
     let statechange_cb = js_this.get_property(k_onstatechange).unwrap();
     let mut statechange_tsfn = ctx.env.create_threadsafe_function(
         &statechange_cb,
@@ -106,7 +106,7 @@ fn start_rendering(ctx: CallContext) -> Result<JsObject> {
         },
     )?;
 
-    let k_oncomplete = get_symbol_for(ctx.env, "node-web-audio-api:oncomplete");
+    let k_oncomplete = crate::utils::get_symbol_for(ctx.env, "node-web-audio-api:oncomplete");
     let complete_cb = js_this.get_property(k_oncomplete).unwrap();
     let mut complete_tsfn = ctx.env.create_threadsafe_function(
         &complete_cb,
@@ -121,7 +121,7 @@ fn start_rendering(ctx: CallContext) -> Result<JsObject> {
             // @fixme: this event is propagated before `startRedering` fulfills
             // which is probaly wrong, so let's propagate the JS audio buffer
             // and let JS handle the race condition
-            let ctor = get_class_ctor(&ctx.env, "AudioBuffer")?;
+            let ctor = crate::utils::get_class_ctor(&ctx.env, "AudioBuffer")?;
             let js_audio_buffer = ctor.new_instance(&[ctx.env.get_null()?])?;
             let napi_audio_buffer = ctx.env.unwrap::<NapiAudioBuffer>(&js_audio_buffer)?;
             napi_audio_buffer.insert(raw_event.rendered_buffer);
@@ -154,7 +154,7 @@ fn start_rendering(ctx: CallContext) -> Result<JsObject> {
         },
         |&mut env, audio_buffer| {
             // create Napi audio buffer from native audio buffer
-            let ctor = get_class_ctor(&env, "AudioBuffer")?;
+            let ctor = crate::utils::get_class_ctor(&env, "AudioBuffer")?;
             let js_audio_buffer = ctor.new_instance(&[env.get_null()?])?;
             let napi_audio_buffer = env.unwrap::<NapiAudioBuffer>(&js_audio_buffer)?;
             napi_audio_buffer.insert(audio_buffer);

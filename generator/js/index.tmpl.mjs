@@ -8,6 +8,7 @@ const nativeModule = require('./index.cjs');
 export const {
   // events
   OfflineAudioCompletionEvent,
+  AudioProcessingEvent,
 
   // manually written nodes
   BaseAudioContext,

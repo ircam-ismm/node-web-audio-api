@@ -210,6 +210,20 @@ module.exports = (jsExport, _nativeBinding) => {
     // --------------------------------------------------------------------
     // Factory Methods (use the patched AudioNodes)
     // --------------------------------------------------------------------
+    createScriptProcessor(bufferSize = 0, numberOfInputChannels = 2, numberOfOutputChannels = 2) {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
+
+      const options = {
+        bufferSize,
+        numberOfInputChannels,
+        numberOfOutputChannels,
+      };
+
+      return new jsExport.ScriptProcessorNode(this, options);
+    }
+
     createAnalyser() {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
@@ -389,6 +403,7 @@ module.exports = (jsExport, _nativeBinding) => {
       configurable: true,
       value: 'BaseAudioContext',
     },
+    createScriptProcessor: kEnumerableProperty,
     createAnalyser: kEnumerableProperty,
     createBufferSource: kEnumerableProperty,
     createBiquadFilter: kEnumerableProperty,

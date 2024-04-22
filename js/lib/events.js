@@ -1,4 +1,3 @@
-const { kNapiObj, kDispatchEvent } = require('./symbols.js');
 const { isFunction } = require('./utils.js');
 
 module.exports.propagateEvent = function propagateEvent(eventTarget, event) {
