@@ -120,7 +120,7 @@ module.exports = (jsExport, nativeBinding) => {
 
         const event = new jsExport.AudioProcessingEvent('audioprocess', audioProcessingEventInit);
         propagateEvent(this, event);
-      }
+      };
 
       this[kNapiObj].listen_to_events();
     }
@@ -150,7 +150,6 @@ module.exports = (jsExport, nativeBinding) => {
         this.#onaudioprocess = value;
       }
     }
-
   }
 
   Object.defineProperties(ScriptProcessorNode, {

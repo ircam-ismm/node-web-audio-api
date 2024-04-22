@@ -40,7 +40,7 @@ class AudioScheduledSourceNode extends AudioNode {
 
       const event = new Event(rawEvent.type);
       propagateEvent(this, event);
-    }
+    };
   }
 
   get onended() {

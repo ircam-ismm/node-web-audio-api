@@ -14,7 +14,7 @@ module.exports.OfflineAudioCompletionEvent = class OfflineAudioCompletionEvent e
     super(type);
 
     if (typeof eventInitDict !== 'object' || eventInitDict === null || !('renderedBuffer' in eventInitDict)) {
-      throw TypeError("Failed to construct 'OfflineAudioCompletionEvent': Failed to read the 'renderedBuffer' property from 'OfflineAudioCompletionEvent': Required member is undefined.")
+      throw TypeError(`Failed to construct 'OfflineAudioCompletionEvent': Failed to read the 'renderedBuffer' property from 'OfflineAudioCompletionEvent': Required member is undefined.`);
     }
 
     this.#renderedBuffer = eventInitDict.renderedBuffer;
@@ -23,7 +23,7 @@ module.exports.OfflineAudioCompletionEvent = class OfflineAudioCompletionEvent e
   get renderedBuffer() {
     return this.#renderedBuffer;
   }
-}
+};
 
 module.exports.AudioProcessingEvent = class AudioProcessingEvent extends Event {
   #playbackTime = null;
@@ -38,14 +38,14 @@ module.exports.AudioProcessingEvent = class AudioProcessingEvent extends Event {
       || !('inputBuffer' in eventInitDict)
       || !('outputBuffer' in eventInitDict)
     ) {
-      throw TypeError("Failed to construct 'OfflineAudioCompletionEvent': Failed to read the 'renderedBuffer' property from 'OfflineAudioCompletionEvent': Required member is undefined.")
+      throw TypeError(`Failed to construct 'AudioProcessingEvent': Invalid 'AudioProcessingEventInit' given`);
     }
 
     super(type);
 
-    this.#playbackTime = eventInitDict.playbackTime
-    this.#inputBuffer = eventInitDict.inputBuffer
-    this.#outputBuffer = eventInitDict.outputBuffer
+    this.#playbackTime = eventInitDict.playbackTime;
+    this.#inputBuffer = eventInitDict.inputBuffer;
+    this.#outputBuffer = eventInitDict.outputBuffer;
   }
 
   get playbackTime() {
@@ -59,4 +59,4 @@ module.exports.AudioProcessingEvent = class AudioProcessingEvent extends Event {
   get outputBuffer() {
     return this.#outputBuffer;
   }
-}
+};

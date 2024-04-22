@@ -19,7 +19,7 @@ offline.suspend(128 / 48000).then(async () => {
 const buffer = await offline.startRendering();
 console.log('+ buffer duration:', buffer.duration);
 
-console.log('')
+console.log('');
 console.log('> Playback computed buffer in loop, should hear a small silent gap in the middle');
 
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';

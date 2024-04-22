@@ -1,5 +1,4 @@
-import { AudioContext, OscillatorNode, ScriptProcessorNode } from '../index.mjs';
-import { sleep } from '@ircam/sc-utils';
+import { AudioContext, OscillatorNode } from '../index.mjs';
 
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });

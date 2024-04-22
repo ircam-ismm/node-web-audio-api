@@ -1,4 +1,4 @@
-const conversions = require("webidl-conversions");
+const conversions = require('webidl-conversions');
 
 const { throwSanitizedError } = require('./lib/errors.js');
 const { kEnumerableProperty, kHiddenProperty } = require('./lib/utils.js');
@@ -160,7 +160,7 @@ class AudioListener {
       context: `Failed to execute 'setOrientation' on 'AudioListener': The provided float value`,
     });
 
-    Z = conversions['float'](Z, {
+    z = conversions['float'](z, {
       context: `Failed to execute 'setOrientation' on 'AudioListener': The provided float value`,
     });
 

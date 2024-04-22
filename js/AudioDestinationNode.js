@@ -20,7 +20,7 @@ class AudioDestinationNode extends AudioNode {
 
   get maxChannelCount() {
     if (!(this instanceof AudioDestinationNode)) {
-      throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioDestinationNode'");
+      throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'AudioDestinationNode'`);
     }
 
     return this[kNapiObj].maxChannelCount;
