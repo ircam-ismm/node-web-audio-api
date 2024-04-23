@@ -223,7 +223,7 @@ fn listen_to_events(ctx: CallContext) -> Result<JsUndefined> {
     let napi_context = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
     let context = napi_context.unwrap();
 
-    let k_onsinkchange = get_symbol_for(ctx.env, "node-web-audio-api:onsinkchange");
+    let k_onsinkchange = crate::utils::get_symbol_for(ctx.env, "node-web-audio-api:onsinkchange");
     let sinkchange_cb = js_this.get_property(k_onsinkchange).unwrap();
     let mut sinkchange_tsfn = ctx.env.create_threadsafe_function(
         &sinkchange_cb,
@@ -236,7 +236,7 @@ fn listen_to_events(ctx: CallContext) -> Result<JsUndefined> {
         },
     )?;
 
-    let k_onstatechange = get_symbol_for(ctx.env, "node-web-audio-api:onstatechange");
+    let k_onstatechange = crate::utils::get_symbol_for(ctx.env, "node-web-audio-api:onstatechange");
     let statechange_cb = js_this.get_property(k_onstatechange).unwrap();
     let mut statechange_tsfn = ctx.env.create_threadsafe_function(
         &statechange_cb,

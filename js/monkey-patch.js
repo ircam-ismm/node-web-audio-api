@@ -24,6 +24,7 @@ module.exports = function monkeyPatch(nativeBinding) {
   // Events
   // --------------------------------------------------------------------------
   jsExport.OfflineAudioCompletionEvent = require('./Events').OfflineAudioCompletionEvent;
+  jsExport.AudioProcessingEvent = require('./Events').AudioProcessingEvent;
   // --------------------------------------------------------------------------
   // Create Web Audio API facade
   // --------------------------------------------------------------------------
@@ -31,6 +32,7 @@ module.exports = function monkeyPatch(nativeBinding) {
   jsExport.AudioContext = require('./AudioContext.js')(jsExport, nativeBinding);
   jsExport.OfflineAudioContext = require('./OfflineAudioContext.js')(jsExport, nativeBinding);
 
+  jsExport.ScriptProcessorNode = require('./ScriptProcessorNode.js')(jsExport, nativeBinding);
   jsExport.AnalyserNode = require('./AnalyserNode.js')(jsExport, nativeBinding);
   jsExport.AudioBufferSourceNode = require('./AudioBufferSourceNode.js')(jsExport, nativeBinding);
   jsExport.BiquadFilterNode = require('./BiquadFilterNode.js')(jsExport, nativeBinding);

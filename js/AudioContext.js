@@ -1,11 +1,11 @@
-const conversions = require("webidl-conversions");
+const conversions = require('webidl-conversions');
 
 const {
   throwSanitizedError,
 } = require('./lib/errors.js');
 const {
   isFunction,
-  kEnumerableProperty
+  kEnumerableProperty,
 } = require('./lib/utils.js');
 const {
   kNapiObj,
@@ -91,7 +91,7 @@ module.exports = function(jsExport, nativeBinding) {
 
         const event = new Event(rawEvent.type);
         propagateEvent(this, event);
-      }
+      };
 
       this[kNapiObj][kOnSinkChange] = (err, rawEvent) => {
         if (typeof rawEvent !== 'object' && !('type' in rawEvent)) {
@@ -100,7 +100,7 @@ module.exports = function(jsExport, nativeBinding) {
 
         const event = new Event(rawEvent.type);
         propagateEvent(this, event);
-      }
+      };
 
       // Workaround to bind the `sinkchange` and `statechange` events to EventTarget.
       // This must be called from JS facade ctor as the JS handler are added to the Napi

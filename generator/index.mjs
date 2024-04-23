@@ -10,8 +10,13 @@ import compile from 'template-literal';
 import beautify from 'js-beautify/js/index.js';
 import { ESLint } from 'eslint';
 
+// List of supported nodes. Note that this is list is composed of IDL definitions,
+// and extended with the list of generatedNodes
+let supportedNodes = [
+  'ScriptProcessorNode',
+];
+
 const generatedNodes = [
-  // @fixme - template is crashing for nodes that have a private constructor (e.g. AudioDestinationNode)
   `AnalyserNode`,
   `AudioBufferSourceNode`,
   `BiquadFilterNode`,
@@ -29,9 +34,6 @@ const generatedNodes = [
   `StereoPannerNode`,
   `WaveShaperNode`,
 ];
-
-// list of supported nodes, for factory methods, etc.
-const audioNodes = [];
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -192,23 +194,22 @@ const utils = {
   },
 };
 
+console.log('-------------------------------------------------------------');
+console.log('## Generate rs files');
+console.log('-------------------------------------------------------------');
+
 // For stats
 const parsed = new Set();
 const ignored = new Set();
 
-function findInTree(name) {
-  return tree.find(l => l.name === name);
-}
-
-console.log('-------------------------------------------------------------');
-console.log('## Generate rs files');
-console.log('-------------------------------------------------------------');
+// replace items with their IDL first
+supportedNodes = supportedNodes.map(name => utils.findInTree(name));
 
 let rsTemplates = path.join(__dirname, 'rs');
 let rsOutput = path.join(process.cwd(), 'src');
 
 generatedNodes.sort().forEach((name, index) => {
-  const nodeIdl = findInTree(name);
+  const nodeIdl = utils.findInTree(name);
   const input = path.join(rsTemplates, `audio_nodes.tmpl.rs`);
   const output = path.join(rsOutput, `${utils.slug(nodeIdl)}.rs`);
 
@@ -220,7 +221,7 @@ generatedNodes.sort().forEach((name, index) => {
 
   fs.writeFileSync(output, generatedPrefix(code));
   // add to the list of supported nodes
-  audioNodes.push(nodeIdl);
+  supportedNodes.push(nodeIdl);
 });
 
 // Generate files that require the list of generated AudioNode
@@ -232,7 +233,7 @@ generatedNodes.sort().forEach((name, index) => {
 
   const codeTmpl = fs.readFileSync(input, 'utf8');
   const tmpl = compile(codeTmpl);
-  const code = tmpl({ nodes: audioNodes, tree, ...utils });
+  const code = tmpl({ nodes: supportedNodes, tree, ...utils });
 
   fs.writeFileSync(output, generatedPrefix(code));
 });
@@ -291,13 +292,13 @@ async function beautifyAndLint(pathname, code) {
 
   const codeTmpl = fs.readFileSync(input, 'utf8');
   const tmpl = compile(codeTmpl);
-  const code = tmpl({ nodes: audioNodes, ...utils });
+  const code = tmpl({ nodes: supportedNodes, ...utils });
 
   beautifyAndLint(output, generatedPrefix(code));
 });
 
 ['AudioParam', 'AudioNode'].concat(generatedNodes).forEach(src => {
-  const nodeIdl = findInTree(src);
+  const nodeIdl = utils.findInTree(src);
   let input;
 
   if (['AudioParam', 'AudioNode'].includes(src)) {

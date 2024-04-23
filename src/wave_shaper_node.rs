@@ -204,7 +204,7 @@ fn get_curve(ctx: CallContext) -> Result<JsUnknown> {
 
     if let Some(arr_f32) = value {
         let length = arr_f32.len();
-        let arr_u8 = crate::to_byte_slice(arr_f32);
+        let arr_u8 = crate::utils::to_byte_slice(arr_f32);
 
         Ok(ctx
             .env

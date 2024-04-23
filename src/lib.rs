@@ -19,31 +19,16 @@
 
 #![deny(clippy::all)]
 
-use napi::{Env, JsFunction, JsObject, JsSymbol, Result};
+use napi::{Env, JsObject, Result};
 use napi_derive::module_exports;
-
-// cf. https://users.rust-lang.org/t/vec-f32-to-u8/21522/7
-#[allow(clippy::needless_lifetimes)]
-pub(crate) fn to_byte_slice<'a>(floats: &'a [f32]) -> &'a [u8] {
-    unsafe { std::slice::from_raw_parts(floats.as_ptr() as *const _, floats.len() * 4) }
-}
-
-pub(crate) fn get_symbol_for(env: &Env, name: &str) -> JsSymbol {
-    env.symbol_for(name).unwrap()
-}
-
-pub(crate) fn get_class_ctor(env: &Env, name: &str) -> Result<JsFunction> {
-    let store_ref: &mut napi::Ref<()> = env.get_instance_data()?.unwrap();
-    let store: JsObject = env.get_reference_value(store_ref)?;
-    let ctor: JsFunction = store.get_named_property(name)?;
-    Ok(ctor)
-}
 
 #[macro_use]
 mod base_audio_context;
 #[macro_use]
 mod audio_node;
 
+// halpers
+mod utils;
 // Web Audio API
 mod audio_context;
 use crate::audio_context::NapiAudioContext;
@@ -61,6 +46,8 @@ mod offline_audio_context;
 use crate::offline_audio_context::NapiOfflineAudioContext;
 // Generated audio nodes
 
+mod script_processor_node;
+use crate::script_processor_node::NapiScriptProcessorNode;
 mod analyser_node;
 use crate::analyser_node::NapiAnalyserNode;
 mod audio_buffer_source_node;
@@ -133,6 +120,9 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     // ----------------------------------------------------------------
     // Generated audio nodes
     // ----------------------------------------------------------------
+
+    let napi_class = NapiScriptProcessorNode::create_js_class(&env)?;
+    exports.set_named_property("ScriptProcessorNode", napi_class)?;
 
     let napi_class = NapiAnalyserNode::create_js_class(&env)?;
     exports.set_named_property("AnalyserNode", napi_class)?;

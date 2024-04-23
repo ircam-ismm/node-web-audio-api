@@ -1,4 +1,4 @@
-const conversions = require("webidl-conversions");
+const conversions = require('webidl-conversions');
 
 const {
   throwSanitizedError,
@@ -9,7 +9,6 @@ const {
 } = require('./lib/utils.js');
 const {
   kNapiObj,
-  kAudioBuffer,
 } = require('./lib/symbols.js');
 
 
@@ -21,7 +20,7 @@ module.exports = (_jsExport, nativeBinding) => {
       }
 
       if (typeof options !== 'object') {
-        throw new TypeError("Failed to construct 'AudioBuffer': argument 1 is not of type 'AudioBufferOptions'");
+        throw new TypeError(`Failed to construct 'AudioBuffer': argument 1 is not of type 'AudioBufferOptions'`);
       }
 
       if (kNapiObj in options) {
@@ -82,7 +81,7 @@ module.exports = (_jsExport, nativeBinding) => {
 
     get sampleRate() {
       if (!(this instanceof AudioBuffer)) {
-        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'");
+        throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'`);
       }
 
       return this[kNapiObj].sampleRate;
@@ -90,7 +89,7 @@ module.exports = (_jsExport, nativeBinding) => {
 
     get duration() {
       if (!(this instanceof AudioBuffer)) {
-        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'");
+        throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'`);
       }
 
       return this[kNapiObj].duration;
@@ -98,7 +97,7 @@ module.exports = (_jsExport, nativeBinding) => {
 
     get length() {
       if (!(this instanceof AudioBuffer)) {
-        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'");
+        throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'`);
       }
 
       return this[kNapiObj].length;
@@ -106,7 +105,7 @@ module.exports = (_jsExport, nativeBinding) => {
 
     get numberOfChannels() {
       if (!(this instanceof AudioBuffer)) {
-        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'");
+        throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'`);
       }
 
       return this[kNapiObj].numberOfChannels;
@@ -114,7 +113,7 @@ module.exports = (_jsExport, nativeBinding) => {
 
     copyFromChannel(destination, channelNumber, bufferOffset = 0) {
       if (!(this instanceof AudioBuffer)) {
-        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'");
+        throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'`);
       }
 
       if (arguments.length < 2) {
@@ -149,7 +148,7 @@ module.exports = (_jsExport, nativeBinding) => {
 
     copyToChannel(source, channelNumber, bufferOffset = 0) {
       if (!(this instanceof AudioBuffer)) {
-        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'");
+        throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'`);
       }
 
       if (arguments.length < 2) {
@@ -184,7 +183,7 @@ module.exports = (_jsExport, nativeBinding) => {
 
     getChannelData(channel) {
       if (!(this instanceof AudioBuffer)) {
-        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'");
+        throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'AudioBuffer'`);
       }
 
       if (arguments.length < 1) {

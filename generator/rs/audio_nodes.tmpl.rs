@@ -335,7 +335,7 @@ fn listen_to_ended_event(
     use napi::threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunctionCallMode};
     use web_audio_api::Event;
 
-    let k_onended = get_symbol_for(env, "node-web-audio-api:onended");
+    let k_onended = crate::utils::get_symbol_for(env, "node-web-audio-api:onended");
     let ended_cb = js_this.get_property(k_onended).unwrap();
     let mut ended_tsfn = env.create_threadsafe_function(
         &ended_cb,
@@ -536,7 +536,7 @@ fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsUnknown> {
 
     if let Some(arr_f32) = value {
         let length = arr_f32.len();
-        let arr_u8 = crate::to_byte_slice(arr_f32);
+        let arr_u8 = crate::utils::to_byte_slice(arr_f32);
 
         Ok(ctx.env
             .create_arraybuffer_with_data(arr_u8.to_vec())

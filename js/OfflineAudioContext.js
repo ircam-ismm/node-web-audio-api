@@ -48,7 +48,7 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
         args = [
           options.numberOfChannels,
           options.length,
-          options.sampleRate
+          options.sampleRate,
         ];
       }
 
@@ -56,16 +56,16 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
 
       numberOfChannels = conversions['unsigned long'](numberOfChannels, {
         enforceRange: true,
-        context: `Failed to construct 'OfflineAudioContext': Failed to read the 'numberOfChannels' property from OfflineContextOptions; The provided value (${numberOfChannels})`
+        context: `Failed to construct 'OfflineAudioContext': Failed to read the 'numberOfChannels' property from OfflineContextOptions; The provided value (${numberOfChannels})`,
       });
 
       length = conversions['unsigned long'](length, {
         enforceRange: true,
-        context: `Failed to construct 'OfflineAudioContext': Failed to read the 'length' property from OfflineContextOptions; The provided value (${length})`
+        context: `Failed to construct 'OfflineAudioContext': Failed to read the 'length' property from OfflineContextOptions; The provided value (${length})`,
       });
 
       sampleRate = conversions['float'](sampleRate, {
-        context: `Failed to construct 'OfflineAudioContext': Failed to read the 'sampleRate' property from OfflineContextOptions; The provided value (${sampleRate})`
+        context: `Failed to construct 'OfflineAudioContext': Failed to read the 'sampleRate' property from OfflineContextOptions; The provided value (${sampleRate})`,
       });
 
       let napiObj;
@@ -87,7 +87,7 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
 
         const event = new Event(rawEvent.type);
         propagateEvent(this, event);
-      }
+      };
 
       // This event is, per spec, the last trigerred one
       this[kNapiObj][kOnComplete] = (err, rawEvent) => {
@@ -106,12 +106,12 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
         });
 
         propagateEvent(this, event);
-      }
+      };
     }
 
     get length() {
       if (!(this instanceof OfflineAudioContext)) {
-        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'");
+        throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'`);
       }
 
       return this[kNapiObj].length;
@@ -119,7 +119,7 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
 
     get oncomplete() {
       if (!(this instanceof OfflineAudioContext)) {
-        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'");
+        throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'`);
       }
 
       return this._complete || null;
@@ -127,7 +127,7 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
 
     set oncomplete(value) {
       if (!(this instanceof OfflineAudioContext)) {
-        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'");
+        throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'`);
       }
 
       if (isFunction(value) || value === null) {
@@ -137,7 +137,7 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
 
     async startRendering() {
       if (!(this instanceof OfflineAudioContext)) {
-        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'");
+        throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'`);
       }
 
       let nativeAudioBuffer;
@@ -159,7 +159,7 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
 
     async resume() {
       if (!(this instanceof OfflineAudioContext)) {
-        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'");
+        throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'`);
       }
 
       try {
@@ -171,7 +171,7 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
 
     async suspend(suspendTime) {
       if (!(this instanceof OfflineAudioContext)) {
-        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'");
+        throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'`);
       }
 
       if (arguments.length < 1) {
