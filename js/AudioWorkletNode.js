@@ -27,10 +27,10 @@ module.exports = (jsExport, nativeBinding) => {
 
     #onaudioprocess = null;
 
-    constructor(context, options) {
+    constructor(context, name, options) {
 
-      if (arguments.length < 1) {
-        throw new TypeError(`Failed to construct 'AudioWorkletNode': 1 argument required, but only ${arguments.length} present`);
+      if (arguments.length < 2) {
+        throw new TypeError(`Failed to construct 'AudioWorkletNode': 2 arguments required, but only ${arguments.length} present`);
       }
 
       if (!(context instanceof jsExport.BaseAudioContext)) {
@@ -41,64 +41,15 @@ module.exports = (jsExport, nativeBinding) => {
       const parsedOptions = {};
 
       if (options && typeof options !== 'object') {
-        throw new TypeError('Failed to construct \'AudioWorkletNode\': argument 2 is not of type \'AudioWorkletNodeOptions\'');
+        throw new TypeError('Failed to construct \'AudioWorkletNode\': argument 3 is not of type \'AudioWorkletNodeOptions\'');
       }
 
-      // IDL defines bufferSize default value as 0
-      // cf. https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createscriptprocessor
-      // > If it’s not passed in, or if the value is 0, then the implementation
-      // > will choose the best buffer size for the given environment, which will
-      // > be constant power of 2 throughout the lifetime of the node.
-      if (options && options.bufferSize !== undefined && options.bufferSize !== 0) {
-        parsedOptions.bufferSize = conversions['unsigned long'](options.bufferSize, {
-          enforceRange: true,
-          context: `Failed to construct 'AudioWorkletNode': Failed to read the 'bufferSize' property from AudioWorkletNodeOptions: The provided value '${options.bufferSize}'`,
-        });
-      } else {
-        parsedOptions.bufferSize = 256;
-      }
-
-      if (options && options.numberOfInputChannels !== undefined) {
-        parsedOptions.numberOfInputChannels = conversions['unsigned long'](options.numberOfInputChannels, {
-          enforceRange: true,
-          context: `Failed to construct 'AudioWorkletNode': Failed to read the 'numberOfInputChannels' property from AudioWorkletNodeOptions: The provided value '${options.numberOfInputChannels}'`,
-        });
-      } else {
-        parsedOptions.numberOfInputChannels = 2;
-      }
-
-      if (options && options.numberOfOutputChannels !== undefined) {
-        parsedOptions.numberOfOutputChannels = conversions['unsigned long'](options.numberOfOutputChannels, {
-          enforceRange: true,
-          context: `Failed to construct 'AudioWorkletNode': Failed to read the 'numberOfOutputChannels' property from AudioWorkletNodeOptions: The provided value '${options.numberOfOutputChannels}'`,
-        });
-      } else {
-        parsedOptions.numberOfOutputChannels = 2;
-      }
-
-      if (options && options.channelCount !== undefined) {
-        parsedOptions.channelCount = conversions['unsigned long'](options.channelCount, {
-          enforceRange: true,
-          context: `Failed to construct 'AudioWorkletNode': Failed to read the 'channelCount' property from AudioWorkletNodeOptions: The provided value '${options.channelCount}'`,
-        });
-      }
-
-      if (options && options.channelCountMode !== undefined) {
-        parsedOptions.channelCountMode = conversions['DOMString'](options.channelCountMode, {
-          context: `Failed to construct 'AudioWorkletNode': Failed to read the 'channelCount' property from AudioWorkletNodeOptions: The provided value '${options.channelCountMode}'`,
-        });
-      }
-
-      if (options && options.channelInterpretation !== undefined) {
-        parsedOptions.channelInterpretation = conversions['DOMString'](options.channelInterpretation, {
-          context: `Failed to construct 'AudioWorkletNode': Failed to read the 'channelInterpretation' property from AudioWorkletNodeOptions: The provided value '${options.channelInterpretation}'`,
-        });
-      }
+      console.log(name);
 
       let napiObj;
 
       try {
-        napiObj = new nativeBinding.AudioWorkletNode(context[kNapiObj], parsedOptions);
+        napiObj = new nativeBinding.AudioWorkletNode(context[kNapiObj], name, parsedOptions);
       } catch (err) {
         throwSanitizedError(err);
       }

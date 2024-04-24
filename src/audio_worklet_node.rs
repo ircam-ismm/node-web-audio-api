@@ -1,6 +1,7 @@
 use napi::*;
 use napi_derive::js_function;
 use web_audio_api::node::*;
+use web_audio_api::worklet::*;
 use web_audio_api::{AudioBuffer, AudioProcessingEvent};
 
 use crate::utils::{
@@ -27,41 +28,16 @@ impl NapiAudioWorkletNode {
     }
 }
 
-#[js_function(2)]
+#[js_function(3)]
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
     let js_audio_context = ctx.get::<JsObject>(0)?;
 
     // --------------------------------------------------------
-    // Parse ScriptProcessorOptions
-    // by bindings construction all fields are populated on the JS side
-    // --------------------------------------------------------
-    let js_options = ctx.get::<JsObject>(1)?;
-
-    let buffer_size = js_options
-        .get::<&str, JsNumber>("bufferSize")?
-        .unwrap()
-        .get_double()? as usize;
-
-    let number_of_input_channels = js_options
-        .get::<&str, JsNumber>("numberOfInputChannels")?
-        .unwrap()
-        .get_double()? as usize;
-
-    let number_of_output_channels = js_options
-        .get::<&str, JsNumber>("numberOfOutputChannels")?
-        .unwrap()
-        .get_double()? as usize;
-
-    // --------------------------------------------------------
     // Create AudioBufferSourceOptions object
     // --------------------------------------------------------
-    let options = ScriptProcessorOptions {
-        buffer_size,
-        number_of_input_channels,
-        number_of_output_channels,
-    };
+    let options = Default::default();
 
     // --------------------------------------------------------
     // Create native AudioWorkletNode
@@ -75,14 +51,14 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            AudioWorkletNode::new(audio_context, options)
+            AudioWorkletNode::new::<NapiAudioWorkletProcessor>(audio_context, options)
         }
         "OfflineAudioContext" => {
             let napi_audio_context = ctx
                 .env
                 .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
-            AudioWorkletNode::new(audio_context, options)
+            AudioWorkletNode::new::<NapiAudioWorkletProcessor>(audio_context, options)
         }
         &_ => panic!("not supported"),
     };
@@ -119,7 +95,7 @@ fn get_buffer_size(ctx: CallContext) -> Result<JsNumber> {
     let napi_node = ctx.env.unwrap::<NapiAudioWorkletNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let buffer_size = node.buffer_size() as f64;
+    let buffer_size = todo!(); //node.buffer_size() as f64;
 
     ctx.env.create_double(buffer_size)
 }
@@ -190,9 +166,31 @@ fn listen_to_events(ctx: CallContext) -> Result<JsUndefined> {
     // not implemented in threadsafe patched version
     // let _ = audioprocess_tsfn.unref(ctx.env);
 
+    /*
     node.set_onaudioprocess(move |e| {
         audioprocess_tsfn.call(e, ThreadsafeFunctionCallModePatched::Blocking);
     });
+    */
 
     ctx.env.get_undefined()
+}
+
+struct NapiAudioWorkletProcessor {}
+
+impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
+    type ProcessorOptions = ();
+
+    fn constructor(opts: Self::ProcessorOptions) -> Self {
+        Self {}
+    }
+
+    fn process<'a, 'b>(
+        &mut self,
+        inputs: &'b [&'a [&'a [f32]]],
+        outputs: &'b mut [&'a mut [&'a mut [f32]]],
+        params: AudioParamValues<'b>,
+        scope: &'b AudioWorkletGlobalScope,
+    ) -> bool {
+        todo!()
+    }
 }

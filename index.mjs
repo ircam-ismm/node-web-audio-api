@@ -46,6 +46,7 @@ export const {
   AudioBuffer,
   // generated nodes
   ScriptProcessorNode,
+  AudioWorkletNode,
   AnalyserNode,
   AudioBufferSourceNode,
   BiquadFilterNode,

@@ -14,6 +14,7 @@ import { ESLint } from 'eslint';
 // and extended with the list of generatedNodes
 let supportedNodes = [
   'ScriptProcessorNode',
+  'AudioWorkletNode',
 ];
 
 const generatedNodes = [

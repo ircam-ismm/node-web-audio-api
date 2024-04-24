@@ -1,14 +1,11 @@
-import { AudioContext, OscillatorNode } from '../index.mjs';
+import { AudioContext, AudioWorkletNode } from '../index.mjs';
 
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });
 
-const sine = new OscillatorNode(audioContext);
-sine.frequency.value = 200;
+const node = new AudioWorkletNode(audioContext, 'white-noise');
 
-const scriptProcessor = audioContext.createScriptProcessor();
-
-scriptProcessor.addEventListener('audioprocess', e => {
+node.addEventListener('audioprocess', e => {
   const input = e.inputBuffer.getChannelData(0);
   const output = e.outputBuffer.getChannelData(0);
 
@@ -18,8 +15,4 @@ scriptProcessor.addEventListener('audioprocess', e => {
   }
 });
 
-sine
-  .connect(scriptProcessor)
-  .connect(audioContext.destination);
-
-sine.start();
+node.connect(audioContext.destination);
