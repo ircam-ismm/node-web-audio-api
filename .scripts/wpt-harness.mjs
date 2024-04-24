@@ -8,6 +8,7 @@ import * as nodeWebAudioAPI from '../index.mjs';
 // mocks
 import createXMLHttpRequest from './wpt-mock/XMLHttpRequest.js';
 import createFetch from './wpt-mock/fetch.js';
+import { requestAnimationFrame, cancelAnimationFrame } from './wpt-mock/requestAnimationFrame.js';
 
 program
   .option('--list', 'List the name of the test files')
@@ -60,7 +61,8 @@ const setup = window => {
   // e.g. 'resources/audiobuffersource-multi-channels-expected.wav'
   window.XMLHttpRequest = createXMLHttpRequest(testsPath);
   window.fetch = createFetch(wptRootPath);
-  // window.requestAnimationFrame = func => setInterval(func, 16);
+  window.requestAnimationFrame = requestAnimationFrame;
+  window.cancelAnimationFrame = cancelAnimationFrame;
 
   // populate window with node internals
   window.TypeError = TypeError;
@@ -127,7 +129,7 @@ const reporter = {
   },
   pass: message => {
     numPass += 1;
-    console.log(chalk.dim(indent(chalk.green("√ ") + message, INDENT_SIZE)));
+    // console.log(chalk.dim(indent(chalk.green("√ ") + message, INDENT_SIZE)));
   },
   fail: message => {
     if (/threw "[^\"]*Error" instead of/.test(message)) {
