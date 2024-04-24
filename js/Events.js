@@ -1,13 +1,6 @@
+const { kEnumerableProperty } = require('./lib/utils.js');
 
-// All this seems to be true in Node.js context
-// cf. https://nodejs.org/api/events.html#class-event
-// dictionary EventInit {
-//   boolean bubbles = false;
-//   boolean cancelable = false;
-//   boolean composed = false;
-// };
-
-module.exports.OfflineAudioCompletionEvent = class OfflineAudioCompletionEvent extends Event {
+class OfflineAudioCompletionEvent extends Event {
   #renderedBuffer = null;
 
   constructor(type, eventInitDict) {
@@ -23,9 +16,21 @@ module.exports.OfflineAudioCompletionEvent = class OfflineAudioCompletionEvent e
   get renderedBuffer() {
     return this.#renderedBuffer;
   }
-};
+}
 
-module.exports.AudioProcessingEvent = class AudioProcessingEvent extends Event {
+Object.defineProperties(OfflineAudioCompletionEvent.prototype, {
+  [Symbol.toStringTag]: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 'OfflineAudioCompletionEvent',
+  },
+
+  renderedBuffer: kEnumerableProperty,
+});
+
+class AudioProcessingEvent extends Event {
   #playbackTime = null;
   #inputBuffer = null;
   #outputBuffer = null;
@@ -59,4 +64,21 @@ module.exports.AudioProcessingEvent = class AudioProcessingEvent extends Event {
   get outputBuffer() {
     return this.#outputBuffer;
   }
-};
+}
+
+Object.defineProperties(AudioProcessingEvent.prototype, {
+  [Symbol.toStringTag]: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 'AudioProcessingEvent',
+  },
+
+  playbackTime: kEnumerableProperty,
+  inputBuffer: kEnumerableProperty,
+  outputBuffer: kEnumerableProperty,
+});
+
+module.exports.OfflineAudioCompletionEvent = OfflineAudioCompletionEvent;
+module.exports.AudioProcessingEvent = AudioProcessingEvent;

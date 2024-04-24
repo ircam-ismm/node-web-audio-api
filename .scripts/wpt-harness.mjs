@@ -54,11 +54,10 @@ const setup = window => {
     }
   }
 
-  // expose media devices API
+  // expose media devices API in navigator
   window.navigator.mediaDevices = nodeWebAudioAPI.mediaDevices;
   // window.MediaStream = nodeWebAudioAPI.mediaDevices.MediaStream;
 
-  // e.g. 'resources/audiobuffersource-multi-channels-expected.wav'
   window.XMLHttpRequest = createXMLHttpRequest(testsPath);
   window.fetch = createFetch(wptRootPath);
   window.requestAnimationFrame = requestAnimationFrame;
@@ -73,8 +72,10 @@ const setup = window => {
   window.Float64Array = Float64Array;
   window.Uint8Array = Uint8Array;
   window.ArrayBuffer = ArrayBuffer;
-  window.EventTarget = EventTarget;
   window.Promise = Promise;
+  window.Event = Event;
+  window.EventTarget = EventTarget;
+  window.Function = Function;
 }
 
 // try catch unhandled error to prevent wpt process from crashing
@@ -129,7 +130,7 @@ const reporter = {
   },
   pass: message => {
     numPass += 1;
-    // console.log(chalk.dim(indent(chalk.green("√ ") + message, INDENT_SIZE)));
+    console.log(chalk.dim(indent(chalk.green("√ ") + message, INDENT_SIZE)));
   },
   fail: message => {
     if (/threw "[^\"]*Error" instead of/.test(message)) {
@@ -141,7 +142,7 @@ const reporter = {
     }
   },
   reportStack: stack => {
-    console.log(chalk.dim(indent(stack, INDENT_SIZE * 2)))
+    console.log(chalk.dim(indent(stack, INDENT_SIZE * 2)));
   },
 };
 
