@@ -20,6 +20,7 @@ export const {
   AudioParam,
   AudioDestinationNode,
   AudioListener,
+  AudioRenderCapacity,
 
   PeriodicWave,
   AudioBuffer,

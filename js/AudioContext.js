@@ -22,6 +22,7 @@ module.exports = function(jsExport, nativeBinding) {
 
   class AudioContext extends jsExport.BaseAudioContext {
     #sinkId = '';
+    #renderCapacity = null;
 
     constructor(options = {}) {
       if (typeof options !== 'object') {
@@ -82,6 +83,10 @@ module.exports = function(jsExport, nativeBinding) {
       if (options.sinkId !== undefined) {
         this.#sinkId = options.sinkId;
       }
+
+      this.#renderCapacity = new jsExport.AudioRenderCapacity({
+        [kNapiObj]: this[kNapiObj].renderCapacity,
+      });
 
       // Add function to Napi object to bridge from Rust events to JS EventTarget
       this[kNapiObj][kOnStateChange] = (err, rawEvent) => {
@@ -160,7 +165,7 @@ module.exports = function(jsExport, nativeBinding) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioContext\'');
       }
 
-      throw new Error(`AudioContext::renderCapacity is not yet implemented`);
+      return this.#renderCapacity;
     }
 
     get onsinkchange() {
