@@ -84,14 +84,14 @@ jobs:
           # in particular for RPi, do it locally and workaround...
           # ---------------------------------------------------------
 
-    name: stable - ${{ matrix.settings.target }} - node@16
+    name: stable - ${{ matrix.settings.target }} - node@20
     runs-on: ${{ matrix.settings.host }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup node
         uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 20
           check-latest: true
           cache: yarn
           architecture: ${{ matrix.settings.architecture }}
@@ -105,23 +105,16 @@ jobs:
       - name: Generate Cargo.lock
         run: cargo generate-lockfile
 
-      - name: Cache cargo registry
-        uses: actions/cache@v3
+      - name: Cache cargo
+        uses: actions/cache@v4
         with:
-          path: ~/.cargo/registry
-          key: ${{ matrix.settings.target }}-node@16-cargo-registry-trimmed-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Cache cargo index
-        uses: actions/cache@v3
-        with:
-          path: ~/.cargo/git
-          key: ${{ matrix.settings.target }}-node@16-cargo-index-trimmed-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Cache NPM dependencies
-        uses: actions/cache@v3
-        with:
-          path: node_modules
-          key: npm-cache-${{ matrix.settings.target }}-node@16-${{ hashFiles('yarn.lock') }}
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            .cargo-cache
+            target/
+          key: ${{ matrix.settings.target }}-cargo-${{ matrix.settings.host }}
 
       - name: Pull latest image
         run: ${{ matrix.settings.docker }}
@@ -135,14 +128,14 @@ jobs:
         shell: bash
 
       - name: Install dependencies
-        run: yarn install --ignore-scripts --registry https://registry.npmjs.org --network-timeout 300000
+        run: yarn install
 
       - name: Build
         run: ${{ matrix.settings.build }}
         shell: bash
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bindings-${{ matrix.settings.target }}
           path: ${{ env.APP_NAME }}.*.node
