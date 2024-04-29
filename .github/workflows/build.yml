@@ -47,37 +47,37 @@ jobs:
           # MAC
           # ---------------------------------------------------------
 
-          # Intel
+          # Intel x86_64
           - host: macos-latest
             target: x86_64-apple-darwin
             architecture: x64
             build: |
-              yarn build --target x86_64-apple-darwin
+              npm run build -- --target x86_64-apple-darwin
               strip -x *.node
 
-          # ARM
+          # ARM64
           - host: macos-latest
-            architecture: x64
             target: aarch64-apple-darwin
+            architecture: x64
             build: |
-              yarn build --target aarch64-apple-darwin
+              npm run build -- --target aarch64-apple-darwin
               strip -x *.node
 
           # ---------------------------------------------------------
           # WINDOWS
           # ---------------------------------------------------------
 
-          # Intel 64
+          # Intel x86_64
           - host: windows-latest
-            build: yarn build
             target: x86_64-pc-windows-msvc
             architecture: x64
+            build: npm run build
 
           # ARM64
           - host: windows-latest
-            architecture: x64
             target: aarch64-pc-windows-msvc
-            build: yarn build --target aarch64-pc-windows-msvc
+            architecture: x64
+            build: npm run build -- --target aarch64-pc-windows-msvc
 
           # ---------------------------------------------------------
           # Linux requires libasound2-dev which is a mess to do remotely
@@ -93,7 +93,6 @@ jobs:
         with:
           node-version: 20
           check-latest: true
-          cache: yarn
           architecture: ${{ matrix.settings.architecture }}
 
       - name: Setup Rust toolchain
@@ -128,7 +127,7 @@ jobs:
         shell: bash
 
       - name: Install dependencies
-        run: yarn install
+        run: npm install
 
       - name: Build
         run: ${{ matrix.settings.build }}
