@@ -9,6 +9,7 @@ export const {
   // events
   OfflineAudioCompletionEvent,
   AudioProcessingEvent,
+  AudioRenderCapacityEvent,
 
   // manually written nodes
   BaseAudioContext,

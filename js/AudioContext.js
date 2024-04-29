@@ -23,6 +23,7 @@ module.exports = function(jsExport, nativeBinding) {
   class AudioContext extends jsExport.BaseAudioContext {
     #sinkId = '';
     #renderCapacity = null;
+    #onsinkchange = null;
 
     constructor(options = {}) {
       if (typeof options !== 'object') {
@@ -52,18 +53,16 @@ module.exports = function(jsExport, nativeBinding) {
       }
 
       if (options.sinkId !== undefined) {
-        const sinkId = options.sinkId;
-
         if (typeof options.sinkId === 'object') {
           // https://webaudio.github.io/web-audio-api/#enumdef-audiosinktype
           if (!('type' in options.sinkId) || options.sinkId.type !== 'none') {
-            throw TypeError(`Failed to construct 'AudioContext': Failed to read the 'sinkId' property from AudioNodeOptions: Failed to read the 'type' property from 'AudioSinkOptions': The provided value (${sinkId.type}) is not a valid enum value of type AudioSinkType.`);
+            throw TypeError(`Failed to construct 'AudioContext': Failed to read the 'sinkId' property from AudioNodeOptions: Failed to read the 'type' property from 'AudioSinkOptions': The provided value (${options.sinkId.type}) is not a valid enum value of type AudioSinkType.`);
           }
 
           targetOptions.sinkId = 'none';
         } else {
-          targetOptions.sinkId = conversions['DOMString'](sinkId, {
-            context: `Failed to construct 'AudioContext': Failed to read the 'sinkId' property from AudioNodeOptions:  Failed to read the 'type' property from 'AudioSinkOptions': The provided value (${sinkId})`,
+          targetOptions.sinkId = conversions['DOMString'](options.sinkId, {
+            context: `Failed to construct 'AudioContext': Failed to read the 'sinkId' property from AudioNodeOptions:  Failed to read the 'type' property from 'AudioSinkOptions': The provided value (${options.sinkId})`,
           });
         }
       } else {
@@ -173,7 +172,7 @@ module.exports = function(jsExport, nativeBinding) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioContext\'');
       }
 
-      return this._sinkchange || null;
+      return this.#onsinkchange;
     }
 
     set onsinkchange(value) {
@@ -182,7 +181,7 @@ module.exports = function(jsExport, nativeBinding) {
       }
 
       if (isFunction(value) || value === null) {
-        this._sinkchange = value;
+        this.#onsinkchange = value;
       }
     }
 

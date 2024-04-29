@@ -1,7 +1,9 @@
 use crate::*;
+
+use napi::threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunctionCallMode};
 use napi::*;
 use napi_derive::js_function;
-use web_audio_api::AudioRenderCapacity;
+use web_audio_api::{AudioRenderCapacity, AudioRenderCapacityEvent, AudioRenderCapacityOptions};
 
 pub(crate) struct NapiAudioRenderCapacity(AudioRenderCapacity);
 
@@ -13,6 +15,10 @@ impl NapiAudioRenderCapacity {
             &[
                 Property::new("start")?.with_method(start),
                 Property::new("stop")?.with_method(stop),
+                // Workaround to bind the `update` events to EventTarget.
+                // This must be called from JS facade ctor as the JS handler are added to the Napi
+                // object after its instantiation, and that we don't have any initial `resume` call.
+                Property::new("listen_to_events")?.with_method(listen_to_events),
             ],
         )
     }
@@ -58,14 +64,65 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 
-#[js_function]
+#[js_function(1)]
 fn start(ctx: CallContext) -> Result<JsUndefined> {
-    println!("start");
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiAudioRenderCapacity>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let js_options = ctx.get::<JsObject>(0)?;
+    let update_interval = js_options
+        .get_named_property::<JsNumber>("updateInterval")?
+        .get_double()?;
+
+    node.start(AudioRenderCapacityOptions { update_interval });
+
     ctx.env.get_undefined()
 }
 
 #[js_function]
 fn stop(ctx: CallContext) -> Result<JsUndefined> {
-    println!("stop");
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiAudioRenderCapacity>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    node.stop();
+
+    ctx.env.get_undefined()
+}
+
+#[js_function]
+fn listen_to_events(ctx: CallContext) -> Result<JsUndefined> {
+    let js_this = ctx.this_unchecked::<JsObject>();
+    let napi_node = ctx.env.unwrap::<NapiAudioRenderCapacity>(&js_this)?;
+    let node = napi_node.unwrap();
+
+    let k_onupdate = crate::utils::get_symbol_for(ctx.env, "node-web-audio-api:onupdate");
+    let update_cb = js_this.get_property(k_onupdate).unwrap();
+    let mut update_tsfn = ctx.env.create_threadsafe_function(
+        &update_cb,
+        0,
+        |ctx: ThreadSafeCallContext<AudioRenderCapacityEvent>| {
+            let event = ctx.value;
+            let mut js_event = ctx.env.create_object()?;
+
+            js_event.set_named_property("type", ctx.env.create_string("update"))?;
+            js_event.set_named_property("timestamp", ctx.env.create_double(event.timestamp))?;
+            js_event
+                .set_named_property("averageLoad", ctx.env.create_double(event.average_load))?;
+            js_event.set_named_property("peakLoad", ctx.env.create_double(event.peak_load))?;
+            js_event
+                .set_named_property("underrunRatio", ctx.env.create_double(event.underrun_ratio))?;
+
+            Ok(vec![js_event])
+        },
+    )?;
+
+    let _ = update_tsfn.unref(ctx.env);
+
+    node.set_onupdate(move |e| {
+        update_tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
+    });
+
     ctx.env.get_undefined()
 }

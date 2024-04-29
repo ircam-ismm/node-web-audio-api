@@ -1,7 +1,22 @@
-const { kNapiObj } = require('./lib/symbols.js');
-const { kEnumerableProperty } = require('./lib/utils.js');
+const conversions = require('webidl-conversions');
+
+const {
+  kNapiObj,
+  kOnUpdate,
+} = require('./lib/symbols.js');
+const {
+  kEnumerableProperty,
+} = require('./lib/utils.js');
+const {
+  propagateEvent,
+} = require('./lib/events.js');
+const {
+  AudioRenderCapacityEvent,
+} = require('./Events.js');
 
 class AudioRenderCapacity extends EventTarget {
+  #onupdate = null;
+
   constructor(options) {
     // Make constructor "private"
     if (
@@ -15,14 +30,53 @@ class AudioRenderCapacity extends EventTarget {
     super();
 
     this[kNapiObj] = options[kNapiObj];
+
+    this[kNapiObj][kOnUpdate] = (err, rawEvent) => {
+      const event = new AudioRenderCapacityEvent('update', rawEvent);
+      propagateEvent(this, event);
+    };
+
+    this[kNapiObj].listen_to_events();
   }
 
-  start() {
+  get onupdate() {
+    if (!(this instanceof AudioRenderCapacity)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioRenderCapacity\'');
+    }
+
+    return this.#onupdate;
+  }
+
+  set onupdate(value) {
+    if (!(this instanceof AudioRenderCapacity)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioRenderCapacity\'');
+    }
+
+    if (isFunction(value) || value === null) {
+      this.#onupdate = value;
+    }
+  }
+
+  start(options = null) {
     if (!(this instanceof AudioRenderCapacity)) {
       throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'AudioRenderCapacity'`);
     }
 
-    return this[kNapiObj].start();
+    let targetOptions = {};
+
+    if (typeof options === 'object' && options !== null) {
+      if (!('updateInterval' in options)) {
+        throw new TypeError(`Failed to execute 'start' on 'AudioRenderCapacity': Failed to read the 'updateInterval' property on 'AudioRenderCapacityOptions'`);
+      }
+
+      targetOptions.updateInterval = conversions['double'](options.updateInterval, {
+        context: `Failed to execute 'start' on 'AudioRenderCapacity': Failed to read the 'updateInterval' property on 'AudioRenderCapacityOptions': The provided value ()`
+      });
+    } else {
+      targetOptions.updateInterval = 1;
+    }
+
+    return this[kNapiObj].start(targetOptions);
   }
 
   stop() {
@@ -53,7 +107,8 @@ Object.defineProperties(AudioRenderCapacity.prototype, {
     value: 'AudioRenderCapacity',
   },
 
-  start: kEnumerableProperty,
+  onupdate: kEnumerableProperty,
+  stop: kEnumerableProperty,
   stop: kEnumerableProperty,
 });
 

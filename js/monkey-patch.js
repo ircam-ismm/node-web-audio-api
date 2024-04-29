@@ -25,6 +25,7 @@ module.exports = function monkeyPatch(nativeBinding) {
   // --------------------------------------------------------------------------
   jsExport.OfflineAudioCompletionEvent = require('./Events').OfflineAudioCompletionEvent;
   jsExport.AudioProcessingEvent = require('./Events').AudioProcessingEvent;
+  jsExport.AudioRenderCapacityEvent = require('./Events').AudioRenderCapacityEvent;
   // --------------------------------------------------------------------------
   // Create Web Audio API facade
   // --------------------------------------------------------------------------
