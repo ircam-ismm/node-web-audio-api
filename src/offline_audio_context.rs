@@ -10,7 +10,9 @@ use web_audio_api::{Event, OfflineAudioCompletionEvent};
 use crate::*;
 
 #[derive(Clone)]
-pub(crate) struct NapiOfflineAudioContext(Arc<OfflineAudioContext>);
+pub(crate) struct NapiOfflineAudioContext {
+    context: Arc<OfflineAudioContext>,
+}
 
 // for debug purpose
 // impl Drop for NapiOfflineAudioContext {
@@ -32,7 +34,7 @@ impl NapiOfflineAudioContext {
     }
 
     pub fn unwrap(&self) -> &OfflineAudioContext {
-        &self.0
+        &self.context
     }
 }
 
@@ -52,7 +54,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // -------------------------------------------------
     // Wrap context
     // -------------------------------------------------
-    let napi_audio_context = NapiOfflineAudioContext(Arc::new(audio_context));
+    let napi_audio_context = NapiOfflineAudioContext {
+        context: Arc::new(audio_context),
+    };
     ctx.env.wrap(&mut js_this, napi_audio_context)?;
 
     js_this.define_properties(&[
@@ -145,7 +149,7 @@ fn start_rendering(ctx: CallContext) -> Result<JsObject> {
     });
 
     // everything is setup, do "real" rendering job
-    let context_clone = Arc::clone(&napi_context.0);
+    let context_clone = Arc::clone(&napi_context.context);
 
     ctx.env.execute_tokio_future(
         async move {
@@ -168,7 +172,7 @@ fn start_rendering(ctx: CallContext) -> Result<JsObject> {
 fn resume(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_context = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let context_clone = Arc::clone(&napi_context.0);
+    let context_clone = Arc::clone(&napi_context.context);
 
     ctx.env.execute_tokio_future(
         async move {
@@ -183,7 +187,7 @@ fn resume(ctx: CallContext) -> Result<JsObject> {
 fn suspend(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_context = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let context_clone = Arc::clone(&napi_context.0);
+    let context_clone = Arc::clone(&napi_context.context);
 
     let when = ctx.get::<JsNumber>(0)?.get_double()?;
 

@@ -10,7 +10,9 @@ use web_audio_api::Event;
 use crate::*;
 
 #[derive(Clone)]
-pub(crate) struct NapiAudioContext(Arc<AudioContext>);
+pub(crate) struct NapiAudioContext {
+    context: Arc<AudioContext>,
+}
 
 // for debug purpose
 // impl Drop for NapiAudioContext {
@@ -39,7 +41,7 @@ impl NapiAudioContext {
     }
 
     pub fn unwrap(&self) -> &AudioContext {
-        &self.0
+        &self.context
     }
 }
 
@@ -99,7 +101,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // -------------------------------------------------
     // Wrap context
     // -------------------------------------------------
-    let napi_audio_context = NapiAudioContext(Arc::new(audio_context));
+    let napi_audio_context = NapiAudioContext {
+        context: Arc::new(audio_context),
+    };
     ctx.env.wrap(&mut js_this, napi_audio_context)?;
 
     js_this.define_properties(&[Property::new("Symbol.toStringTag")?
@@ -172,7 +176,7 @@ fn set_sink_id(ctx: CallContext) -> Result<JsUndefined> {
 fn resume(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_context = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
-    let context_clone = Arc::clone(&napi_context.0);
+    let context_clone = Arc::clone(&napi_context.context);
 
     ctx.env.execute_tokio_future(
         async move {
@@ -187,7 +191,7 @@ fn resume(ctx: CallContext) -> Result<JsObject> {
 fn suspend(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_context = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
-    let context_clone = Arc::clone(&napi_context.0);
+    let context_clone = Arc::clone(&napi_context.context);
 
     ctx.env.execute_tokio_future(
         async move {
@@ -202,7 +206,7 @@ fn suspend(ctx: CallContext) -> Result<JsObject> {
 fn close(ctx: CallContext) -> Result<JsObject> {
     let js_this = ctx.this_unchecked::<JsObject>();
     let napi_context = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
-    let context_clone = Arc::clone(&napi_context.0);
+    let context_clone = Arc::clone(&napi_context.context);
 
     ctx.env.execute_tokio_future(
         async move {

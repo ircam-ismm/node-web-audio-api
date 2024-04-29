@@ -78,7 +78,7 @@ macro_rules! base_audio_context_impl {
         fn decode_audio_data(ctx: CallContext) -> Result<JsObject> {
             let js_this = ctx.this_unchecked::<JsObject>();
             let napi_obj = ctx.env.unwrap::<$napi_struct>(&js_this)?;
-            let clone = Arc::clone(&napi_obj.0);
+            let clone = Arc::clone(&napi_obj.context);
 
             let js_buffer = ctx.get::<JsArrayBuffer>(0)?.into_value()?;
             let cursor = Cursor::new(js_buffer.to_vec());
