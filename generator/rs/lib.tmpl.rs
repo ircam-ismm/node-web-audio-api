@@ -1,7 +1,41 @@
 #![deny(clippy::all)]
 
-use napi::{Env, JsObject, Result};
-use napi_derive::module_exports;
+use napi::{Env, JsObject, JsUndefined, Result};
+use napi_derive::{module_exports, napi};
+
+use std::sync::mpsc::{self, Receiver, Sender};
+use std::sync::{Mutex, OnceLock};
+
+type SendItem = String;
+pub(crate) fn send_recv_pair() -> &'static Mutex<(Option<Sender<SendItem>>, Option<Receiver<SendItem>>)> {
+    static PAIR: OnceLock<Mutex<(Option<Sender<SendItem>>, Option<Receiver<SendItem>>)>> = OnceLock::new();
+    PAIR.get_or_init(|| {
+        let (send, recv) = mpsc::channel();
+        Mutex::new((Some(send), Some(recv)))
+    })
+}
+
+#[napi]
+pub fn run_audio_worklet(env: Env) -> Result<JsUndefined> {
+    println!("worklet");
+    let recv = send_recv_pair().lock().unwrap().1.take().unwrap();
+    for item in recv {
+        println!("got one {}", &item);
+        let code = std::fs::read_to_string(item).unwrap();
+        println!("got code");
+        match env.run_script::<_, JsUndefined>(code) {
+            Err(e) => println!("error {:?}", e),
+            Ok(_) => println!("all good"),
+        };
+    }
+    env.get_undefined()
+}
+
+#[napi]
+pub fn register_processor(env: Env) -> Result<JsUndefined> {
+    println!("register");
+    env.get_undefined()
+}
 
 #[macro_use]
 mod base_audio_context;

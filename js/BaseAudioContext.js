@@ -25,11 +25,15 @@ const {
 const {
   kNapiObj,
 } = require('./lib/symbols.js');
+const {
+  Worker,
+} = require('node:worker_threads');
 
 module.exports = (jsExport, _nativeBinding) => {
   class BaseAudioContext extends EventTarget {
     #listener = null;
     #destination = null;
+    #worker = null;
 
     constructor(options) {
       // Make constructor "private"
@@ -41,6 +45,8 @@ module.exports = (jsExport, _nativeBinding) => {
       }
 
       super();
+      this.#worker = new Worker('./js/lib/worker.js');
+      console.log('worker is init');
 
       Object.defineProperty(this, kNapiObj, {
         value: options[kNapiObj],

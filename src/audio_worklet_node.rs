@@ -191,6 +191,16 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
         params: AudioParamValues<'b>,
         scope: &'b AudioWorkletGlobalScope,
     ) -> bool {
+        // convert to JS frozen arrays (requires env..)
+        // - inputs
+        // - outputs
+        // convert to maplike
+        // - params
+
+        // send to worker thread
+        // await result
+        // drop js stuff
+        // pass return value
         todo!()
     }
 }

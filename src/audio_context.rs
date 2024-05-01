@@ -12,6 +12,7 @@ use crate::*;
 #[derive(Clone)]
 pub(crate) struct NapiAudioContext {
     context: Arc<AudioContext>,
+    worker_sender: Sender<String>,
 }
 
 // for debug purpose
@@ -97,12 +98,16 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     };
 
     let audio_context = AudioContext::new(audio_context_options);
+    let worker_sender = send_recv_pair().lock().unwrap().0.take().unwrap();
+
+    worker_sender.send("noise.js".to_string()).unwrap();
 
     // -------------------------------------------------
     // Wrap context
     // -------------------------------------------------
     let napi_audio_context = NapiAudioContext {
         context: Arc::new(audio_context),
+        worker_sender,
     };
     ctx.env.wrap(&mut js_this, napi_audio_context)?;
 
