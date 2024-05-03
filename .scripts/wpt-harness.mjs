@@ -8,6 +8,7 @@ import * as nodeWebAudioAPI from '../index.mjs';
 // mocks
 import createXMLHttpRequest from './wpt-mock/XMLHttpRequest.js';
 import createFetch from './wpt-mock/fetch.js';
+import { requestAnimationFrame, cancelAnimationFrame } from './wpt-mock/requestAnimationFrame.js';
 
 program
   .option('--list', 'List the name of the test files')
@@ -53,14 +54,14 @@ const setup = window => {
     }
   }
 
-  // expose media devices API
+  // expose media devices API in navigator
   window.navigator.mediaDevices = nodeWebAudioAPI.mediaDevices;
   // window.MediaStream = nodeWebAudioAPI.mediaDevices.MediaStream;
 
-  // e.g. 'resources/audiobuffersource-multi-channels-expected.wav'
   window.XMLHttpRequest = createXMLHttpRequest(testsPath);
   window.fetch = createFetch(wptRootPath);
-  // window.requestAnimationFrame = func => setInterval(func, 16);
+  window.requestAnimationFrame = requestAnimationFrame;
+  window.cancelAnimationFrame = cancelAnimationFrame;
 
   // populate window with node internals
   window.TypeError = TypeError;
@@ -71,8 +72,13 @@ const setup = window => {
   window.Float64Array = Float64Array;
   window.Uint8Array = Uint8Array;
   window.ArrayBuffer = ArrayBuffer;
-  window.EventTarget = EventTarget;
   window.Promise = Promise;
+  window.Event = Event;
+  window.EventTarget = EventTarget;
+  // @note - adding Function this crashes some tests:
+  // the-pannernode-interface/pannernode-setposition-throws.html
+  // the-periodicwave-interface/createPeriodicWaveInfiniteValuesThrows.html
+  // window.Function = Function;
 }
 
 // try catch unhandled error to prevent wpt process from crashing
@@ -139,7 +145,7 @@ const reporter = {
     }
   },
   reportStack: stack => {
-    console.log(chalk.dim(indent(stack, INDENT_SIZE * 2)))
+    console.log(chalk.dim(indent(stack, INDENT_SIZE * 2)));
   },
 };
 

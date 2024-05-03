@@ -219,7 +219,7 @@ module.exports = (_jsExport, nativeBinding) => {
     },
   });
 
-  Object.defineProperties(AudioBuffer.prototype,  {
+  Object.defineProperties(AudioBuffer.prototype, {
     [Symbol.toStringTag]: {
       __proto__: null,
       writable: false,

@@ -1,3 +1,10 @@
+## v0.20.0 (29/04/2024)
+
+- Update upstream crate to [v0.44.0](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-0440-2024-04-22)
+- Implement ScriptProcessorNode
+- Fix memory leak introduced in v0.19.0
+- Improve events compliance
+
 ## v0.19.0 (17/04/2024)
 
 - Update upstream crate to [1.0.0-rc.5](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-0430--100-rc5-2024-04-15)
