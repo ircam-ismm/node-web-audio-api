@@ -29,10 +29,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // --------------------------------------------------------
     let options: AudioWorkletNodeOptions<()> = Default::default();
     println!("get send");
-    let send = dbg!(crate::send_recv_pair().lock().unwrap())
-        .0
-        .take()
-        .unwrap();
+    let send = crate::send_recv_pair().lock().unwrap().0.take().unwrap();
     println!("got send");
 
     // Remap the constructor options to include our processor options
@@ -104,11 +101,11 @@ audio_node_impl!(NapiAudioWorkletNode);
 // -------------------------------------------------
 
 struct NapiAudioWorkletProcessor {
-    send: Sender<String>,
+    send: Sender<crate::SendItem>,
 }
 
 impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
-    type ProcessorOptions = Sender<String>;
+    type ProcessorOptions = Sender<crate::SendItem>;
 
     fn constructor(opts: Self::ProcessorOptions) -> Self {
         Self { send: opts }
@@ -117,11 +114,12 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
     fn process<'a, 'b>(
         &mut self,
         _inputs: &'b [&'a [&'a [f32]]],
-        _outputs: &'b mut [&'a mut [&'a mut [f32]]],
+        outputs: &'b mut [&'a mut [&'a mut [f32]]],
         _params: AudioParamValues<'b>,
         _scope: &'b AudioWorkletGlobalScope,
     ) -> bool {
-        self.send.send("aa".to_string()).unwrap();
+        let output_ptr = crate::SendItem(outputs[0][0].as_mut_ptr());
+        self.send.send(output_ptr).unwrap();
         true
         // convert to JS frozen arrays (requires env..)
         // - inputs

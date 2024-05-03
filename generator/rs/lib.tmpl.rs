@@ -6,7 +6,8 @@ use napi_derive::{module_exports, napi};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Mutex, OnceLock};
 
-type SendItem = String;
+pub(crate) struct SendItem(*mut f32);
+unsafe impl Send for SendItem {}
 pub(crate) fn send_recv_pair() -> &'static Mutex<(Option<Sender<SendItem>>, Option<Receiver<SendItem>>)> {
     static PAIR: OnceLock<Mutex<(Option<Sender<SendItem>>, Option<Receiver<SendItem>>)>> = OnceLock::new();
     PAIR.get_or_init(|| {
@@ -18,25 +19,22 @@ pub(crate) fn send_recv_pair() -> &'static Mutex<(Option<Sender<SendItem>>, Opti
 #[napi]
 pub fn run_audio_worklet(env: Env) -> Result<JsUndefined> {
     println!("inside rust worklet");
-    let recv = dbg!(send_recv_pair().lock().unwrap()).1.take().unwrap();
+    let recv = send_recv_pair().lock().unwrap().1.take().unwrap();
     for item in recv {
-        println!("got one {}", &item);
         let proc = env.get_global()?.get_property::<_, JsObject>(env.create_string("proc123")?)?;
         let process = proc.get_property::<_, JsFunction>(env.create_string("process")?)?;
 
-        let mut output_samples = vec![0.; 128];
         let data: &mut[u8] = unsafe {
-            std::slice::from_raw_parts_mut(output_samples.as_mut_ptr() as *mut _, output_samples.len() * 4)
+            std::slice::from_raw_parts_mut(item.0 as *mut _, 128 * 4)
         };
         let data_ptr = data.as_mut_ptr();
         let ptr_length = data.len();
-        let manually_drop = std::mem::ManuallyDrop::new(output_samples);
         let output_samples = unsafe {
             env
                 .create_arraybuffer_with_borrowed_data(
                     data_ptr,
                     ptr_length,
-                    manually_drop,
+                    (),
                     napi::noop_finalize,
                 )
                 .map(|array_buffer| {
@@ -52,15 +50,11 @@ pub fn run_audio_worklet(env: Env) -> Result<JsUndefined> {
         let mut outputs = env.create_array(0)?;
         outputs.insert(output_channels)?;
 
-        let ret: bool = process.call3(
+        let _ret: bool = process.call3(
             env.create_array(128)?,
             outputs,
             env.create_array(128)?,
         )?;
-        dbg!(ret);
-
-        let output_samples: Vec<f32> = unsafe { Vec::from_raw_parts(data_ptr as *mut _, 128, 128) };
-        dbg!(output_samples);
     }
     env.get_undefined()
 }
