@@ -1,23 +1,11 @@
 /* eslint-disable no-unused-vars */
 const conversions = require('webidl-conversions');
 const {
-  toSanitizedSequence,
-} = require('./lib/cast.js');
-const {
-  isFunction,
-  kEnumerableProperty,
-} = require('./lib/utils.js');
-const {
   throwSanitizedError,
 } = require('./lib/errors.js');
 const {
   kNapiObj,
-  kAudioBuffer,
-  kOnAudioProcess,
 } = require('./lib/symbols.js');
-const {
-  propagateEvent,
-} = require('./lib/events.js');
 const {
   Worker,
 } = require('node:worker_threads');
@@ -84,47 +72,6 @@ runAudioWorklet()
           }
       );
       console.log('worker is init');
-
-      this[kNapiObj][kOnAudioProcess] = (err, rawEvent) => {
-        if (typeof rawEvent !== 'object' && !('type' in rawEvent)) {
-          throw new TypeError('Invalid [kOnStateChange] Invocation: rawEvent should have a type property');
-        }
-
-        const audioProcessingEventInit = {
-          playbackTime: rawEvent.playbackTime,
-          inputBuffer: new jsExport.AudioBuffer({ [kNapiObj]: rawEvent.inputBuffer }),
-          outputBuffer: new jsExport.AudioBuffer({ [kNapiObj]: rawEvent.outputBuffer }),
-        };
-
-        const event = new jsExport.AudioProcessingEvent('audioprocess', audioProcessingEventInit);
-        propagateEvent(this, event);
-      };
-    }
-
-    get bufferSize() {
-      if (!(this instanceof AudioWorkletNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioWorkletNode\'');
-      }
-
-      return this[kNapiObj].bufferSize;
-    }
-
-    get onaudioprocess() {
-      if (!(this instanceof AudioWorkletNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioWorkletNode\'');
-      }
-
-      return this.#onaudioprocess;
-    }
-
-    set onaudioprocess(value) {
-      if (!(this instanceof AudioWorkletNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioWorkletNode\'');
-      }
-
-      if (isFunction(value) || value === null) {
-        this.#onaudioprocess = value;
-      }
     }
   }
 
@@ -146,9 +93,6 @@ runAudioWorklet()
       configurable: true,
       value: 'AudioWorkletNode',
     },
-    bufferSize: kEnumerableProperty,
-    onaudioprocess: kEnumerableProperty,
-
   });
 
   return AudioWorkletNode;
