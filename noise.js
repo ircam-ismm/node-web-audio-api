@@ -1,6 +1,6 @@
 console.log("white noise.js");
 
-class WhiteNoiseProcessor /*extends AudioWorkletProcessor*/ {
+class WhiteNoiseProcessor extends AudioWorkletProcessor {
   process(inputs, outputs, parameters) {
     const output = outputs[0];
     output.forEach((channel) => {
@@ -12,5 +12,4 @@ class WhiteNoiseProcessor /*extends AudioWorkletProcessor*/ {
   }
 }
 
-// TODO cannot access parent scope
-// registerProcessor('white-noise', WhiteNoiseProcessor);
+registerProcessor('white-noise', WhiteNoiseProcessor);

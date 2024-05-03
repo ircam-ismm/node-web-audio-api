@@ -17,23 +17,11 @@ pub(crate) fn send_recv_pair() -> &'static Mutex<(Option<Sender<SendItem>>, Opti
 
 #[napi]
 pub fn run_audio_worklet(env: Env) -> Result<JsUndefined> {
-    println!("worklet");
-    let recv = send_recv_pair().lock().unwrap().1.take().unwrap();
+    println!("inside rust worklet");
+    let recv = dbg!(send_recv_pair().lock().unwrap()).1.take().unwrap();
     for item in recv {
         println!("got one {}", &item);
-        let code = std::fs::read_to_string(item).unwrap();
-        println!("got code");
-        match env.run_script::<_, JsUndefined>(code) {
-            Err(e) => println!("error {:?}", e),
-            Ok(_) => println!("all good"),
-        };
     }
-    env.get_undefined()
-}
-
-#[napi]
-pub fn register_processor(env: Env) -> Result<JsUndefined> {
-    println!("register");
     env.get_undefined()
 }
 

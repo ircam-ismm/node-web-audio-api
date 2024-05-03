@@ -18,6 +18,9 @@ const {
 const {
   propagateEvent,
 } = require('./lib/events.js');
+const {
+  Worker,
+} = require('node:worker_threads');
 /* eslint-enable no-unused-vars */
 
 const AudioNode = require('./AudioNode.js');
@@ -26,6 +29,7 @@ module.exports = (jsExport, nativeBinding) => {
   class AudioWorkletNode extends AudioNode {
 
     #onaudioprocess = null;
+    #worker = null;
 
     constructor(context, name, options) {
 
@@ -44,7 +48,6 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError('Failed to construct \'AudioWorkletNode\': argument 3 is not of type \'AudioWorkletNodeOptions\'');
       }
 
-      console.log(name);
 
       let napiObj;
 
@@ -57,6 +60,19 @@ module.exports = (jsExport, nativeBinding) => {
       super(context, {
         [kNapiObj]: napiObj,
       });
+
+      console.log(name);
+      this.#worker = new Worker(`
+console.log("inside worker");
+const { runAudioWorklet } = require('/Users/otto/Projects/node-web-audio-api-rs/index.js');
+runAudioWorklet()
+`,
+          {
+              eval: true,
+              workerData: options.processorOptions,
+          }
+      );
+      console.log('worker is init');
 
       this[kNapiObj][kOnAudioProcess] = (err, rawEvent) => {
         if (typeof rawEvent !== 'object' && !('type' in rawEvent)) {
@@ -72,8 +88,6 @@ module.exports = (jsExport, nativeBinding) => {
         const event = new jsExport.AudioProcessingEvent('audioprocess', audioProcessingEventInit);
         propagateEvent(this, event);
       };
-
-      this[kNapiObj].listen_to_events();
     }
 
     get bufferSize() {
