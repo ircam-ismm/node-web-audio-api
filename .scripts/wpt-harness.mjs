@@ -75,7 +75,10 @@ const setup = window => {
   window.Promise = Promise;
   window.Event = Event;
   window.EventTarget = EventTarget;
-  window.Function = Function;
+  // @note - adding Function this crashes some tests:
+  // the-pannernode-interface/pannernode-setposition-throws.html
+  // the-periodicwave-interface/createPeriodicWaveInfiniteValuesThrows.html
+  // window.Function = Function;
 }
 
 // try catch unhandled error to prevent wpt process from crashing
