@@ -19,13 +19,13 @@
 
 #![deny(clippy::all)]
 
-use napi::{Env, JsFunction, JsObject, JsUndefined, Result};
+use napi::{Env, JsFunction, JsObject, JsUndefined, JsUnknown, Result};
 use napi_derive::{module_exports, napi};
 
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Mutex, OnceLock};
 
-pub(crate) struct SendItem(*mut f32);
+pub(crate) struct SendItem(*mut f32, *mut f32);
 unsafe impl Send for SendItem {}
 pub(crate) fn send_recv_pair(
 ) -> &'static Mutex<(Option<Sender<SendItem>>, Option<Receiver<SendItem>>)> {
@@ -47,25 +47,20 @@ pub fn run_audio_worklet(env: Env) -> Result<JsUndefined> {
             .get_property::<_, JsObject>(env.create_string("proc123")?)?;
         let process = proc.get_property::<_, JsFunction>(env.create_string("process")?)?;
 
-        let data: &mut [u8] = unsafe { std::slice::from_raw_parts_mut(item.0 as *mut _, 128 * 4) };
-        let data_ptr = data.as_mut_ptr();
-        let ptr_length = data.len();
-        let output_samples = unsafe {
-            env.create_arraybuffer_with_borrowed_data(data_ptr, ptr_length, (), napi::noop_finalize)
-                .map(|array_buffer| {
-                    array_buffer
-                        .into_raw()
-                        .into_typedarray(napi::TypedArrayType::Float32, 128, 0)
-                })
-                .unwrap()
-        };
+        let input_samples = crate::utils::float_buffer_to_js(&env, item.0, 128);
+        let mut input_channels = env.create_array(0)?;
+        input_channels.insert(input_samples)?;
+        let mut inputs = env.create_array(0)?;
+        inputs.insert(input_channels)?;
 
+        let output_samples = crate::utils::float_buffer_to_js(&env, item.1, 128);
         let mut output_channels = env.create_array(0)?;
         output_channels.insert(output_samples)?;
         let mut outputs = env.create_array(0)?;
         outputs.insert(output_channels)?;
 
-        let _ret: bool = process.call3(env.create_array(128)?, outputs, env.create_array(128)?)?;
+        let js_ret: JsUnknown = process.apply3(proc, inputs, outputs, env.create_array(128)?)?;
+        let _ret = js_ret.coerce_to_bool()?.get_value()?;
     }
     env.get_undefined()
 }

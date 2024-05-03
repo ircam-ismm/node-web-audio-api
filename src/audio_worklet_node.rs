@@ -113,13 +113,15 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
 
     fn process<'a, 'b>(
         &mut self,
-        _inputs: &'b [&'a [&'a [f32]]],
+        inputs: &'b [&'a [&'a [f32]]],
         outputs: &'b mut [&'a mut [&'a mut [f32]]],
         _params: AudioParamValues<'b>,
         _scope: &'b AudioWorkletGlobalScope,
     ) -> bool {
-        let output_ptr = crate::SendItem(outputs[0][0].as_mut_ptr());
-        self.send.send(output_ptr).unwrap();
+        let input_ptr = inputs[0][0].as_ptr() as *mut _;
+        let output_ptr = outputs[0][0].as_mut_ptr();
+        let item = crate::SendItem(input_ptr, output_ptr);
+        self.send.send(item).unwrap();
         true
         // convert to JS frozen arrays (requires env..)
         // - inputs
