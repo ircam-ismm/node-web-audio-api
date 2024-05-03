@@ -7,5 +7,5 @@ const audioContext = new AudioContext({ latencyHint });
 audioContext.addModule('noise.js');
 */
 
-const node = new AudioWorkletNode(audioContext, 'noise.js', {});
+const node = new AudioWorkletNode(audioContext, 'noise.js', {processorOptions: "hello world"});
 node.connect(audioContext.destination);
