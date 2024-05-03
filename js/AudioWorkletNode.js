@@ -1,3 +1,9 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const {
+  Worker,
+} = require('node:worker_threads');
+
 /* eslint-disable no-unused-vars */
 const conversions = require('webidl-conversions');
 const {
@@ -6,9 +12,7 @@ const {
 const {
   kNapiObj,
 } = require('./lib/symbols.js');
-const {
-  Worker,
-} = require('node:worker_threads');
+
 /* eslint-enable no-unused-vars */
 
 const AudioNode = require('./AudioNode.js');
@@ -50,14 +54,16 @@ module.exports = (jsExport, nativeBinding) => {
       });
 
       console.log(name);
-      var fs = require('fs');
-      var path = require('path');
-      var buffer = fs.readFileSync(path.join(process.cwd(), name));
+
+      const buffer = fs.readFileSync(path.join(process.cwd(), name));
       console.log(buffer.toString());
+
+      const indexJs = path.join(__dirname, '..', 'index.js');
+
       this.#worker = new Worker(`
 const { workerData } = require('node:worker_threads');
 console.log("inside worker");
-const { runAudioWorklet } = require('/Users/otto/Projects/node-web-audio-api-rs/index.js');
+const { runAudioWorklet } = require('${indexJs}');
 class AudioWorkletProcessor { }
 var proc123;
 function registerProcessor(name, ctor) {
