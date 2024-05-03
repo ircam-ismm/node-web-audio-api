@@ -19,12 +19,15 @@
 
 #![deny(clippy::all)]
 
-use napi::{Env, JsFunction, JsObject, JsUndefined, JsUnknown, Result};
+use napi::{Env, JsFunction, JsNumber, JsObject, JsString, JsUndefined, JsUnknown, Result};
 use napi_derive::{module_exports, napi};
 
-use std::sync::mpsc::{self, Receiver, Sender};
+use crossbeam_channel::{self, Receiver, Sender};
 use std::sync::{Mutex, OnceLock};
 
+use web_audio_api::AudioParamDescriptor;
+
+// channel from main to worker
 pub(crate) struct SendItem(*mut f32, *mut f32);
 unsafe impl Send for SendItem {}
 pub(crate) fn send_recv_pair(
@@ -32,9 +35,55 @@ pub(crate) fn send_recv_pair(
     static PAIR: OnceLock<Mutex<(Option<Sender<SendItem>>, Option<Receiver<SendItem>>)>> =
         OnceLock::new();
     PAIR.get_or_init(|| {
-        let (send, recv) = mpsc::channel();
+        let (send, recv) = crossbeam_channel::unbounded();
         Mutex::new((Some(send), Some(recv)))
     })
+}
+
+// channel from worker to main
+pub(crate) struct SendItem2(Vec<AudioParamDescriptor>);
+pub(crate) fn send_recv_pair2() -> &'static (Sender<SendItem2>, Receiver<SendItem2>) {
+    static PAIR: OnceLock<(Sender<SendItem2>, Receiver<SendItem2>)> = OnceLock::new();
+    PAIR.get_or_init(|| crossbeam_channel::unbounded())
+}
+
+#[napi]
+pub fn register_params(env: Env, params: Vec<JsObject>) -> Result<JsUndefined> {
+    let rs_params: Vec<_> = params
+        .into_iter()
+        .map(|param| {
+            let js_name = param
+                .get_property::<_, JsString>(env.create_string("name").unwrap())
+                .unwrap();
+            let utf8_name = js_name.into_utf8().unwrap();
+            let name = utf8_name.into_owned().unwrap();
+            let min_value = param
+                .get_property::<_, JsNumber>(env.create_string("minValue").unwrap())
+                .unwrap()
+                .get_double()
+                .unwrap() as f32;
+            let max_value = param
+                .get_property::<_, JsNumber>(env.create_string("maxValue").unwrap())
+                .unwrap()
+                .get_double()
+                .unwrap() as f32;
+            let default_value = param
+                .get_property::<_, JsNumber>(env.create_string("defaultValue").unwrap())
+                .unwrap()
+                .get_double()
+                .unwrap() as f32;
+
+            web_audio_api::AudioParamDescriptor {
+                name,
+                min_value,
+                max_value,
+                default_value,
+                automation_rate: web_audio_api::AutomationRate::A,
+            }
+        })
+        .collect();
+    send_recv_pair2().0.send(SendItem2(rs_params)).unwrap();
+    env.get_undefined()
 }
 
 #[napi]

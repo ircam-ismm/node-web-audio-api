@@ -28,9 +28,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // Create AudioBufferSourceOptions object
     // --------------------------------------------------------
     let options: AudioWorkletNodeOptions<()> = Default::default();
-    println!("get send");
     let send = crate::send_recv_pair().lock().unwrap().0.take().unwrap();
-    println!("got send");
 
     // Remap the constructor options to include our processor options
     let AudioWorkletNodeOptions {
@@ -74,6 +72,8 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         &_ => panic!("not supported"),
     };
 
+    dbg!(native_node.parameters());
+
     // --------------------------------------------------------
     // Finalize instance creation
     // --------------------------------------------------------
@@ -109,6 +109,13 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
 
     fn constructor(opts: Self::ProcessorOptions) -> Self {
         Self { send: opts }
+    }
+
+    fn parameter_descriptors() -> Vec<AudioParamDescriptor>
+    where
+        Self: Sized,
+    {
+        dbg!(crate::send_recv_pair2().1.recv().unwrap().0)
     }
 
     fn process<'a, 'b>(

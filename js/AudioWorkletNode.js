@@ -20,7 +20,6 @@ const AudioNode = require('./AudioNode.js');
 module.exports = (jsExport, nativeBinding) => {
   class AudioWorkletNode extends AudioNode {
 
-    #onaudioprocess = null;
     #worker = null;
 
     constructor(context, name, options) {
@@ -40,6 +39,32 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError('Failed to construct \'AudioWorkletNode\': argument 3 is not of type \'AudioWorkletNodeOptions\'');
       }
 
+      console.log(name);
+
+      const buffer = fs.readFileSync(path.join(process.cwd(), name));
+      console.log(buffer.toString());
+
+      const indexJs = path.join(__dirname, '..', 'index.js');
+
+      const worker = new Worker(`
+const { workerData } = require('node:worker_threads');
+console.log("inside worker");
+const { runAudioWorklet, registerParams } = require('${indexJs}');
+class AudioWorkletProcessor { }
+var proc123;
+function registerProcessor(name, ctor) {
+  registerParams(ctor.parameterDescriptors);
+  proc123 = new ctor(workerData);
+}
+${buffer}
+runAudioWorklet()
+`,
+          {
+              eval: true,
+              workerData: options.processorOptions,
+          }
+      );
+      console.log('worker is init');
 
       let napiObj;
 
@@ -52,32 +77,7 @@ module.exports = (jsExport, nativeBinding) => {
       super(context, {
         [kNapiObj]: napiObj,
       });
-
-      console.log(name);
-
-      const buffer = fs.readFileSync(path.join(process.cwd(), name));
-      console.log(buffer.toString());
-
-      const indexJs = path.join(__dirname, '..', 'index.js');
-
-      this.#worker = new Worker(`
-const { workerData } = require('node:worker_threads');
-console.log("inside worker");
-const { runAudioWorklet } = require('${indexJs}');
-class AudioWorkletProcessor { }
-var proc123;
-function registerProcessor(name, ctor) {
-  proc123 = new ctor(workerData);
-}
-${buffer}
-runAudioWorklet()
-`,
-          {
-              eval: true,
-              workerData: options.processorOptions,
-          }
-      );
-      console.log('worker is init');
+      this.#worker = worker;
     }
   }
 
