@@ -62,9 +62,20 @@ module.exports = (jsExport, nativeBinding) => {
       });
 
       console.log(name);
+      var fs = require('fs');
+      var path = require('path');
+      var buffer = fs.readFileSync(path.join(process.cwd(), name));
+      console.log(buffer.toString());
       this.#worker = new Worker(`
+const { workerData } = require('node:worker_threads');
 console.log("inside worker");
 const { runAudioWorklet } = require('/Users/otto/Projects/node-web-audio-api-rs/index.js');
+class AudioWorkletProcessor { }
+var proc123;
+function registerProcessor(name, ctor) {
+  proc123 = new ctor(workerData);
+}
+${buffer}
 runAudioWorklet()
 `,
           {

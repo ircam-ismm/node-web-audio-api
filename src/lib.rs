@@ -19,7 +19,7 @@
 
 #![deny(clippy::all)]
 
-use napi::{Env, JsObject, JsUndefined, Result};
+use napi::{Env, JsFunction, JsObject, JsUndefined, Result};
 use napi_derive::{module_exports, napi};
 
 use std::sync::mpsc::{self, Receiver, Sender};
@@ -42,6 +42,46 @@ pub fn run_audio_worklet(env: Env) -> Result<JsUndefined> {
     let recv = dbg!(send_recv_pair().lock().unwrap()).1.take().unwrap();
     for item in recv {
         println!("got one {}", &item);
+        let proc = env
+            .get_global()?
+            .get_property::<_, JsObject>(env.create_string("proc123")?)?;
+        let process = proc.get_property::<_, JsFunction>(env.create_string("process")?)?;
+
+        let mut output_samples = vec![0.; 128];
+        let data: &mut [u8] = unsafe {
+            std::slice::from_raw_parts_mut(
+                output_samples.as_mut_ptr() as *mut _,
+                output_samples.len() * 4,
+            )
+        };
+        let data_ptr = data.as_mut_ptr();
+        let ptr_length = data.len();
+        let manually_drop = std::mem::ManuallyDrop::new(output_samples);
+        let output_samples = unsafe {
+            env.create_arraybuffer_with_borrowed_data(
+                data_ptr,
+                ptr_length,
+                manually_drop,
+                napi::noop_finalize,
+            )
+            .map(|array_buffer| {
+                array_buffer
+                    .into_raw()
+                    .into_typedarray(napi::TypedArrayType::Float32, 128, 0)
+            })
+            .unwrap()
+        };
+
+        let mut output_channels = env.create_array(0)?;
+        output_channels.insert(output_samples)?;
+        let mut outputs = env.create_array(0)?;
+        outputs.insert(output_channels)?;
+
+        let ret: bool = process.call3(env.create_array(128)?, outputs, env.create_array(128)?)?;
+        dbg!(ret);
+
+        let output_samples: Vec<f32> = unsafe { Vec::from_raw_parts(data_ptr as *mut _, 128, 128) };
+        dbg!(output_samples);
     }
     env.get_undefined()
 }
