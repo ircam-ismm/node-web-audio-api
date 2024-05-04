@@ -83,6 +83,9 @@ use crate::stereo_panner_node::NapiStereoPannerNode;
 mod wave_shaper_node;
 use crate::wave_shaper_node::NapiWaveShaperNode;
 
+// other AudioWorklet internals
+use crate::audio_worklet_node::{register_params, run_audio_worklet};
+
 // MediaDevices & MediaStream API
 mod media_streams;
 use crate::media_streams::NapiMediaStream;
@@ -176,6 +179,12 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
 
     let napi_class = NapiWaveShaperNode::create_js_class(&env)?;
     exports.set_named_property("WaveShaperNode", napi_class)?;
+
+    // ----------------------------------------------------------------
+    // AudioWorklet utils (internal)
+    // ----------------------------------------------------------------
+    exports.create_named_method("register_params", register_params)?;
+    exports.create_named_method("run_audio_worklet", run_audio_worklet)?;
 
     // ----------------------------------------------------------------
     // MediaStream API & Media Devices API

@@ -30,6 +30,9 @@ ${d.nodes.map(n => { return `
 mod ${d.slug(n)};
 use crate::${d.slug(n)}::${d.napiName(n)};`}).join('')}
 
+// other AudioWorklet internals
+use crate::audio_worklet_node::{register_params, run_audio_worklet};
+
 // MediaDevices & MediaStream API
 mod media_streams;
 use crate::media_streams::NapiMediaStream;
@@ -73,6 +76,12 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     let napi_class = ${d.napiName(n)}::create_js_class(&env)?;
     exports.set_named_property("${d.name(n)}", napi_class)?;
     `}).join('')}
+
+    // ----------------------------------------------------------------
+    // AudioWorklet utils (internal)
+    // ----------------------------------------------------------------
+    exports.create_named_method("register_params", register_params)?;
+    exports.create_named_method("run_audio_worklet", run_audio_worklet)?;
 
     // ----------------------------------------------------------------
     // MediaStream API & Media Devices API

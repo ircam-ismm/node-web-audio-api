@@ -61,6 +61,12 @@ module.exports = function monkeyPatch(nativeBinding) {
   jsExport.AudioBuffer = require('./AudioBuffer.js')(jsExport, nativeBinding);
 
   // --------------------------------------------------------------------------
+  // AudioWorklet utils (internal)
+  // --------------------------------------------------------------------------
+  jsExport.register_params = nativeBinding.register_params;
+  jsExport.run_audio_worklet = nativeBinding.run_audio_worklet;
+
+  // --------------------------------------------------------------------------
   // Promisify MediaDevices API
   // --------------------------------------------------------------------------
   jsExport.mediaDevices = {};

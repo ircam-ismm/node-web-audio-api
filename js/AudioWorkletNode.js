@@ -44,20 +44,20 @@ module.exports = (jsExport, nativeBinding) => {
       const buffer = fs.readFileSync(path.join(process.cwd(), name));
       console.log(buffer.toString());
 
-      const indexJs = path.join(__dirname, '..', 'index.js');
+      const indexCjs = path.join(__dirname, '..', 'index.cjs');
 
       const worker = new Worker(`
 const { workerData } = require('node:worker_threads');
 console.log("inside worker");
-const { runAudioWorklet, registerParams } = require('${indexJs}');
+const { register_params, run_audio_worklet } = require('${indexCjs}');
 class AudioWorkletProcessor { }
 var proc123;
 function registerProcessor(name, ctor) {
-  registerParams(ctor.parameterDescriptors);
+  register_params(ctor.parameterDescriptors);
   proc123 = new ctor(workerData);
 }
 ${buffer}
-runAudioWorklet()
+run_audio_worklet()
 `,
           {
               eval: true,

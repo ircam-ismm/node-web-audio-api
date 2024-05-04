@@ -11,8 +11,8 @@ crate-type = ["cdylib"]
 
 [dependencies]
 crossbeam-channel = "0.5.12"
-napi = {version="2.15", features=["napi9", "tokio_rt"]}
-napi-derive = "2.15"
+napi = { version="2.15", features=["napi9", "tokio_rt"] }
+napi-derive = { version="2.15" }
 # web-audio-api = "=0.44.0"
 web-audio-api = { path = "../web-audio-api-rs" }
 

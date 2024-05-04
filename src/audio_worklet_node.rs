@@ -2,7 +2,7 @@ use crate::utils::float_buffer_to_js;
 
 use crate::*;
 use napi::*;
-use napi_derive::{js_function, napi};
+use napi_derive::js_function;
 use web_audio_api::node::*;
 use web_audio_api::worklet::*;
 
@@ -31,77 +31,87 @@ pub(crate) fn send_recv_pair2() -> &'static (Sender<SendItem2>, Receiver<SendIte
     PAIR.get_or_init(|| crossbeam_channel::unbounded())
 }
 
-#[napi]
-pub fn register_params(env: Env, params: Vec<JsObject>) -> Result<JsUndefined> {
-    let rs_params: Vec<_> = params
-        .into_iter()
-        .map(|param| {
-            let js_name = param
-                .get_property::<_, JsString>(env.create_string("name").unwrap())
-                .unwrap();
-            let utf8_name = js_name.into_utf8().unwrap();
-            let name = utf8_name.into_owned().unwrap();
-            let min_value = param
-                .get_property::<_, JsNumber>(env.create_string("minValue").unwrap())
-                .unwrap()
-                .get_double()
-                .unwrap() as f32;
-            let max_value = param
-                .get_property::<_, JsNumber>(env.create_string("maxValue").unwrap())
-                .unwrap()
-                .get_double()
-                .unwrap() as f32;
-            let default_value = param
-                .get_property::<_, JsNumber>(env.create_string("defaultValue").unwrap())
-                .unwrap()
-                .get_double()
-                .unwrap() as f32;
+#[js_function(1)]
+pub fn register_params(ctx: CallContext) -> Result<JsUndefined> {
+    let js_params = ctx.get::<JsObject>(0)?;
+    let length = js_params.get_array_length()? as usize;
+    let mut rs_params: Vec<web_audio_api::AudioParamDescriptor> = Vec::with_capacity(length);
 
-            web_audio_api::AudioParamDescriptor {
-                name,
-                min_value,
-                max_value,
-                default_value,
-                automation_rate: web_audio_api::AutomationRate::A,
-            }
-        })
-        .collect();
+    for i in 0..length {
+        let param = js_params.get_element::<JsObject>(i.try_into().unwrap())?;
+
+        let js_name = param.get_named_property::<JsString>("name").unwrap();
+        let utf8_name = js_name.into_utf8().unwrap();
+        let name = utf8_name.into_owned().unwrap();
+
+        let min_value = param
+            .get_named_property::<JsNumber>("minValue")
+            .unwrap()
+            .get_double()
+            .unwrap() as f32;
+
+        let max_value = param
+            .get_named_property::<JsNumber>("maxValue")
+            .unwrap()
+            .get_double()
+            .unwrap() as f32;
+
+        let default_value = param
+            .get_named_property::<JsNumber>("defaultValue")
+            .unwrap()
+            .get_double()
+            .unwrap() as f32;
+
+        let param_descriptor = web_audio_api::AudioParamDescriptor {
+            name,
+            min_value,
+            max_value,
+            default_value,
+            automation_rate: web_audio_api::AutomationRate::A,
+        };
+
+        rs_params.insert(i, param_descriptor);
+    }
+
     send_recv_pair2().0.send(SendItem2(rs_params)).unwrap();
-    env.get_undefined()
+    ctx.env.get_undefined()
 }
 
-#[napi]
-pub fn run_audio_worklet(env: Env) -> Result<JsUndefined> {
+#[js_function]
+pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
     println!("inside rust worklet");
     let recv = send_recv_pair().lock().unwrap().1.take().unwrap();
-    for item in recv {
-        let proc = env
-            .get_global()?
-            .get_property::<_, JsObject>(env.create_string("proc123")?)?;
-        let process = proc.get_property::<_, JsFunction>(env.create_string("process")?)?;
 
-        let input_samples = float_buffer_to_js(&env, item.0, 128);
-        let mut input_channels = env.create_array(0)?;
+    for item in recv {
+        let proc = ctx
+            .env
+            .get_global()?
+            .get_named_property::<JsObject>("proc123")?;
+        let process = proc.get_named_property::<JsFunction>("process")?;
+
+        let input_samples = float_buffer_to_js(&ctx.env, item.0, 128);
+        let mut input_channels = ctx.env.create_array(0)?;
         input_channels.insert(input_samples)?;
-        let mut inputs = env.create_array(0)?;
+        let mut inputs = ctx.env.create_array(0)?;
         inputs.insert(input_channels)?;
 
-        let output_samples = float_buffer_to_js(&env, item.1, 128);
-        let mut output_channels = env.create_array(0)?;
+        let output_samples = float_buffer_to_js(&ctx.env, item.1, 128);
+        let mut output_channels = ctx.env.create_array(0)?;
         output_channels.insert(output_samples)?;
-        let mut outputs = env.create_array(0)?;
+        let mut outputs = ctx.env.create_array(0)?;
         outputs.insert(output_channels)?;
 
-        let mut params = env.create_object()?;
+        let mut params = ctx.env.create_object()?;
         item.2.into_iter().for_each(|(name, ptr, len)| {
-            let val = float_buffer_to_js(&env, ptr, len);
+            let val = float_buffer_to_js(&ctx.env, ptr, len);
             params.set_named_property(&name, val).unwrap()
         });
 
         let js_ret: JsUnknown = process.apply3(proc, inputs, outputs, params)?;
         let _ret = js_ret.coerce_to_bool()?.get_value()?;
     }
-    env.get_undefined()
+
+    ctx.env.get_undefined()
 }
 
 pub(crate) struct NapiAudioWorkletNode(AudioWorkletNode);
