@@ -131,22 +131,25 @@ pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
         let process = proc.get_named_property::<JsFunction>("process")?;
 
         let mut js_inputs = ctx.env.create_array(0)?;
-        if !inputs.is_empty() {
-            let input = inputs[0][0];
-            let input_samples = float_buffer_to_js(ctx.env, input.as_ptr() as *mut _, input.len());
-            let mut input_channels = ctx.env.create_array(0)?;
-            input_channels.insert(input_samples)?;
-            js_inputs.insert(input_channels)?;
+        for input in inputs.into_iter() {
+            let mut channels = ctx.env.create_array(0)?;
+            for channel in input.into_iter() {
+                let samples =
+                    float_buffer_to_js(ctx.env, channel.as_ptr() as *mut _, channel.len());
+                channels.insert(samples)?;
+            }
+            js_inputs.insert(channels)?;
         }
 
         let mut js_outputs = ctx.env.create_array(0)?;
-        if !outputs.is_empty() {
-            let output = outputs[0][0];
-            let output_samples =
-                float_buffer_to_js(ctx.env, output.as_ptr() as *mut _, output.len());
-            let mut output_channels = ctx.env.create_array(0)?;
-            output_channels.insert(output_samples)?;
-            js_outputs.insert(output_channels)?;
+        for output in outputs.into_iter() {
+            let mut channels = ctx.env.create_array(0)?;
+            for channel in output.into_iter() {
+                let samples =
+                    float_buffer_to_js(ctx.env, channel.as_ptr() as *mut _, channel.len());
+                channels.insert(samples)?;
+            }
+            js_outputs.insert(channels)?;
         }
 
         let mut js_params = ctx.env.create_object()?;
