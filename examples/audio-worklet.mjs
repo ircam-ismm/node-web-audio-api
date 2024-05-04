@@ -3,8 +3,7 @@ import { AudioContext, OscillatorNode, AudioWorkletNode } from '../index.mjs';
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });
 
-const sine = new OscillatorNode(audioContext);
-sine.frequency.value = 200;
+const sine = new OscillatorNode(audioContext, {type: 'sawtooth', frequency: 5000});
 
 /*
 audioContext.addModule('noise.js');

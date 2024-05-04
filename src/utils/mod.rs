@@ -32,7 +32,7 @@ pub(crate) fn float_buffer_to_js(env: &Env, data: *mut f32, length: usize) -> na
             .map(|array_buffer| {
                 array_buffer
                     .into_raw()
-                    .into_typedarray(napi::TypedArrayType::Float32, 128, 0)
+                    .into_typedarray(napi::TypedArrayType::Float32, length, 0)
                     .unwrap()
             })
             .unwrap()

@@ -1,3 +1,5 @@
+use crate::utils::float_buffer_to_js;
+
 use crate::*;
 use napi::*;
 use napi_derive::{js_function, napi};
@@ -10,7 +12,7 @@ use crossbeam_channel::{self, Receiver, Sender};
 use std::sync::{Mutex, OnceLock};
 
 // channel from main to worker
-pub(crate) struct SendItem(*mut f32, *mut f32);
+pub(crate) struct SendItem(*mut f32, *mut f32, Vec<(String, *mut f32, usize)>);
 unsafe impl Send for SendItem {}
 pub(crate) fn send_recv_pair(
 ) -> &'static Mutex<(Option<Sender<SendItem>>, Option<Receiver<SendItem>>)> {
@@ -78,19 +80,25 @@ pub fn run_audio_worklet(env: Env) -> Result<JsUndefined> {
             .get_property::<_, JsObject>(env.create_string("proc123")?)?;
         let process = proc.get_property::<_, JsFunction>(env.create_string("process")?)?;
 
-        let input_samples = crate::utils::float_buffer_to_js(&env, item.0, 128);
+        let input_samples = float_buffer_to_js(&env, item.0, 128);
         let mut input_channels = env.create_array(0)?;
         input_channels.insert(input_samples)?;
         let mut inputs = env.create_array(0)?;
         inputs.insert(input_channels)?;
 
-        let output_samples = crate::utils::float_buffer_to_js(&env, item.1, 128);
+        let output_samples = float_buffer_to_js(&env, item.1, 128);
         let mut output_channels = env.create_array(0)?;
         output_channels.insert(output_samples)?;
         let mut outputs = env.create_array(0)?;
         outputs.insert(output_channels)?;
 
-        let js_ret: JsUnknown = process.apply3(proc, inputs, outputs, env.create_array(128)?)?;
+        let mut params = env.create_object()?;
+        item.2.into_iter().for_each(|(name, ptr, len)| {
+            let val = float_buffer_to_js(&env, ptr, len);
+            params.set_named_property(&name, val).unwrap()
+        });
+
+        let js_ret: JsUnknown = process.apply3(proc, inputs, outputs, params)?;
         let _ret = js_ret.coerce_to_bool()?.get_value()?;
     }
     env.get_undefined()
@@ -164,7 +172,15 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         &_ => panic!("not supported"),
     };
 
+    /* TODO expose parameters in JS
     dbg!(native_node.parameters());
+    let param_bit_depth = native_node.parameters().get("bitDepth").unwrap();
+    let param_reduction = native_node.parameters().get("frequencyReduction").unwrap();
+    param_bit_depth.set_value_at_time(1., 0.);
+    param_reduction.set_value_at_time(0.01, 0.);
+    param_reduction.linear_ramp_to_value_at_time(0.1, 4.);
+    param_reduction.exponential_ramp_to_value_at_time(0.01, 8.);
+    */
 
     // --------------------------------------------------------
     // Finalize instance creation
@@ -214,12 +230,19 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
         &mut self,
         inputs: &'b [&'a [&'a [f32]]],
         outputs: &'b mut [&'a mut [&'a mut [f32]]],
-        _params: AudioParamValues<'b>,
+        params: AudioParamValues<'b>,
         _scope: &'b AudioWorkletGlobalScope,
     ) -> bool {
         let input_ptr = inputs[0][0].as_ptr() as *mut _;
         let output_ptr = outputs[0][0].as_mut_ptr();
-        let item = SendItem(input_ptr, output_ptr);
+        let param_ptr: Vec<_> = params
+            .keys()
+            .map(|k| {
+                let value = params.get(k);
+                (k.to_string(), value.as_ptr() as *mut _, value.len())
+            })
+            .collect();
+        let item = SendItem(input_ptr, output_ptr, param_ptr);
         self.send.send(item).unwrap();
         true
         // convert to JS frozen arrays (requires env..)
