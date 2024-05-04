@@ -1,8 +1,100 @@
 use crate::*;
 use napi::*;
-use napi_derive::js_function;
+use napi_derive::{js_function, napi};
 use web_audio_api::node::*;
 use web_audio_api::worklet::*;
+
+use web_audio_api::AudioParamDescriptor;
+
+use crossbeam_channel::{self, Receiver, Sender};
+use std::sync::{Mutex, OnceLock};
+
+// channel from main to worker
+pub(crate) struct SendItem(*mut f32, *mut f32);
+unsafe impl Send for SendItem {}
+pub(crate) fn send_recv_pair(
+) -> &'static Mutex<(Option<Sender<SendItem>>, Option<Receiver<SendItem>>)> {
+    static PAIR: OnceLock<Mutex<(Option<Sender<SendItem>>, Option<Receiver<SendItem>>)>> =
+        OnceLock::new();
+    PAIR.get_or_init(|| {
+        let (send, recv) = crossbeam_channel::unbounded();
+        Mutex::new((Some(send), Some(recv)))
+    })
+}
+
+// channel from worker to main
+pub(crate) struct SendItem2(Vec<AudioParamDescriptor>);
+pub(crate) fn send_recv_pair2() -> &'static (Sender<SendItem2>, Receiver<SendItem2>) {
+    static PAIR: OnceLock<(Sender<SendItem2>, Receiver<SendItem2>)> = OnceLock::new();
+    PAIR.get_or_init(|| crossbeam_channel::unbounded())
+}
+
+#[napi]
+pub fn register_params(env: Env, params: Vec<JsObject>) -> Result<JsUndefined> {
+    let rs_params: Vec<_> = params
+        .into_iter()
+        .map(|param| {
+            let js_name = param
+                .get_property::<_, JsString>(env.create_string("name").unwrap())
+                .unwrap();
+            let utf8_name = js_name.into_utf8().unwrap();
+            let name = utf8_name.into_owned().unwrap();
+            let min_value = param
+                .get_property::<_, JsNumber>(env.create_string("minValue").unwrap())
+                .unwrap()
+                .get_double()
+                .unwrap() as f32;
+            let max_value = param
+                .get_property::<_, JsNumber>(env.create_string("maxValue").unwrap())
+                .unwrap()
+                .get_double()
+                .unwrap() as f32;
+            let default_value = param
+                .get_property::<_, JsNumber>(env.create_string("defaultValue").unwrap())
+                .unwrap()
+                .get_double()
+                .unwrap() as f32;
+
+            web_audio_api::AudioParamDescriptor {
+                name,
+                min_value,
+                max_value,
+                default_value,
+                automation_rate: web_audio_api::AutomationRate::A,
+            }
+        })
+        .collect();
+    send_recv_pair2().0.send(SendItem2(rs_params)).unwrap();
+    env.get_undefined()
+}
+
+#[napi]
+pub fn run_audio_worklet(env: Env) -> Result<JsUndefined> {
+    println!("inside rust worklet");
+    let recv = send_recv_pair().lock().unwrap().1.take().unwrap();
+    for item in recv {
+        let proc = env
+            .get_global()?
+            .get_property::<_, JsObject>(env.create_string("proc123")?)?;
+        let process = proc.get_property::<_, JsFunction>(env.create_string("process")?)?;
+
+        let input_samples = crate::utils::float_buffer_to_js(&env, item.0, 128);
+        let mut input_channels = env.create_array(0)?;
+        input_channels.insert(input_samples)?;
+        let mut inputs = env.create_array(0)?;
+        inputs.insert(input_channels)?;
+
+        let output_samples = crate::utils::float_buffer_to_js(&env, item.1, 128);
+        let mut output_channels = env.create_array(0)?;
+        output_channels.insert(output_samples)?;
+        let mut outputs = env.create_array(0)?;
+        outputs.insert(output_channels)?;
+
+        let js_ret: JsUnknown = process.apply3(proc, inputs, outputs, env.create_array(128)?)?;
+        let _ret = js_ret.coerce_to_bool()?.get_value()?;
+    }
+    env.get_undefined()
+}
 
 pub(crate) struct NapiAudioWorkletNode(AudioWorkletNode);
 
@@ -28,7 +120,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // Create AudioBufferSourceOptions object
     // --------------------------------------------------------
     let options: AudioWorkletNodeOptions<()> = Default::default();
-    let send = crate::send_recv_pair().lock().unwrap().0.take().unwrap();
+    let send = send_recv_pair().lock().unwrap().0.take().unwrap();
 
     // Remap the constructor options to include our processor options
     let AudioWorkletNodeOptions {
@@ -101,11 +193,11 @@ audio_node_impl!(NapiAudioWorkletNode);
 // -------------------------------------------------
 
 struct NapiAudioWorkletProcessor {
-    send: Sender<crate::SendItem>,
+    send: Sender<SendItem>,
 }
 
 impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
-    type ProcessorOptions = Sender<crate::SendItem>;
+    type ProcessorOptions = Sender<SendItem>;
 
     fn constructor(opts: Self::ProcessorOptions) -> Self {
         Self { send: opts }
@@ -115,7 +207,7 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
     where
         Self: Sized,
     {
-        dbg!(crate::send_recv_pair2().1.recv().unwrap().0)
+        dbg!(send_recv_pair2().1.recv().unwrap().0)
     }
 
     fn process<'a, 'b>(
@@ -127,7 +219,7 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
     ) -> bool {
         let input_ptr = inputs[0][0].as_ptr() as *mut _;
         let output_ptr = outputs[0][0].as_mut_ptr();
-        let item = crate::SendItem(input_ptr, output_ptr);
+        let item = SendItem(input_ptr, output_ptr);
         self.send.send(item).unwrap();
         true
         // convert to JS frozen arrays (requires env..)
