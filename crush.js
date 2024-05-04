@@ -1,5 +1,5 @@
 class Bitcrusher extends AudioWorkletProcessor {
-    static get parameterDescriptors () {
+    static get parameterDescriptors() {
         return [{
             name: 'bitDepth',
             defaultValue: 12,
@@ -12,7 +12,8 @@ class Bitcrusher extends AudioWorkletProcessor {
             maxValue: 1
         }];
     }
-    constructor (options) {
+
+    constructor(options) {
         // The initial parameter value can be set by passing |options|
         // to the processor's constructor.
         super(options);
@@ -20,7 +21,8 @@ class Bitcrusher extends AudioWorkletProcessor {
         this._lastSampleValue = 0;
         console.log("init");
     }
-    process (inputs, outputs, parameters) {
+
+    process(inputs, outputs, parameters) {
         const input = inputs[0];
         const output = outputs[0];
         const bitDepth = parameters.bitDepth;

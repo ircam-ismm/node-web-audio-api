@@ -1,10 +1,13 @@
 import { AudioContext, OscillatorNode, AudioWorkletNode } from '../index.mjs';
+import { sleep } from '@ircam/sc-utils';
 
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });
 
 const sine = new OscillatorNode(audioContext, { type: 'sawtooth', frequency: 5000 });
-const bitCrusher = new AudioWorkletNode(audioContext, 'crush.js', { processorOptions: "hello world" });
+const bitCrusher = new AudioWorkletNode(audioContext, 'crush.js', {
+  processorOptions: { msg: "hello world" },
+});
 
 sine
   .connect(bitCrusher)
@@ -21,3 +24,7 @@ paramReduction.exponentialRampToValueAtTime(0.01, 8.);
 
 sine.start();
 sine.stop(8);
+
+await sleep(8)
+
+await audioContext.close();

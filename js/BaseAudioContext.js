@@ -28,8 +28,8 @@ const {
 
 module.exports = (jsExport, _nativeBinding) => {
   class BaseAudioContext extends EventTarget {
-    #listener = null;
     #destination = null;
+    #listener = null;
 
     constructor(options) {
       // Make constructor "private"
@@ -47,10 +47,19 @@ module.exports = (jsExport, _nativeBinding) => {
         ...kHiddenProperty,
       });
 
-      this.#listener = null; // lazily instanciated
       this.#destination = new jsExport.AudioDestinationNode(this, {
         [kNapiObj]: this[kNapiObj].destination,
       });
+      this.#listener = null; // lazily instanciated
+    }
+
+
+    get destination() {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
+
+      return this.#destination;
     }
 
     get listener() {
@@ -65,14 +74,6 @@ module.exports = (jsExport, _nativeBinding) => {
       }
 
       return this.#listener;
-    }
-
-    get destination() {
-      if (!(this instanceof BaseAudioContext)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
-      }
-
-      return this.#destination;
     }
 
     get sampleRate() {
