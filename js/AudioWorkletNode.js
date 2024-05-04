@@ -21,6 +21,7 @@ module.exports = (jsExport, nativeBinding) => {
   class AudioWorkletNode extends AudioNode {
 
     #worker = null;
+    #parameters = {};
 
     constructor(context, name, options) {
 
@@ -77,7 +78,22 @@ run_audio_worklet()
       super(context, {
         [kNapiObj]: napiObj,
       });
+
+      for (let name in this[kNapiObj].parameters) {
+        this.#parameters[name] = new jsExport.AudioParam({
+          [kNapiObj]: this[kNapiObj].parameters[name],
+        });
+      }
+
       this.#worker = worker;
+    }
+
+    get parameters() {
+      if (!(this instanceof AudioWorkletNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'DelayNode\'');
+      }
+
+      return this.#parameters;
     }
   }
 

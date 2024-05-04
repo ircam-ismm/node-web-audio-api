@@ -182,15 +182,16 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         &_ => panic!("not supported"),
     };
 
-    /* TODO expose parameters in JS
-    dbg!(native_node.parameters());
-    let param_bit_depth = native_node.parameters().get("bitDepth").unwrap();
-    let param_reduction = native_node.parameters().get("frequencyReduction").unwrap();
-    param_bit_depth.set_value_at_time(1., 0.);
-    param_reduction.set_value_at_time(0.01, 0.);
-    param_reduction.linear_ramp_to_value_at_time(0.1, 4.);
-    param_reduction.exponential_ramp_to_value_at_time(0.01, 8.);
-    */
+    let mut js_parameters = ctx.env.create_object()?;
+
+    for (name, native_param) in native_node.parameters().iter() {
+        let native_param = native_param.clone();
+        let napi_param = NapiAudioParam::new(native_param);
+        let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
+        ctx.env.wrap(&mut js_obj, napi_param)?;
+
+        js_parameters.set_named_property(name, js_obj)?;
+    }
 
     // --------------------------------------------------------
     // Finalize instance creation
@@ -198,6 +199,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     js_this.define_properties(&[
         Property::new("context")?
             .with_value(&js_audio_context)
+            .with_property_attributes(PropertyAttributes::Enumerable),
+        Property::new("parameters")?
+            .with_value(&js_parameters)
             .with_property_attributes(PropertyAttributes::Enumerable),
         // this must be put on the instance and not in the prototype to be reachable
         Property::new("Symbol.toStringTag")?
