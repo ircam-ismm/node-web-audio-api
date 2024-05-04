@@ -159,7 +159,13 @@ function registerProcessor(name, ctor) {
   proc123 = new ctor(workerData);
 }
 ${buffer}
-run_audio_worklet()
+function run_loop() {
+    // block until we need to render a quantum
+    run_audio_worklet();
+    // yield to the event loop, and then repeat
+    setImmediate(run_loop);
+}
+run_loop();
 `,
           {
               eval: true,

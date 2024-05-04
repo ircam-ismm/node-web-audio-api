@@ -107,61 +107,63 @@ pub(crate) fn register_params(ctx: CallContext) -> Result<JsUndefined> {
 
 #[js_function]
 pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
-    println!("inside rust worklet");
-    let recv = send_recv_pair().lock().unwrap().1.take().unwrap();
+    let item = send_recv_pair()
+        .lock()
+        .unwrap()
+        .1
+        .as_ref()
+        .unwrap()
+        .recv()
+        .unwrap();
+    let ProcessorArguments {
+        inputs,
+        outputs,
+        params,
+        current_time,
+        current_frame,
+        sample_rate,
+        tail_time,
+    } = item;
 
-    for item in recv {
-        let ProcessorArguments {
-            inputs,
-            outputs,
-            params,
-            current_time,
-            current_frame,
-            sample_rate,
-            tail_time,
-        } = item;
-        let mut global = ctx.env.get_global()?;
+    let mut global = ctx.env.get_global()?;
 
-        // fill AudioWorkletGlobalScope
-        global.set_named_property("currentTime", current_time)?;
-        global.set_named_property("currentFrame", current_frame)?;
-        global.set_named_property("sampleRate", sample_rate)?;
+    // fill AudioWorkletGlobalScope
+    global.set_named_property("currentTime", current_time)?;
+    global.set_named_property("currentFrame", current_frame)?;
+    global.set_named_property("sampleRate", sample_rate)?;
 
-        let proc = global.get_named_property::<JsObject>("proc123")?;
-        let process = proc.get_named_property::<JsFunction>("process")?;
+    let proc = global.get_named_property::<JsObject>("proc123")?;
+    let process = proc.get_named_property::<JsFunction>("process")?;
 
-        let mut js_inputs = ctx.env.create_array(0)?;
-        for input in inputs.into_iter() {
-            let mut channels = ctx.env.create_array(0)?;
-            for channel in input.into_iter() {
-                let samples =
-                    float_buffer_to_js(ctx.env, channel.as_ptr() as *mut _, channel.len());
-                channels.insert(samples)?;
-            }
-            js_inputs.insert(channels)?;
+    let mut js_inputs = ctx.env.create_array(0)?;
+    for input in inputs.into_iter() {
+        let mut channels = ctx.env.create_array(0)?;
+        for channel in input.into_iter() {
+            let samples = float_buffer_to_js(ctx.env, channel.as_ptr() as *mut _, channel.len());
+            channels.insert(samples)?;
         }
-
-        let mut js_outputs = ctx.env.create_array(0)?;
-        for output in outputs.into_iter() {
-            let mut channels = ctx.env.create_array(0)?;
-            for channel in output.into_iter() {
-                let samples =
-                    float_buffer_to_js(ctx.env, channel.as_ptr() as *mut _, channel.len());
-                channels.insert(samples)?;
-            }
-            js_outputs.insert(channels)?;
-        }
-
-        let mut js_params = ctx.env.create_object()?;
-        params.into_iter().for_each(|(name, data)| {
-            let val = float_buffer_to_js(ctx.env, data.as_ptr() as *mut _, data.len());
-            js_params.set_named_property(name, val).unwrap()
-        });
-
-        let js_ret: JsUnknown = process.apply3(proc, js_inputs, js_outputs, js_params)?;
-        let ret = js_ret.coerce_to_bool()?.get_value()?;
-        tail_time.store(ret, Ordering::Relaxed);
+        js_inputs.insert(channels)?;
     }
+
+    let mut js_outputs = ctx.env.create_array(0)?;
+    for output in outputs.into_iter() {
+        let mut channels = ctx.env.create_array(0)?;
+        for channel in output.into_iter() {
+            let samples = float_buffer_to_js(ctx.env, channel.as_ptr() as *mut _, channel.len());
+            channels.insert(samples)?;
+        }
+        js_outputs.insert(channels)?;
+    }
+
+    let mut js_params = ctx.env.create_object()?;
+    params.into_iter().for_each(|(name, data)| {
+        let val = float_buffer_to_js(ctx.env, data.as_ptr() as *mut _, data.len());
+        js_params.set_named_property(name, val).unwrap()
+    });
+
+    let js_ret: JsUnknown = process.apply3(proc, js_inputs, js_outputs, js_params)?;
+    let ret = js_ret.coerce_to_bool()?.get_value()?;
+    tail_time.store(ret, Ordering::Relaxed);
 
     ctx.env.get_undefined()
 }

@@ -13,12 +13,15 @@ class Bitcrusher extends AudioWorkletProcessor {
         }];
     }
 
-    constructor(options) {
+    constructor (options) {
+        console.log('in constructor', options);
+
         // The initial parameter value can be set by passing |options|
         // to the processor's constructor.
         super(options);
         this._phase = 0;
         this._lastSampleValue = 0;
+
         console.log("init");
     }
 
