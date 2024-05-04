@@ -27,6 +27,7 @@ pub(crate) struct ProcessorArguments {
 unsafe impl Send for ProcessorArguments {}
 
 // channel from main to worker
+#[allow(clippy::type_complexity)] // will refactor later
 pub(crate) fn send_recv_pair() -> &'static Mutex<(
     Option<Sender<ProcessorArguments>>,
     Option<Receiver<ProcessorArguments>>,
@@ -43,11 +44,13 @@ pub(crate) fn send_recv_pair() -> &'static Mutex<(
     })
 }
 
-// channel from worker to main
 pub(crate) struct SendItem2(Vec<AudioParamDescriptor>);
+
+// channel from worker to main
+#[allow(clippy::type_complexity)] // will refactor later
 pub(crate) fn send_recv_pair2() -> &'static (Sender<SendItem2>, Receiver<SendItem2>) {
     static PAIR: OnceLock<(Sender<SendItem2>, Receiver<SendItem2>)> = OnceLock::new();
-    PAIR.get_or_init(|| crossbeam_channel::unbounded())
+    PAIR.get_or_init(crossbeam_channel::unbounded)
 }
 
 #[js_function(1)]
@@ -114,13 +117,13 @@ pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
             .get_named_property::<JsObject>("proc123")?;
         let process = proc.get_named_property::<JsFunction>("process")?;
 
-        let input_samples = float_buffer_to_js(&ctx.env, inputs, 128);
+        let input_samples = float_buffer_to_js(ctx.env, inputs, 128);
         let mut input_channels = ctx.env.create_array(0)?;
         input_channels.insert(input_samples)?;
         let mut inputs = ctx.env.create_array(0)?;
         inputs.insert(input_channels)?;
 
-        let output_samples = float_buffer_to_js(&ctx.env, outputs, 128);
+        let output_samples = float_buffer_to_js(ctx.env, outputs, 128);
         let mut output_channels = ctx.env.create_array(0)?;
         output_channels.insert(output_samples)?;
         let mut outputs = ctx.env.create_array(0)?;
@@ -128,7 +131,7 @@ pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
 
         let mut js_params = ctx.env.create_object()?;
         params.into_iter().for_each(|(name, ptr, len)| {
-            let val = float_buffer_to_js(&ctx.env, ptr, len);
+            let val = float_buffer_to_js(ctx.env, ptr, len);
             js_params.set_named_property(&name, val).unwrap()
         });
 
