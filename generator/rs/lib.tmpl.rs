@@ -30,7 +30,7 @@ ${d.nodes.map(n => { return `
 mod ${d.slug(n)};
 use crate::${d.slug(n)}::${d.napiName(n)};`}).join('')}
 
-// other AudioWorklet internals
+// AudioWorklet internals
 use crate::audio_worklet_node::{register_params, run_audio_worklet};
 
 // MediaDevices & MediaStream API
@@ -113,10 +113,9 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     let napi_class = NapiMediaStream::create_js_class(&env)?;
     store.set_named_property("MediaStream", napi_class)?;
 
-    // store the store into instance so that it can be globally accessed
+    // push store into env instance data so that it can be globally accessed
     let store_ref = env.create_reference(store)?;
     env.set_instance_data(store_ref, 0, |mut c| {
-        // don't have any idea of what this does
         c.value.unref(c.env).unwrap();
     })?;
 

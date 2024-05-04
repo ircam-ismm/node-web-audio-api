@@ -32,7 +32,7 @@ pub(crate) fn send_recv_pair2() -> &'static (Sender<SendItem2>, Receiver<SendIte
 }
 
 #[js_function(1)]
-pub fn register_params(ctx: CallContext) -> Result<JsUndefined> {
+pub(crate) fn register_params(ctx: CallContext) -> Result<JsUndefined> {
     let js_params = ctx.get::<JsObject>(0)?;
     let length = js_params.get_array_length()? as usize;
     let mut rs_params: Vec<web_audio_api::AudioParamDescriptor> = Vec::with_capacity(length);
