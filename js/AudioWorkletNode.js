@@ -149,10 +149,14 @@ module.exports = (jsExport, nativeBinding) => {
       const indexCjs = path.join(__dirname, '..', 'index.cjs');
 
       const worker = new Worker(`
-const { workerData } = require('node:worker_threads');
+const { workerData, parentPort } = require('node:worker_threads');
 console.log("inside worker");
 const { register_params, run_audio_worklet } = require('${indexCjs}');
-class AudioWorkletProcessor { }
+class AudioWorkletProcessor {
+    constructor(options) {
+        this.port = parentPort;
+    }
+}
 var proc123;
 function registerProcessor(name, ctor) {
   register_params(ctor.parameterDescriptors ?? []);
@@ -193,6 +197,10 @@ run_loop();
       }
 
       this.#worker = worker;
+
+      // TODO this works because the Worker has `postMessage` and `on('message')`
+      // but we should probably use an actual MessagePort instance here..
+      this.port = worker;
     }
 
     get parameters() {

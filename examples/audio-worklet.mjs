@@ -9,6 +9,9 @@ const bitCrusher = new AudioWorkletNode(audioContext, 'crush.js', {
   processorOptions: { msg: "hello world" },
 });
 
+bitCrusher.port.on('message', (event) => console.log('main recv', event));
+bitCrusher.port.postMessage({hello: 'from main'});
+
 sine
   .connect(bitCrusher)
   .connect(audioContext.destination);

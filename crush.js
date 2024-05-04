@@ -22,6 +22,8 @@ class Bitcrusher extends AudioWorkletProcessor {
         this._phase = 0;
         this._lastSampleValue = 0;
 
+        this.port.on('message', (event) => console.log('worker recv', event));
+
         console.log("init");
     }
 
@@ -62,6 +64,11 @@ class Bitcrusher extends AudioWorkletProcessor {
                 }
             }
         }
+
+        if (Math.random() < 0.005) {
+            this.port.postMessage({hello: 'from render'});
+        }
+
         // No need to return a value; this node's lifetime is dependent only on its
         // input connections.
     }
