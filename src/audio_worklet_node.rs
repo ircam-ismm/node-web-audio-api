@@ -20,6 +20,12 @@ pub(crate) struct ProcessorArguments {
     outputs: *mut f32,
     // raw ptrs to the params (we can't Send a ref)
     params: Vec<(String, *mut f32, usize)>,
+    // AudioWorkletGlobalScope currentTime
+    current_time: f64,
+    // AudioWorkletGlobalScope currentFrame
+    current_frame: u64,
+    // AudioWorkletGlobalScope sampleRate
+    sample_rate: f32,
     // tail_time return value
     tail_time: Arc<AtomicBool>,
 }
@@ -109,12 +115,19 @@ pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
             inputs,
             outputs,
             params,
+            current_time,
+            current_frame,
+            sample_rate,
             tail_time,
         } = item;
-        let proc = ctx
-            .env
-            .get_global()?
-            .get_named_property::<JsObject>("proc123")?;
+        let mut global = ctx.env.get_global()?;
+
+        // fill AudioWorkletGlobalScope
+        global.set_named_property("currentTime", current_time)?;
+        global.set_named_property("currentFrame", current_frame)?;
+        global.set_named_property("sampleRate", sample_rate)?;
+
+        let proc = global.get_named_property::<JsObject>("proc123")?;
         let process = proc.get_named_property::<JsFunction>("process")?;
 
         let input_samples = float_buffer_to_js(ctx.env, inputs, 128);
@@ -279,7 +292,7 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
         inputs: &'b [&'a [&'a [f32]]],
         outputs: &'b mut [&'a mut [&'a mut [f32]]],
         params: AudioParamValues<'b>,
-        _scope: &'b AudioWorkletGlobalScope,
+        scope: &'b AudioWorkletGlobalScope,
     ) -> bool {
         let input_ptr = inputs[0][0].as_ptr() as *mut _;
         let output_ptr = outputs[0][0].as_mut_ptr();
@@ -294,6 +307,9 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
             inputs: input_ptr,
             outputs: output_ptr,
             params: param_ptr,
+            current_time: scope.current_time,
+            current_frame: scope.current_frame,
+            sample_rate: scope.sample_rate,
             tail_time: Arc::clone(&self.tail_time),
         };
         self.send.send(item).unwrap();
