@@ -14,12 +14,12 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 /// Rust to JS processor inputs
 pub(crate) struct ProcessorArguments {
-    // raw ptr to the inputs (we can't Send a ref)
-    inputs: *mut f32,
-    // raw ptr to the outputs (we can't Send a ref)
-    outputs: *mut f32,
-    // raw ptrs to the params (we can't Send a ref)
-    params: Vec<(String, *mut f32, usize)>,
+    // processor inputs (unsafely cast to static)
+    inputs: &'static [&'static [&'static [f32]]],
+    // processor ouputs (unsafely cast to static)
+    outputs: &'static [&'static [&'static [f32]]],
+    // processor audio params (unsafely cast to static)
+    params: Vec<(&'static str, &'static [f32])>,
     // AudioWorkletGlobalScope currentTime
     current_time: f64,
     // AudioWorkletGlobalScope currentFrame
@@ -130,25 +130,32 @@ pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
         let proc = global.get_named_property::<JsObject>("proc123")?;
         let process = proc.get_named_property::<JsFunction>("process")?;
 
-        let input_samples = float_buffer_to_js(ctx.env, inputs, 128);
-        let mut input_channels = ctx.env.create_array(0)?;
-        input_channels.insert(input_samples)?;
-        let mut inputs = ctx.env.create_array(0)?;
-        inputs.insert(input_channels)?;
+        let mut js_inputs = ctx.env.create_array(0)?;
+        if !inputs.is_empty() {
+            let input = inputs[0][0];
+            let input_samples = float_buffer_to_js(ctx.env, input.as_ptr() as *mut _, input.len());
+            let mut input_channels = ctx.env.create_array(0)?;
+            input_channels.insert(input_samples)?;
+            js_inputs.insert(input_channels)?;
+        }
 
-        let output_samples = float_buffer_to_js(ctx.env, outputs, 128);
-        let mut output_channels = ctx.env.create_array(0)?;
-        output_channels.insert(output_samples)?;
-        let mut outputs = ctx.env.create_array(0)?;
-        outputs.insert(output_channels)?;
+        let mut js_outputs = ctx.env.create_array(0)?;
+        if !outputs.is_empty() {
+            let output = outputs[0][0];
+            let output_samples =
+                float_buffer_to_js(ctx.env, output.as_ptr() as *mut _, output.len());
+            let mut output_channels = ctx.env.create_array(0)?;
+            output_channels.insert(output_samples)?;
+            js_outputs.insert(output_channels)?;
+        }
 
         let mut js_params = ctx.env.create_object()?;
-        params.into_iter().for_each(|(name, ptr, len)| {
-            let val = float_buffer_to_js(ctx.env, ptr, len);
-            js_params.set_named_property(&name, val).unwrap()
+        params.into_iter().for_each(|(name, data)| {
+            let val = float_buffer_to_js(ctx.env, data.as_ptr() as *mut _, data.len());
+            js_params.set_named_property(name, val).unwrap()
         });
 
-        let js_ret: JsUnknown = process.apply3(proc, inputs, outputs, js_params)?;
+        let js_ret: JsUnknown = process.apply3(proc, js_inputs, js_outputs, js_params)?;
         let ret = js_ret.coerce_to_bool()?.get_value()?;
         tail_time.store(ret, Ordering::Relaxed);
     }
@@ -294,19 +301,20 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
         params: AudioParamValues<'b>,
         scope: &'b AudioWorkletGlobalScope,
     ) -> bool {
-        let input_ptr = inputs[0][0].as_ptr() as *mut _;
-        let output_ptr = outputs[0][0].as_mut_ptr();
-        let param_ptr: Vec<_> = params
+        let inputs: &'static [&'static [&'static [f32]]] = unsafe { std::mem::transmute(inputs) };
+        let outputs: &'static [&'static [&'static [f32]]] = unsafe { std::mem::transmute(outputs) };
+        let params: Vec<(&'static str, &'static [f32])> = params
             .keys()
             .map(|k| {
-                let value = params.get(k);
-                (k.to_string(), value.as_ptr() as *mut _, value.len())
+                let label = unsafe { std::mem::transmute(k) };
+                let value = unsafe { std::mem::transmute(&params.get(k)[..]) };
+                (label, value)
             })
             .collect();
         let item = ProcessorArguments {
-            inputs: input_ptr,
-            outputs: output_ptr,
-            params: param_ptr,
+            inputs,
+            outputs,
+            params,
             current_time: scope.current_time,
             current_frame: scope.current_frame,
             sample_rate: scope.sample_rate,
