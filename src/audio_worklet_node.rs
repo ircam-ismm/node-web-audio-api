@@ -9,7 +9,8 @@ use web_audio_api::worklet::*;
 use web_audio_api::AudioParamDescriptor;
 
 use crossbeam_channel::{self, Receiver, Sender};
-use std::sync::{Mutex, OnceLock};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex, OnceLock};
 
 /// Rust to JS processor inputs
 pub(crate) struct ProcessorArguments {
@@ -19,15 +20,23 @@ pub(crate) struct ProcessorArguments {
     outputs: *mut f32,
     // raw ptrs to the params (we can't Send a ref)
     params: Vec<(String, *mut f32, usize)>,
+    // tail_time return value
+    tail_time: Arc<AtomicBool>,
 }
 
 unsafe impl Send for ProcessorArguments {}
 
 // channel from main to worker
-pub(crate) fn send_recv_pair(
-) -> &'static Mutex<(Option<Sender<ProcessorArguments>>, Option<Receiver<ProcessorArguments>>)> {
-    static PAIR: OnceLock<Mutex<(Option<Sender<ProcessorArguments>>, Option<Receiver<ProcessorArguments>>)>> =
-        OnceLock::new();
+pub(crate) fn send_recv_pair() -> &'static Mutex<(
+    Option<Sender<ProcessorArguments>>,
+    Option<Receiver<ProcessorArguments>>,
+)> {
+    static PAIR: OnceLock<
+        Mutex<(
+            Option<Sender<ProcessorArguments>>,
+            Option<Receiver<ProcessorArguments>>,
+        )>,
+    > = OnceLock::new();
     PAIR.get_or_init(|| {
         let (send, recv) = crossbeam_channel::unbounded();
         Mutex::new((Some(send), Some(recv)))
@@ -96,7 +105,8 @@ pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
         let ProcessorArguments {
             inputs,
             outputs,
-            params
+            params,
+            tail_time,
         } = item;
         let proc = ctx
             .env
@@ -123,7 +133,8 @@ pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
         });
 
         let js_ret: JsUnknown = process.apply3(proc, inputs, outputs, js_params)?;
-        let _ret = js_ret.coerce_to_bool()?.get_value()?;
+        let ret = js_ret.coerce_to_bool()?.get_value()?;
+        tail_time.store(ret, Ordering::Relaxed);
     }
 
     ctx.env.get_undefined()
@@ -164,13 +175,14 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         processor_options: _processor_options,
         audio_node_options,
     } = options;
+    let tail_time = Arc::new(AtomicBool::new(false));
     let options = AudioWorkletNodeOptions {
         number_of_inputs,
         number_of_outputs,
         output_channel_count,
         parameter_data,
         audio_node_options,
-        processor_options: send,
+        processor_options: (send, tail_time),
     };
 
     // --------------------------------------------------------
@@ -239,13 +251,17 @@ audio_node_impl!(NapiAudioWorkletNode);
 
 struct NapiAudioWorkletProcessor {
     send: Sender<ProcessorArguments>,
+    tail_time: Arc<AtomicBool>,
 }
 
 impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
-    type ProcessorOptions = Sender<ProcessorArguments>;
+    type ProcessorOptions = (Sender<ProcessorArguments>, Arc<AtomicBool>);
 
     fn constructor(opts: Self::ProcessorOptions) -> Self {
-        Self { send: opts }
+        Self {
+            send: opts.0,
+            tail_time: opts.1,
+        }
     }
 
     fn parameter_descriptors() -> Vec<AudioParamDescriptor>
@@ -274,20 +290,10 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
         let item = ProcessorArguments {
             inputs: input_ptr,
             outputs: output_ptr,
-            params: param_ptr
+            params: param_ptr,
+            tail_time: Arc::clone(&self.tail_time),
         };
         self.send.send(item).unwrap();
-        true
-        // convert to JS frozen arrays (requires env..)
-        // - inputs
-        // - outputs
-        // convert to maplike
-        // - params
-
-        // send to worker thread
-        // await result
-        // drop js stuff
-        // pass return value
-        //todo!()
+        self.tail_time.load(Ordering::Relaxed)
     }
 }
