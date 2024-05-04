@@ -11,12 +11,22 @@ use web_audio_api::AudioParamDescriptor;
 use crossbeam_channel::{self, Receiver, Sender};
 use std::sync::{Mutex, OnceLock};
 
+/// Rust to JS processor inputs
+pub(crate) struct ProcessorArguments {
+    // raw ptr to the inputs (we can't Send a ref)
+    inputs: *mut f32,
+    // raw ptr to the outputs (we can't Send a ref)
+    outputs: *mut f32,
+    // raw ptrs to the params (we can't Send a ref)
+    params: Vec<(String, *mut f32, usize)>,
+}
+
+unsafe impl Send for ProcessorArguments {}
+
 // channel from main to worker
-pub(crate) struct SendItem(*mut f32, *mut f32, Vec<(String, *mut f32, usize)>);
-unsafe impl Send for SendItem {}
 pub(crate) fn send_recv_pair(
-) -> &'static Mutex<(Option<Sender<SendItem>>, Option<Receiver<SendItem>>)> {
-    static PAIR: OnceLock<Mutex<(Option<Sender<SendItem>>, Option<Receiver<SendItem>>)>> =
+) -> &'static Mutex<(Option<Sender<ProcessorArguments>>, Option<Receiver<ProcessorArguments>>)> {
+    static PAIR: OnceLock<Mutex<(Option<Sender<ProcessorArguments>>, Option<Receiver<ProcessorArguments>>)>> =
         OnceLock::new();
     PAIR.get_or_init(|| {
         let (send, recv) = crossbeam_channel::unbounded();
@@ -83,31 +93,36 @@ pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
     let recv = send_recv_pair().lock().unwrap().1.take().unwrap();
 
     for item in recv {
+        let ProcessorArguments {
+            inputs,
+            outputs,
+            params
+        } = item;
         let proc = ctx
             .env
             .get_global()?
             .get_named_property::<JsObject>("proc123")?;
         let process = proc.get_named_property::<JsFunction>("process")?;
 
-        let input_samples = float_buffer_to_js(&ctx.env, item.0, 128);
+        let input_samples = float_buffer_to_js(&ctx.env, inputs, 128);
         let mut input_channels = ctx.env.create_array(0)?;
         input_channels.insert(input_samples)?;
         let mut inputs = ctx.env.create_array(0)?;
         inputs.insert(input_channels)?;
 
-        let output_samples = float_buffer_to_js(&ctx.env, item.1, 128);
+        let output_samples = float_buffer_to_js(&ctx.env, outputs, 128);
         let mut output_channels = ctx.env.create_array(0)?;
         output_channels.insert(output_samples)?;
         let mut outputs = ctx.env.create_array(0)?;
         outputs.insert(output_channels)?;
 
-        let mut params = ctx.env.create_object()?;
-        item.2.into_iter().for_each(|(name, ptr, len)| {
+        let mut js_params = ctx.env.create_object()?;
+        params.into_iter().for_each(|(name, ptr, len)| {
             let val = float_buffer_to_js(&ctx.env, ptr, len);
-            params.set_named_property(&name, val).unwrap()
+            js_params.set_named_property(&name, val).unwrap()
         });
 
-        let js_ret: JsUnknown = process.apply3(proc, inputs, outputs, params)?;
+        let js_ret: JsUnknown = process.apply3(proc, inputs, outputs, js_params)?;
         let _ret = js_ret.coerce_to_bool()?.get_value()?;
     }
 
@@ -223,11 +238,11 @@ audio_node_impl!(NapiAudioWorkletNode);
 // -------------------------------------------------
 
 struct NapiAudioWorkletProcessor {
-    send: Sender<SendItem>,
+    send: Sender<ProcessorArguments>,
 }
 
 impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
-    type ProcessorOptions = Sender<SendItem>;
+    type ProcessorOptions = Sender<ProcessorArguments>;
 
     fn constructor(opts: Self::ProcessorOptions) -> Self {
         Self { send: opts }
@@ -256,7 +271,11 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
                 (k.to_string(), value.as_ptr() as *mut _, value.len())
             })
             .collect();
-        let item = SendItem(input_ptr, output_ptr, param_ptr);
+        let item = ProcessorArguments {
+            inputs: input_ptr,
+            outputs: output_ptr,
+            params: param_ptr
+        };
         self.send.send(item).unwrap();
         true
         // convert to JS frozen arrays (requires env..)
