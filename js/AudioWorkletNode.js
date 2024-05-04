@@ -54,7 +54,7 @@ const { register_params, run_audio_worklet } = require('${indexCjs}');
 class AudioWorkletProcessor { }
 var proc123;
 function registerProcessor(name, ctor) {
-  register_params(ctor.parameterDescriptors);
+  register_params(ctor.parameterDescriptors ?? []);
   proc123 = new ctor(workerData);
 }
 ${buffer}
