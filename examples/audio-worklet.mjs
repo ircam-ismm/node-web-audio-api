@@ -1,11 +1,17 @@
+import path from 'node:path';
+
 import { AudioContext, OscillatorNode, AudioWorkletNode } from '../index.mjs';
 import { sleep } from '@ircam/sc-utils';
 
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });
 
+// @todo - only relative to cwd for now, should support absolute and relative to caller pathnames
+const workletPathname = path.join('examples', 'worklets', 'bitcrusher.js');
+await audioContext.audioWorklet.addModule(workletPathname);
+
 const sine = new OscillatorNode(audioContext, { type: 'sawtooth', frequency: 5000 });
-const bitCrusher = new AudioWorkletNode(audioContext, 'crush.js', {
+const bitCrusher = new AudioWorkletNode(audioContext, 'bitcrusher', {
   processorOptions: { msg: "hello world" },
 });
 
@@ -30,4 +36,6 @@ sine.stop(8);
 
 await sleep(8)
 
+// @todo - this should close the AudioWorkletGlobalScope properly
+// before closing the "real" context
 await audioContext.close();

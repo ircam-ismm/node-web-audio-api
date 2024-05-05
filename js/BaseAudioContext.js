@@ -24,12 +24,16 @@ const {
 } = require('./lib/utils.js');
 const {
   kNapiObj,
+  kPrivateConstructor,
 } = require('./lib/symbols.js');
+
+const AudioWorklet = require('./AudioWorklet.js');
 
 module.exports = (jsExport, _nativeBinding) => {
   class BaseAudioContext extends EventTarget {
     #listener = null;
     #destination = null;
+    #audioWorklet = null;
 
     constructor(options) {
       // Make constructor "private"
@@ -47,10 +51,23 @@ module.exports = (jsExport, _nativeBinding) => {
         ...kHiddenProperty,
       });
 
-      this.#listener = null; // lazily instanciated
+      this.#audioWorklet = new AudioWorklet({
+        [kPrivateConstructor]: true,
+      });
       this.#destination = new jsExport.AudioDestinationNode(this, {
         [kNapiObj]: this[kNapiObj].destination,
       });
+    }
+
+    // @todo
+    // renderQuantumSize
+
+    get audioWorklet() {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
+
+      return this.#audioWorklet;
     }
 
     get listener() {
@@ -98,9 +115,6 @@ module.exports = (jsExport, _nativeBinding) => {
 
       return this[kNapiObj].state;
     }
-
-    // renderQuantumSize
-    // audioWorklet
 
     get onstatechange() {
       if (!(this instanceof BaseAudioContext)) {

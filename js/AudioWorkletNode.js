@@ -14,6 +14,7 @@ const {
 } = require('./lib/errors.js');
 const {
   kNapiObj,
+  kCreateProcessor,
 } = require('./lib/symbols.js');
 
 /* eslint-enable no-unused-vars */
@@ -23,19 +24,10 @@ const IMPLEMENTATION_MAX_NUMBER_OF_CHANNELS = 32;
 
 module.exports = (jsExport, nativeBinding) => {
   class AudioWorkletNode extends AudioNode {
-
-    #worker = null;
+    #port = null;
     #parameters = {};
 
-    // dictionary AudioWorkletNodeOptions : AudioNodeOptions {
-    //     unsigned long numberOfInputs = 1;
-    //     unsigned long numberOfOutputs = 1;
-    //     sequence<unsigned long> outputChannelCount;
-    //     record<DOMString, double> parameterData;
-    //     object processorOptions;
-    // };
     constructor(context, name, options) {
-
       if (arguments.length < 2) {
         throw new TypeError(`Failed to construct 'AudioWorkletNode': 2 arguments required, but only ${arguments.length} present`);
       }
@@ -143,40 +135,8 @@ module.exports = (jsExport, nativeBinding) => {
         parsedOptions.processorOptions = {};
       }
 
-      const buffer = fs.readFileSync(path.join(process.cwd(), name));
-      console.log(buffer.toString(), parsedOptions);
-
-      const indexCjs = path.join(__dirname, '..', 'index.cjs');
-
-      const worker = new Worker(`
-const { workerData, parentPort } = require('node:worker_threads');
-console.log("inside worker");
-const { register_params, run_audio_worklet } = require('${indexCjs}');
-class AudioWorkletProcessor {
-    constructor(options) {
-        this.port = parentPort;
-    }
-}
-var proc123;
-function registerProcessor(name, ctor) {
-  register_params(ctor.parameterDescriptors ?? []);
-  proc123 = new ctor(workerData);
-}
-${buffer}
-function run_loop() {
-    // block until we need to render a quantum
-    run_audio_worklet();
-    // yield to the event loop, and then repeat
-    setImmediate(run_loop);
-}
-run_loop();
-`,
-          {
-              eval: true,
-              workerData: options.processorOptions,
-          }
-      );
-      console.log('worker is init');
+      // console.log('>>> create processor');
+      const messagePort = context.audioWorklet[kCreateProcessor](parsedName, options.processorOptions);
 
       let napiObj;
 
@@ -196,19 +156,23 @@ run_loop();
         });
       }
 
-      this.#worker = worker;
-
-      // TODO this works because the Worker has `postMessage` and `on('message')`
-      // but we should probably use an actual MessagePort instance here..
-      this.port = worker;
+      this.#port = messagePort;
     }
 
     get parameters() {
       if (!(this instanceof AudioWorkletNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'DelayNode\'');
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioWorkletNode\'');
       }
 
       return this.#parameters;
+    }
+
+    get port() {
+      if (!(this instanceof AudioWorkletNode)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioWorkletNode\'');
+      }
+
+      return this.#port;
     }
   }
 

@@ -1,6 +1,7 @@
 module.exports.kNapiObj = Symbol('node-web-audio-api:napi-obj');
 module.exports.kAudioBuffer = Symbol('node-web-audio-api:audio-buffer');
-
+module.exports.kCreateProcessor = Symbol('node-web-audio-api:create-processor');
+module.exports.kPrivateConstructor = Symbol('node-web-audio-api:private-constructor');
 
 // semi-private keys for events listeners
 
@@ -17,6 +18,3 @@ module.exports.kOnComplete = Symbol.for('node-web-audio-api:oncomplete');
 module.exports.kOnEnded = Symbol.for('node-web-audio-api:onended');
 // # ScriptProcessorNode
 module.exports.kOnAudioProcess = Symbol.for('node-web-audio-api:onaudioprocess');
-
-//
-
