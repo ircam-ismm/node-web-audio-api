@@ -54,7 +54,7 @@ class AudioWorklet {
     });
   }
 
-  [kCreateProcessor](name, processorOptions) {
+  [kCreateProcessor](name, processorOptions, id) {
     const { port1, port2 } = new MessageChannel();
 
     // @todo - check if some processorOptions must be transfered as well
@@ -63,6 +63,7 @@ class AudioWorklet {
       name,
       processorOptions,
       messagePort: port2,
+      id,
     }, [port2]);
 
     return port1;

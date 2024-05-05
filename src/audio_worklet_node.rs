@@ -9,8 +9,12 @@ use web_audio_api::worklet::*;
 use web_audio_api::AudioParamDescriptor;
 
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
+
+// ID generator for the WorkletNodes
+// It increments per process instead of per context for simplicity.
+static INCREMENTING_ID: AtomicU32 = AtomicU32::new(0);
 
 /// Rust to JS processor inputs
 pub(crate) struct ProcessorArguments {
@@ -289,6 +293,8 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         js_parameters.set_named_property(name, js_obj)?;
     }
 
+    let id = INCREMENTING_ID.fetch_add(1, Ordering::Relaxed);
+
     // --------------------------------------------------------
     // Finalize instance creation
     // --------------------------------------------------------
@@ -298,6 +304,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .with_property_attributes(PropertyAttributes::Enumerable),
         Property::new("parameters")?
             .with_value(&js_parameters)
+            .with_property_attributes(PropertyAttributes::Enumerable),
+        Property::new("id")?
+            .with_value(&ctx.env.create_uint32(id)?)
             .with_property_attributes(PropertyAttributes::Enumerable),
         // this must be put on the instance and not in the prototype to be reachable
         Property::new("Symbol.toStringTag")?

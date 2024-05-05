@@ -135,9 +135,6 @@ module.exports = (jsExport, nativeBinding) => {
         parsedOptions.processorOptions = {};
       }
 
-      // console.log('>>> create processor');
-      const messagePort = context.audioWorklet[kCreateProcessor](parsedName, options.processorOptions);
-
       let napiObj;
 
       try {
@@ -145,6 +142,12 @@ module.exports = (jsExport, nativeBinding) => {
       } catch (err) {
         throwSanitizedError(err);
       }
+
+      let id = napiObj.id;
+      console.log('id = ', id);
+
+      // console.log('>>> create processor');
+      const messagePort = context.audioWorklet[kCreateProcessor](parsedName, options.processorOptions, id);
 
       super(context, {
         [kNapiObj]: napiObj,

@@ -9,7 +9,7 @@ const {
 
 const kMessagePort = Symbol('node-web-audio-api:message-port');
 const nameProcessorCtorMap = new Map();
-// const processorIdMap = new WeakMap(); // instance, uuid
+const processorIdMap = new WeakMap();
 let loopStarted = false;
 let breakLoop = false;
 
@@ -69,7 +69,7 @@ parentPort.on('message', event => {
       break;
     }
     case 'node-web-audio-api:worklet:create-processor': {
-      const { name, processorOptions, messagePort } = event;
+      const { name, processorOptions, messagePort, id } = event;
       const ctor = nameProcessorCtorMap.get(name);
 
       register_params(ctor.parameterDescriptors ?? []);
@@ -77,8 +77,7 @@ parentPort.on('message', event => {
       processorOptions[kMessagePort] = messagePort;
       const instance = new ctor(processorOptions);
 
-      // @todo - enable multiple processors
-      globalThis.proc123 = instance;
+      globalThis.processorIdMap.set(id, instance);
 
       if (!loopStarted) {
         loopStarted = true;
