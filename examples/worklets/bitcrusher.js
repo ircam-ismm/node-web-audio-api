@@ -14,7 +14,7 @@ class Bitcrusher extends AudioWorkletProcessor {
     }
 
     constructor(options) {
-      process.stdout.write(`++ in constructor: ${JSON.stringify(options, null, 2)}\n`);
+      console.log(`++ in constructor: ${JSON.stringify(options, null, 2)}\n`);
       // The initial parameter value can be set by passing |options|
       // to the processor's constructor.
       super(options);
@@ -24,7 +24,7 @@ class Bitcrusher extends AudioWorkletProcessor {
       this._msg = options.msg;
 
       this.port.on('message', event => {
-        process.stdout.write(`++ on message: ${JSON.stringify(event, null, 2)}\n`);
+        console.log(`++ on message: ${JSON.stringify(event, null, 2)}\n`);
       });
     }
 

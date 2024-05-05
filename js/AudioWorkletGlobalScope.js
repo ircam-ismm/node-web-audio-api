@@ -53,11 +53,10 @@ parentPort.on('close', () => {
   // @todo
   // - clear all maps
   // - etc...
-  return;
 });
 
 parentPort.on('message', event => {
-  process.stdout.write(event.cmd + '\n');
+  console.log(event.cmd + '\n');
 
   switch (event.cmd) {
     case 'node-web-audio-api:worklet:add-module': {
