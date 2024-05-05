@@ -12,11 +12,11 @@ await audioContext.audioWorklet.addModule(workletPathname);
 
 const sine = new OscillatorNode(audioContext, { type: 'sawtooth', frequency: 5000 });
 const bitCrusher = new AudioWorkletNode(audioContext, 'bitcrusher', {
-  processorOptions: { msg: "hello world" },
+  processorOptions: { msg: 'hello world' },
 });
 
 bitCrusher.port.on('message', (event) => console.log('main recv', event));
-bitCrusher.port.postMessage({hello: 'from main'});
+bitCrusher.port.postMessage({ hello: 'from main' });
 
 sine
   .connect(bitCrusher)

@@ -57,6 +57,8 @@ parentPort.on('close', () => {
 });
 
 parentPort.on('message', event => {
+  process.stdout.write(event.cmd + '\n');
+
   switch (event.cmd) {
     case 'node-web-audio-api:worklet:add-module': {
       const { code } = event;
