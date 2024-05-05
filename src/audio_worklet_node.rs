@@ -1,14 +1,14 @@
 use crate::utils::float_buffer_to_js;
-
 use crate::*;
+
+use crossbeam_channel::{self, Receiver, Sender};
 use napi::*;
 use napi_derive::js_function;
 use web_audio_api::node::*;
 use web_audio_api::worklet::*;
-
 use web_audio_api::AudioParamDescriptor;
 
-use crossbeam_channel::{self, Receiver, Sender};
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
@@ -188,28 +188,69 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
     let js_audio_context = ctx.get::<JsObject>(0)?;
 
-    // --------------------------------------------------------
-    // Create AudioBufferSourceOptions object
-    // --------------------------------------------------------
-    let options: AudioWorkletNodeOptions<()> = Default::default();
-    let send = send_recv_pair().lock().unwrap().0.take().unwrap();
+    // @note - not used
+    let js_name = ctx.get::<JsString>(1)?;
+    let utf8_name = js_name.into_utf8()?;
+    let _name = utf8_name.into_owned()?;
 
-    // Remap the constructor options to include our processor options
-    let AudioWorkletNodeOptions {
-        number_of_inputs,
-        number_of_outputs,
-        output_channel_count,
-        parameter_data,
-        processor_options: _processor_options,
-        audio_node_options,
-    } = options;
+    // --------------------------------------------------------
+    // Parse options
+    // --------------------------------------------------------
+    let options_js = ctx.get::<JsObject>(2)?;
+
+    let number_of_inputs = options_js
+        .get_named_property::<JsNumber>("numberOfInputs")?
+        .get_double()? as usize;
+
+    let number_of_outputs = options_js
+        .get_named_property::<JsNumber>("numberOfOutputs")?
+        .get_double()? as usize;
+
+    let output_channel_count_js = options_js
+        .get::<&str, JsTypedArray>("outputChannelCount")?
+        .unwrap();
+    let output_channel_count_value = output_channel_count_js.into_value()?;
+    let output_channel_count_u32: &[u32] = output_channel_count_value.as_ref();
+    let output_channel_count: Vec<usize> = output_channel_count_u32
+        .iter()
+        .map(|&v| v as usize)
+        .collect();
+
+    let mut parameter_data = HashMap::<String, f64>::new();
+    let parameter_data_js = options_js.get_named_property::<JsObject>("parameterData")?;
+    let parameter_keys_js = parameter_data_js.get_all_property_names(
+        KeyCollectionMode::OwnOnly,
+        KeyFilter::Enumerable,
+        KeyConversion::NumbersToStrings,
+    )?;
+    let length = parameter_keys_js.get_array_length()?;
+
+    for i in 0..length {
+        let key_js = parameter_keys_js.get_element::<JsString>(i)?;
+        let utf8_key = key_js.into_utf8()?;
+        let key = utf8_key.into_owned()?;
+
+        let value = parameter_data_js
+            .get_property::<JsString, JsNumber>(key_js)?
+            .get_double()?;
+
+        parameter_data.insert(key, value);
+    }
+
+    // no need to parse `processorOptions`, sent to JS processor
+
+    // --------------------------------------------------------
+    // Create AudioWorkletNodeOptions object
+    // --------------------------------------------------------
+    let send = send_recv_pair().lock().unwrap().0.take().unwrap();
     let tail_time = Arc::new(AtomicBool::new(false));
+
     let options = AudioWorkletNodeOptions {
         number_of_inputs,
         number_of_outputs,
         output_channel_count,
         parameter_data,
-        audio_node_options,
+        audio_node_options: AudioNodeOptions::default(),
         processor_options: (send, tail_time),
     };
 

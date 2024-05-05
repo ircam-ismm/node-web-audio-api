@@ -218,7 +218,7 @@ run_loop();
       writable: false,
       enumerable: false,
       configurable: true,
-      value: 0,
+      value: 2,
     },
   });
 
