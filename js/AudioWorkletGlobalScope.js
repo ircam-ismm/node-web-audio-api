@@ -24,6 +24,10 @@ function runLoop() {
 }
 
 class AudioWorkletProcessor {
+  static get parameterDescriptors() {
+    return [];
+  }
+
   #port = null;
 
   constructor(options) {
@@ -43,9 +47,11 @@ class AudioWorkletProcessor {
 function createRegisterProcessor(promiseId) {
   return function registerProcessor(name, processorCtor) {
     nameProcessorCtorMap.set(name, processorCtor);
-    // send back to main thread and resolve Promise
-    const parameterDescriptors = processorCtor.parameterDescriptors;
 
+    const parameterDescriptors = processorCtor.parameterDescriptors;
+    // register param descriptors on the rust side
+    register_params(parameterDescriptors);
+    // send param descriptors on main thread and resolve Promise
     parentPort.postMessage({
       cmd: 'node-web-audio-api:worklet:processor-registered',
       promiseId,
@@ -78,8 +84,6 @@ parentPort.on('message', event => {
     case 'node-web-audio-api:worklet:create-processor': {
       const { name, processorOptions, messagePort } = event;
       const ctor = nameProcessorCtorMap.get(name);
-
-      register_params(ctor.parameterDescriptors ?? []);
 
       processorOptions[kMessagePort] = messagePort;
       const instance = new ctor(processorOptions);
