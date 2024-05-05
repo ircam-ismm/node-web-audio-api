@@ -14,7 +14,6 @@ let loopStarted = false;
 let breakLoop = false;
 
 function runLoop() {
-  console.log('run loop')
   // block until we need to render a quantum
   run_audio_worklet();
 
@@ -43,23 +42,21 @@ class AudioWorkletProcessor {
 function registerProcessor(name, processorCtor) {
   nameProcessorCtorMap.set(name, processorCtor);
   // send back to main thread and resolve Promise
-  console.log('+ registered processor', name, processorCtor.parameterDescriptors);
+  console.log('> registered processor', name, processorCtor.parameterDescriptors);
 }
 
+// NOTE: Authors that register an event listener on the "message" event of this
+// port should call close on either end of the MessageChannel (either in the
+// AudioWorklet or the AudioWorkletGlobalScope side) to allow for resources to be collected.
+parentPort.on('close', () => {
+  breakLoop = true;
+  // @todo
+  // - clear all maps
+  // - etc...
+  return;
+});
+
 parentPort.on('message', event => {
-  // NOTE: Authors that register an event listener on the "message" event of this
-  // port should call close on either end of the MessageChannel (either in the
-  // AudioWorklet or the AudioWorkletGlobalScope side) to allow for resources to be collected.
-  if (event === 'close') {
-    breakLoop = true;
-    // @todo
-    // - clear all maps
-    // - etc...
-    return;
-  }
-
-  console.log(event.cmd);
-
   switch (event.cmd) {
     case 'node-web-audio-api:worklet:add-module': {
       const { code } = event;

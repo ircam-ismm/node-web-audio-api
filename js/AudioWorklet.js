@@ -27,7 +27,6 @@ class AudioWorklet {
   }
 
   async addModule(moduleUrl) {
-    console.log('> add module', moduleUrl);
     if (!this.#port) {
       await new Promise(resolve => {
         const workletPathname = path.join(__dirname, 'AudioWorkletGlobalScope.js');
@@ -35,7 +34,7 @@ class AudioWorklet {
         this.#port.on('online', resolve);
       });
 
-      console.log('worker online')
+      console.log('> worker online');
     }
 
 
@@ -58,6 +57,7 @@ class AudioWorklet {
   [kCreateProcessor](name, processorOptions) {
     const { port1, port2 } = new MessageChannel();
 
+    // @todo - check if some processorOptions must be transfered as well
     this.#port.postMessage({
       cmd: 'node-web-audio-api:worklet:create-processor',
       name,
