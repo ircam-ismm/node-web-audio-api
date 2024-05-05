@@ -39,10 +39,20 @@ class AudioWorkletProcessor {
   }
 }
 
-function registerProcessor(name, processorCtor) {
-  nameProcessorCtorMap.set(name, processorCtor);
-  // send back to main thread and resolve Promise
-  console.log('> registered processor', name, processorCtor.parameterDescriptors);
+// create registerProcessor method with memoized promiseId
+function createRegisterProcessor(promiseId) {
+  return function registerProcessor(name, processorCtor) {
+    nameProcessorCtorMap.set(name, processorCtor);
+    // send back to main thread and resolve Promise
+    const parameterDescriptors = processorCtor.parameterDescriptors;
+
+    parentPort.postMessage({
+      cmd: 'node-web-audio-api:worklet:processor-registered',
+      promiseId,
+      name,
+      parameterDescriptors,
+    });
+  }
 }
 
 // NOTE: Authors that register an event listener on the "message" event of this
@@ -60,11 +70,9 @@ parentPort.on('message', event => {
 
   switch (event.cmd) {
     case 'node-web-audio-api:worklet:add-module': {
-      const { code } = event;
+      const { code, promiseId } = event;
       const func = new Function('AudioWorkletProcessor', 'registerProcessor', code);
-      func(AudioWorkletProcessor, registerProcessor);
-
-      // @todo - send back parameterDescriptors
+      func(AudioWorkletProcessor, createRegisterProcessor(promiseId));
       break;
     }
     case 'node-web-audio-api:worklet:create-processor': {

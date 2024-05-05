@@ -8,10 +8,13 @@ const {
 const {
   kCreateProcessor,
   kPrivateConstructor,
+  kWorkletParamDescriptorsMap,
 } = require('./lib/symbols.js');
 
 class AudioWorklet {
   #port = null;
+  #idPromiseMap = new Map();
+  #promiseId = 0;
 
   constructor(options) {
     if (
@@ -20,6 +23,9 @@ class AudioWorklet {
     ) {
       throw new TypeError('Illegal constructor');
     }
+
+    // AudioWorklet can access this to check `parameterData`
+    this[kWorkletParamDescriptorsMap] = new Map();
   }
 
   get port() {
@@ -32,13 +38,24 @@ class AudioWorklet {
         const workletPathname = path.join(__dirname, 'AudioWorkletGlobalScope.js');
         this.#port = new Worker(workletPathname);
         this.#port.on('online', resolve);
-      });
 
-      console.log('> worker online');
+        this.#port.on('message', event => {
+          switch (event.cmd) {
+            case 'node-web-audio-api:worklet:processor-registered': {
+              const { promiseId, name, parameterDescriptors } = event;
+              const { resolve, reject } = this.#idPromiseMap.get(promiseId);
+
+              this.#idPromiseMap.delete(promiseId);
+              resolve({ name, parameterDescriptors });
+              break;
+            }
+          }
+        });
+      });
     }
 
-
     let buffer;
+
     try {
       // @todo - allow relative path from caller site, probably required for wpt
       const pathname = path.join(process.cwd(), moduleUrl);
@@ -47,11 +64,20 @@ class AudioWorklet {
       throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
     }
 
-    // @todo - wait for feedback from worker with param descriptors to resolve promise
-    this.#port.postMessage({
-      cmd: 'node-web-audio-api:worklet:add-module',
-      code: buffer.toString(),
+    const promiseId = this.#promiseId++;
+    // This promise is resolved when the Worker returns the name and
+    // parameterDescriptors from the added module
+    const { name, parameterDescriptors } = await new Promise((resolve, reject) => {
+      this.#idPromiseMap.set(promiseId, { resolve, reject });
+
+      this.#port.postMessage({
+        cmd: 'node-web-audio-api:worklet:add-module',
+        code: buffer.toString(),
+        promiseId,
+      });
     });
+
+    this[kWorkletParamDescriptorsMap].set(name, parameterDescriptors);
   }
 
   [kCreateProcessor](name, processorOptions) {
