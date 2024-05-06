@@ -10,11 +10,14 @@ use web_audio_api::AudioParamDescriptor;
 
 use std::cell::Cell;
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
+
+static INCREMENTING_ID: AtomicU32 = AtomicU32::new(0);
 
 /// Rust to JS processor inputs
 pub(crate) struct ProcessorArguments {
+    id: u32,
     // processor inputs (unsafely cast to static)
     inputs: &'static [&'static [&'static [f32]]],
     // processor ouputs (unsafely cast to static)
@@ -87,6 +90,7 @@ pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
         .recv()
         .unwrap();
     let ProcessorArguments {
+        id,
         inputs,
         outputs,
         params,
@@ -98,17 +102,17 @@ pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
 
     let mut global = ctx.env.get_global()?;
 
+    // Make sure the processor exists, might run into race conditions between
+    // Rust Audio thread and JS Worker thread
+    let processor = global.get_named_property::<JsUnknown>(&id.to_string())?;
+    if processor.get_type()? == ValueType::Unknown {
+        return ctx.env.get_undefined();
+    }
+
     // fill AudioWorkletGlobalScope
     global.set_named_property("currentTime", current_time)?;
     global.set_named_property("currentFrame", current_frame)?;
     global.set_named_property("sampleRate", sample_rate)?;
-
-    // Make sure the processor exists, might run into race conditions between
-    // Rust Audio thread and JS Worker thread
-    let processor = global.get_named_property::<JsUnknown>("proc123")?;
-    if processor.get_type()? == ValueType::Unknown {
-        return ctx.env.get_undefined();
-    }
 
     let processor = processor.coerce_to_object()?;
     let process_method = processor.get_named_property::<JsFunction>("process")?;
@@ -265,6 +269,8 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // --------------------------------------------------------
     let send = send_recv_pair().lock().unwrap().0.take().unwrap();
     let tail_time = Arc::new(AtomicBool::new(false));
+    // Unique id to pair Napi Worklet and JS processor
+    let id = INCREMENTING_ID.fetch_add(1, Ordering::Relaxed);
 
     let options = AudioWorkletNodeOptions {
         number_of_inputs,
@@ -272,7 +278,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         output_channel_count,
         parameter_data,
         audio_node_options: AudioNodeOptions::default(),
-        processor_options: (send, tail_time),
+        processor_options: (send, tail_time, id),
     };
 
     // --------------------------------------------------------
@@ -328,6 +334,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         Property::new("parameters")?
             .with_value(&js_parameters)
             .with_property_attributes(PropertyAttributes::Enumerable),
+        Property::new("id")?
+            .with_value(&ctx.env.create_uint32(id)?)
+            .with_property_attributes(PropertyAttributes::Enumerable),
         // this must be put on the instance and not in the prototype to be reachable
         Property::new("Symbol.toStringTag")?
             .with_value(&ctx.env.create_string("AudioWorkletNode")?)
@@ -350,16 +359,18 @@ audio_node_impl!(NapiAudioWorkletNode);
 struct NapiAudioWorkletProcessor {
     send: Sender<ProcessorArguments>,
     tail_time: Arc<AtomicBool>,
+    id: u32,
     params: Vec<(&'static str, &'static [f32])>,
 }
 
 impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
-    type ProcessorOptions = (Sender<ProcessorArguments>, Arc<AtomicBool>);
+    type ProcessorOptions = (Sender<ProcessorArguments>, Arc<AtomicBool>, u32);
 
     fn constructor(opts: Self::ProcessorOptions) -> Self {
         Self {
             send: opts.0,
             tail_time: opts.1,
+            id: opts.2,
             params: Vec::with_capacity(32),
         }
     }
@@ -390,6 +401,7 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
         let params = unsafe { std::mem::transmute(&self.params[..]) };
 
         let item = ProcessorArguments {
+            id: self.id,
             inputs,
             outputs,
             params,
@@ -398,6 +410,7 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
             sample_rate: scope.sample_rate,
             tail_time: Arc::clone(&self.tail_time),
         };
+
         self.send.send(item).unwrap();
         self.tail_time.load(Ordering::Relaxed)
     }

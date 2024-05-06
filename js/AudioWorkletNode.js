@@ -177,7 +177,11 @@ module.exports = (jsExport, nativeBinding) => {
       });
 
       // Create JS processor
-      this.#port = context.audioWorklet[kCreateProcessor](parsedName, processorOptions);
+      this.#port = context.audioWorklet[kCreateProcessor](
+        parsedName,
+        processorOptions,
+        napiObj.id,
+      );
     }
 
     get parameters() {

@@ -79,14 +79,14 @@ parentPort.on('message', event => {
       break;
     }
     case 'node-web-audio-api:worklet:create-processor': {
-      const { name, processorOptions, messagePort } = event;
+      const { name, id, processorOptions, messagePort } = event;
       const ctor = nameProcessorCtorMap.get(name);
 
       processorOptions[kMessagePort] = messagePort;
       const instance = new ctor(processorOptions);
 
       // @todo - enable multiple processors
-      globalThis.proc123 = instance;
+      globalThis[`${id}`] = instance;
 
       if (!loopStarted) {
         loopStarted = true;
