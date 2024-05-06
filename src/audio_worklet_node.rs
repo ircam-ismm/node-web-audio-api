@@ -49,15 +49,19 @@ pub(crate) fn send_recv_pair() -> &'static Mutex<(
     })
 }
 
-pub(crate) struct SendItem2(Vec<AudioParamDescriptor>);
+struct AudioParamChannel {
+    send: Mutex<Sender<Vec<AudioParamDescriptor>>>,
+    recv: Receiver<Vec<AudioParamDescriptor>>,
+}
 
-// channel from worker to main
-#[allow(clippy::type_complexity)] // will refactor later
-pub(crate) fn send_recv_pair2() -> &'static (Mutex<Sender<SendItem2>>, Receiver<SendItem2>) {
-    static PAIR: OnceLock<(Mutex<Sender<SendItem2>>, Receiver<SendItem2>)> = OnceLock::new();
+fn audio_param_descriptor_channel() -> &'static AudioParamChannel {
+    static PAIR: OnceLock<AudioParamChannel> = OnceLock::new();
     PAIR.get_or_init(|| {
         let (send, recv) = crossbeam_channel::unbounded();
-        (Mutex::new(send), recv)
+        AudioParamChannel {
+            send: Mutex::new(send),
+            recv,
+        }
     })
 }
 
@@ -274,8 +278,8 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // --------------------------------------------------------
     // send parameterDescriptors so that NapiAudioWorkletProcessor can retrieve them
     // --------------------------------------------------------
-    let guard = send_recv_pair2().0.lock().unwrap();
-    guard.send(SendItem2(rs_params)).unwrap();
+    let guard = audio_param_descriptor_channel().send.lock().unwrap();
+    guard.send(rs_params).unwrap();
 
     // --------------------------------------------------------
     // Create native AudioWorkletNode
@@ -362,7 +366,7 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
     where
         Self: Sized,
     {
-        dbg!(send_recv_pair2().1.recv().unwrap().0)
+        audio_param_descriptor_channel().recv.recv().unwrap()
     }
 
     fn process<'a, 'b>(
