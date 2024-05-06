@@ -30,8 +30,6 @@ pub(crate) struct ProcessorArguments {
     tail_time: Arc<AtomicBool>,
 }
 
-unsafe impl Send for ProcessorArguments {}
-
 // channel from main to worker
 #[allow(clippy::type_complexity)] // will refactor later
 pub(crate) fn send_recv_pair() -> &'static Mutex<(
