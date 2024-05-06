@@ -22,8 +22,8 @@ sine
   .connect(bitCrusher)
   .connect(audioContext.destination);
 
-const paramBitDepth =  bitCrusher.parameters.bitDepth;
-const paramReduction =  bitCrusher.parameters.frequencyReduction;
+const paramBitDepth =  bitCrusher.parameters.get('bitDepth');
+const paramReduction =  bitCrusher.parameters.get('frequencyReduction');
 
 paramBitDepth.setValueAtTime(1, 0);
 

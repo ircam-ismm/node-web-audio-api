@@ -11,6 +11,9 @@ const {
   kCreateProcessor,
   kPrivateConstructor,
 } = require('./lib/symbols.js');
+const {
+  kEnumerableProperty,
+} = require('./lib/utils.js');
 
 class AudioWorklet {
   #port = null;
@@ -105,6 +108,28 @@ class AudioWorklet {
     return port1;
   }
 }
+
+Object.defineProperties(AudioWorklet, {
+  length: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 0,
+  },
+});
+
+Object.defineProperties(AudioWorklet.prototype, {
+  [Symbol.toStringTag]: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 'AudioWorklet',
+  },
+  addModule: kEnumerableProperty,
+  port: kEnumerableProperty,
+});
 
 module.exports = AudioWorklet;
 

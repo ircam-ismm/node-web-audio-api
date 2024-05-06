@@ -10,12 +10,17 @@ const {
   kNapiObj,
   kProcessorRegistered,
   kGetParameterDescriptors,
+  kPrivateConstructor,
   kCreateProcessor,
 } = require('./lib/symbols.js');
+const {
+  kEnumerableProperty,
+} = require('./lib/utils.js');
 
 /* eslint-enable no-unused-vars */
 
 const AudioNode = require('./AudioNode.js');
+const AudioParamMap = require('./AudioParamMap.js');
 const IMPLEMENTATION_MAX_NUMBER_OF_CHANNELS = 32;
 
 module.exports = (jsExport, nativeBinding) => {
@@ -156,11 +161,20 @@ module.exports = (jsExport, nativeBinding) => {
         [kNapiObj]: napiObj,
       });
 
+      let parameters = new Map();
+
       for (let name in this[kNapiObj].parameters) {
-        this.#parameters[name] = new jsExport.AudioParam({
+        const audioParam = new jsExport.AudioParam({
           [kNapiObj]: this[kNapiObj].parameters[name],
         });
+
+        parameters.set(name, audioParam);
       }
+
+      this.#parameters = new AudioParamMap({
+        [kPrivateConstructor]: true,
+        parameters,
+      });
 
       // Create JS processor
       this.#port = context.audioWorklet[kCreateProcessor](parsedName, processorOptions);
@@ -201,6 +215,8 @@ module.exports = (jsExport, nativeBinding) => {
       configurable: true,
       value: 'AudioWorkletNode',
     },
+    parameters: kEnumerableProperty,
+    port: kEnumerableProperty,
   });
 
   return AudioWorkletNode;
