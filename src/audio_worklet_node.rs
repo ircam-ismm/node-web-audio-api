@@ -110,9 +110,9 @@ pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
     let process_method = processor.get_named_property::<JsFunction>("process")?;
 
     let mut js_inputs = ctx.env.create_array(0)?;
-    for input in inputs.into_iter() {
+    for input in inputs.iter() {
         let mut channels = ctx.env.create_array(0)?;
-        for channel in input.into_iter() {
+        for channel in input.iter() {
             let samples = float_buffer_to_js(ctx.env, channel.as_ptr() as *mut _, channel.len());
             channels.insert(samples)?;
         }
@@ -120,9 +120,9 @@ pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
     }
 
     let mut js_outputs = ctx.env.create_array(0)?;
-    for output in outputs.into_iter() {
+    for output in outputs.iter() {
         let mut channels = ctx.env.create_array(0)?;
-        for channel in output.into_iter() {
+        for channel in output.iter() {
             let samples = float_buffer_to_js(ctx.env, channel.as_ptr() as *mut _, channel.len());
             channels.insert(samples)?;
         }
