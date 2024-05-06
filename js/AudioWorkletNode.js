@@ -1,9 +1,3 @@
-const fs = require('node:fs');
-const path = require('node:path');
-const {
-  Worker,
-} = require('node:worker_threads');
-
 /* eslint-disable no-unused-vars */
 const conversions = require('webidl-conversions');
 const {
@@ -14,6 +8,8 @@ const {
 } = require('./lib/errors.js');
 const {
   kNapiObj,
+  kProcessorRegistered,
+  kGetParameterDescriptors,
   kCreateProcessor,
 } = require('./lib/symbols.js');
 
@@ -36,12 +32,15 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError(`Failed to construct 'AudioWorkletNode': argument 1 is not of type BaseAudioContext`);
       }
 
-      // @todo
-      // - check that context.#audioWorkletGlobalScope exists
-      // - cehck that name has been registered through add module
       const parsedName = conversions['DOMString'](name, {
-        context: `Failed to construct 'AudioWorkletNode': The given 'AudioWorkletProcessor' name`
+        context: `Failed to construct 'AudioWorkletNode': The given 'AudioWorkletProcessor' name`,
       });
+
+      if (!context.audioWorklet[kProcessorRegistered](parsedName)) {
+        if (!(context instanceof jsExport.BaseAudioContext)) {
+          throw new TypeError(`Failed to construct 'AudioWorkletNode': processor '${parsedName}' is not registered in 'AudioWorklet`);
+        }
+      }
 
       // parsed version of the option to be passed to NAPI
       const parsedOptions = {};
@@ -125,23 +124,30 @@ module.exports = (jsExport, nativeBinding) => {
         parsedOptions.parameterData = {};
       }
 
+      // These ones are for the JS processor
+      let processorOptions;
+
       if (options && options.processorOptions !== undefined) {
         if (typeof options.processorOptions === 'object' && options.processorOptions !== null) {
-          parsedOptions.processorOptions = Object.assign(options.processorOptions);
+          processorOptions = Object.assign({}, options.processorOptions);
         } else {
           throw new TypeError(`Failed to construct 'AudioWorkletNode': Invalid 'processorOptions' property from AudioWorkletNodeOptions: 'processorOptions' is not an object`);
         }
       } else {
-        parsedOptions.processorOptions = {};
+        processorOptions = {};
       }
 
-      // console.log('>>> create processor');
-      const messagePort = context.audioWorklet[kCreateProcessor](parsedName, options.processorOptions);
-
+      // Create NapiAudioWorkletNode
+      const parameterDescriptors = context.audioWorklet[kGetParameterDescriptors](parsedName);
       let napiObj;
 
       try {
-        napiObj = new nativeBinding.AudioWorkletNode(context[kNapiObj], parsedName, parsedOptions);
+        napiObj = new nativeBinding.AudioWorkletNode(
+          context[kNapiObj],
+          parsedName,
+          parsedOptions,
+          parameterDescriptors,
+        );
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -156,7 +162,8 @@ module.exports = (jsExport, nativeBinding) => {
         });
       }
 
-      this.#port = messagePort;
+      // Create JS processor
+      this.#port = context.audioWorklet[kCreateProcessor](parsedName, processorOptions);
     }
 
     get parameters() {

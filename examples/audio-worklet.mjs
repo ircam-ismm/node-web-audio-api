@@ -34,7 +34,7 @@ paramReduction.exponentialRampToValueAtTime(0.01, 8.);
 sine.start();
 sine.stop(8);
 
-await sleep(8)
+await sleep(8);
 
 // @todo - this should close the AudioWorkletGlobalScope properly
 // before closing the "real" context

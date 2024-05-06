@@ -84,7 +84,7 @@ mod wave_shaper_node;
 use crate::wave_shaper_node::NapiWaveShaperNode;
 
 // AudioWorklet internals
-use crate::audio_worklet_node::{register_params, run_audio_worklet};
+use crate::audio_worklet_node::run_audio_worklet;
 
 // MediaDevices & MediaStream API
 mod media_streams;
@@ -183,7 +183,6 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     // ----------------------------------------------------------------
     // AudioWorklet utils (internal)
     // ----------------------------------------------------------------
-    exports.create_named_method("register_params", register_params)?;
     exports.create_named_method("run_audio_worklet", run_audio_worklet)?;
 
     // ----------------------------------------------------------------

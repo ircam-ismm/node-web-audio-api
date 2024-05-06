@@ -6,15 +6,17 @@ const {
 } = require('node:worker_threads');
 
 const {
+  kProcessorRegistered,
+  kGetParameterDescriptors,
   kCreateProcessor,
   kPrivateConstructor,
-  kWorkletParamDescriptorsMap,
 } = require('./lib/symbols.js');
 
 class AudioWorklet {
   #port = null;
   #idPromiseMap = new Map();
   #promiseId = 0;
+  #workletParamDescriptorsMap = new Map();
 
   constructor(options) {
     if (
@@ -23,9 +25,6 @@ class AudioWorklet {
     ) {
       throw new TypeError('Illegal constructor');
     }
-
-    // AudioWorklet can access this to check `parameterData`
-    this[kWorkletParamDescriptorsMap] = new Map();
   }
 
   get port() {
@@ -43,7 +42,7 @@ class AudioWorklet {
           switch (event.cmd) {
             case 'node-web-audio-api:worklet:processor-registered': {
               const { promiseId, name, parameterDescriptors } = event;
-              const { resolve, reject } = this.#idPromiseMap.get(promiseId);
+              const { resolve } = this.#idPromiseMap.get(promiseId);
 
               this.#idPromiseMap.delete(promiseId);
               resolve({ name, parameterDescriptors });
@@ -70,6 +69,9 @@ class AudioWorklet {
     const { name, parameterDescriptors } = await new Promise((resolve, reject) => {
       this.#idPromiseMap.set(promiseId, { resolve, reject });
 
+      // @todo - handle errors
+      // - no `process` found in class
+      // - invalid parameterDescriptors
       this.#port.postMessage({
         cmd: 'node-web-audio-api:worklet:add-module',
         code: buffer.toString(),
@@ -77,13 +79,22 @@ class AudioWorklet {
       });
     });
 
-    this[kWorkletParamDescriptorsMap].set(name, parameterDescriptors);
+    this.#workletParamDescriptorsMap.set(name, parameterDescriptors);
+  }
+
+  [kProcessorRegistered](name) {
+    return Array.from(this.#workletParamDescriptorsMap.keys()).includes(name);
+  }
+
+  [kGetParameterDescriptors](name) {
+    return this.#workletParamDescriptorsMap.get(name);
   }
 
   [kCreateProcessor](name, processorOptions) {
     const { port1, port2 } = new MessageChannel();
 
-    // @todo - check if some processorOptions must be transfered as well
+    // @todo
+    // - check if some processorOptions must be transfered as well
     this.#port.postMessage({
       cmd: 'node-web-audio-api:worklet:create-processor',
       name,

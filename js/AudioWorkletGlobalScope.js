@@ -3,7 +3,6 @@ const {
 } = require('node:worker_threads');
 
 const {
-  register_params,
   run_audio_worklet,
 } = require('../index.cjs');
 
@@ -49,8 +48,6 @@ function createRegisterProcessor(promiseId) {
     nameProcessorCtorMap.set(name, processorCtor);
 
     const parameterDescriptors = processorCtor.parameterDescriptors;
-    // register param descriptors on the rust side
-    register_params(parameterDescriptors);
     // send param descriptors on main thread and resolve Promise
     parentPort.postMessage({
       cmd: 'node-web-audio-api:worklet:processor-registered',
@@ -58,7 +55,7 @@ function createRegisterProcessor(promiseId) {
       name,
       parameterDescriptors,
     });
-  }
+  };
 }
 
 // NOTE: Authors that register an event listener on the "message" event of this

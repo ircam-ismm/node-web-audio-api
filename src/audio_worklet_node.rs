@@ -59,52 +59,6 @@ pub(crate) fn send_recv_pair2() -> &'static (Sender<SendItem2>, Receiver<SendIte
     PAIR.get_or_init(crossbeam_channel::unbounded)
 }
 
-#[js_function(1)]
-pub(crate) fn register_params(ctx: CallContext) -> Result<JsUndefined> {
-    let js_params = ctx.get::<JsObject>(0)?;
-    let length = js_params.get_array_length()? as usize;
-    let mut rs_params: Vec<web_audio_api::AudioParamDescriptor> = Vec::with_capacity(length);
-
-    for i in 0..length {
-        let param = js_params.get_element::<JsObject>(i.try_into().unwrap())?;
-
-        let js_name = param.get_named_property::<JsString>("name").unwrap();
-        let utf8_name = js_name.into_utf8().unwrap();
-        let name = utf8_name.into_owned().unwrap();
-
-        let min_value = param
-            .get_named_property::<JsNumber>("minValue")
-            .unwrap()
-            .get_double()
-            .unwrap() as f32;
-
-        let max_value = param
-            .get_named_property::<JsNumber>("maxValue")
-            .unwrap()
-            .get_double()
-            .unwrap() as f32;
-
-        let default_value = param
-            .get_named_property::<JsNumber>("defaultValue")
-            .unwrap()
-            .get_double()
-            .unwrap() as f32;
-
-        let param_descriptor = web_audio_api::AudioParamDescriptor {
-            name,
-            min_value,
-            max_value,
-            default_value,
-            automation_rate: web_audio_api::AutomationRate::A,
-        };
-
-        rs_params.insert(i, param_descriptor);
-    }
-
-    send_recv_pair2().0.send(SendItem2(rs_params)).unwrap();
-    ctx.env.get_undefined()
-}
-
 #[js_function]
 pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
     let item = send_recv_pair()
@@ -182,7 +136,7 @@ impl NapiAudioWorkletNode {
     }
 }
 
-#[js_function(3)]
+#[js_function(4)]
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
@@ -237,7 +191,53 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         parameter_data.insert(key, value);
     }
 
-    // no need to parse `processorOptions`, sent to JS processor
+    // No `processorOptions` here, they are sent to JS processor
+
+    // --------------------------------------------------------
+    // Parse ParameterDescriptors
+    // --------------------------------------------------------
+    let params_js = ctx.get::<JsObject>(3)?;
+    let length = params_js.get_array_length()? as usize;
+    let mut rs_params: Vec<web_audio_api::AudioParamDescriptor> = Vec::with_capacity(length);
+
+    for i in 0..length {
+        let param = params_js.get_element::<JsObject>(i.try_into().unwrap())?;
+
+        let js_name = param.get_named_property::<JsString>("name").unwrap();
+        let utf8_name = js_name.into_utf8().unwrap();
+        let name = utf8_name.into_owned().unwrap();
+
+        let min_value = param
+            .get_named_property::<JsNumber>("minValue")
+            .unwrap()
+            .get_double()
+            .unwrap() as f32;
+
+        let max_value = param
+            .get_named_property::<JsNumber>("maxValue")
+            .unwrap()
+            .get_double()
+            .unwrap() as f32;
+
+        let default_value = param
+            .get_named_property::<JsNumber>("defaultValue")
+            .unwrap()
+            .get_double()
+            .unwrap() as f32;
+
+        let param_descriptor = web_audio_api::AudioParamDescriptor {
+            name,
+            min_value,
+            max_value,
+            default_value,
+            automation_rate: web_audio_api::AutomationRate::A,
+        };
+
+        rs_params.insert(i, param_descriptor);
+    }
+
+    // send parameterDescriptors so that NapiAudioWorkletProcessor can retrieve them
+    send_recv_pair2().0.send(SendItem2(rs_params)).unwrap();
 
     // --------------------------------------------------------
     // Create AudioWorkletNodeOptions object
