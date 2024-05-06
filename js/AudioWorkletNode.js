@@ -42,9 +42,7 @@ module.exports = (jsExport, nativeBinding) => {
       });
 
       if (!context.audioWorklet[kProcessorRegistered](parsedName)) {
-        if (!(context instanceof jsExport.BaseAudioContext)) {
-          throw new TypeError(`Failed to construct 'AudioWorkletNode': processor '${parsedName}' is not registered in 'AudioWorklet`);
-        }
+        throw new TypeError(`Failed to construct 'AudioWorkletNode': processor '${parsedName}' is not registered in 'AudioWorklet'`);
       }
 
       // parsed version of the option to be passed to NAPI
