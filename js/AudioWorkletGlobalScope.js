@@ -90,7 +90,7 @@ parentPort.on('message', event => {
 
       if (!loopStarted) {
         loopStarted = true;
-        runLoop();
+        setImmediate(runLoop);
       }
       break;
     }
