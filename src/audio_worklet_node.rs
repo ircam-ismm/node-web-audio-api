@@ -34,34 +34,29 @@ pub(crate) struct ProcessorArguments {
     tail_time: Arc<AtomicBool>,
 }
 
-// channel from main to worker
-#[allow(clippy::type_complexity)] // will refactor later
-pub(crate) fn send_recv_pair() -> &'static Mutex<(
-    Option<Sender<ProcessorArguments>>,
-    Option<Receiver<ProcessorArguments>>,
-)> {
-    static PAIR: OnceLock<
-        Mutex<(
-            Option<Sender<ProcessorArguments>>,
-            Option<Receiver<ProcessorArguments>>,
-        )>,
-    > = OnceLock::new();
+struct ProcessCallChannel {
+    send: Sender<ProcessorArguments>,
+    recv: Receiver<ProcessorArguments>,
+}
+
+fn process_call_channel() -> &'static ProcessCallChannel {
+    static PAIR: OnceLock<ProcessCallChannel> = OnceLock::new();
     PAIR.get_or_init(|| {
         let (send, recv) = crossbeam_channel::unbounded();
-        Mutex::new((Some(send), Some(recv)))
+        ProcessCallChannel { send, recv }
     })
 }
 
-struct AudioParamChannel {
+struct AudioParamDescriptorsChannel {
     send: Mutex<Sender<Vec<AudioParamDescriptor>>>,
     recv: Receiver<Vec<AudioParamDescriptor>>,
 }
 
-fn audio_param_descriptor_channel() -> &'static AudioParamChannel {
-    static PAIR: OnceLock<AudioParamChannel> = OnceLock::new();
+fn audio_param_descriptor_channel() -> &'static AudioParamDescriptorsChannel {
+    static PAIR: OnceLock<AudioParamDescriptorsChannel> = OnceLock::new();
     PAIR.get_or_init(|| {
         let (send, recv) = crossbeam_channel::unbounded();
-        AudioParamChannel {
+        AudioParamDescriptorsChannel {
             send: Mutex::new(send),
             recv,
         }
@@ -81,14 +76,7 @@ pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
         );
     }
 
-    let item = send_recv_pair()
-        .lock()
-        .unwrap()
-        .1
-        .as_ref()
-        .unwrap()
-        .recv()
-        .unwrap();
+    let item = process_call_channel().recv.recv().unwrap();
     let ProcessorArguments {
         id,
         inputs,
@@ -267,7 +255,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // --------------------------------------------------------
     // Create AudioWorkletNodeOptions object
     // --------------------------------------------------------
-    let send = send_recv_pair().lock().unwrap().0.take().unwrap();
+    let send = process_call_channel().send.clone();
     let tail_time = Arc::new(AtomicBool::new(false));
     // Unique id to pair Napi Worklet and JS processor
     let id = INCREMENTING_ID.fetch_add(1, Ordering::Relaxed);
