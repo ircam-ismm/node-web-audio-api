@@ -15,8 +15,14 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 static INCREMENTING_ID: AtomicU32 = AtomicU32::new(0);
 
+enum WorkletCommand {
+    Drop(u32),
+    Process(ProcessorArguments),
+}
+
 /// Rust to JS processor inputs
-pub(crate) struct ProcessorArguments {
+struct ProcessorArguments {
+    // processor unique ID
     id: u32,
     // processor inputs (unsafely cast to static)
     inputs: &'static [&'static [&'static [f32]]],
@@ -35,8 +41,8 @@ pub(crate) struct ProcessorArguments {
 }
 
 struct ProcessCallChannel {
-    send: Sender<ProcessorArguments>,
-    recv: Receiver<ProcessorArguments>,
+    send: Sender<WorkletCommand>,
+    recv: Receiver<WorkletCommand>,
 }
 
 fn process_call_channel() -> &'static ProcessCallChannel {
@@ -67,16 +73,7 @@ thread_local! {
     pub static HAS_THREAD_PRIO: Cell<bool> = const { Cell::new(false) };
 }
 
-#[js_function]
-pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
-    if !HAS_THREAD_PRIO.replace(true) {
-        println!(
-            "Set Worker thread prio: {:?}",
-            thread_priority::set_current_thread_priority(thread_priority::ThreadPriority::Max)
-        );
-    }
-
-    let item = process_call_channel().recv.recv().unwrap();
+fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
     let ProcessorArguments {
         id,
         inputs,
@@ -86,15 +83,15 @@ pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
         current_frame,
         sample_rate,
         tail_time,
-    } = item;
+    } = args;
 
-    let mut global = ctx.env.get_global()?;
+    let mut global = env.get_global()?;
 
     // Make sure the processor exists, might run into race conditions
     // between Rust Audio thread and JS Worker thread
     let processor = global.get_named_property::<JsUnknown>(&id.to_string())?;
     if processor.get_type()? == ValueType::Unknown {
-        return ctx.env.get_undefined();
+        return Ok(());
     }
 
     // fill AudioWorkletGlobalScope
@@ -105,35 +102,58 @@ pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
     let processor = processor.coerce_to_object()?;
     let process_method = processor.get_named_property::<JsFunction>("process")?;
 
-    let mut js_inputs = ctx.env.create_array(0)?;
+    let mut js_inputs = env.create_array(0)?;
     for input in inputs.iter() {
-        let mut channels = ctx.env.create_array(0)?;
+        let mut channels = env.create_array(0)?;
         for channel in input.iter() {
-            let samples = float_buffer_to_js(ctx.env, channel.as_ptr() as *mut _, channel.len());
+            let samples = float_buffer_to_js(env, channel.as_ptr() as *mut _, channel.len());
             channels.insert(samples)?;
         }
         js_inputs.insert(channels)?;
     }
 
-    let mut js_outputs = ctx.env.create_array(0)?;
+    let mut js_outputs = env.create_array(0)?;
     for output in outputs.iter() {
-        let mut channels = ctx.env.create_array(0)?;
+        let mut channels = env.create_array(0)?;
         for channel in output.iter() {
-            let samples = float_buffer_to_js(ctx.env, channel.as_ptr() as *mut _, channel.len());
+            let samples = float_buffer_to_js(env, channel.as_ptr() as *mut _, channel.len());
             channels.insert(samples)?;
         }
         js_outputs.insert(channels)?;
     }
 
-    let mut js_params = ctx.env.create_object()?;
+    let mut js_params = env.create_object()?;
     params.iter().for_each(|(name, data)| {
-        let val = float_buffer_to_js(ctx.env, data.as_ptr() as *mut _, data.len());
+        let val = float_buffer_to_js(env, data.as_ptr() as *mut _, data.len());
         js_params.set_named_property(name, val).unwrap()
     });
 
     let js_ret: JsUnknown = process_method.apply3(processor, js_inputs, js_outputs, js_params)?;
     let ret = js_ret.coerce_to_bool()?.get_value()?;
     tail_time.store(ret, Ordering::Relaxed);
+
+    Ok(())
+}
+
+#[js_function]
+pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
+    if !HAS_THREAD_PRIO.replace(true) {
+        println!(
+            "Set Worker thread prio: {:?}",
+            thread_priority::set_current_thread_priority(thread_priority::ThreadPriority::Max)
+        );
+    }
+
+    match process_call_channel().recv.recv().unwrap() {
+        WorkletCommand::Drop(id) => {
+            let mut global = ctx.env.get_global()?;
+            let result = global.delete_named_property(&id.to_string());
+            println!("delete proc result {:?}", result);
+        }
+        WorkletCommand::Process(args) => {
+            process_audio_worklet(ctx.env, args)?;
+        }
+    }
 
     ctx.env.get_undefined()
 }
@@ -345,14 +365,14 @@ audio_node_impl!(NapiAudioWorkletNode);
 // -------------------------------------------------
 
 struct NapiAudioWorkletProcessor {
-    send: Sender<ProcessorArguments>,
+    send: Sender<WorkletCommand>,
     tail_time: Arc<AtomicBool>,
     id: u32,
     params: Vec<(&'static str, &'static [f32])>,
 }
 
 impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
-    type ProcessorOptions = (Sender<ProcessorArguments>, Arc<AtomicBool>, u32);
+    type ProcessorOptions = (Sender<WorkletCommand>, Arc<AtomicBool>, u32);
 
     fn constructor(opts: Self::ProcessorOptions) -> Self {
         Self {
@@ -399,7 +419,14 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
             tail_time: Arc::clone(&self.tail_time),
         };
 
-        self.send.send(item).unwrap();
+        self.send.send(WorkletCommand::Process(item)).unwrap();
         self.tail_time.load(Ordering::Relaxed)
+    }
+}
+
+impl Drop for NapiAudioWorkletProcessor {
+    fn drop(&mut self) {
+        println!("Drop is called for processor {}", self.id);
+        self.send.send(WorkletCommand::Drop(self.id)).unwrap();
     }
 }
