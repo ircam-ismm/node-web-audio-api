@@ -20,7 +20,7 @@ pub(crate) struct ProcessorArguments {
     // processor ouputs (unsafely cast to static)
     outputs: &'static [&'static [&'static [f32]]],
     // processor audio params (unsafely cast to static)
-    params: Vec<(&'static str, &'static [f32])>,
+    params: &'static [(&'static str, &'static [f32])],
     // AudioWorkletGlobalScope currentTime
     current_time: f64,
     // AudioWorkletGlobalScope currentFrame
@@ -134,7 +134,7 @@ pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
     }
 
     let mut js_params = ctx.env.create_object()?;
-    params.into_iter().for_each(|(name, data)| {
+    params.iter().for_each(|(name, data)| {
         let val = float_buffer_to_js(ctx.env, data.as_ptr() as *mut _, data.len());
         js_params.set_named_property(name, val).unwrap()
     });
@@ -350,6 +350,7 @@ audio_node_impl!(NapiAudioWorkletNode);
 struct NapiAudioWorkletProcessor {
     send: Sender<ProcessorArguments>,
     tail_time: Arc<AtomicBool>,
+    params: Vec<(&'static str, &'static [f32])>,
 }
 
 impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
@@ -359,6 +360,7 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
         Self {
             send: opts.0,
             tail_time: opts.1,
+            params: Vec::with_capacity(32),
         }
     }
 
@@ -378,14 +380,15 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
     ) -> bool {
         let inputs: &'static [&'static [&'static [f32]]] = unsafe { std::mem::transmute(inputs) };
         let outputs: &'static [&'static [&'static [f32]]] = unsafe { std::mem::transmute(outputs) };
-        let params: Vec<(&'static str, &'static [f32])> = params
-            .keys()
-            .map(|k| {
-                let label = unsafe { std::mem::transmute(k) };
-                let value = unsafe { std::mem::transmute(&params.get(k)[..]) };
-                (label, value)
-            })
-            .collect();
+
+        self.params.clear();
+        self.params.extend(params.keys().map(|k| {
+            let label = unsafe { std::mem::transmute(k) };
+            let value = unsafe { std::mem::transmute(&params.get(k)[..]) };
+            (label, value)
+        }));
+        let params = unsafe { std::mem::transmute(&self.params[..]) };
+
         let item = ProcessorArguments {
             inputs,
             outputs,
