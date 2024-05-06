@@ -102,8 +102,8 @@ pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
 
     let mut global = ctx.env.get_global()?;
 
-    // Make sure the processor exists, might run into race conditions between
-    // Rust Audio thread and JS Worker thread
+    // Make sure the processor exists, might run into race conditions
+    // between Rust Audio thread and JS Worker thread
     let processor = global.get_named_property::<JsUnknown>(&id.to_string())?;
     if processor.get_type()? == ValueType::Unknown {
         return ctx.env.get_undefined();

@@ -84,8 +84,8 @@ parentPort.on('message', event => {
 
       processorOptions[kMessagePort] = messagePort;
       const instance = new ctor(processorOptions);
-
-      // @todo - enable multiple processors
+      // store in global so that Rust can match the JS processor
+      // with its corresponding NapiAudioWorkletProcessor
       globalThis[`${id}`] = instance;
 
       if (!loopStarted) {
