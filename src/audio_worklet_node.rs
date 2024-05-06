@@ -86,8 +86,15 @@ pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
     global.set_named_property("currentFrame", current_frame)?;
     global.set_named_property("sampleRate", sample_rate)?;
 
-    let proc = global.get_named_property::<JsObject>("proc123")?;
-    let process = proc.get_named_property::<JsFunction>("process")?;
+    // Make sure the processor exists, might run into race conditions between
+    // Rust Audio thread and JS Worker thread
+    let processor = global.get_named_property::<JsUnknown>("proc123")?;
+    if processor.get_type()? == ValueType::Unknown {
+        return ctx.env.get_undefined();
+    }
+
+    let processor = processor.coerce_to_object()?;
+    let process_method = processor.get_named_property::<JsFunction>("process")?;
 
     let mut js_inputs = ctx.env.create_array(0)?;
     for input in inputs.into_iter() {
@@ -115,7 +122,7 @@ pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
         js_params.set_named_property(name, val).unwrap()
     });
 
-    let js_ret: JsUnknown = process.apply3(proc, js_inputs, js_outputs, js_params)?;
+    let js_ret: JsUnknown = process_method.apply3(processor, js_inputs, js_outputs, js_params)?;
     let ret = js_ret.coerce_to_bool()?.get_value()?;
     tail_time.store(ret, Ordering::Relaxed);
 
