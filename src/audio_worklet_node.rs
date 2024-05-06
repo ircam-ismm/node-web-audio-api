@@ -8,6 +8,7 @@ use web_audio_api::node::*;
 use web_audio_api::worklet::*;
 use web_audio_api::AudioParamDescriptor;
 
+use std::cell::Cell;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
@@ -60,8 +61,19 @@ pub(crate) fn send_recv_pair2() -> &'static (Mutex<Sender<SendItem2>>, Receiver<
     })
 }
 
+thread_local! {
+    pub static HAS_THREAD_PRIO: Cell<bool> = const { Cell::new(false) };
+}
+
 #[js_function]
 pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
+    if !HAS_THREAD_PRIO.replace(true) {
+        println!(
+            "Set Worker thread prio: {:?}",
+            thread_priority::set_current_thread_priority(thread_priority::ThreadPriority::Max)
+        );
+    }
+
     let item = send_recv_pair()
         .lock()
         .unwrap()
