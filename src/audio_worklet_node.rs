@@ -90,7 +90,7 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
     // Make sure the processor exists, might run into race conditions
     // between Rust Audio thread and JS Worker thread
     let processor = global.get_named_property::<JsUnknown>(&id.to_string())?;
-    if processor.get_type()? == ValueType::Unknown {
+    if processor.get_type()? == ValueType::Undefined {
         return Ok(());
     }
 
