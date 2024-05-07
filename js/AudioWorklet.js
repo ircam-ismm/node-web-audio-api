@@ -30,6 +30,21 @@ class AudioWorklet {
     }
   }
 
+  #bindEvents() {
+    this.#port.on('message', event => {
+      switch (event.cmd) {
+        case 'node-web-audio-api:worklet:processor-registered': {
+          const { promiseId, name, parameterDescriptors } = event;
+          const { resolve } = this.#idPromiseMap.get(promiseId);
+
+          this.#idPromiseMap.delete(promiseId);
+          resolve({ name, parameterDescriptors });
+          break;
+        }
+      }
+    });
+  }
+
   get port() {
     return this.#port;
   }
@@ -41,18 +56,7 @@ class AudioWorklet {
         this.#port = new Worker(workletPathname);
         this.#port.on('online', resolve);
 
-        this.#port.on('message', event => {
-          switch (event.cmd) {
-            case 'node-web-audio-api:worklet:processor-registered': {
-              const { promiseId, name, parameterDescriptors } = event;
-              const { resolve } = this.#idPromiseMap.get(promiseId);
-
-              this.#idPromiseMap.delete(promiseId);
-              resolve({ name, parameterDescriptors });
-              break;
-            }
-          }
-        });
+        this.#bindEvents();
       });
     }
 
@@ -95,7 +99,6 @@ class AudioWorklet {
 
   [kCreateProcessor](name, processorOptions, id) {
     const { port1, port2 } = new MessageChannel();
-
     // @todo - check if some processorOptions must be transfered as well
     this.#port.postMessage({
       cmd: 'node-web-audio-api:worklet:create-processor',
