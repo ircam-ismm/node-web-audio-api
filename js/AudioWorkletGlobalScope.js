@@ -4,7 +4,7 @@ const {
 
 const {
   run_audio_worklet,
-} = require('../index.cjs');
+} = require('../load-native.cjs');
 
 const kMessagePort = Symbol('node-web-audio-api:message-port');
 const nameProcessorCtorMap = new Map();
