@@ -40,17 +40,16 @@ struct ProcessorArguments {
     tail_time: Arc<AtomicBool>,
 }
 
-struct ProcessCallChannel {
+pub(crate) struct ProcessCallChannel {
     send: Sender<WorkletCommand>,
     recv: Receiver<WorkletCommand>,
 }
 
-fn process_call_channel() -> &'static ProcessCallChannel {
-    static PAIR: OnceLock<ProcessCallChannel> = OnceLock::new();
-    PAIR.get_or_init(|| {
+impl ProcessCallChannel {
+    pub fn new() -> Self {
         let (send, recv) = crossbeam_channel::unbounded();
-        ProcessCallChannel { send, recv }
-    })
+        Self { send, recv }
+    }
 }
 
 struct AudioParamDescriptorsChannel {
@@ -160,9 +159,15 @@ pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
         );
     }
 
-    match process_call_channel().recv.recv().unwrap() {
+    let mut global = ctx.env.get_global()?;
+
+    // Get a handle to the Receiver of worklet commands, it is wrapped in the JsObject
+    // `ProcessCallChannel`
+    let channel = global.get_named_property::<JsObject>("processCallChannel")?;
+    let process_call_channel: &mut Receiver<WorkletCommand> = ctx.env.unwrap(&channel)?;
+
+    match process_call_channel.recv().unwrap() {
         WorkletCommand::Drop(id) => {
-            let mut global = ctx.env.get_global()?;
             let result = global.delete_named_property(&id.to_string());
             println!("delete proc result {:?}", result);
         }
@@ -193,11 +198,29 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();
 
     let js_audio_context = ctx.get::<JsObject>(0)?;
+    let audio_context_name =
+        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
+    let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
+    let audio_context_str = &audio_context_utf8_name[..];
 
     // @note - not used
     let js_name = ctx.get::<JsString>(1)?;
     let utf8_name = js_name.into_utf8()?;
     let _name = utf8_name.into_owned()?;
+
+    let process_call_channel = match audio_context_str {
+        "AudioContext" => {
+            let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
+            napi_audio_context.unwrap_process_call_channel()
+        }
+        "OfflineAudioContext" => {
+            let napi_audio_context = ctx
+                .env
+                .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
+            napi_audio_context.unwrap_process_call_channel()
+        }
+        &_ => panic!("not supported"),
+    };
 
     // --------------------------------------------------------
     // Parse options
@@ -291,7 +314,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // --------------------------------------------------------
     // Create AudioWorkletNodeOptions object
     // --------------------------------------------------------
-    let send = process_call_channel().send.clone();
+    let send = process_call_channel.send.clone();
     let tail_time = Arc::new(AtomicBool::new(false));
     // Unique id to pair Napi Worklet and JS processor
     let id = INCREMENTING_ID.fetch_add(1, Ordering::Relaxed);
@@ -314,11 +337,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // --------------------------------------------------------
     // Create native AudioWorkletNode
     // --------------------------------------------------------
-    let audio_context_name =
-        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
-    let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
-    let audio_context_str = &audio_context_utf8_name[..];
-
     let native_node = match audio_context_str {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;

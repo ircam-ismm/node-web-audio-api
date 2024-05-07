@@ -10,7 +10,7 @@ use web_audio_api::Event;
 use crate::*;
 
 #[derive(Clone)]
-pub(crate) struct NapiAudioContext(Arc<AudioContext>);
+pub(crate) struct NapiAudioContext(Arc<AudioContext>, Arc<ProcessCallChannel>);
 
 // for debug purpose
 // impl Drop for NapiAudioContext {
@@ -40,6 +40,10 @@ impl NapiAudioContext {
 
     pub fn unwrap(&self) -> &AudioContext {
         &self.0
+    }
+
+    pub fn unwrap_process_call_channel(&self) -> &ProcessCallChannel {
+        &self.1
     }
 }
 
@@ -99,7 +103,8 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // -------------------------------------------------
     // Wrap context
     // -------------------------------------------------
-    let napi_audio_context = NapiAudioContext(Arc::new(audio_context));
+    let napi_audio_context =
+        NapiAudioContext(Arc::new(audio_context), Arc::new(ProcessCallChannel::new()));
     ctx.env.wrap(&mut js_this, napi_audio_context)?;
 
     js_this.define_properties(&[Property::new("Symbol.toStringTag")?

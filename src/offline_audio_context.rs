@@ -10,7 +10,7 @@ use web_audio_api::{Event, OfflineAudioCompletionEvent};
 use crate::*;
 
 #[derive(Clone)]
-pub(crate) struct NapiOfflineAudioContext(Arc<OfflineAudioContext>);
+pub(crate) struct NapiOfflineAudioContext(Arc<OfflineAudioContext>, Arc<ProcessCallChannel>);
 
 // for debug purpose
 // impl Drop for NapiOfflineAudioContext {
@@ -34,6 +34,10 @@ impl NapiOfflineAudioContext {
     pub fn unwrap(&self) -> &OfflineAudioContext {
         &self.0
     }
+
+    pub fn unwrap_process_call_channel(&self) -> &ProcessCallChannel {
+        &self.1
+    }
 }
 
 #[js_function(3)]
@@ -52,7 +56,8 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // -------------------------------------------------
     // Wrap context
     // -------------------------------------------------
-    let napi_audio_context = NapiOfflineAudioContext(Arc::new(audio_context));
+    let napi_audio_context =
+        NapiOfflineAudioContext(Arc::new(audio_context), Arc::new(ProcessCallChannel::new()));
     ctx.env.wrap(&mut js_this, napi_audio_context)?;
 
     js_this.define_properties(&[

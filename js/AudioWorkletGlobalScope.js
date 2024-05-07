@@ -10,6 +10,7 @@ const kHiddenOptions = Symbol('node-web-audio-api:hidden-options');
 const kWorkletInputs = Symbol.for('node-web-audio-api:worklet-inputs');
 const kWorkletOutputs = Symbol.for('node-web-audio-api:worklet-outputs');
 const nameProcessorCtorMap = new Map();
+const processCallChannel = ???; // TODO how to get this JsObject here..?
 // const processorIdMap = new WeakMap(); // instance, uuid
 let loopStarted = false;
 

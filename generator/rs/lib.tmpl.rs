@@ -31,7 +31,7 @@ mod ${d.slug(n)};
 use crate::${d.slug(n)}::${d.napiName(n)};`}).join('')}
 
 // AudioWorklet internals
-use crate::audio_worklet_node::{run_audio_worklet};
+use crate::audio_worklet_node::{run_audio_worklet, ProcessCallChannel};
 
 // MediaDevices & MediaStream API
 mod media_streams;

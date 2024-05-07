@@ -84,7 +84,7 @@ mod wave_shaper_node;
 use crate::wave_shaper_node::NapiWaveShaperNode;
 
 // AudioWorklet internals
-use crate::audio_worklet_node::run_audio_worklet;
+use crate::audio_worklet_node::{run_audio_worklet, ProcessCallChannel};
 
 // MediaDevices & MediaStream API
 mod media_streams;
