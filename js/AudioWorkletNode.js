@@ -128,16 +128,14 @@ module.exports = (jsExport, nativeBinding) => {
       }
 
       // These ones are for the JS processor
-      let processorOptions;
-
       if (options && options.processorOptions !== undefined) {
         if (typeof options.processorOptions === 'object' && options.processorOptions !== null) {
-          processorOptions = Object.assign({}, options.processorOptions);
+          parsedOptions.processorOptions = Object.assign({}, options.processorOptions);
         } else {
           throw new TypeError(`Failed to construct 'AudioWorkletNode': Invalid 'processorOptions' property from AudioWorkletNodeOptions: 'processorOptions' is not an object`);
         }
       } else {
-        processorOptions = {};
+        parsedOptions.processorOptions = {};
       }
 
       // Create NapiAudioWorkletNode
@@ -177,7 +175,7 @@ module.exports = (jsExport, nativeBinding) => {
       // Create JS processor
       this.#port = context.audioWorklet[kCreateProcessor](
         parsedName,
-        processorOptions,
+        parsedOptions,
         napiObj.id,
       );
     }

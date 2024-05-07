@@ -1,4 +1,4 @@
-use crate::utils::float_buffer_to_js;
+use crate::utils::{float_buffer_to_js, get_symbol_for};
 use crate::*;
 
 use crossbeam_channel::{self, Receiver, Sender};
@@ -100,26 +100,41 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
     global.set_named_property("sampleRate", sample_rate)?;
 
     let processor = processor.coerce_to_object()?;
-    let process_method = processor.get_named_property::<JsFunction>("process")?;
 
-    let mut js_inputs = env.create_array(0)?;
-    for input in inputs.iter() {
-        let mut channels = env.create_array(0)?;
-        for channel in input.iter() {
+    let k_worklet_inputs = get_symbol_for(env, "node-web-audio-api:worklet-inputs");
+    let k_worklet_outputs = get_symbol_for(env, "node-web-audio-api:worklet-outputs");
+
+    let js_inputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_inputs)?;
+
+    for (input_number, input) in inputs.iter().enumerate() {
+        let mut channels = js_inputs.get_element::<JsObject>(input_number as u32)?;
+
+        for (channel_number, channel) in input.iter().enumerate() {
             let samples = float_buffer_to_js(env, channel.as_ptr() as *mut _, channel.len());
-            channels.insert(samples)?;
+            // let _ = samples.freeze()?; // Error "Cannot freeze array buffer views with elements"
+            channels.set_element(channel_number as u32, samples)?;
         }
-        js_inputs.insert(channels)?;
+
+        // delete remaining channels, if any
+        for i in input.len() as u32..channels.get_array_length().unwrap() {
+            channels.delete_element(i as u32)?;
+        }
     }
 
-    let mut js_outputs = env.create_array(0)?;
-    for output in outputs.iter() {
-        let mut channels = env.create_array(0)?;
-        for channel in output.iter() {
+    let js_outputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_outputs)?;
+
+    for (output_number, output) in outputs.iter().enumerate() {
+        let mut channels = js_outputs.get_element::<JsObject>(output_number as u32)?;
+
+        for (channel_number, channel) in output.iter().enumerate() {
             let samples = float_buffer_to_js(env, channel.as_ptr() as *mut _, channel.len());
-            channels.insert(samples)?;
+            channels.set_element(channel_number as u32, samples)?;
         }
-        js_outputs.insert(channels)?;
+
+        // delete remaining channels, if any
+        for i in output.len() as u32..channels.get_array_length().unwrap() {
+            channels.delete_element(i as u32)?;
+        }
     }
 
     let mut js_params = env.create_object()?;
@@ -128,6 +143,7 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
         js_params.set_named_property(name, val).unwrap()
     });
 
+    let process_method = processor.get_named_property::<JsFunction>("process")?;
     let js_ret: JsUnknown = process_method.apply3(processor, js_inputs, js_outputs, js_params)?;
     let ret = js_ret.coerce_to_bool()?.get_value()?;
     tail_time.store(ret, Ordering::Relaxed);

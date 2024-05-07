@@ -6,7 +6,9 @@ const {
   run_audio_worklet,
 } = require('../load-native.cjs');
 
-const kMessagePort = Symbol('node-web-audio-api:message-port');
+const kHiddenOptions = Symbol('node-web-audio-api:hidden-options');
+const kWorkletInputs = Symbol.for('node-web-audio-api:worklet-inputs');
+const kWorkletOutputs = Symbol.for('node-web-audio-api:worklet-outputs');
 const nameProcessorCtorMap = new Map();
 // const processorIdMap = new WeakMap(); // instance, uuid
 let loopStarted = false;
@@ -26,7 +28,12 @@ class AudioWorkletProcessor {
   #port = null;
 
   constructor(options) {
-    this.#port = options[kMessagePort];
+    const { port, numberOfInputs, numberOfOutputs } = options[kHiddenOptions];
+
+    this.#port = port;
+    this[kWorkletInputs] = new Array(numberOfInputs).fill([]);
+    this[kWorkletOutputs] = new Array(numberOfOutputs).fill([]);
+    // @todo - use `outputChannelCount`
   }
 
   get port() {
@@ -70,10 +77,23 @@ parentPort.on('message', event => {
       break;
     }
     case 'node-web-audio-api:worklet:create-processor': {
-      const { name, id, processorOptions, messagePort } = event;
+      const { name, id, options, port } = event;
       const ctor = nameProcessorCtorMap.get(name);
+      // options to be passed to the processor parent for intialization
+      const {
+        numberOfInputs,
+        numberOfOutputs,
+        processorOptions,
+        outputChannelCount, // @todo - clarify usage
+      } = options;
+      // rewrap options of interest for the AudioWorkletNodeBaseClass
+      const hiddenOptions = {
+        port,
+        numberOfInputs,
+        numberOfOutputs,
+      };
 
-      processorOptions[kMessagePort] = messagePort;
+      processorOptions[kHiddenOptions] = hiddenOptions;
       const instance = new ctor(processorOptions);
       // store in global so that Rust can match the JS processor
       // with its corresponding NapiAudioWorkletProcessor

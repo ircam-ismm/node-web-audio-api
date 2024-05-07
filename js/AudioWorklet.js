@@ -98,15 +98,15 @@ class AudioWorklet {
     return this.#workletParamDescriptorsMap.get(name);
   }
 
-  [kCreateProcessor](name, processorOptions, id) {
+  [kCreateProcessor](name, options, id) {
     const { port1, port2 } = new MessageChannel();
     // @todo - check if some processorOptions must be transfered as well
     this.#port.postMessage({
       cmd: 'node-web-audio-api:worklet:create-processor',
       name,
       id,
-      processorOptions,
-      messagePort: port2,
+      options,
+      port: port2,
     }, [port2]);
 
     return port1;
