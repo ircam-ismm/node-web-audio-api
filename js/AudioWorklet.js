@@ -1,9 +1,12 @@
 const fs = require('node:fs').promises;
+const { existsSync } = require('node:fs');
 const path = require('node:path');
 const {
   Worker,
   MessageChannel,
 } = require('node:worker_threads');
+
+const fetch = require('node-fetch');
 
 const {
   kProcessorRegistered,
@@ -51,6 +54,67 @@ class AudioWorklet {
   }
 
   async addModule(moduleUrl) {
+    // try different module resolution strategies
+    // 1. in fs, relative to cwd
+    // 2. in fs, relative to call site
+    // 3. from network (important for wpt)
+    //
+    // @important - this must be done first or the Error stack changes
+    let code;
+
+    if (existsSync(moduleUrl)) {
+      const pathname = moduleUrl;
+
+      try {
+        // @todo - allow relative path from caller site, probably required for wpt
+        const buffer = await fs.readFile(pathname);
+        code = buffer.toString();
+      } catch (err) {
+        throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
+      }
+    } else {
+      // get caller site from error stack trace
+      const callerSite = (new Error()).stack.split('\n')[2].trim().split(' ')[1];
+
+      if (callerSite.startsWith('http')) {
+        // we know separators are '/'
+        const baseUrl = callerSite.substr(0, callerSite.lastIndexOf('/'));
+        let url;
+
+        if (moduleUrl.startsWith('/')) {
+          // absolute url
+          const origin = new URL(baseUrl).origin;
+          url = origin + moduleUrl;
+        } else {
+          url = baseUrl + '/' + moduleUrl;
+        }
+
+        try {
+          const res = await fetch(url);
+          code = await res.text();
+        } catch (err) {
+          throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
+        }
+      } else {
+        const dirname = callerSite.substr(0, callerSite.lastIndexOf(path.sep));
+        const absDirname = dirname.replace('file://', '');
+        const pathname = path.join(absDirname, moduleUrl);
+
+        if (existsSync(pathname)) {
+          try {
+            // @todo - allow relative path from caller site, probably required for wpt
+            const buffer = await fs.readFile(pathname);
+            code = buffer.toString();
+          } catch (err) {
+            throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
+          }
+        } else {
+          throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': Cannot find module ${moduleUrl}`);
+        }
+      }
+    }
+
+    // launch Worker if not exists
     if (!this.#port) {
       await new Promise(resolve => {
         const workletPathname = path.join(__dirname, 'AudioWorkletGlobalScope.js');
@@ -59,16 +123,6 @@ class AudioWorklet {
 
         this.#bindEvents();
       });
-    }
-
-    let buffer;
-
-    try {
-      // @todo - allow relative path from caller site, probably required for wpt
-      const pathname = path.join(process.cwd(), moduleUrl);
-      buffer = await fs.readFile(pathname);
-    } catch (err) {
-      throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
     }
 
     const promiseId = this.#promiseId++;
@@ -82,7 +136,7 @@ class AudioWorklet {
       // - invalid parameterDescriptors
       this.#port.postMessage({
         cmd: 'node-web-audio-api:worklet:add-module',
-        code: buffer.toString(),
+        code,
         promiseId,
       });
     });

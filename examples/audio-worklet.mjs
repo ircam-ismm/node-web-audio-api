@@ -6,8 +6,8 @@ import { sleep } from '@ircam/sc-utils';
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });
 
-await audioContext.audioWorklet.addModule(path.join('examples', 'worklets', 'bitcrusher.js'));
-await audioContext.audioWorklet.addModule(path.join('examples', 'worklets', 'white-noise.js'));
+await audioContext.audioWorklet.addModule(path.join('examples', 'worklets', 'bitcrusher.js')); // relative to cwd
+await audioContext.audioWorklet.addModule(path.join('worklets', 'white-noise.js')); // relative path to call site
 
 const sine = new OscillatorNode(audioContext, { type: 'sawtooth', frequency: 5000 });
 const bitCrusher = new AudioWorkletNode(audioContext, 'bitcrusher', {
