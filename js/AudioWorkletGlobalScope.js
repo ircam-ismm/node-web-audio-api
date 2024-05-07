@@ -10,16 +10,12 @@ const kMessagePort = Symbol('node-web-audio-api:message-port');
 const nameProcessorCtorMap = new Map();
 // const processorIdMap = new WeakMap(); // instance, uuid
 let loopStarted = false;
-let breakLoop = false;
 
 function runLoop() {
   // block until we need to render a quantum
   run_audio_worklet();
-
-  if (!breakLoop) {
-    // yield to the event loop, and then repeat
-    setImmediate(runLoop);
-  }
+  // yield to the event loop, and then repeat
+  setImmediate(runLoop);
 }
 
 class AudioWorkletProcessor {
@@ -58,15 +54,10 @@ function createRegisterProcessor(promiseId) {
   };
 }
 
+// @todo - recheck this, not sure this is relevant in our case
 // NOTE: Authors that register an event listener on the "message" event of this
 // port should call close on either end of the MessageChannel (either in the
 // AudioWorklet or the AudioWorkletGlobalScope side) to allow for resources to be collected.
-parentPort.on('close', () => {
-  breakLoop = true;
-  // @todo
-  // - clear all maps
-  // - etc...
-});
 
 parentPort.on('message', event => {
   console.log(event.cmd + '\n');

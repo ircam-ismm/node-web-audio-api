@@ -11,6 +11,7 @@ const {
   kNapiObj,
   kOnStateChange,
   kOnSinkChange,
+  kWorkletRelease,
 } = require('./lib/symbols.js');
 const {
   propagateEvent,
@@ -210,6 +211,7 @@ module.exports = function(jsExport, nativeBinding) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioContext\'');
       }
 
+      await this.audioWorklet[kWorkletRelease]();
       await this[kNapiObj].close();
     }
 

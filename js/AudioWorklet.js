@@ -10,6 +10,7 @@ const {
   kGetParameterDescriptors,
   kCreateProcessor,
   kPrivateConstructor,
+  kWorkletRelease,
 } = require('./lib/symbols.js');
 const {
   kEnumerableProperty,
@@ -109,6 +110,15 @@ class AudioWorklet {
     }, [port2]);
 
     return port1;
+  }
+
+  async [kWorkletRelease]() {
+    if (this.#port) {
+      await new Promise(resolve => {
+        this.#port.on('exit', resolve);
+        this.#port.terminate();
+      });
+    }
   }
 }
 

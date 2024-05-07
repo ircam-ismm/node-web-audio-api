@@ -38,6 +38,5 @@ whiteNoise.connect(audioContext.destination);
 
 await sleep(8);
 
-// @todo - this should close the AudioWorkletGlobalScope properly
-// before closing the "real" context
 await audioContext.close();
+

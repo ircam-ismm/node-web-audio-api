@@ -12,6 +12,7 @@ const {
 } = require('./lib/utils.js');
 const {
   kNapiObj,
+  kWorkletRelease,
   kOnStateChange,
   kOnComplete,
 } = require('./lib/symbols.js');
@@ -148,7 +149,10 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
         throwSanitizedError(err);
       }
 
-      // @fixme: workaround the fact that this event seems to be triggered before
+      // release audio worklet, if any
+      await this.audioWorklet[kWorkletRelease]();
+
+      // workaround the fact that this event seems to be triggered before
       // startRendering fulfills and that we want to return the exact same instance
       if (this.#renderedBuffer === null) {
         this.#renderedBuffer = new jsExport.AudioBuffer({ [kNapiObj]: nativeAudioBuffer });

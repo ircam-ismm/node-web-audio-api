@@ -4,6 +4,7 @@ module.exports.kPrivateConstructor = Symbol('node-web-audio-api:private-construc
 module.exports.kCreateProcessor = Symbol('node-web-audio-api:create-processor');
 module.exports.kProcessorRegistered = Symbol('node-web-audio-api:processor-registered');
 module.exports.kGetParameterDescriptors = Symbol('node-web-audio-api:get-parameter-descriptors');
+module.exports.kWorkletRelease = Symbol('node-web-audio-api:k-worklet-release');
 
 // semi-private keys for events listeners
 
