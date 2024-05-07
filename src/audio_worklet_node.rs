@@ -117,7 +117,7 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
 
         // delete remaining channels, if any
         for i in input.len() as u32..channels.get_array_length().unwrap() {
-            channels.delete_element(i as u32)?;
+            channels.delete_element(i)?;
         }
     }
 
@@ -133,7 +133,7 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
 
         // delete remaining channels, if any
         for i in output.len() as u32..channels.get_array_length().unwrap() {
-            channels.delete_element(i as u32)?;
+            channels.delete_element(i)?;
         }
     }
 
