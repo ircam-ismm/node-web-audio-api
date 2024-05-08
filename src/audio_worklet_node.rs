@@ -474,16 +474,24 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
         params: AudioParamValues<'b>,
         scope: &'b AudioWorkletGlobalScope,
     ) -> bool {
+        // SAFETY:
+        // We are transmuting the a' and b' lifetimes to static in order to send them to the Worker
+        // thread. This should be safe as long as:
+        // - this function does not return before the Worker has finished using the slices
+        // - the Worker / JS-code doesn't keep a copy of these slices - fingers crossed on this one
+
         let inputs: &'static [&'static [&'static [f32]]] = unsafe { std::mem::transmute(inputs) };
         let outputs: &'static [&'static [&'static [f32]]] = unsafe { std::mem::transmute(outputs) };
 
         self.param_values.clear();
         self.param_values.extend(params.keys().map(|k| {
-            let label = unsafe { std::mem::transmute(k) };
-            let value = unsafe { std::mem::transmute(&params.get(k)[..]) };
+            let label: &'static str = unsafe { std::mem::transmute(k) };
+            let value: &'static [f32] = unsafe { std::mem::transmute(&params.get(k)[..]) };
             (label, value)
         }));
-        let param_values = unsafe { std::mem::transmute(&self.param_values[..]) };
+        let param_values: &'static [_] = unsafe { std::mem::transmute(&self.param_values[..]) };
+
+        // end SAFETY comment
 
         let item = ProcessorArguments {
             id: self.id,
