@@ -24,8 +24,6 @@ impl NapiAudioListener {
 }
 
 // https://webaudio.github.io/web-audio-api/#AudioListener
-//
-// @note: should be a private constructor
 #[js_function(1)]
 fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let mut js_this = ctx.this_unchecked::<JsObject>();

@@ -107,13 +107,18 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         .with_property_attributes(PropertyAttributes::Static)])?;
 
     // -------------------------------------------------
-    // Bind AudioDestination - requires Symbol.toStringTag
+    // Bind AudioDestination and AudioRenderCapacity
     // -------------------------------------------------
     let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
     let store: JsObject = ctx.env.get_reference_value(store_ref)?;
+
     let ctor: JsFunction = store.get_named_property("AudioDestinationNode")?;
     let js_obj = ctor.new_instance(&[&js_this])?;
     js_this.set_named_property("destination", &js_obj)?;
+
+    let ctor: JsFunction = store.get_named_property("AudioRenderCapacity")?;
+    let js_obj = ctor.new_instance(&[&js_this])?;
+    js_this.set_named_property("renderCapacity", &js_obj)?;
 
     ctx.env.get_undefined()
 }

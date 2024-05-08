@@ -6,11 +6,11 @@ import { AudioContext, ConvolverNode } from '../index.mjs';
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });
 
-// let cap = audioContext.render_capacity();
-// cap.onupdate(|e| println!("{:?}", e));
-// cap.start(AudioRenderCapacityOptions {
-//     update_interval: 1.,
-// });
+audioContext.renderCapacity.addEventListener('update', e => {
+  const { timestamp, averageLoad, peakLoad, underrunRatio } = e;
+  console.log('AudioRenderCapacityEvent:', { timestamp, averageLoad, peakLoad, underrunRatio });
+});
+audioContext.renderCapacity.start({ updateInterval: 1.5 });
 
 const arrayBuffer = fs.readFileSync(path.join('examples', 'samples', 'vocals-dry.wav')).buffer;
 const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
