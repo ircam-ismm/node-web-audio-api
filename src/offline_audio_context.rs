@@ -9,8 +9,9 @@ use web_audio_api::{Event, OfflineAudioCompletionEvent};
 
 use crate::*;
 
+/// Napi object wrapping the native OfflineAudioContext and the AudioWorklet ID
 #[derive(Clone)]
-pub(crate) struct NapiOfflineAudioContext(Arc<OfflineAudioContext>);
+pub(crate) struct NapiOfflineAudioContext(Arc<OfflineAudioContext>, usize);
 
 // for debug purpose
 // impl Drop for NapiOfflineAudioContext {
@@ -34,6 +35,10 @@ impl NapiOfflineAudioContext {
     pub fn unwrap(&self) -> &OfflineAudioContext {
         &self.0
     }
+
+    pub fn worklet_id(&self) -> usize {
+        self.1
+    }
 }
 
 #[js_function(3)]
@@ -48,11 +53,12 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let sample_rate = ctx.get::<JsNumber>(2)?.get_double()? as f32;
 
     let audio_context = OfflineAudioContext::new(number_of_channels, length, sample_rate);
+    let worklet_id = crate::audio_worklet_node::allocate_process_call_channel();
 
     // -------------------------------------------------
     // Wrap context
     // -------------------------------------------------
-    let napi_audio_context = NapiOfflineAudioContext(Arc::new(audio_context));
+    let napi_audio_context = NapiOfflineAudioContext(Arc::new(audio_context), worklet_id);
     ctx.env.wrap(&mut js_this, napi_audio_context)?;
 
     js_this.define_properties(&[

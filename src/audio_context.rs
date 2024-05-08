@@ -9,8 +9,9 @@ use web_audio_api::Event;
 
 use crate::*;
 
+/// Napi object wrapping the native AudioContext and the AudioWorklet ID
 #[derive(Clone)]
-pub(crate) struct NapiAudioContext(Arc<AudioContext>);
+pub(crate) struct NapiAudioContext(Arc<AudioContext>, usize);
 
 // for debug purpose
 // impl Drop for NapiAudioContext {
@@ -40,6 +41,10 @@ impl NapiAudioContext {
 
     pub fn unwrap(&self) -> &AudioContext {
         &self.0
+    }
+
+    pub fn worklet_id(&self) -> usize {
+        self.1
     }
 }
 
@@ -95,11 +100,12 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     };
 
     let audio_context = AudioContext::new(audio_context_options);
+    let worklet_id = crate::audio_worklet_node::allocate_process_call_channel();
 
     // -------------------------------------------------
     // Wrap context
     // -------------------------------------------------
-    let napi_audio_context = NapiAudioContext(Arc::new(audio_context));
+    let napi_audio_context = NapiAudioContext(Arc::new(audio_context), worklet_id);
     ctx.env.wrap(&mut js_this, napi_audio_context)?;
 
     js_this.define_properties(&[Property::new("Symbol.toStringTag")?

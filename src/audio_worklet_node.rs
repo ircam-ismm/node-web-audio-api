@@ -316,10 +316,28 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         rs_params.insert(i, param_descriptor);
     }
 
+    let audio_context_name =
+        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
+    let audio_context_str = audio_context_name.into_utf8()?;
+
+    let worklet_id = match audio_context_str.as_str()? {
+        "AudioContext" => {
+            let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
+            napi_audio_context.worklet_id()
+        }
+        "OfflineAudioContext" => {
+            let napi_audio_context = ctx
+                .env
+                .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
+            napi_audio_context.worklet_id()
+        }
+        &_ => panic!("not supported"),
+    };
+
     // --------------------------------------------------------
     // Create AudioWorkletNodeOptions object
     // --------------------------------------------------------
-    let send = process_call_sender(0);
+    let send = process_call_sender(worklet_id);
     let tail_time = Arc::new(AtomicBool::new(false));
     // Unique id to pair Napi Worklet and JS processor
     let id = INCREMENTING_ID.fetch_add(1, Ordering::Relaxed);
@@ -342,12 +360,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // --------------------------------------------------------
     // Create native AudioWorkletNode
     // --------------------------------------------------------
-    let audio_context_name =
-        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
-    let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
-    let audio_context_str = &audio_context_utf8_name[..];
-
-    let native_node = match audio_context_str {
+    let native_node = match audio_context_str.as_str()? {
         "AudioContext" => {
             let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
             let audio_context = napi_audio_context.unwrap();
