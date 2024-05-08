@@ -179,7 +179,7 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
     Ok(())
 }
 
-#[js_function]
+#[js_function(1)]
 pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
     if !HAS_THREAD_PRIO.replace(true) {
         println!(
@@ -188,7 +188,9 @@ pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
         );
     }
 
-    match process_call_receiver(0).recv().unwrap() {
+    let worklet_id = ctx.get::<JsNumber>(0)?.get_uint32()? as usize;
+
+    match process_call_receiver(worklet_id).recv().unwrap() {
         WorkletCommand::Drop(id) => {
             let mut global = ctx.env.get_global()?;
             let result = global.delete_named_property(&id.to_string());

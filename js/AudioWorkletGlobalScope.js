@@ -11,7 +11,7 @@ const kWorkletInputs = Symbol.for('node-web-audio-api:worklet-inputs');
 const kWorkletOutputs = Symbol.for('node-web-audio-api:worklet-outputs');
 const nameProcessorCtorMap = new Map();
 const paramDescriptorRegisteredMap = new Map();
-// const processorIdMap = new WeakMap(); // instance, uuid
+const workletId = 0; // TODO how to receive from the Rust side?
 let loopStarted = false;
 
 function isIterable(obj) {
@@ -24,7 +24,7 @@ function isIterable(obj) {
 
 function runLoop() {
   // block until we need to render a quantum
-  run_audio_worklet();
+  run_audio_worklet(workletId);
   // yield to the event loop, and then repeat
   setImmediate(runLoop);
 }
