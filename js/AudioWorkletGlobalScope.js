@@ -10,8 +10,17 @@ const kHiddenOptions = Symbol('node-web-audio-api:hidden-options');
 const kWorkletInputs = Symbol.for('node-web-audio-api:worklet-inputs');
 const kWorkletOutputs = Symbol.for('node-web-audio-api:worklet-outputs');
 const nameProcessorCtorMap = new Map();
+const paramDescriptorRegisteredMap = new Map();
 // const processorIdMap = new WeakMap(); // instance, uuid
 let loopStarted = false;
+
+function isIterable(obj) {
+  // checks for null and undefined
+  if (obj === null || obj === undefined) {
+    return false;
+  }
+  return typeof obj[Symbol.iterator] === 'function';
+}
 
 function runLoop() {
   // block until we need to render a quantum
@@ -46,21 +55,22 @@ class AudioWorkletProcessor {
 }
 
 // create registerProcessor method with memoized promiseId
-function createRegisterProcessor(promiseId) {
-  return function registerProcessor(name, processorCtor) {
-    nameProcessorCtorMap.set(name, processorCtor);
 
-    // must support Array, Set or iterators
-    const parameterDescriptors = Array.from(processorCtor.parameterDescriptors);
-    // send param descriptors on main thread and resolve Promise
-    parentPort.postMessage({
-      cmd: 'node-web-audio-api:worklet:processor-registered',
-      promiseId,
-      name,
-      parameterDescriptors,
-    });
-  };
-}
+function registerProcessor(name, processorCtor) {
+  nameProcessorCtorMap.set(name, processorCtor);
+
+  // must support Array, Set or iterators
+  let parameterDescriptors = processorCtor.parameterDescriptors;
+
+  if (!isIterable(parameterDescriptors)) {
+    // mark as invalid parameterDescriptors
+    paramDescriptorRegisteredMap.set(name, null);
+  } else {
+    parameterDescriptors = Array.from(parameterDescriptors);
+    paramDescriptorRegisteredMap.set(name, parameterDescriptors);
+  }
+};
+
 
 // @todo - recheck this, not sure this is relevant in our case
 // NOTE: Authors that register an event listener on the "message" event of this
@@ -74,7 +84,16 @@ parentPort.on('message', event => {
     case 'node-web-audio-api:worklet:add-module': {
       const { code, promiseId } = event;
       const func = new Function('AudioWorkletProcessor', 'registerProcessor', code);
-      func(AudioWorkletProcessor, createRegisterProcessor(promiseId));
+      func(AudioWorkletProcessor, registerProcessor);
+
+      // send registered param descriptors on main thread and resolve Promise
+      parentPort.postMessage({
+        cmd: 'node-web-audio-api:worklet:processor-registered',
+        promiseId,
+        paramDescriptorRegisteredMap,
+      });
+
+      paramDescriptorRegisteredMap.clear();
       break;
     }
     case 'node-web-audio-api:worklet:create-processor': {

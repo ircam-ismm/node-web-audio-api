@@ -9,8 +9,6 @@ const {
   MessageChannel,
 } = require('node:worker_threads');
 
-const fetch = require('node-fetch');
-
 const {
   kProcessorRegistered,
   kGetParameterDescriptors,
@@ -21,6 +19,9 @@ const {
 const {
   kEnumerableProperty,
 } = require('./lib/utils.js');
+
+// cf. https://www.npmjs.com/package/node-fetch#commonjs
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 class AudioWorklet {
   #port = null;
@@ -41,11 +42,11 @@ class AudioWorklet {
     this.#port.on('message', event => {
       switch (event.cmd) {
         case 'node-web-audio-api:worklet:processor-registered': {
-          const { promiseId, name, parameterDescriptors } = event;
+          const { promiseId, paramDescriptorRegisteredMap } = event;
           const { resolve } = this.#idPromiseMap.get(promiseId);
 
           this.#idPromiseMap.delete(promiseId);
-          resolve({ name, parameterDescriptors });
+          resolve(paramDescriptorRegisteredMap);
           break;
         }
       }
@@ -138,12 +139,9 @@ class AudioWorklet {
     const promiseId = this.#promiseId++;
     // This promise is resolved when the Worker returns the name and
     // parameterDescriptors from the added module
-    const { name, parameterDescriptors } = await new Promise((resolve, reject) => {
+    const paramDescriptorRegisteredMap = await new Promise((resolve, reject) => {
       this.#idPromiseMap.set(promiseId, { resolve, reject });
 
-      // @todo - handle errors
-      // - no `process` found in class
-      // - invalid parameterDescriptors
       this.#port.postMessage({
         cmd: 'node-web-audio-api:worklet:add-module',
         code,
@@ -151,7 +149,18 @@ class AudioWorklet {
       });
     });
 
-    this.#workletParamDescriptorsMap.set(name, parameterDescriptors);
+    for (let [name, parameterDescriptors] of paramDescriptorRegisteredMap.entries()) {
+      // @todo - sanitize `parameterDescriptors`, replace with `null` if invalid
+      // cf. https://webaudio.github.io/web-audio-api/#AudioParamDescriptor
+      // dictionary AudioParamDescriptor {
+      //     required DOMString name;
+      //     float defaultValue = 0;
+      //     float minValue = -3.4028235e38;
+      //     float maxValue = 3.4028235e38;
+      //     AutomationRate automationRate = "a-rate";
+      // };
+      this.#workletParamDescriptorsMap.set(name, parameterDescriptors);
+    }
   }
 
   [kProcessorRegistered](name) {
