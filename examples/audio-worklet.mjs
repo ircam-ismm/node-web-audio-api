@@ -36,7 +36,12 @@ sine.stop(8);
 const whiteNoise = new AudioWorkletNode(audioContext, 'white-noise');
 whiteNoise.connect(audioContext.destination);
 
+audioContext.renderCapacity.addEventListener('update', e => {
+  const { timestamp, averageLoad, peakLoad, underrunRatio } = e;
+  console.log('AudioRenderCapacityEvent:', { timestamp, averageLoad, peakLoad, underrunRatio });
+});
+audioContext.renderCapacity.start({ updateInterval: 1. });
+
 await sleep(8);
 
 await audioContext.close();
-
