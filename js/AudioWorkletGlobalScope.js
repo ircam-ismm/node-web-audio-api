@@ -7,16 +7,17 @@ const {
   run_audio_worklet,
 } = require('../load-native.cjs');
 
+const {
+  workletId,
+} = workerData;
+
 const kHiddenOptions = Symbol('node-web-audio-api:hidden-options');
 const kWorkletInputs = Symbol.for('node-web-audio-api:worklet-inputs');
 const kWorkletOutputs = Symbol.for('node-web-audio-api:worklet-outputs');
+
 const nameProcessorCtorMap = new Map();
 const paramDescriptorRegisteredMap = new Map();
 let loopStarted = false;
-
-console.log(workerData);
-const { workletId } = workerData;
-console.log('coucou', workletId)
 
 function isIterable(obj) {
   // checks for null and undefined
@@ -27,9 +28,8 @@ function isIterable(obj) {
 }
 
 function runLoop() {
-  // console.log(workerData.workletId);
   // block until we need to render a quantum
-  run_audio_worklet(workerData.workletId);
+  run_audio_worklet(workletId);
   // yield to the event loop, and then repeat
   setImmediate(runLoop);
 }
@@ -63,7 +63,6 @@ class AudioWorkletProcessor {
 
 function registerProcessor(name, processorCtor) {
   nameProcessorCtorMap.set(name, processorCtor);
-
   // must support Array, Set or iterators
   let parameterDescriptors = processorCtor.parameterDescriptors;
 
