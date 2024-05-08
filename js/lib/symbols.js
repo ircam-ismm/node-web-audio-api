@@ -21,3 +21,5 @@ module.exports.kOnComplete = Symbol.for('node-web-audio-api:oncomplete');
 module.exports.kOnEnded = Symbol.for('node-web-audio-api:onended');
 // # ScriptProcessorNode
 module.exports.kOnAudioProcess = Symbol.for('node-web-audio-api:onaudioprocess');
+// # AudioRenderCapacity
+module.exports.kOnUpdate = Symbol.for('node-web-audio-api:onupdate');

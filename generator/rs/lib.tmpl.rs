@@ -19,6 +19,8 @@ mod audio_param;
 use crate::audio_param::NapiAudioParam;
 mod audio_listener;
 use crate::audio_listener::NapiAudioListener;
+mod audio_render_capacity;
+use crate::audio_render_capacity::NapiAudioRenderCapacity;
 mod audio_buffer;
 use crate::audio_buffer::NapiAudioBuffer;
 mod periodic_wave;
@@ -105,6 +107,9 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
 
     let napi_class = NapiAudioListener::create_js_class(&env)?;
     store.set_named_property("AudioListener", napi_class)?;
+
+    let napi_class = NapiAudioRenderCapacity::create_js_class(&env)?;
+    store.set_named_property("AudioRenderCapacity", napi_class)?;
 
     let napi_class = NapiAudioBuffer::create_js_class(&env)?;
     store.set_named_property("AudioBuffer", napi_class)?;

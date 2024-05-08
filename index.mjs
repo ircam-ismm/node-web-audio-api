@@ -30,6 +30,7 @@ export const {
   // events
   OfflineAudioCompletionEvent,
   AudioProcessingEvent,
+  AudioRenderCapacityEvent,
 
   // manually written nodes
   BaseAudioContext,
@@ -43,6 +44,7 @@ export const {
   AudioListener,
   AudioWorklet,
   AudioParamMap,
+  AudioRenderCapacity,
 
   PeriodicWave,
   AudioBuffer,
