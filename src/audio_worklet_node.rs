@@ -1,11 +1,16 @@
 use crate::utils::{float_buffer_to_js, get_symbol_for};
-use crate::*;
+use crate::{NapiAudioContext, NapiAudioParam, NapiOfflineAudioContext};
 
 use crossbeam_channel::{self, Receiver, Sender};
+
 use napi::*;
 use napi_derive::js_function;
-use web_audio_api::node::*;
-use web_audio_api::worklet::*;
+
+use web_audio_api::node::{AudioNode, AudioNodeOptions, ChannelCountMode, ChannelInterpretation};
+use web_audio_api::worklet::{
+    AudioParamValues, AudioWorkletGlobalScope, AudioWorkletNode, AudioWorkletNodeOptions,
+    AudioWorkletProcessor,
+};
 use web_audio_api::AudioParamDescriptor;
 
 use std::cell::Cell;
@@ -13,14 +18,16 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, OnceLock, RwLock};
 
+/// Unique ID generator for AudioWorkletProcessors
 static INCREMENTING_ID: AtomicU32 = AtomicU32::new(0);
 
+/// Command issued from render thread to the Worker
 enum WorkletCommand {
     Drop(u32),
     Process(ProcessorArguments),
 }
 
-/// Rust to JS processor inputs
+/// Render thread to Worker processor arguments
 struct ProcessorArguments {
     // processor unique ID
     id: u32,
@@ -29,7 +36,7 @@ struct ProcessorArguments {
     // processor ouputs (unsafely cast to static)
     outputs: &'static [&'static [&'static [f32]]],
     // processor audio params (unsafely cast to static)
-    params: &'static [(&'static str, &'static [f32])],
+    param_values: &'static [(&'static str, &'static [f32])],
     // AudioWorkletGlobalScope currentTime
     current_time: f64,
     // AudioWorkletGlobalScope currentFrame
@@ -40,6 +47,7 @@ struct ProcessorArguments {
     tail_time: Arc<AtomicBool>,
 }
 
+/// Message channel from render thread to Worker
 struct ProcessCallChannel {
     send: Sender<WorkletCommand>,
     recv: Receiver<WorkletCommand>,
@@ -81,11 +89,17 @@ fn process_call_receiver(id: usize) -> Receiver<WorkletCommand> {
         .clone()
 }
 
+/// Message channel inside the control thread to pass param descriptors of a given AudioWorkletNode
+/// into the static method AudioWorkletProcessor::parameter_descriptors
 struct AudioParamDescriptorsChannel {
     send: Mutex<Sender<Vec<AudioParamDescriptor>>>,
     recv: Receiver<Vec<AudioParamDescriptor>>,
 }
 
+/// Generate the AudioParamDescriptorsChannel
+///
+/// It is shared by the whole application, so even by different AudioContexts. This is no issue
+/// because it's using a Mutex to prevent concurrency.
 fn audio_param_descriptor_channel() -> &'static AudioParamDescriptorsChannel {
     static PAIR: OnceLock<AudioParamDescriptorsChannel> = OnceLock::new();
     PAIR.get_or_init(|| {
@@ -98,15 +112,17 @@ fn audio_param_descriptor_channel() -> &'static AudioParamDescriptorsChannel {
 }
 
 thread_local! {
-    pub static HAS_THREAD_PRIO: Cell<bool> = const { Cell::new(false) };
+    /// Denotes if the Worker thread priority has already been upped
+    static HAS_THREAD_PRIO: Cell<bool> = const { Cell::new(false) };
 }
 
+/// Handle a AudioWorkletProcessor::process call in the Worker
 fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
     let ProcessorArguments {
         id,
         inputs,
         outputs,
-        params,
+        param_values,
         current_time,
         current_frame,
         sample_rate,
@@ -166,7 +182,7 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
     }
 
     let mut js_params = env.create_object()?;
-    params.iter().for_each(|(name, data)| {
+    param_values.iter().for_each(|(name, data)| {
         let val = float_buffer_to_js(env, data.as_ptr() as *mut _, data.len());
         js_params.set_named_property(name, val).unwrap()
     });
@@ -179,22 +195,23 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
     Ok(())
 }
 
+/// The entry point into Rust from the Worker
 #[js_function(1)]
 pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
+    // Set thread priority to highest, if not done already
     if !HAS_THREAD_PRIO.replace(true) {
-        println!(
-            "Set Worker thread prio: {:?}",
-            thread_priority::set_current_thread_priority(thread_priority::ThreadPriority::Max)
-        );
+        // allowed to fail
+        let _ = thread_priority::set_current_thread_priority(thread_priority::ThreadPriority::Max);
     }
 
+    // Obtain the unique worker ID
     let worklet_id = ctx.get::<JsNumber>(0)?.get_uint32()? as usize;
 
+    // Wait for an incoming command
     match process_call_receiver(worklet_id).recv().unwrap() {
         WorkletCommand::Drop(id) => {
             let mut global = ctx.env.get_global()?;
-            let result = global.delete_named_property(&id.to_string());
-            println!("delete proc result {:?}", result);
+            global.delete_named_property(&id.to_string()).unwrap();
         }
         WorkletCommand::Process(args) => {
             process_audio_worklet(ctx.env, args)?;
@@ -224,10 +241,8 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
     let js_audio_context = ctx.get::<JsObject>(0)?;
 
-    // @note - not used
-    let js_name = ctx.get::<JsString>(1)?;
-    let utf8_name = js_name.into_utf8()?;
-    let _name = utf8_name.into_owned()?;
+    // @note - not used, handled in the JS code
+    // let js_name = ctx.get::<JsString>(1)?;
 
     // --------------------------------------------------------
     // Parse options
@@ -339,10 +354,13 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // --------------------------------------------------------
     // Create AudioWorkletNodeOptions object
     // --------------------------------------------------------
-    let send = process_call_sender(worklet_id);
-    let tail_time = Arc::new(AtomicBool::new(false));
-    // Unique id to pair Napi Worklet and JS processor
     let id = INCREMENTING_ID.fetch_add(1, Ordering::Relaxed);
+    let processor_options = NapiAudioWorkletProcessor {
+        id,
+        send: process_call_sender(worklet_id),
+        tail_time: Arc::new(AtomicBool::new(false)),
+        param_values: Vec::with_capacity(32),
+    };
 
     let options = AudioWorkletNodeOptions {
         number_of_inputs,
@@ -350,7 +368,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         output_channel_count,
         parameter_data,
         audio_node_options: AudioNodeOptions::default(),
-        processor_options: (send, tail_time, id),
+        processor_options,
     };
 
     // --------------------------------------------------------
@@ -424,28 +442,28 @@ audio_node_impl!(NapiAudioWorkletNode);
 // -------------------------------------------------
 
 struct NapiAudioWorkletProcessor {
-    send: Sender<WorkletCommand>,
-    tail_time: Arc<AtomicBool>,
+    /// Unique id to pair Napi Worklet and JS processor
     id: u32,
-    params: Vec<(&'static str, &'static [f32])>,
+    /// Sender to the JS Worklet
+    send: Sender<WorkletCommand>,
+    /// tail_time result holder
+    tail_time: Arc<AtomicBool>,
+    /// Reusable Vec for AudioParam values
+    param_values: Vec<(&'static str, &'static [f32])>,
 }
 
 impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
-    type ProcessorOptions = (Sender<WorkletCommand>, Arc<AtomicBool>, u32);
+    type ProcessorOptions = NapiAudioWorkletProcessor;
 
     fn constructor(opts: Self::ProcessorOptions) -> Self {
-        Self {
-            send: opts.0,
-            tail_time: opts.1,
-            id: opts.2,
-            params: Vec::with_capacity(32),
-        }
+        opts // the opts contain the full processor
     }
 
     fn parameter_descriptors() -> Vec<AudioParamDescriptor>
     where
         Self: Sized,
     {
+        // Get the values out of thin air, see `audio_param_descriptor_channel()` for details
         audio_param_descriptor_channel().recv.recv().unwrap()
     }
 
@@ -459,19 +477,19 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
         let inputs: &'static [&'static [&'static [f32]]] = unsafe { std::mem::transmute(inputs) };
         let outputs: &'static [&'static [&'static [f32]]] = unsafe { std::mem::transmute(outputs) };
 
-        self.params.clear();
-        self.params.extend(params.keys().map(|k| {
+        self.param_values.clear();
+        self.param_values.extend(params.keys().map(|k| {
             let label = unsafe { std::mem::transmute(k) };
             let value = unsafe { std::mem::transmute(&params.get(k)[..]) };
             (label, value)
         }));
-        let params = unsafe { std::mem::transmute(&self.params[..]) };
+        let param_values = unsafe { std::mem::transmute(&self.param_values[..]) };
 
         let item = ProcessorArguments {
             id: self.id,
             inputs,
             outputs,
-            params,
+            param_values,
             current_time: scope.current_time,
             current_frame: scope.current_frame,
             sample_rate: scope.sample_rate,
@@ -485,7 +503,6 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
 
 impl Drop for NapiAudioWorkletProcessor {
     fn drop(&mut self) {
-        println!("Drop is called for processor {}", self.id);
         self.send.send(WorkletCommand::Drop(self.id)).unwrap();
     }
 }
