@@ -15,8 +15,8 @@ use web_audio_api::AudioParamDescriptor;
 
 use std::cell::Cell;
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
-use std::sync::{Arc, Mutex, OnceLock, RwLock};
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::{Mutex, OnceLock, RwLock};
 
 /// Unique ID generator for AudioWorkletProcessors
 static INCREMENTING_ID: AtomicU32 = AtomicU32::new(0);
@@ -43,8 +43,8 @@ struct ProcessorArguments {
     current_frame: u64,
     // AudioWorkletGlobalScope sampleRate
     sample_rate: f32,
-    // tail_time return value
-    tail_time: Arc<AtomicBool>,
+    // channel for tail_time return value
+    tail_time_sender: Sender<bool>,
 }
 
 /// Message channel from render thread to Worker
@@ -126,7 +126,7 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
         current_time,
         current_frame,
         sample_rate,
-        tail_time,
+        tail_time_sender,
     } = args;
 
     let mut global = env.get_global()?;
@@ -190,7 +190,7 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
     let process_method = processor.get_named_property::<JsFunction>("process")?;
     let js_ret: JsUnknown = process_method.apply3(processor, js_inputs, js_outputs, js_params)?;
     let ret = js_ret.coerce_to_bool()?.get_value()?;
-    tail_time.store(ret, Ordering::Relaxed);
+    let _ = tail_time_sender.send(ret); // allowed to fail
 
     Ok(())
 }
@@ -358,7 +358,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let processor_options = NapiAudioWorkletProcessor {
         id,
         send: process_call_sender(worklet_id),
-        tail_time: Arc::new(AtomicBool::new(false)),
+        tail_time_channel: crossbeam_channel::bounded(1),
         param_values: Vec::with_capacity(32),
     };
 
@@ -446,8 +446,8 @@ struct NapiAudioWorkletProcessor {
     id: u32,
     /// Sender to the JS Worklet
     send: Sender<WorkletCommand>,
-    /// tail_time result holder
-    tail_time: Arc<AtomicBool>,
+    /// tail_time result channel
+    tail_time_channel: (Sender<bool>, Receiver<bool>),
     /// Reusable Vec for AudioParam values
     param_values: Vec<(&'static str, &'static [f32])>,
 }
@@ -501,11 +501,13 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
             current_time: scope.current_time,
             current_frame: scope.current_frame,
             sample_rate: scope.sample_rate,
-            tail_time: Arc::clone(&self.tail_time),
+            tail_time_sender: self.tail_time_channel.0.clone(),
         };
 
+        // send command to Worker
         self.send.send(WorkletCommand::Process(item)).unwrap();
-        self.tail_time.load(Ordering::Relaxed)
+        // await result
+        self.tail_time_channel.1.recv().unwrap()
     }
 }
 
