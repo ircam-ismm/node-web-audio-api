@@ -53,6 +53,7 @@ module.exports = (jsExport, _nativeBinding) => {
 
       this.#audioWorklet = new AudioWorklet({
         [kPrivateConstructor]: true,
+        workletId: this[kNapiObj].workletId,
       });
 
       this.#destination = new jsExport.AudioDestinationNode(this, {

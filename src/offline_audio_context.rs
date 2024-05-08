@@ -77,6 +77,9 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let js_obj = ctor.new_instance(&[&js_this])?;
     js_this.set_named_property("destination", &js_obj)?;
 
+    // internal id to retrieve worklet message channel
+    js_this.set_named_property("workletId", ctx.env.create_uint32(worklet_id as u32)?)?;
+
     ctx.env.get_undefined()
 }
 

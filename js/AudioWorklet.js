@@ -25,6 +25,7 @@ const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch
 
 class AudioWorklet {
   #port = null;
+  #workletId = null;
   #idPromiseMap = new Map();
   #promiseId = 0;
   #workletParamDescriptorsMap = new Map();
@@ -36,6 +37,8 @@ class AudioWorklet {
     ) {
       throw new TypeError('Illegal constructor');
     }
+
+    this.#workletId = options.workletId;
   }
 
   #bindEvents() {
@@ -129,7 +132,11 @@ class AudioWorklet {
     if (!this.#port) {
       await new Promise(resolve => {
         const workletPathname = path.join(__dirname, 'AudioWorkletGlobalScope.js');
-        this.#port = new Worker(workletPathname);
+        this.#port = new Worker(workletPathname, {
+          workerData: {
+            workletId: this.#workletId,
+          },
+        });
         this.#port.on('online', resolve);
 
         this.#bindEvents();

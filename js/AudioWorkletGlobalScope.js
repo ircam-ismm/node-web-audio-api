@@ -1,5 +1,6 @@
 const {
   parentPort,
+  workerData,
 } = require('node:worker_threads');
 
 const {
@@ -11,8 +12,11 @@ const kWorkletInputs = Symbol.for('node-web-audio-api:worklet-inputs');
 const kWorkletOutputs = Symbol.for('node-web-audio-api:worklet-outputs');
 const nameProcessorCtorMap = new Map();
 const paramDescriptorRegisteredMap = new Map();
-const workletId = 0; // TODO how to receive from the Rust side?
 let loopStarted = false;
+
+console.log(workerData);
+const { workletId } = workerData;
+console.log('coucou', workletId)
 
 function isIterable(obj) {
   // checks for null and undefined
@@ -23,8 +27,9 @@ function isIterable(obj) {
 }
 
 function runLoop() {
+  // console.log(workerData.workletId);
   // block until we need to render a quantum
-  run_audio_worklet(workletId);
+  run_audio_worklet(workerData.workletId);
   // yield to the event loop, and then repeat
   setImmediate(runLoop);
 }
@@ -81,6 +86,10 @@ parentPort.on('message', event => {
   console.log(event.cmd + '\n');
 
   switch (event.cmd) {
+    case 'node-web-audio-api:worklet:init': {
+      const { workletId, promiseId } = event;
+      break;
+    }
     case 'node-web-audio-api:worklet:add-module': {
       const { code, promiseId } = event;
       const func = new Function('AudioWorkletProcessor', 'registerProcessor', code);
