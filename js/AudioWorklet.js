@@ -1,3 +1,6 @@
+const {
+  resolveObjectURL
+} = require('node:buffer');
 const fs = require('node:fs').promises;
 const { existsSync } = require('node:fs');
 const path = require('node:path');
@@ -58,6 +61,7 @@ class AudioWorklet {
     // 1. in fs, relative to cwd
     // 2. in fs, relative to call site
     // 3. from network (important for wpt)
+    // 3. blob (important for wpt too)
     //
     // @important - this must be done first or the Error stack changes
     let code;
@@ -66,9 +70,15 @@ class AudioWorklet {
       const pathname = moduleUrl;
 
       try {
-        // @todo - allow relative path from caller site, probably required for wpt
         const buffer = await fs.readFile(pathname);
         code = buffer.toString();
+      } catch (err) {
+        throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
+      }
+    } else if (moduleUrl.startsWith('blob:')) {
+      try {
+        const blob = resolveObjectURL(moduleUrl);
+        code = await blob.text();
       } catch (err) {
         throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
       }
@@ -109,7 +119,7 @@ class AudioWorklet {
             throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
           }
         } else {
-          throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': Cannot find module ${moduleUrl}`);
+          throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': Cannot resolve module ${moduleUrl}`);
         }
       }
     }

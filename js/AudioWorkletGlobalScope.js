@@ -50,7 +50,8 @@ function createRegisterProcessor(promiseId) {
   return function registerProcessor(name, processorCtor) {
     nameProcessorCtorMap.set(name, processorCtor);
 
-    const parameterDescriptors = processorCtor.parameterDescriptors;
+    // must support Array, Set or iterators
+    const parameterDescriptors = Array.from(processorCtor.parameterDescriptors);
     // send param descriptors on main thread and resolve Promise
     parentPort.postMessage({
       cmd: 'node-web-audio-api:worklet:processor-registered',

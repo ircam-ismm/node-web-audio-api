@@ -1,3 +1,5 @@
+import { Blob } from 'node:buffer';
+
 import path from 'path';
 import wptRunner from 'wpt-runner';
 import chalk from 'chalk';
@@ -38,6 +40,13 @@ const rootURL = 'webaudio';
 
 // monkey patch `window` with our web audio API
 const setup = window => {
+  // monkey patch innerText with textContent
+  Object.defineProperty(window.HTMLScriptElement.prototype, 'innerText', {
+    get: function() {
+      return this.textContent;
+    },
+  })
+  // return;
   // This is meant to make some idlharness tests pass:
   // cf. wpt-runnner/testharness/idlharness.js line 1466-1472
   // These tests, which assess the descriptor of the classes according to window,
@@ -75,6 +84,8 @@ const setup = window => {
   window.Promise = Promise;
   window.Event = Event;
   window.EventTarget = EventTarget;
+  window.URL = URL;
+  window.Blob = Blob;
   // @note - adding Function this crashes some tests:
   // the-pannernode-interface/pannernode-setposition-throws.html
   // the-periodicwave-interface/createPeriodicWaveInfiniteValuesThrows.html
