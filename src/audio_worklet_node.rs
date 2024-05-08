@@ -11,7 +11,7 @@ use web_audio_api::AudioParamDescriptor;
 use std::cell::Cell;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock, RwLock};
 
 static INCREMENTING_ID: AtomicU32 = AtomicU32::new(0);
 
@@ -45,12 +45,40 @@ struct ProcessCallChannel {
     recv: Receiver<WorkletCommand>,
 }
 
-fn process_call_channel() -> &'static ProcessCallChannel {
-    static PAIR: OnceLock<ProcessCallChannel> = OnceLock::new();
-    PAIR.get_or_init(|| {
-        let (send, recv) = crossbeam_channel::unbounded();
-        ProcessCallChannel { send, recv }
-    })
+/// Global map of ID -> ProcessCallChannel
+///
+/// Every (Offline)AudioContext is assigned a new channel + ID. The ID is passed to the
+/// AudioWorklet Worker and to every AudioNode in the context so they can grab the channel and use
+/// message passing.
+static GLOBAL_PROCESS_CALL_CHANNEL_MAP: RwLock<Vec<ProcessCallChannel>> = RwLock::new(vec![]);
+
+/// Request a new channel + ID for a newly created (Offline)AudioContext
+pub(crate) fn allocate_process_call_channel() -> usize {
+    let (send, recv) = crossbeam_channel::unbounded();
+    let channel = ProcessCallChannel { send, recv };
+
+    // We need a write-lock to initialize the channel
+    let mut write_lock = GLOBAL_PROCESS_CALL_CHANNEL_MAP.write().unwrap();
+    let id = write_lock.len();
+    write_lock.push(channel);
+
+    id
+}
+
+/// Obtain the WorkletCommand sender for this context ID
+fn process_call_sender(id: usize) -> Sender<WorkletCommand> {
+    // optimistically assume the channel exists and we can use a shared read-lock
+    GLOBAL_PROCESS_CALL_CHANNEL_MAP.read().unwrap()[id]
+        .send
+        .clone()
+}
+
+/// Obtain the WorkletCommand receiver for this context ID
+fn process_call_receiver(id: usize) -> Receiver<WorkletCommand> {
+    // optimistically assume the channel exists and we can use a shared read-lock
+    GLOBAL_PROCESS_CALL_CHANNEL_MAP.read().unwrap()[id]
+        .recv
+        .clone()
 }
 
 struct AudioParamDescriptorsChannel {
@@ -160,7 +188,7 @@ pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
         );
     }
 
-    match process_call_channel().recv.recv().unwrap() {
+    match process_call_receiver(0).recv().unwrap() {
         WorkletCommand::Drop(id) => {
             let mut global = ctx.env.get_global()?;
             let result = global.delete_named_property(&id.to_string());
@@ -291,7 +319,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // --------------------------------------------------------
     // Create AudioWorkletNodeOptions object
     // --------------------------------------------------------
-    let send = process_call_channel().send.clone();
+    let send = process_call_sender(0);
     let tail_time = Arc::new(AtomicBool::new(false));
     // Unique id to pair Napi Worklet and JS processor
     let id = INCREMENTING_ID.fetch_add(1, Ordering::Relaxed);
