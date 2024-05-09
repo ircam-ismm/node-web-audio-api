@@ -294,6 +294,54 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     // No `processorOptions` here, they are sent to JS processor
 
     // --------------------------------------------------------
+    // Parse AudioNodeOptions
+    // --------------------------------------------------------
+    let audio_node_options_default = AudioNodeOptions::default();
+
+    let some_channel_count_js = options_js.get::<&str, JsObject>("channelCount")?;
+    let channel_count = if let Some(channel_count_js) = some_channel_count_js {
+        channel_count_js.coerce_to_number()?.get_double()? as usize
+    } else {
+        audio_node_options_default.channel_count
+    };
+
+    let some_channel_count_mode_js = options_js.get::<&str, JsObject>("channelCountMode")?;
+    let channel_count_mode = if let Some(channel_count_mode_js) = some_channel_count_mode_js {
+        let channel_count_mode_str = channel_count_mode_js
+            .coerce_to_string()?
+            .into_utf8()?
+            .into_owned()?;
+
+        println!("++++++ {:?}", channel_count_mode_str.as_str());
+        match channel_count_mode_str.as_str() {
+            "max" => ChannelCountMode::Max,
+            "clamped-max" => ChannelCountMode::ClampedMax,
+            "explicit" => ChannelCountMode::Explicit,
+            _ => unreachable!(),
+        }
+    } else {
+        audio_node_options_default.channel_count_mode
+    };
+
+    let some_channel_interpretation_js =
+        options_js.get::<&str, JsObject>("channelInterpretation")?;
+    let channel_interpretation =
+        if let Some(channel_interpretation_js) = some_channel_interpretation_js {
+            let channel_interpretation_str = channel_interpretation_js
+                .coerce_to_string()?
+                .into_utf8()?
+                .into_owned()?;
+
+            match channel_interpretation_str.as_str() {
+                "speakers" => ChannelInterpretation::Speakers,
+                "discrete" => ChannelInterpretation::Discrete,
+                _ => unreachable!(),
+            }
+        } else {
+            audio_node_options_default.channel_interpretation
+        };
+
+    // --------------------------------------------------------
     // Parse ParameterDescriptors
     // --------------------------------------------------------
     let params_js = ctx.get::<JsObject>(3)?;
@@ -378,7 +426,11 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
         number_of_outputs,
         output_channel_count,
         parameter_data,
-        audio_node_options: AudioNodeOptions::default(),
+        audio_node_options: AudioNodeOptions {
+            channel_count,
+            channel_count_mode,
+            channel_interpretation,
+        },
         processor_options,
     };
 

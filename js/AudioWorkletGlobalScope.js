@@ -21,6 +21,7 @@ const kWorkletParams = Symbol.for('node-web-audio-api:worklet-params');
 
 const nameProcessorCtorMap = new Map();
 const paramDescriptorRegisteredMap = new Map();
+let pendingProcessorConstructionData = null;
 let loopStarted = false;
 let breakLoop = false;
 let immediateId = null;
@@ -59,13 +60,13 @@ class AudioWorkletProcessor {
 
   #port = null;
 
-  constructor(options) {
+  constructor() {
     const {
       port,
       numberOfInputs,
       numberOfOutputs,
       parameterDescriptors,
-    } = options[kHiddenOptions];
+    } = pendingProcessorConstructionData;
 
     this.#port = port;
 
@@ -249,21 +250,23 @@ parentPort.on('message', event => {
         outputChannelCount, // @todo - clarify usage
       } = options;
       // rewrap options of interest for the AudioWorkletNodeBaseClass
-      const hiddenOptions = {
+      pendingProcessorConstructionData = {
         port,
         numberOfInputs,
         numberOfOutputs,
         parameterDescriptors: ctor.parameterDescriptors,
       };
 
-      processorOptions[kHiddenOptions] = hiddenOptions;
       let instance;
 
       try {
         instance = new ctor(processorOptions);
       } catch (err) {
+        // @todo - send processor error
         console.log(err.message);
       }
+
+      pendingProcessorConstructionData = null;
       // store in global so that Rust can match the JS processor
       // with its corresponding NapiAudioWorkletProcessor
       globalThis[`${id}`] = instance;

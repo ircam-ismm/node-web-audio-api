@@ -138,6 +138,34 @@ module.exports = (jsExport, nativeBinding) => {
         parsedOptions.processorOptions = {};
       }
 
+      // AudioNodeOptions
+      if (options && options.channelCount !== undefined) {
+        parsedOptions.channelCount = conversions['unsigned long'](options.channelCount, {
+          enforceRange: true,
+          context: `Failed to construct 'AudioWorkletNode': Failed to read the 'channelCount' property from BiquadFilterOptions: The provided value '${options.channelCount}'`,
+        });
+      }
+
+      if (options && options.channelCountMode !== undefined) {
+        if (!['max', 'clamped-max', 'explicit'].includes(options.channelCountMode)) {
+          throw new TypeError(`Failed to construct 'AudioWorkletNode': Failed to read the 'channelCountMode' property from 'AudioNodeOptions': The provided value '${options.channelCountMode}' is not a valid enum value of type ChannelCountMode`);
+        }
+
+        parsedOptions.channelCountMode = conversions['DOMString'](options.channelCountMode, {
+          context: `Failed to construct 'AudioWorkletNode': Failed to read the 'channelCount' property from BiquadFilterOptions: The provided value '${options.channelCountMode}'`,
+        });
+      }
+
+      if (options && options.channelInterpretation !== undefined) {
+        if (!['speakers', 'discrete'].includes(options.channelInterpretation)) {
+          throw new TypeError(`Failed to construct 'AudioWorkletNode': Failed to read the 'channelInterpretation' property from 'AudioNodeOptions': The provided value '${options.channelInterpretation}' is not a valid enum value of type ChannelCountMode`);
+        }
+
+        parsedOptions.channelInterpretation = conversions['DOMString'](options.channelInterpretation, {
+          context: `Failed to construct 'AudioWorkletNode': Failed to read the 'channelInterpretation' property from BiquadFilterOptions: The provided value '${options.channelInterpretation}'`,
+        });
+      }
+
       // Create NapiAudioWorkletNode
       const parameterDescriptors = context.audioWorklet[kGetParameterDescriptors](parsedName);
       let napiObj;

@@ -1,6 +1,6 @@
 class ArraySourceProcessor extends AudioWorkletProcessor {
     constructor(options) {
-        super(options);
+        super();
         this.sharedFloats = options.sharedFloats;
     }
 

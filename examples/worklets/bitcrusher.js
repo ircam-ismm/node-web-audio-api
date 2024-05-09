@@ -17,7 +17,7 @@ class Bitcrusher extends AudioWorkletProcessor {
       console.log(`++ in constructor: ${JSON.stringify(options, null, 2)}\n`);
       // The initial parameter value can be set by passing |options|
       // to the processor's constructor.
-      super(options);
+      super();
 
       this._phase = 0;
       this._lastSampleValue = 0;
