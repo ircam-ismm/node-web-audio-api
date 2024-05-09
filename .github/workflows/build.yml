@@ -84,7 +84,7 @@ jobs:
           # in particular for RPi, do it locally and workaround...
           # ---------------------------------------------------------
 
-    name: stable - ${{ matrix.settings.target }} - node@20
+    name: stable - ${{ matrix.settings.target }} - node@22.1
     runs-on: ${{ matrix.settings.host }}
     steps:
       - uses: actions/checkout@v4
