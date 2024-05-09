@@ -230,7 +230,13 @@ parentPort.on('message', event => {
       };
 
       processorOptions[kHiddenOptions] = hiddenOptions;
-      const instance = new ctor(processorOptions);
+      let instance;
+
+      try {
+        instance = new ctor(processorOptions);
+      } catch (err) {
+        console.log(err.message);
+      }
       // store in global so that Rust can match the JS processor
       // with its corresponding NapiAudioWorkletProcessor
       globalThis[`${id}`] = instance;

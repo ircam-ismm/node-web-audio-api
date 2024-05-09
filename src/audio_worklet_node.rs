@@ -11,7 +11,7 @@ use web_audio_api::worklet::{
     AudioParamValues, AudioWorkletGlobalScope, AudioWorkletNode, AudioWorkletNodeOptions,
     AudioWorkletProcessor,
 };
-use web_audio_api::AudioParamDescriptor;
+use web_audio_api::{AudioParamDescriptor, AutomationRate};
 
 use std::cell::Cell;
 use std::collections::HashMap;
@@ -322,12 +322,20 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .get_double()
             .unwrap() as f32;
 
-        let param_descriptor = web_audio_api::AudioParamDescriptor {
+        let js_str = param.get_named_property::<JsString>("automationRate")?;
+        let utf8_str = js_str.coerce_to_string()?.into_utf8()?.into_owned()?;
+        let automation_rate = match utf8_str.as_str() {
+            "a-rate" => AutomationRate::A,
+            "k-rate" => AutomationRate::K,
+            _ => unreachable!(),
+        };
+
+        let param_descriptor = AudioParamDescriptor {
             name,
             min_value,
             max_value,
             default_value,
-            automation_rate: web_audio_api::AutomationRate::A,
+            automation_rate,
         };
 
         rs_params.insert(i, param_descriptor);
