@@ -16,6 +16,8 @@ const {
 const kHiddenOptions = Symbol('node-web-audio-api:worklet-hidden-options');
 const kWorkletInputs = Symbol.for('node-web-audio-api:worklet-inputs');
 const kWorkletOutputs = Symbol.for('node-web-audio-api:worklet-outputs');
+const kWorkletParams = Symbol.for('node-web-audio-api:worklet-params');
+// const kWorkletOrderedParamNames = Symbol.for('node-web-audio-api:worklet-ordered-param-names');
 
 const nameProcessorCtorMap = new Map();
 const paramDescriptorRegisteredMap = new Map();
@@ -54,12 +56,23 @@ class AudioWorkletProcessor {
   #port = null;
 
   constructor(options) {
-    const { port, numberOfInputs, numberOfOutputs } = options[kHiddenOptions];
+    const {
+      port,
+      numberOfInputs,
+      numberOfOutputs,
+      parameterDescriptors,
+    } = options[kHiddenOptions];
 
     this.#port = port;
+
     this[kWorkletInputs] = new Array(numberOfInputs).fill([]);
-    this[kWorkletOutputs] = new Array(numberOfOutputs).fill([]);
     // @todo - use `outputChannelCount`
+    this[kWorkletOutputs] = new Array(numberOfOutputs).fill([]);
+    this[kWorkletParams] = {};
+    // prepare kWorkletParams object with parameter descriptors names
+    parameterDescriptors.forEach(desc => {
+      this[kWorkletParams][desc.name] = null;
+    });
   }
 
   get port() {
@@ -227,6 +240,7 @@ parentPort.on('message', event => {
         port,
         numberOfInputs,
         numberOfOutputs,
+        parameterDescriptors: ctor.parameterDescriptors,
       };
 
       processorOptions[kHiddenOptions] = hiddenOptions;

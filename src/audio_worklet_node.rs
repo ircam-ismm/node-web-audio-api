@@ -147,6 +147,7 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
 
     let k_worklet_inputs = get_symbol_for(env, "node-web-audio-api:worklet-inputs");
     let k_worklet_outputs = get_symbol_for(env, "node-web-audio-api:worklet-outputs");
+    let k_worklet_params = get_symbol_for(env, "node-web-audio-api:worklet-outputs");
 
     let js_inputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_inputs)?;
 
@@ -155,7 +156,6 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
 
         for (channel_number, channel) in input.iter().enumerate() {
             let samples = float_buffer_to_js(env, channel.as_ptr() as *mut _, channel.len());
-            // let _ = samples.freeze()?; // Error "Cannot freeze array buffer views with elements"
             channels.set_element(channel_number as u32, samples)?;
         }
 
@@ -181,7 +181,9 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
         }
     }
 
-    let mut js_params = env.create_object()?;
+    let mut js_params = processor.get_property::<JsSymbol, JsObject>(k_worklet_params)?;
+    // @note - could maybe rely on the fact that ParameterDescriptors
+    // are ordered to avoid sending param names in `param_values`
     param_values.iter().for_each(|(name, data)| {
         let val = float_buffer_to_js(env, data.as_ptr() as *mut _, data.len());
         js_params.set_named_property(name, val).unwrap()
