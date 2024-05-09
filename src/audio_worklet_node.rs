@@ -135,6 +135,7 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
     // between Rust Audio thread and JS Worker thread
     let processor = global.get_named_property::<JsUnknown>(&id.to_string())?;
     if processor.get_type()? == ValueType::Undefined {
+        let _ = tail_time_sender.send(true); // make sure we will be called
         return Ok(());
     }
 
