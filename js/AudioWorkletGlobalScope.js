@@ -22,6 +22,8 @@ const kWorkletParams = Symbol.for('node-web-audio-api:worklet-params');
 const nameProcessorCtorMap = new Map();
 const paramDescriptorRegisteredMap = new Map();
 let loopStarted = false;
+let breakLoop = false;
+let immediateId = null;
 
 function isIterable(obj) {
   // checks for null and undefined
@@ -42,10 +44,12 @@ function isConstructor(f) {
 }
 
 function runLoop() {
-  // block until we need to render a quantum
-  run_audio_worklet(workletId);
-  // yield to the event loop, and then repeat
-  setImmediate(runLoop);
+  if (!breakLoop) {
+    // block until we need to render a quantum
+    run_audio_worklet(workletId);
+    // yield to the event loop, and then repeat
+    immediateId = setImmediate(runLoop);
+  }
 }
 
 class AudioWorkletProcessor {
@@ -201,6 +205,9 @@ function registerProcessor(name, processorCtor) {
 // NOTE: Authors that register an event listener on the "message" event of this
 // port should call close on either end of the MessageChannel (either in the
 // AudioWorklet or the AudioWorkletGlobalScope side) to allow for resources to be collected.
+parentPort.on('exit', () => {
+  process.stdout.write('closing worklet');
+});
 
 parentPort.on('message', event => {
   console.log(event.cmd + '\n');
@@ -208,6 +215,12 @@ parentPort.on('message', event => {
   switch (event.cmd) {
     case 'node-web-audio-api:worklet:init': {
       const { workletId, promiseId } = event;
+      break;
+    }
+    case 'node-web-audio-api:worklet:exit': {
+      breakLoop = true;
+      // delete all remaining processor instances
+      process.exit(0);
       break;
     }
     case 'node-web-audio-api:worklet:add-module': {

@@ -197,7 +197,9 @@ class AudioWorklet {
     if (this.#port) {
       await new Promise(resolve => {
         this.#port.on('exit', resolve);
-        this.#port.terminate();
+        this.#port.postMessage({
+          cmd: 'node-web-audio-api:worklet:exit',
+        });
       });
     }
   }

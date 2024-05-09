@@ -39,4 +39,5 @@ await runSource();
 
 // @todo - this should close the AudioWorkletGlobalScope properly
 // before closing the "real" context
+console.log('closing');
 await audioContext.close();
