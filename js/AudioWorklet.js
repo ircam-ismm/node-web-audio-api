@@ -20,6 +20,7 @@ const {
   kEnumerableProperty,
 } = require('./lib/utils.js');
 
+const caller = require('caller');
 // cf. https://www.npmjs.com/package/node-fetch#commonjs
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
@@ -62,10 +63,12 @@ class AudioWorklet {
 
   async addModule(moduleUrl) {
     // try different module resolution strategies
-    // 1. in fs, relative to cwd
-    // 2. in fs, relative to call site
-    // 3. from network (important for wpt)
-    // 3. blob (important for wpt too)
+    // - file (absolute path or relative to cwd)
+    // - url
+    // - blob
+    // - fallback: relative to caller site
+    //   + in fs
+    //   + caller site is url - required for wpt, probably no other use case
     //
     // @important - this must be done first or the Error stack changes
     let code;
@@ -79,6 +82,13 @@ class AudioWorklet {
       } catch (err) {
         throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
       }
+    } else if (moduleUrl.startsWith('http')) {
+      try {
+          const res = await fetch(moduleUrl);
+          code = await res.text();
+        } catch (err) {
+          throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
+        }
     } else if (moduleUrl.startsWith('blob:')) {
       try {
         const blob = resolveObjectURL(moduleUrl);
@@ -88,7 +98,7 @@ class AudioWorklet {
       }
     } else {
       // get caller site from error stack trace
-      const callerSite = (new Error()).stack.split('\n')[2].trim().split(' ')[1];
+      const callerSite = caller();
 
       if (callerSite.startsWith('http')) {
         // we know separators are '/'
@@ -157,15 +167,6 @@ class AudioWorklet {
     });
 
     for (let [name, parameterDescriptors] of paramDescriptorRegisteredMap.entries()) {
-      // @todo - sanitize `parameterDescriptors`, replace with `null` if invalid
-      // cf. https://webaudio.github.io/web-audio-api/#AudioParamDescriptor
-      // dictionary AudioParamDescriptor {
-      //     required DOMString name;
-      //     float defaultValue = 0;
-      //     float minValue = -3.4028235e38;
-      //     float maxValue = 3.4028235e38;
-      //     AutomationRate automationRate = "a-rate";
-      // };
       this.#workletParamDescriptorsMap.set(name, parameterDescriptors);
     }
   }
