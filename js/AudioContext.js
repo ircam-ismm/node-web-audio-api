@@ -215,8 +215,13 @@ module.exports = function(jsExport, nativeBinding) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioContext\'');
       }
 
-      await this.audioWorklet[kWorkletRelease]();
+      // Close context first to prevent render to be called against an already
+      // closed worklet, which locks the whole process because the processor just
+      // wait the `tail_time` event.
+      // Note that this still need extra care on worklet side because `close` does
+      // not guarantee render wont be called, apparently
       await this[kNapiObj].close();
+      await this.audioWorklet[kWorkletRelease]();
     }
 
     async setSinkId(sinkId) {

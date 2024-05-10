@@ -220,6 +220,8 @@ parentPort.on('message', event => {
     }
     case 'node-web-audio-api:worklet:exit': {
       breakLoop = true;
+      // run audio worklet on rust side to handle any pending incoming command
+      run_audio_worklet(workletId);
       // delete all remaining processor instances
       process.exit(0);
       break;
