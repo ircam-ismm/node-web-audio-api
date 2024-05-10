@@ -231,7 +231,9 @@ pub(crate) fn run_audio_worklet_global_scope(ctx: CallContext) -> Result<JsUndef
     // would stay stuck here waiting for an incoming message
     // Note that 100 microseconds is arbitrary, but seems to maintain the js event loop
     // in some kind of higher piority behavior, preventing enexpected peak loads
-    while let Ok(msg) = process_call_receiver(worklet_id).recv_timeout(std::time::Duration::from_micros(100)) {
+    while let Ok(msg) =
+        process_call_receiver(worklet_id).recv_timeout(std::time::Duration::from_micros(100))
+    {
         match msg {
             WorkletCommand::Drop(id) => {
                 let mut global = ctx.env.get_global()?;
@@ -253,13 +255,8 @@ pub(crate) fn exit_audio_worklet_global_scope(ctx: CallContext) -> Result<JsUnde
     // Flag message channel as exited to prevent any other render call
     process_call_exited(worklet_id).store(true, Ordering::SeqCst);
     // Handle any pending message from audio thread
-    if let Ok(msg) = process_call_receiver(worklet_id).try_recv() {
-        match msg {
-            WorkletCommand::Process(args) => {
-                let _ = args.tail_time_sender.send(false);
-            }
-            _ => (),
-        }
+    if let Ok(WorkletCommand::Process(args)) = process_call_receiver(worklet_id).try_recv() {
+        let _ = args.tail_time_sender.send(false);
     }
 
     ctx.env.get_undefined()
@@ -365,22 +362,21 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
     let some_channel_interpretation_js =
         options_js.get::<&str, JsObject>("channelInterpretation")?;
-    let channel_interpretation = if let Some(channel_interpretation_js) =
-        some_channel_interpretation_js
-    {
-        let channel_interpretation_str = channel_interpretation_js
-            .coerce_to_string()?
-            .into_utf8()?
-            .into_owned()?;
+    let channel_interpretation =
+        if let Some(channel_interpretation_js) = some_channel_interpretation_js {
+            let channel_interpretation_str = channel_interpretation_js
+                .coerce_to_string()?
+                .into_utf8()?
+                .into_owned()?;
 
-        match channel_interpretation_str.as_str() {
-            "speakers" => ChannelInterpretation::Speakers,
-            "discrete" => ChannelInterpretation::Discrete,
-            _ => unreachable!(),
-        }
-    } else {
-        audio_node_options_default.channel_interpretation
-    };
+            match channel_interpretation_str.as_str() {
+                "speakers" => ChannelInterpretation::Speakers,
+                "discrete" => ChannelInterpretation::Discrete,
+                _ => unreachable!(),
+            }
+        } else {
+            audio_node_options_default.channel_interpretation
+        };
 
     // --------------------------------------------------------
     // Parse ParameterDescriptors
@@ -619,8 +615,7 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
         // send command to Worker
         self.send.send(WorkletCommand::Process(item)).unwrap();
         // await result
-        let ret = self.tail_time_channel.1.recv().unwrap();
-        ret
+        self.tail_time_channel.1.recv().unwrap()
     }
 }
 
