@@ -142,8 +142,14 @@ module.exports = (jsExport, nativeBinding) => {
       if (options && options.channelCount !== undefined) {
         parsedOptions.channelCount = conversions['unsigned long'](options.channelCount, {
           enforceRange: true,
-          context: `Failed to construct 'AudioWorkletNode': Failed to read the 'channelCount' property from BiquadFilterOptions: The provided value '${options.channelCount}'`,
+          context: `Failed to construct 'AudioWorkletNode': Failed to read the 'channelCount' property from AudioWorkletNodeOptions: The provided value '${options.channelCount}'`,
         });
+
+        // if we delegate this check to Rust, this can poison a Mutex
+        // (probably the `audio_param_descriptor_channel` one)
+        if (parsedOptions.channelCount <= 0 || parsedOptions.channelCount > 32) {
+          throw new DOMException(`Failed to construct 'AudioWorkletNode': Invalid 'channelCount' property: Number of channels: ${parsedOptions.channelCount} is outside range [1, 32]`, 'NotSupportedError')
+        }
       }
 
       if (options && options.channelCountMode !== undefined) {
@@ -152,7 +158,7 @@ module.exports = (jsExport, nativeBinding) => {
         }
 
         parsedOptions.channelCountMode = conversions['DOMString'](options.channelCountMode, {
-          context: `Failed to construct 'AudioWorkletNode': Failed to read the 'channelCount' property from BiquadFilterOptions: The provided value '${options.channelCountMode}'`,
+          context: `Failed to construct 'AudioWorkletNode': Failed to read the 'channelCount' property from AudioWorkletNodeOptions: The provided value '${options.channelCountMode}'`,
         });
       }
 
@@ -162,7 +168,7 @@ module.exports = (jsExport, nativeBinding) => {
         }
 
         parsedOptions.channelInterpretation = conversions['DOMString'](options.channelInterpretation, {
-          context: `Failed to construct 'AudioWorkletNode': Failed to read the 'channelInterpretation' property from BiquadFilterOptions: The provided value '${options.channelInterpretation}'`,
+          context: `Failed to construct 'AudioWorkletNode': Failed to read the 'channelInterpretation' property from AudioWorkletNodeOptions: The provided value '${options.channelInterpretation}'`,
         });
       }
 

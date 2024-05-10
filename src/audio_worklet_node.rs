@@ -312,7 +312,6 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             .into_utf8()?
             .into_owned()?;
 
-        println!("++++++ {:?}", channel_count_mode_str.as_str());
         match channel_count_mode_str.as_str() {
             "max" => ChannelCountMode::Max,
             "clamped-max" => ChannelCountMode::ClampedMax,
@@ -325,21 +324,22 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
     let some_channel_interpretation_js =
         options_js.get::<&str, JsObject>("channelInterpretation")?;
-    let channel_interpretation =
-        if let Some(channel_interpretation_js) = some_channel_interpretation_js {
-            let channel_interpretation_str = channel_interpretation_js
-                .coerce_to_string()?
-                .into_utf8()?
-                .into_owned()?;
+    let channel_interpretation = if let Some(channel_interpretation_js) =
+        some_channel_interpretation_js
+    {
+        let channel_interpretation_str = channel_interpretation_js
+            .coerce_to_string()?
+            .into_utf8()?
+            .into_owned()?;
 
-            match channel_interpretation_str.as_str() {
-                "speakers" => ChannelInterpretation::Speakers,
-                "discrete" => ChannelInterpretation::Discrete,
-                _ => unreachable!(),
-            }
-        } else {
-            audio_node_options_default.channel_interpretation
-        };
+        match channel_interpretation_str.as_str() {
+            "speakers" => ChannelInterpretation::Speakers,
+            "discrete" => ChannelInterpretation::Discrete,
+            _ => unreachable!(),
+        }
+    } else {
+        audio_node_options_default.channel_interpretation
+    };
 
     // --------------------------------------------------------
     // Parse ParameterDescriptors
@@ -456,7 +456,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
             let audio_context = napi_audio_context.unwrap();
             AudioWorkletNode::new::<NapiAudioWorkletProcessor>(audio_context, options)
         }
-        &_ => panic!("not supported"),
+        &_ => unreachable!(),
     };
 
     drop(guard);
