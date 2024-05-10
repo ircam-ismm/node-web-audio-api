@@ -15,8 +15,8 @@ use web_audio_api::{AudioParamDescriptor, AutomationRate};
 
 use std::cell::Cell;
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicU32, Ordering};
-use std::sync::{Mutex, OnceLock, RwLock};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::{Arc, Mutex, OnceLock, RwLock};
 
 /// Unique ID generator for AudioWorkletProcessors
 static INCREMENTING_ID: AtomicU32 = AtomicU32::new(0);
@@ -51,6 +51,8 @@ struct ProcessorArguments {
 struct ProcessCallChannel {
     send: Sender<WorkletCommand>,
     recv: Receiver<WorkletCommand>,
+    // mark that the worklet has been exited to prevent any further `process` call
+    exited: Arc<AtomicBool>,
 }
 
 /// Global map of ID -> ProcessCallChannel
@@ -62,8 +64,14 @@ static GLOBAL_PROCESS_CALL_CHANNEL_MAP: RwLock<Vec<ProcessCallChannel>> = RwLock
 
 /// Request a new channel + ID for a newly created (Offline)AudioContext
 pub(crate) fn allocate_process_call_channel() -> usize {
-    let (send, recv) = crossbeam_channel::unbounded();
-    let channel = ProcessCallChannel { send, recv };
+    // Only one process message can be sent at same time from a given context,
+    // but Drop messages could be send too, so let's take some room
+    let (send, recv) = crossbeam_channel::bounded(32);
+    let channel = ProcessCallChannel {
+        send,
+        recv,
+        exited: Arc::new(AtomicBool::new(false)),
+    };
 
     // We need a write-lock to initialize the channel
     let mut write_lock = GLOBAL_PROCESS_CALL_CHANNEL_MAP.write().unwrap();
@@ -86,6 +94,14 @@ fn process_call_receiver(id: usize) -> Receiver<WorkletCommand> {
     // optimistically assume the channel exists and we can use a shared read-lock
     GLOBAL_PROCESS_CALL_CHANNEL_MAP.read().unwrap()[id]
         .recv
+        .clone()
+}
+
+/// Obtain the WorkletCommand exited flag for this context ID
+fn process_call_exited(id: usize) -> Arc<AtomicBool> {
+    // optimistically assume the channel exists and we can use a shared read-lock
+    GLOBAL_PROCESS_CALL_CHANNEL_MAP.read().unwrap()[id]
+        .exited
         .clone()
 }
 
@@ -200,7 +216,7 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
 
 /// The entry point into Rust from the Worker
 #[js_function(1)]
-pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
+pub(crate) fn run_audio_worklet_global_scope(ctx: CallContext) -> Result<JsUndefined> {
     // Set thread priority to highest, if not done already
     if !HAS_THREAD_PRIO.replace(true) {
         // allowed to fail
@@ -210,14 +226,39 @@ pub(crate) fn run_audio_worklet(ctx: CallContext) -> Result<JsUndefined> {
     // Obtain the unique worker ID
     let worklet_id = ctx.get::<JsNumber>(0)?.get_uint32()? as usize;
 
-    // Wait for an incoming command
-    match process_call_receiver(worklet_id).recv().unwrap() {
-        WorkletCommand::Drop(id) => {
-            let mut global = ctx.env.get_global()?;
-            global.delete_named_property(&id.to_string()).unwrap();
+    // Wait for an incoming command, the recv_timeout is required for OfflineAudioContext
+    // as we have no way to exit the worklet before the graph is dropped, so the worlet
+    // would stay stuck here waiting for an incoming message
+    // Note that 100 microseconds is arbitrary, but seems to maintain the js event loop
+    // in some kind of higher piority behavior, preventing enexpected peak loads
+    while let Ok(msg) = process_call_receiver(worklet_id).recv_timeout(std::time::Duration::from_micros(100)) {
+        match msg {
+            WorkletCommand::Drop(id) => {
+                let mut global = ctx.env.get_global()?;
+                global.delete_named_property(&id.to_string()).unwrap();
+            }
+            WorkletCommand::Process(args) => {
+                process_audio_worklet(ctx.env, args)?;
+            }
         }
-        WorkletCommand::Process(args) => {
-            process_audio_worklet(ctx.env, args)?;
+    }
+
+    ctx.env.get_undefined()
+}
+
+#[js_function(1)]
+pub(crate) fn exit_audio_worklet_global_scope(ctx: CallContext) -> Result<JsUndefined> {
+    // Obtain the unique worker ID
+    let worklet_id = ctx.get::<JsNumber>(0)?.get_uint32()? as usize;
+    // Flag message channel as exited to prevent any other render call
+    process_call_exited(worklet_id).store(true, Ordering::SeqCst);
+    // Handle any pending message from audio thread
+    if let Ok(msg) = process_call_receiver(worklet_id).try_recv() {
+        match msg {
+            WorkletCommand::Process(args) => {
+                let _ = args.tail_time_sender.send(false);
+            }
+            _ => (),
         }
     }
 
@@ -324,21 +365,22 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
 
     let some_channel_interpretation_js =
         options_js.get::<&str, JsObject>("channelInterpretation")?;
-    let channel_interpretation =
-        if let Some(channel_interpretation_js) = some_channel_interpretation_js {
-            let channel_interpretation_str = channel_interpretation_js
-                .coerce_to_string()?
-                .into_utf8()?
-                .into_owned()?;
+    let channel_interpretation = if let Some(channel_interpretation_js) =
+        some_channel_interpretation_js
+    {
+        let channel_interpretation_str = channel_interpretation_js
+            .coerce_to_string()?
+            .into_utf8()?
+            .into_owned()?;
 
-            match channel_interpretation_str.as_str() {
-                "speakers" => ChannelInterpretation::Speakers,
-                "discrete" => ChannelInterpretation::Discrete,
-                _ => unreachable!(),
-            }
-        } else {
-            audio_node_options_default.channel_interpretation
-        };
+        match channel_interpretation_str.as_str() {
+            "speakers" => ChannelInterpretation::Speakers,
+            "discrete" => ChannelInterpretation::Discrete,
+            _ => unreachable!(),
+        }
+    } else {
+        audio_node_options_default.channel_interpretation
+    };
 
     // --------------------------------------------------------
     // Parse ParameterDescriptors
@@ -416,6 +458,7 @@ fn constructor(ctx: CallContext) -> Result<JsUndefined> {
     let processor_options = NapiAudioWorkletProcessor {
         id,
         send: process_call_sender(worklet_id),
+        exited: process_call_exited(worklet_id),
         tail_time_channel: crossbeam_channel::bounded(1),
         param_values: Vec::with_capacity(32),
     };
@@ -508,6 +551,8 @@ struct NapiAudioWorkletProcessor {
     id: u32,
     /// Sender to the JS Worklet
     send: Sender<WorkletCommand>,
+    /// Flag that marks the JS worklet as exited
+    exited: Arc<AtomicBool>,
     /// tail_time result channel
     tail_time_channel: (Sender<bool>, Receiver<bool>),
     /// Reusable Vec for AudioParam values
@@ -536,6 +581,11 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
         params: AudioParamValues<'b>,
         scope: &'b AudioWorkletGlobalScope,
     ) -> bool {
+        // Early return if audio thread is still closing while worklet has been exited
+        if self.exited.load(Ordering::SeqCst) {
+            return false;
+        }
+
         // SAFETY:
         // We are transmuting the a' and b' lifetimes to static in order to send them to the Worker
         // thread. This should be safe as long as:
@@ -569,12 +619,15 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
         // send command to Worker
         self.send.send(WorkletCommand::Process(item)).unwrap();
         // await result
-        self.tail_time_channel.1.recv().unwrap()
+        let ret = self.tail_time_channel.1.recv().unwrap();
+        ret
     }
 }
 
 impl Drop for NapiAudioWorkletProcessor {
     fn drop(&mut self) {
-        self.send.send(WorkletCommand::Drop(self.id)).unwrap();
+        if !self.exited.load(Ordering::SeqCst) {
+            self.send.send(WorkletCommand::Drop(self.id)).unwrap();
+        }
     }
 }

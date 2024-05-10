@@ -6,7 +6,8 @@ const {
 const conversions = require('webidl-conversions');
 
 const {
-  run_audio_worklet,
+  exit_audio_worklet_global_scope,
+  run_audio_worklet_global_scope,
 } = require('../load-native.cjs');
 
 const {
@@ -23,8 +24,7 @@ const nameProcessorCtorMap = new Map();
 const paramDescriptorRegisteredMap = new Map();
 let pendingProcessorConstructionData = null;
 let loopStarted = false;
-let breakLoop = false;
-let immediateId = null;
+let runLoopImmediateId = null;
 
 function isIterable(obj) {
   // checks for null and undefined
@@ -45,12 +45,10 @@ function isConstructor(f) {
 }
 
 function runLoop() {
-  if (!breakLoop) {
-    // block until we need to render a quantum
-    run_audio_worklet(workletId);
-    // yield to the event loop, and then repeat
-    immediateId = setImmediate(runLoop);
-  }
+  // block until we need to render a quantum
+  run_audio_worklet_global_scope(workletId);
+  // yield to the event loop, and then repeat
+  runLoopImmediateId = setImmediate(runLoop);
 }
 
 class AudioWorkletProcessor {
@@ -219,10 +217,10 @@ parentPort.on('message', event => {
       break;
     }
     case 'node-web-audio-api:worklet:exit': {
-      breakLoop = true;
-      // run audio worklet on rust side to handle any pending incoming command
-      run_audio_worklet(workletId);
-      // delete all remaining processor instances
+      clearImmediate(runLoopImmediateId);
+      // properly exit audio worklet on rust side
+      exit_audio_worklet_global_scope(workletId);
+      // exit process
       process.exit(0);
       break;
     }

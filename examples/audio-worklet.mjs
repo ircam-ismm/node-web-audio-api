@@ -1,10 +1,11 @@
 import path from 'node:path';
 
-import { AudioContext, OscillatorNode, AudioWorkletNode } from '../index.mjs';
+import { AudioContext, OfflineAudioContext, OscillatorNode, AudioWorkletNode } from '../index.mjs';
 import { sleep } from '@ircam/sc-utils';
 
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });
+// const audioContext = new OfflineAudioContext(2, 1 * 48000, 48000);
 
 await audioContext.audioWorklet.addModule(path.join('examples', 'worklets', 'bitcrusher.js')); // relative to cwd
 await audioContext.audioWorklet.addModule(path.join('worklets', 'white-noise.js')); // relative path to call site
@@ -43,5 +44,6 @@ audioContext.renderCapacity.addEventListener('update', e => {
 audioContext.renderCapacity.start({ updateInterval: 1. });
 
 await sleep(8);
-
 await audioContext.close();
+
+// await audioContext.startRendering();
