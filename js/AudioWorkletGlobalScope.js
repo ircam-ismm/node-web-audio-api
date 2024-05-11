@@ -19,6 +19,7 @@ const kHiddenOptions = Symbol('node-web-audio-api:worklet-hidden-options');
 const kWorkletInputs = Symbol.for('node-web-audio-api:worklet-inputs');
 const kWorkletOutputs = Symbol.for('node-web-audio-api:worklet-outputs');
 const kWorkletParams = Symbol.for('node-web-audio-api:worklet-params');
+const kWorkletParamsCache = Symbol.for('node-web-audio-api:worklet-params-cache');
 // const kWorkletOrderedParamNames = Symbol.for('node-web-audio-api:worklet-ordered-param-names');
 
 const nameProcessorCtorMap = new Map();
@@ -75,13 +76,22 @@ globalThis.AudioWorkletProcessor = class AudioWorkletProcessor {
 
     this.#port = port;
 
+    // @todo - reuse Float32Arrays between calls + freeze arrays
     this[kWorkletInputs] = new Array(numberOfInputs).fill([]);
     // @todo - use `outputChannelCount`
     this[kWorkletOutputs] = new Array(numberOfOutputs).fill([]);
+
+    // Object to be reused as `process` parameters argument
     this[kWorkletParams] = {};
-    // prepare kWorkletParams object with parameter descriptors names
+    // Cache of 2 Float32Array (of length 128 and 1) for each param, to be reused on
+    // each process call according to the size the param for the current render quantum
+    this[kWorkletParamsCache] = {};
+
     parameterDescriptors.forEach(desc => {
-      this[kWorkletParams][desc.name] = null;
+      this[kWorkletParamsCache][desc.name] = [
+        new Float32Array(128), // should be globalThis.renderQuantumSize
+        new Float32Array(1),
+      ]
     });
   }
 

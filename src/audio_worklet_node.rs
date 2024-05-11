@@ -1,4 +1,4 @@
-use crate::utils::{float_buffer_to_js, get_symbol_for};
+use crate::utils::{float_buffer_to_js, get_symbol_for, to_byte_slice};
 use crate::{NapiAudioContext, NapiAudioParam, NapiOfflineAudioContext};
 
 use crossbeam_channel::{self, Receiver, Sender};
@@ -160,7 +160,8 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
 
     let k_worklet_inputs = get_symbol_for(env, "node-web-audio-api:worklet-inputs");
     let k_worklet_outputs = get_symbol_for(env, "node-web-audio-api:worklet-outputs");
-    let k_worklet_params = get_symbol_for(env, "node-web-audio-api:worklet-outputs");
+    let k_worklet_params = get_symbol_for(env, "node-web-audio-api:worklet-params");
+    let k_worklet_params_cache = get_symbol_for(env, "node-web-audio-api:worklet-params-cache");
 
     let js_inputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_inputs)?;
 
@@ -195,12 +196,23 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
     }
 
     let mut js_params = processor.get_property::<JsSymbol, JsObject>(k_worklet_params)?;
-    // @note - could maybe rely on the fact that ParameterDescriptors
-    // are ordered to avoid sending param names in `param_values`
-    param_values.iter().for_each(|(name, data)| {
-        let val = float_buffer_to_js(env, data.as_ptr() as *mut _, data.len());
-        js_params.set_named_property(name, val).unwrap()
-    });
+    let js_params_cache = processor.get_property::<JsSymbol, JsObject>(k_worklet_params_cache)?;
+
+    // @perf - We could rely on the fact that ParameterDescriptors
+    // are ordered maps to avoid sending param names in `param_values`
+    for (name, data) in param_values.iter() {
+        let float32_arr_cache = js_params_cache.get_named_property::<JsObject>(name)?;
+        // retrieve right Float32Array according to actual param size, i.e. 128 or 1
+        let cache_index = if data.len() == 1 { 1 } else { 0 };
+        let float32_arr = float32_arr_cache.get_element::<JsTypedArray>(cache_index)?;
+        // copy data into undeerlying ArrayBuffer
+        let mut array_buffer_value = float32_arr.into_value()?.arraybuffer.into_value()?;
+        let u8_slice = to_byte_slice(data);
+        array_buffer_value.copy_from_slice(u8_slice);
+        // get new owned value, as `float32_arr` as been consumed by `into_value` call
+        let float32_arr = float32_arr_cache.get_element::<JsTypedArray>(cache_index)?;
+        js_params.set_named_property(name, float32_arr).unwrap();
+    }
 
     let process_method = processor.get_named_property::<JsFunction>("process")?;
     let js_ret: JsUnknown = process_method.apply3(processor, js_inputs, js_outputs, js_params)?;

@@ -147,7 +147,7 @@ module.exports = (jsExport, nativeBinding) => {
 
         // if we delegate this check to Rust, this can poison a Mutex
         // (probably the `audio_param_descriptor_channel` one)
-        if (parsedOptions.channelCount <= 0 || parsedOptions.channelCount > 32) {
+        if (parsedOptions.channelCount <= 0 || parsedOptions.channelCount > IMPLEMENTATION_MAX_NUMBER_OF_CHANNELS) {
           throw new DOMException(`Failed to construct 'AudioWorkletNode': Invalid 'channelCount' property: Number of channels: ${parsedOptions.channelCount} is outside range [1, 32]`, 'NotSupportedError')
         }
       }
