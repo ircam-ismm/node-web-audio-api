@@ -54,6 +54,7 @@ module.exports = (jsExport, _nativeBinding) => {
       this.#audioWorklet = new AudioWorklet({
         [kPrivateConstructor]: true,
         workletId: this[kNapiObj].workletId,
+        sampleRate: this[kNapiObj].sampleRate,
       });
 
       this.#destination = new jsExport.AudioDestinationNode(this, {
@@ -107,16 +108,14 @@ module.exports = (jsExport, _nativeBinding) => {
       return this[kNapiObj].currentTime;
     }
 
-    get renderQuantumSize() {
-      if (!(this instanceof BaseAudioContext)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
-      }
+    // @todo - implement in upstream crate + pass to AudioWorkletGlobalScope
+    // get renderQuantumSize() {
+    //   if (!(this instanceof BaseAudioContext)) {
+    //     throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
+    //   }
 
-      throw new Error(`Not implemented`);
-      // return this[kNapiObj].currentTime;
-    }
-
-    // renderQuantumSize
+    //   return this[kNapiObj].renderQuantumSize;
+    // }
 
     get state() {
       if (!(this instanceof BaseAudioContext)) {

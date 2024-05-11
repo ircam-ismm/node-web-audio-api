@@ -24,6 +24,84 @@ const caller = require('caller');
 // cf. https://www.npmjs.com/package/node-fetch#commonjs
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
+/**
+ * Retrieve code with different module resolution strategies
+ * - file - absolute or relative to cwd path
+ * - URL
+ * - Blob
+ * - fallback: relative to caller site
+ *   + in fs
+ *   + caller site is url - required for wpt, probably no other use case
+ */
+const resolveModule = async (moduleUrl) => {
+  let code;
+
+  if (existsSync(moduleUrl)) {
+    const pathname = moduleUrl;
+
+    try {
+      const buffer = await fs.readFile(pathname);
+      code = buffer.toString();
+    } catch (err) {
+      throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
+    }
+  } else if (moduleUrl.startsWith('http')) {
+    try {
+        const res = await fetch(moduleUrl);
+        code = await res.text();
+      } catch (err) {
+        throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
+      }
+  } else if (moduleUrl.startsWith('blob:')) {
+    try {
+      const blob = resolveObjectURL(moduleUrl);
+      code = await blob.text();
+    } catch (err) {
+      throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
+    }
+  } else {
+    // get caller site from error stack trace
+    const callerSite = caller(2);
+
+    if (callerSite.startsWith('http')) {
+      let url;
+      // handle origin relative and caller path relative URLs
+      if (moduleUrl.startsWith('/')) {
+        const origin = new URL(baseUrl).origin;
+        url = origin + moduleUrl;
+      } else {
+        // we know separators are '/'
+        const baseUrl = callerSite.substr(0, callerSite.lastIndexOf('/'));
+        url = baseUrl + '/' + moduleUrl;
+      }
+
+      try {
+        const res = await fetch(url);
+        code = await res.text();
+      } catch (err) {
+        throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
+      }
+    } else {
+      const dirname = callerSite.substr(0, callerSite.lastIndexOf(path.sep));
+      const absDirname = dirname.replace('file://', '');
+      const pathname = path.join(absDirname, moduleUrl);
+
+      if (existsSync(pathname)) {
+        try {
+          const buffer = await fs.readFile(pathname);
+          code = buffer.toString();
+        } catch (err) {
+          throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
+        }
+      } else {
+        throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': Cannot resolve module ${moduleUrl}`);
+      }
+    }
+  }
+
+  return code;
+}
+
 class AudioWorklet {
   #workletId = null;
   #sampleRate = null;
@@ -67,81 +145,7 @@ class AudioWorklet {
   }
 
   async addModule(moduleUrl) {
-    // try different module resolution strategies
-    // - file (absolute path or relative to cwd)
-    // - url
-    // - blob
-    // - fallback: relative to caller site
-    //   + in fs
-    //   + caller site is url - required for wpt, probably no other use case
-    //
-    // @important - this must be done first or the Error stack changes
-    let code;
-
-    if (existsSync(moduleUrl)) {
-      const pathname = moduleUrl;
-
-      try {
-        const buffer = await fs.readFile(pathname);
-        code = buffer.toString();
-      } catch (err) {
-        throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
-      }
-    } else if (moduleUrl.startsWith('http')) {
-      try {
-          const res = await fetch(moduleUrl);
-          code = await res.text();
-        } catch (err) {
-          throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
-        }
-    } else if (moduleUrl.startsWith('blob:')) {
-      try {
-        const blob = resolveObjectURL(moduleUrl);
-        code = await blob.text();
-      } catch (err) {
-        throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
-      }
-    } else {
-      // get caller site from error stack trace
-      const callerSite = caller();
-
-      if (callerSite.startsWith('http')) {
-        // we know separators are '/'
-        const baseUrl = callerSite.substr(0, callerSite.lastIndexOf('/'));
-        let url;
-
-        if (moduleUrl.startsWith('/')) {
-          // absolute url
-          const origin = new URL(baseUrl).origin;
-          url = origin + moduleUrl;
-        } else {
-          url = baseUrl + '/' + moduleUrl;
-        }
-
-        try {
-          const res = await fetch(url);
-          code = await res.text();
-        } catch (err) {
-          throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
-        }
-      } else {
-        const dirname = callerSite.substr(0, callerSite.lastIndexOf(path.sep));
-        const absDirname = dirname.replace('file://', '');
-        const pathname = path.join(absDirname, moduleUrl);
-
-        if (existsSync(pathname)) {
-          try {
-            // @todo - allow relative path from caller site, probably required for wpt
-            const buffer = await fs.readFile(pathname);
-            code = buffer.toString();
-          } catch (err) {
-            throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
-          }
-        } else {
-          throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': Cannot resolve module ${moduleUrl}`);
-        }
-      }
-    }
+    const code = await resolveModule(moduleUrl);
 
     // launch Worker if not exists
     if (!this.#port) {
