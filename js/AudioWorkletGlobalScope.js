@@ -107,7 +107,6 @@ globalThis.AudioWorkletProcessor = class AudioWorkletProcessor {
 // follow algorithm from:
 // https://webaudio.github.io/web-audio-api/#dom-audioworkletglobalscope-registerprocessor
 globalThis.registerProcessor = function registerProcessor(name, processorCtor) {
-  console.log(name, processorCtor);
   const parsedName = conversions['DOMString'](name, {
     context: `Cannot execute 'registerProcessor' in 'AudoWorkletGlobalScope': name (${name})`,
   });
@@ -121,11 +120,15 @@ globalThis.registerProcessor = function registerProcessor(name, processorCtor) {
   }
 
   if (!isConstructor(processorCtor)) {
-    throw new TypeError(`Cannot execute 'registerProcessor' in 'AudoWorkletGlobalScope': Processor for name '${name}' is not a constructor`);
+    throw new TypeError(`Cannot execute 'registerProcessor")' in 'AudoWorkletGlobalScope': argument 2 for name '${name}' is not a constructor`);
   }
 
   if (typeof processorCtor.prototype !== 'object') {
-    throw new TypeError(`Cannot execute 'registerProcessor' in 'AudoWorkletGlobalScope': Processor for name '${name}' is not a valid processor`);
+    throw new TypeError(`Cannot execute 'registerProcessor")' in 'AudoWorkletGlobalScope': argument 2 for name '${name}' is not is not a valid AudioWorkletProcessor`);
+  }
+
+  if (typeof processorCtor.prototype.process !== 'function') {
+    throw new TypeError(`Cannot execute 'registerProcessor' in 'AudoWorkletGlobalScope': AudioWorkletProcessor for name '${name}' must implement a 'proces' method`);
   }
 
   // must support Array, Set or iterators
