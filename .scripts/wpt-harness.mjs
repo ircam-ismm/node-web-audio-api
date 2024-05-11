@@ -86,6 +86,7 @@ const setup = window => {
   window.EventTarget = EventTarget;
   window.URL = URL;
   window.Blob = Blob;
+  window.SharedArrayBuffer = SharedArrayBuffer;
   // @note - adding Function this crashes some tests:
   // the-pannernode-interface/pannernode-setposition-throws.html
   // the-periodicwave-interface/createPeriodicWaveInfiniteValuesThrows.html
