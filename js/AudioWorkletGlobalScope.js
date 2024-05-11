@@ -15,6 +15,7 @@ const {
   sampleRate,
 } = workerData;
 
+const kWorkletQueueTask = Symbol.for('node-web-audio-api:worklet-queue-task');
 const kWorkletCallableProcess = Symbol.for('node-web-audio-api:worklet-callable-process');
 const kWorkletInputs = Symbol.for('node-web-audio-api:worklet-inputs');
 const kWorkletOutputs = Symbol.for('node-web-audio-api:worklet-outputs');
@@ -103,6 +104,10 @@ globalThis.AudioWorkletProcessor = class AudioWorkletProcessor {
     }
 
     return this.#port;
+  }
+
+  [kWorkletQueueTask](cmd) {
+    this.#port.postMessage({ cmd });
   }
 }
 

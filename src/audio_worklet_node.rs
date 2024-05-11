@@ -156,68 +156,105 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
     global.set_named_property("currentTime", current_time)?;
     global.set_named_property("currentFrame", current_frame)?;
 
-    let processor = processor.coerce_to_object()?;
+    let mut processor = processor.coerce_to_object()?;
 
-    let k_worklet_inputs = get_symbol_for(env, "node-web-audio-api:worklet-inputs");
-    let k_worklet_outputs = get_symbol_for(env, "node-web-audio-api:worklet-outputs");
-    let k_worklet_params = get_symbol_for(env, "node-web-audio-api:worklet-params");
-    let k_worklet_params_cache = get_symbol_for(env, "node-web-audio-api:worklet-params-cache");
+    let k_worklet_callable_process =
+        get_symbol_for(env, "node-web-audio-api:worklet-callable-process");
+    // return early if worklet has been tagged as not callable,
+    // @note - maybe this could be guaranteed on rust side
+    let callable_process = processor
+        .get_property::<JsSymbol, JsBoolean>(k_worklet_callable_process)?
+        .get_value()?;
 
-    let js_inputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_inputs)?;
-
-    for (input_number, input) in inputs.iter().enumerate() {
-        let mut channels = js_inputs.get_element::<JsObject>(input_number as u32)?;
-
-        for (channel_number, channel) in input.iter().enumerate() {
-            let samples = float_buffer_to_js(env, channel.as_ptr() as *mut _, channel.len());
-            channels.set_element(channel_number as u32, samples)?;
-        }
-
-        // delete remaining channels, if any
-        for i in input.len() as u32..channels.get_array_length().unwrap() {
-            channels.delete_element(i)?;
-        }
+    if !callable_process {
+        let _ = tail_time_sender.send(false);
+        return Ok(());
     }
 
-    let js_outputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_outputs)?;
+    match processor.get_named_property::<JsFunction>("process") {
+        Ok(process_method) => {
+            let k_worklet_inputs = get_symbol_for(env, "node-web-audio-api:worklet-inputs");
+            let k_worklet_outputs = get_symbol_for(env, "node-web-audio-api:worklet-outputs");
+            let k_worklet_params = get_symbol_for(env, "node-web-audio-api:worklet-params");
+            let k_worklet_params_cache =
+                get_symbol_for(env, "node-web-audio-api:worklet-params-cache");
 
-    for (output_number, output) in outputs.iter().enumerate() {
-        let mut channels = js_outputs.get_element::<JsObject>(output_number as u32)?;
+            let js_inputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_inputs)?;
 
-        for (channel_number, channel) in output.iter().enumerate() {
-            let samples = float_buffer_to_js(env, channel.as_ptr() as *mut _, channel.len());
-            channels.set_element(channel_number as u32, samples)?;
+            for (input_number, input) in inputs.iter().enumerate() {
+                let mut channels = js_inputs.get_element::<JsObject>(input_number as u32)?;
+
+                for (channel_number, channel) in input.iter().enumerate() {
+                    let samples =
+                        float_buffer_to_js(env, channel.as_ptr() as *mut _, channel.len());
+                    channels.set_element(channel_number as u32, samples)?;
+                }
+
+                // delete remaining channels, if any
+                for i in input.len() as u32..channels.get_array_length().unwrap() {
+                    channels.delete_element(i)?;
+                }
+            }
+
+            let js_outputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_outputs)?;
+
+            for (output_number, output) in outputs.iter().enumerate() {
+                let mut channels = js_outputs.get_element::<JsObject>(output_number as u32)?;
+
+                for (channel_number, channel) in output.iter().enumerate() {
+                    let samples =
+                        float_buffer_to_js(env, channel.as_ptr() as *mut _, channel.len());
+                    channels.set_element(channel_number as u32, samples)?;
+                }
+
+                // delete remaining channels, if any
+                for i in output.len() as u32..channels.get_array_length().unwrap() {
+                    channels.delete_element(i)?;
+                }
+            }
+
+            let mut js_params = processor.get_property::<JsSymbol, JsObject>(k_worklet_params)?;
+            let js_params_cache =
+                processor.get_property::<JsSymbol, JsObject>(k_worklet_params_cache)?;
+
+            // @perf - We could rely on the fact that ParameterDescriptors
+            // are ordered maps to avoid sending param names in `param_values`
+            for (name, data) in param_values.iter() {
+                let float32_arr_cache = js_params_cache.get_named_property::<JsObject>(name)?;
+                // retrieve right Float32Array according to actual param size, i.e. 128 or 1
+                let cache_index = if data.len() == 1 { 1 } else { 0 };
+                let float32_arr = float32_arr_cache.get_element::<JsTypedArray>(cache_index)?;
+                // copy data into undeerlying ArrayBuffer
+                let mut array_buffer_value = float32_arr.into_value()?.arraybuffer.into_value()?;
+                let u8_slice = to_byte_slice(data);
+                array_buffer_value.copy_from_slice(u8_slice);
+                // get new owned value, as `float32_arr` as been consumed by `into_value` call
+                let float32_arr = float32_arr_cache.get_element::<JsTypedArray>(cache_index)?;
+                js_params.set_named_property(name, float32_arr)?;
+            }
+
+            let js_ret: JsUnknown =
+                process_method.apply3(processor, js_inputs, js_outputs, js_params)?;
+            let ret = js_ret.coerce_to_bool()?.get_value()?;
+
+            let _ = tail_time_sender.send(ret); // allowed to fail
         }
-
-        // delete remaining channels, if any
-        for i in output.len() as u32..channels.get_array_length().unwrap() {
-            channels.delete_element(i)?;
+        Err(_) => {
+            let k_worklet_queue_task = get_symbol_for(env, "node-web-audio-api:worklet-queue-task");
+            // would be more usefull on rust side
+            let value = env.get_boolean(false)?;
+            processor.set_property(k_worklet_callable_process, value)?;
+            // @todo - set active source flag to false
+            // https://webaudio.github.io/web-audio-api/#active-source
+            let _ = tail_time_sender.send(false);
+            // [spec] Queue a task to the control thread fire an ErrorEvent
+            // named processorerror at the associated AudioWorkletNode.
+            let queue_task =
+                processor.get_property::<JsSymbol, JsFunction>(k_worklet_queue_task)?;
+            let cmd = env.create_string("node-web-audio-api:worklet:invalid-process")?;
+            queue_task.apply1(processor, cmd)?;
         }
     }
-
-    let mut js_params = processor.get_property::<JsSymbol, JsObject>(k_worklet_params)?;
-    let js_params_cache = processor.get_property::<JsSymbol, JsObject>(k_worklet_params_cache)?;
-
-    // @perf - We could rely on the fact that ParameterDescriptors
-    // are ordered maps to avoid sending param names in `param_values`
-    for (name, data) in param_values.iter() {
-        let float32_arr_cache = js_params_cache.get_named_property::<JsObject>(name)?;
-        // retrieve right Float32Array according to actual param size, i.e. 128 or 1
-        let cache_index = if data.len() == 1 { 1 } else { 0 };
-        let float32_arr = float32_arr_cache.get_element::<JsTypedArray>(cache_index)?;
-        // copy data into undeerlying ArrayBuffer
-        let mut array_buffer_value = float32_arr.into_value()?.arraybuffer.into_value()?;
-        let u8_slice = to_byte_slice(data);
-        array_buffer_value.copy_from_slice(u8_slice);
-        // get new owned value, as `float32_arr` as been consumed by `into_value` call
-        let float32_arr = float32_arr_cache.get_element::<JsTypedArray>(cache_index)?;
-        js_params.set_named_property(name, float32_arr).unwrap();
-    }
-
-    let process_method = processor.get_named_property::<JsFunction>("process")?;
-    let js_ret: JsUnknown = process_method.apply3(processor, js_inputs, js_outputs, js_params)?;
-    let ret = js_ret.coerce_to_bool()?.get_value()?;
-    let _ = tail_time_sender.send(ret); // allowed to fail
 
     Ok(())
 }

@@ -16,6 +16,12 @@ const {
 const {
   kEnumerableProperty,
 } = require('./lib/utils.js');
+const {
+  propagateEvent,
+} = require('./lib/events.js');
+const {
+  ErrorEvent,
+} = require('./Events.js');
 
 /* eslint-enable no-unused-vars */
 
@@ -212,6 +218,19 @@ module.exports = (jsExport, nativeBinding) => {
         parsedOptions,
         napiObj.id,
       );
+
+      this.#port.on('message', event => {
+        // ErrorEvent named processorerror
+        switch (event.cmd) {
+          case 'node-web-audio-api:worklet:invalid-process': {
+            const err = new ErrorEvent('processorerror', {
+              message: `Failed to execute 'process' on 'AudioWorkletNode': Invalid 'process' method`
+            });
+            propagateEvent(this, err);
+            break;
+          }
+        }
+      });
     }
 
     get parameters() {
