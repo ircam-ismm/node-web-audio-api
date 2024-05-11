@@ -41,8 +41,6 @@ struct ProcessorArguments {
     current_time: f64,
     // AudioWorkletGlobalScope currentFrame
     current_frame: u64,
-    // AudioWorkletGlobalScope sampleRate
-    sample_rate: f32,
     // channel for tail_time return value
     tail_time_sender: Sender<bool>,
 }
@@ -141,7 +139,6 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
         param_values,
         current_time,
         current_frame,
-        sample_rate,
         tail_time_sender,
     } = args;
 
@@ -158,7 +155,6 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
     // fill AudioWorkletGlobalScope
     global.set_named_property("currentTime", current_time)?;
     global.set_named_property("currentFrame", current_frame)?;
-    global.set_named_property("sampleRate", sample_rate)?;
 
     let processor = processor.coerce_to_object()?;
 
@@ -608,7 +604,6 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
             param_values,
             current_time: scope.current_time,
             current_frame: scope.current_frame,
-            sample_rate: scope.sample_rate,
             tail_time_sender: self.tail_time_channel.0.clone(),
         };
 

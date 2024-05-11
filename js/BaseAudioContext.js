@@ -107,6 +107,17 @@ module.exports = (jsExport, _nativeBinding) => {
       return this[kNapiObj].currentTime;
     }
 
+    get renderQuantumSize() {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
+
+      throw new Error(`Not implemented`);
+      // return this[kNapiObj].currentTime;
+    }
+
+    // renderQuantumSize
+
     get state() {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
@@ -114,9 +125,6 @@ module.exports = (jsExport, _nativeBinding) => {
 
       return this[kNapiObj].state;
     }
-
-    // renderQuantumSize
-    // audioWorklet
 
     get onstatechange() {
       if (!(this instanceof BaseAudioContext)) {

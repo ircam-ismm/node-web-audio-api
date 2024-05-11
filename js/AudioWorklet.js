@@ -25,8 +25,9 @@ const caller = require('caller');
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 class AudioWorklet {
-  #port = null;
   #workletId = null;
+  #sampleRate = null;
+  #port = null;
   #idPromiseMap = new Map();
   #promiseId = 0;
   #workletParamDescriptorsMap = new Map();
@@ -40,18 +41,22 @@ class AudioWorklet {
     }
 
     this.#workletId = options.workletId;
+    this.#sampleRate = options.sampleRate;
   }
 
   #bindEvents() {
     this.#port.on('message', event => {
       switch (event.cmd) {
-        case 'node-web-audio-api:worklet:processor-registered': {
-          const { promiseId, paramDescriptorRegisteredMap } = event;
+        case 'node-web-audio-api:worklet:module-added': {
+          const { promiseId } = event;
           const { resolve } = this.#idPromiseMap.get(promiseId);
-
           this.#idPromiseMap.delete(promiseId);
-          resolve(paramDescriptorRegisteredMap);
+          resolve();
           break;
+        }
+        case 'node-web-audio-api:worlet:processor-registered': {
+          const { name, parameterDescriptors } = event;
+          this.#workletParamDescriptorsMap.set(name, parameterDescriptors);
         }
       }
     });
@@ -145,6 +150,7 @@ class AudioWorklet {
         this.#port = new Worker(workletPathname, {
           workerData: {
             workletId: this.#workletId,
+            sampleRate: this.#sampleRate,
           },
         });
         this.#port.on('online', resolve);
@@ -156,7 +162,7 @@ class AudioWorklet {
     const promiseId = this.#promiseId++;
     // This promise is resolved when the Worker returns the name and
     // parameterDescriptors from the added module
-    const paramDescriptorRegisteredMap = await new Promise((resolve, reject) => {
+    await new Promise((resolve, reject) => {
       this.#idPromiseMap.set(promiseId, { resolve, reject });
 
       this.#port.postMessage({
@@ -165,10 +171,6 @@ class AudioWorklet {
         promiseId,
       });
     });
-
-    for (let [name, parameterDescriptors] of paramDescriptorRegisteredMap.entries()) {
-      this.#workletParamDescriptorsMap.set(name, parameterDescriptors);
-    }
   }
 
   [kProcessorRegistered](name) {
