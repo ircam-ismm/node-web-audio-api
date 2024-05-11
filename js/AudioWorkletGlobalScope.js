@@ -15,7 +15,7 @@ const {
   sampleRate,
 } = workerData;
 
-const kHiddenOptions = Symbol('node-web-audio-api:worklet-hidden-options');
+const kWorkletCallableProcess = Symbol.for('node-web-audio-api:worklet-callable-process');
 const kWorkletInputs = Symbol.for('node-web-audio-api:worklet-inputs');
 const kWorkletOutputs = Symbol.for('node-web-audio-api:worklet-outputs');
 const kWorkletParams = Symbol.for('node-web-audio-api:worklet-params');
@@ -74,13 +74,13 @@ globalThis.AudioWorkletProcessor = class AudioWorkletProcessor {
       parameterDescriptors,
     } = pendingProcessorConstructionData;
 
-    this.#port = port;
-
+    // @todo - Mark [[callable process]] as true, set to false in render quantum
+    // either "process" doese not exists, either it throws an error
+    this[kWorkletCallableProcess] = true;
     // @todo - reuse Float32Arrays between calls + freeze arrays
     this[kWorkletInputs] = new Array(numberOfInputs).fill([]);
     // @todo - use `outputChannelCount`
     this[kWorkletOutputs] = new Array(numberOfOutputs).fill([]);
-
     // Object to be reused as `process` parameters argument
     this[kWorkletParams] = {};
     // Cache of 2 Float32Array (of length 128 and 1) for each param, to be reused on
@@ -93,6 +93,8 @@ globalThis.AudioWorkletProcessor = class AudioWorkletProcessor {
         new Float32Array(1),
       ]
     });
+
+    this.#port = port;
   }
 
   get port() {
@@ -125,10 +127,6 @@ globalThis.registerProcessor = function registerProcessor(name, processorCtor) {
 
   if (typeof processorCtor.prototype !== 'object') {
     throw new TypeError(`Cannot execute 'registerProcessor")' in 'AudoWorkletGlobalScope': argument 2 for name '${name}' is not is not a valid AudioWorkletProcessor`);
-  }
-
-  if (typeof processorCtor.prototype.process !== 'function') {
-    throw new TypeError(`Cannot execute 'registerProcessor' in 'AudoWorkletGlobalScope': AudioWorkletProcessor for name '${name}' must implement a 'proces' method`);
   }
 
   // must support Array, Set or iterators
