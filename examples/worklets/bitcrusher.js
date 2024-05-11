@@ -21,7 +21,7 @@ class Bitcrusher extends AudioWorkletProcessor {
 
       this._phase = 0;
       this._lastSampleValue = 0;
-      this._msg = options.msg;
+      this._msg = options.processorOptions.msg;
 
       this.port.on('message', event => {
         console.log(`++ on message: ${JSON.stringify(event, null, 2)}\n`);

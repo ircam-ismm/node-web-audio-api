@@ -265,25 +265,19 @@ parentPort.on('message', event => {
     case 'node-web-audio-api:worklet:create-processor': {
       const { name, id, options, port } = event;
       const ctor = nameProcessorCtorMap.get(name);
-      // options to be passed to the processor parent for intialization
-      const {
-        numberOfInputs,
-        numberOfOutputs,
-        processorOptions,
-        outputChannelCount, // @todo - clarify usage
-      } = options;
+
       // rewrap options of interest for the AudioWorkletNodeBaseClass
       pendingProcessorConstructionData = {
         port,
-        numberOfInputs,
-        numberOfOutputs,
+        numberOfInputs: options.numberOfInputs,
+        numberOfOutputs: options.numberOfOutputs,
         parameterDescriptors: ctor.parameterDescriptors,
       };
 
       let instance;
 
       try {
-        instance = new ctor(processorOptions);
+        instance = new ctor(options);
       } catch (err) {
         // @todo - send processor error
         console.log(err.message);
