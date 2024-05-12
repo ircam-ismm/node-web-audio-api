@@ -219,14 +219,24 @@ module.exports = (jsExport, nativeBinding) => {
         napiObj.id,
       );
 
-      this.#port.on('message', event => {
+      this.#port.on('message', msg => {
         // ErrorEvent named processorerror
-        switch (event.cmd) {
-          case 'node-web-audio-api:worklet:invalid-process': {
-            const err = new ErrorEvent('processorerror', {
-              message: `Failed to execute 'process' on 'AudioWorkletNode': Invalid 'process' method`
-            });
-            propagateEvent(this, err);
+        switch (msg.cmd) {
+          case 'node-web-audio-api:worklet:process-invalid': {
+            const message = `Failed to execute 'process' on '${parsedName}' AudioWorkletProcessor: ${msg.err.message}`;
+            const error = new TypeError(message);
+            error.stack = msg.err.stack.replace(msg.err.message, message);
+
+            const event = new ErrorEvent('processorerror', { message, error });
+            propagateEvent(this, event);
+            break;
+          }
+          case 'node-web-audio-api:worklet:process-error': {
+            const message = `Failed to execute 'process' on '${parsedName}' AudioWorkletProcessor: ${msg.err.message}`;
+            const error = msg.err; // propagate error as is
+
+            const event = new ErrorEvent('processorerror', { message, error });
+            propagateEvent(this, event);
             break;
           }
         }

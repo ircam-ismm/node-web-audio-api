@@ -106,8 +106,8 @@ globalThis.AudioWorkletProcessor = class AudioWorkletProcessor {
     return this.#port;
   }
 
-  [kWorkletQueueTask](cmd) {
-    this.#port.postMessage({ cmd });
+  [kWorkletQueueTask](cmd, err) {
+    this.#port.postMessage({ cmd, err });
   }
 }
 

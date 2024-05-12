@@ -15,6 +15,7 @@ use web_audio_api::{AudioParamDescriptor, AutomationRate};
 
 use std::cell::Cell;
 use std::collections::HashMap;
+use std::option::Option;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, OnceLock, RwLock};
 
@@ -130,6 +131,11 @@ thread_local! {
     static HAS_THREAD_PRIO: Cell<bool> = const { Cell::new(false) };
 }
 
+struct WorkletAbruptCompletionResult {
+    cmd: String,
+    err: Error,
+}
+
 /// Handle a AudioWorkletProcessor::process call in the Worker
 fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
     let ProcessorArguments {
@@ -143,10 +149,10 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
     } = args;
 
     let mut global = env.get_global()?;
+    let processor = global.get_named_property::<JsUnknown>(&id.to_string())?;
 
     // Make sure the processor exists, might run into race conditions
     // between Rust Audio thread and JS Worker thread
-    let processor = global.get_named_property::<JsUnknown>(&id.to_string())?;
     if processor.get_type()? == ValueType::Undefined {
         let _ = tail_time_sender.send(true); // make sure we will be called
         return Ok(());
@@ -156,28 +162,27 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
     global.set_named_property("currentTime", current_time)?;
     global.set_named_property("currentFrame", current_frame)?;
 
-    let mut processor = processor.coerce_to_object()?;
+    let processor = processor.coerce_to_object()?;
 
-    let k_worklet_callable_process =
-        get_symbol_for(env, "node-web-audio-api:worklet-callable-process");
+    let k_worklet_callable_process = get_symbol_for(env, "node-web-audio-api:worklet-callable-process");
     // return early if worklet has been tagged as not callable,
     // @note - maybe this could be guaranteed on rust side
-    let callable_process = processor
-        .get_property::<JsSymbol, JsBoolean>(k_worklet_callable_process)?
-        .get_value()?;
+    let callable_process = processor.get_property::<JsSymbol, JsBoolean>(k_worklet_callable_process)?.get_value()?;
 
     if !callable_process {
         let _ = tail_time_sender.send(false);
         return Ok(());
     }
 
+    // This value become Some if "process" do not exist or throw an error at execution
+    let mut completion: Option<WorkletAbruptCompletionResult> = None;
+
     match processor.get_named_property::<JsFunction>("process") {
         Ok(process_method) => {
             let k_worklet_inputs = get_symbol_for(env, "node-web-audio-api:worklet-inputs");
             let k_worklet_outputs = get_symbol_for(env, "node-web-audio-api:worklet-outputs");
             let k_worklet_params = get_symbol_for(env, "node-web-audio-api:worklet-params");
-            let k_worklet_params_cache =
-                get_symbol_for(env, "node-web-audio-api:worklet-params-cache");
+            let k_worklet_params_cache = get_symbol_for(env, "node-web-audio-api:worklet-params-cache");
 
             let js_inputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_inputs)?;
 
@@ -185,8 +190,7 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
                 let mut channels = js_inputs.get_element::<JsObject>(input_number as u32)?;
 
                 for (channel_number, channel) in input.iter().enumerate() {
-                    let samples =
-                        float_buffer_to_js(env, channel.as_ptr() as *mut _, channel.len());
+                    let samples = float_buffer_to_js(env, channel.as_ptr() as *mut _, channel.len());
                     channels.set_element(channel_number as u32, samples)?;
                 }
 
@@ -202,8 +206,7 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
                 let mut channels = js_outputs.get_element::<JsObject>(output_number as u32)?;
 
                 for (channel_number, channel) in output.iter().enumerate() {
-                    let samples =
-                        float_buffer_to_js(env, channel.as_ptr() as *mut _, channel.len());
+                    let samples = float_buffer_to_js(env, channel.as_ptr() as *mut _, channel.len());
                     channels.set_element(channel_number as u32, samples)?;
                 }
 
@@ -214,8 +217,7 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
             }
 
             let mut js_params = processor.get_property::<JsSymbol, JsObject>(k_worklet_params)?;
-            let js_params_cache =
-                processor.get_property::<JsSymbol, JsObject>(k_worklet_params_cache)?;
+            let js_params_cache = processor.get_property::<JsSymbol, JsObject>(k_worklet_params_cache)?;
 
             // @perf - We could rely on the fact that ParameterDescriptors
             // are ordered maps to avoid sending param names in `param_values`
@@ -233,27 +235,55 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
                 js_params.set_named_property(name, float32_arr)?;
             }
 
-            let js_ret: JsUnknown =
-                process_method.apply3(processor, js_inputs, js_outputs, js_params)?;
-            let ret = js_ret.coerce_to_bool()?.get_value()?;
+            let res: Result<JsUnknown> = process_method.apply3(
+                processor,
+                js_inputs,
+                js_outputs,
+                js_params,
+            );
 
-            let _ = tail_time_sender.send(ret); // allowed to fail
-        }
-        Err(_) => {
-            let k_worklet_queue_task = get_symbol_for(env, "node-web-audio-api:worklet-queue-task");
-            // would be more usefull on rust side
-            let value = env.get_boolean(false)?;
-            processor.set_property(k_worklet_callable_process, value)?;
-            // @todo - set active source flag to false
-            // https://webaudio.github.io/web-audio-api/#active-source
-            let _ = tail_time_sender.send(false);
-            // [spec] Queue a task to the control thread fire an ErrorEvent
-            // named processorerror at the associated AudioWorkletNode.
-            let queue_task =
-                processor.get_property::<JsSymbol, JsFunction>(k_worklet_queue_task)?;
-            let cmd = env.create_string("node-web-audio-api:worklet:invalid-process")?;
-            queue_task.apply1(processor, cmd)?;
-        }
+            match res {
+                Ok(js_ret) => {
+                    let ret = js_ret.coerce_to_bool()?.get_value()?;
+                    let _ = tail_time_sender.send(ret); // allowed to fail
+                },
+                Err(err) => {
+                    completion = Some(WorkletAbruptCompletionResult {
+                        cmd: "node-web-audio-api:worklet:process-error".to_string(),
+                        err,
+                    });
+                }
+            }
+        },
+        Err(err) => {
+            completion = Some(WorkletAbruptCompletionResult {
+                cmd: "node-web-audio-api:worklet:process-invalid".to_string(),
+                err,
+            });
+        },
+    }
+
+    // Handle eventual errors
+    if let Some(value) = completion {
+        let WorkletAbruptCompletionResult {
+            cmd,
+            err
+        } = value;
+        // Grab back our process which may have been consumed by the process apply
+        let mut processor = global.get_named_property::<JsObject>(&id.to_string())?;
+        let k_worklet_queue_task = get_symbol_for(env, "node-web-audio-api:worklet-queue-task");
+        // @todo - would be usefull to propagate to rust side too so that the
+        // processor can be removed from graph (?)
+        let value = env.get_boolean(false)?;
+        processor.set_property(k_worklet_callable_process, value)?;
+        // set active source flag to false, same semantic as tail time
+        // https://webaudio.github.io/web-audio-api/#active-source
+        let _ = tail_time_sender.send(false);
+        // Dispatch processorerror event on main thread
+        let queue_task = processor.get_property::<JsSymbol, JsFunction>(k_worklet_queue_task)?;
+        let js_cmd = env.create_string(&cmd)?;
+        let js_err = env.create_error(err)?;
+        queue_task.apply2(processor, js_cmd, js_err)?;
     }
 
     Ok(())
