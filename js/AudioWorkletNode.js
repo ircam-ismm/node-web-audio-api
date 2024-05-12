@@ -222,6 +222,12 @@ module.exports = (jsExport, nativeBinding) => {
       this.#port.on('message', msg => {
         // ErrorEvent named processorerror
         switch (msg.cmd) {
+          case 'node-web-audio-api:worklet:ctor-error': {
+            const message = `Failed to construct '${parsedName}' AudioWorkletProcessor: ${msg.err.message}`;
+            const event = new ErrorEvent('processorerror', { message, error: msg.err });
+            propagateEvent(this, event);
+            break;
+          }
           case 'node-web-audio-api:worklet:process-invalid': {
             const message = `Failed to execute 'process' on '${parsedName}' AudioWorkletProcessor: ${msg.err.message}`;
             const error = new TypeError(message);
@@ -233,9 +239,7 @@ module.exports = (jsExport, nativeBinding) => {
           }
           case 'node-web-audio-api:worklet:process-error': {
             const message = `Failed to execute 'process' on '${parsedName}' AudioWorkletProcessor: ${msg.err.message}`;
-            const error = msg.err; // propagate error as is
-
-            const event = new ErrorEvent('processorerror', { message, error });
+            const event = new ErrorEvent('processorerror', { message, error: msg.err });
             propagateEvent(this, event);
             break;
           }

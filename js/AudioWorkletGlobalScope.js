@@ -282,8 +282,7 @@ parentPort.on('message', event => {
       try {
         instance = new ctor(options);
       } catch (err) {
-        // @todo - send processor error
-        console.log(err.message);
+        port.postMessage({ cmd: 'node-web-audio-api:worklet:ctor-error', err });
       }
 
       pendingProcessorConstructionData = null;

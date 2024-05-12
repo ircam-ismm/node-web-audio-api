@@ -164,10 +164,13 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
 
     let processor = processor.coerce_to_object()?;
 
-    let k_worklet_callable_process = get_symbol_for(env, "node-web-audio-api:worklet-callable-process");
+    let k_worklet_callable_process =
+        get_symbol_for(env, "node-web-audio-api:worklet-callable-process");
     // return early if worklet has been tagged as not callable,
     // @note - maybe this could be guaranteed on rust side
-    let callable_process = processor.get_property::<JsSymbol, JsBoolean>(k_worklet_callable_process)?.get_value()?;
+    let callable_process = processor
+        .get_property::<JsSymbol, JsBoolean>(k_worklet_callable_process)?
+        .get_value()?;
 
     if !callable_process {
         let _ = tail_time_sender.send(false);
@@ -182,7 +185,8 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
             let k_worklet_inputs = get_symbol_for(env, "node-web-audio-api:worklet-inputs");
             let k_worklet_outputs = get_symbol_for(env, "node-web-audio-api:worklet-outputs");
             let k_worklet_params = get_symbol_for(env, "node-web-audio-api:worklet-params");
-            let k_worklet_params_cache = get_symbol_for(env, "node-web-audio-api:worklet-params-cache");
+            let k_worklet_params_cache =
+                get_symbol_for(env, "node-web-audio-api:worklet-params-cache");
 
             let js_inputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_inputs)?;
 
@@ -190,7 +194,8 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
                 let mut channels = js_inputs.get_element::<JsObject>(input_number as u32)?;
 
                 for (channel_number, channel) in input.iter().enumerate() {
-                    let samples = float_buffer_to_js(env, channel.as_ptr() as *mut _, channel.len());
+                    let samples =
+                        float_buffer_to_js(env, channel.as_ptr() as *mut _, channel.len());
                     channels.set_element(channel_number as u32, samples)?;
                 }
 
@@ -206,7 +211,8 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
                 let mut channels = js_outputs.get_element::<JsObject>(output_number as u32)?;
 
                 for (channel_number, channel) in output.iter().enumerate() {
-                    let samples = float_buffer_to_js(env, channel.as_ptr() as *mut _, channel.len());
+                    let samples =
+                        float_buffer_to_js(env, channel.as_ptr() as *mut _, channel.len());
                     channels.set_element(channel_number as u32, samples)?;
                 }
 
@@ -217,7 +223,8 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
             }
 
             let mut js_params = processor.get_property::<JsSymbol, JsObject>(k_worklet_params)?;
-            let js_params_cache = processor.get_property::<JsSymbol, JsObject>(k_worklet_params_cache)?;
+            let js_params_cache =
+                processor.get_property::<JsSymbol, JsObject>(k_worklet_params_cache)?;
 
             // @perf - We could rely on the fact that ParameterDescriptors
             // are ordered maps to avoid sending param names in `param_values`
@@ -235,18 +242,14 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
                 js_params.set_named_property(name, float32_arr)?;
             }
 
-            let res: Result<JsUnknown> = process_method.apply3(
-                processor,
-                js_inputs,
-                js_outputs,
-                js_params,
-            );
+            let res: Result<JsUnknown> =
+                process_method.apply3(processor, js_inputs, js_outputs, js_params);
 
             match res {
                 Ok(js_ret) => {
                     let ret = js_ret.coerce_to_bool()?.get_value()?;
                     let _ = tail_time_sender.send(ret); // allowed to fail
-                },
+                }
                 Err(err) => {
                     completion = Some(WorkletAbruptCompletionResult {
                         cmd: "node-web-audio-api:worklet:process-error".to_string(),
@@ -254,21 +257,18 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
                     });
                 }
             }
-        },
+        }
         Err(err) => {
             completion = Some(WorkletAbruptCompletionResult {
                 cmd: "node-web-audio-api:worklet:process-invalid".to_string(),
                 err,
             });
-        },
+        }
     }
 
     // Handle eventual errors
     if let Some(value) = completion {
-        let WorkletAbruptCompletionResult {
-            cmd,
-            err
-        } = value;
+        let WorkletAbruptCompletionResult { cmd, err } = value;
         // Grab back our process which may have been consumed by the process apply
         let mut processor = global.get_named_property::<JsObject>(&id.to_string())?;
         let k_worklet_queue_task = get_symbol_for(env, "node-web-audio-api:worklet-queue-task");
