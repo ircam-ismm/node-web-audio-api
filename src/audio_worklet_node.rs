@@ -1,4 +1,4 @@
-use crate::utils::{float_buffer_to_js, get_symbol_for};
+use crate::utils::float_buffer_to_js;
 use crate::{NapiAudioContext, NapiAudioParam, NapiOfflineAudioContext};
 
 use crossbeam_channel::{self, Receiver, Sender};
@@ -165,7 +165,7 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
     let processor = processor.coerce_to_object()?;
 
     let k_worklet_callable_process =
-        get_symbol_for(env, "node-web-audio-api:worklet-callable-process");
+        env.symbol_for("node-web-audio-api:worklet-callable-process")?;
     // return early if worklet has been tagged as not callable,
     // @note - maybe this could be guaranteed on rust side
     let callable_process = processor
@@ -182,11 +182,11 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
 
     match processor.get_named_property::<JsFunction>("process") {
         Ok(process_method) => {
-            let k_worklet_inputs = get_symbol_for(env, "node-web-audio-api:worklet-inputs");
-            let k_worklet_outputs = get_symbol_for(env, "node-web-audio-api:worklet-outputs");
-            let k_worklet_params = get_symbol_for(env, "node-web-audio-api:worklet-params");
+            let k_worklet_inputs = env.symbol_for("node-web-audio-api:worklet-inputs")?;
+            let k_worklet_outputs = env.symbol_for("node-web-audio-api:worklet-outputs")?;
+            let k_worklet_params = env.symbol_for("node-web-audio-api:worklet-params")?;
             let k_worklet_params_cache =
-                get_symbol_for(env, "node-web-audio-api:worklet-params-cache");
+                env.symbol_for("node-web-audio-api:worklet-params-cache")?;
 
             let js_inputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_inputs)?;
 
@@ -271,7 +271,7 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
         let WorkletAbruptCompletionResult { cmd, err } = value;
         // Grab back our process which may have been consumed by the process apply
         let mut processor = global.get_named_property::<JsObject>(&id.to_string())?;
-        let k_worklet_queue_task = get_symbol_for(env, "node-web-audio-api:worklet-queue-task");
+        let k_worklet_queue_task = env.symbol_for("node-web-audio-api:worklet-queue-task")?;
         // @todo - would be usefull to propagate to rust side too so that the
         // processor can be removed from graph (?)
         let value = env.get_boolean(false)?;
