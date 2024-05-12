@@ -1,4 +1,4 @@
-use crate::utils::{float_buffer_to_js, get_symbol_for, to_byte_slice};
+use crate::utils::{float_buffer_to_js, get_symbol_for};
 use crate::{NapiAudioContext, NapiAudioParam, NapiOfflineAudioContext};
 
 use crossbeam_channel::{self, Receiver, Sender};
@@ -233,10 +233,10 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
                 // retrieve right Float32Array according to actual param size, i.e. 128 or 1
                 let cache_index = if data.len() == 1 { 1 } else { 0 };
                 let float32_arr = float32_arr_cache.get_element::<JsTypedArray>(cache_index)?;
-                // copy data into undeerlying ArrayBuffer
-                let mut array_buffer_value = float32_arr.into_value()?.arraybuffer.into_value()?;
-                let u8_slice = to_byte_slice(data);
-                array_buffer_value.copy_from_slice(u8_slice);
+                // copy data into underlying ArrayBuffer
+                let mut float32_arr_value = float32_arr.into_value()?;
+                let buffer: &mut [f32] = float32_arr_value.as_mut();
+                buffer.copy_from_slice(data);
                 // get new owned value, as `float32_arr` as been consumed by `into_value` call
                 let float32_arr = float32_arr_cache.get_element::<JsTypedArray>(cache_index)?;
                 js_params.set_named_property(name, float32_arr)?;
