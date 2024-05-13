@@ -24,6 +24,7 @@ const kWorkletParamsCache = Symbol.for('node-web-audio-api:worklet-params-cache'
 // const kWorkletOrderedParamNames = Symbol.for('node-web-audio-api:worklet-ordered-param-names');
 
 const nameProcessorCtorMap = new Map();
+const processors = {};
 let pendingProcessorConstructionData = null;
 let loopStarted = false;
 let runLoopImmediateId = null;
@@ -48,7 +49,7 @@ function isConstructor(f) {
 
 function runLoop() {
   // block until we need to render a quantum
-  run_audio_worklet_global_scope(workletId);
+  run_audio_worklet_global_scope(workletId, processors);
   // yield to the event loop, and then repeat
   runLoopImmediateId = setImmediate(runLoop);
 }
@@ -242,13 +243,13 @@ parentPort.on('message', event => {
 
   switch (event.cmd) {
     case 'node-web-audio-api:worklet:init': {
-      const { workletId, promiseId } = event;
+      const { workletId, processors, promiseId } = event;
       break;
     }
     case 'node-web-audio-api:worklet:exit': {
       clearImmediate(runLoopImmediateId);
       // properly exit audio worklet on rust side
-      exit_audio_worklet_global_scope(workletId);
+      exit_audio_worklet_global_scope(workletId, processors);
       // exit process
       process.exit(0);
       break;
@@ -288,7 +289,7 @@ parentPort.on('message', event => {
       pendingProcessorConstructionData = null;
       // store in global so that Rust can match the JS processor
       // with its corresponding NapiAudioWorkletProcessor
-      globalThis[`${id}`] = instance;
+      processors[`${id}`] = instance;
 
       if (!loopStarted) {
         loopStarted = true;

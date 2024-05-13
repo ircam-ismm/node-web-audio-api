@@ -137,7 +137,7 @@ struct WorkletAbruptCompletionResult {
 }
 
 /// Handle a AudioWorkletProcessor::process call in the Worker
-fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
+fn process_audio_worklet(env: &Env, processors: &JsObject, args: ProcessorArguments) -> Result<()> {
     let ProcessorArguments {
         id,
         inputs,
@@ -148,8 +148,7 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
         tail_time_sender,
     } = args;
 
-    let mut global = env.get_global()?;
-    let processor = global.get_named_property::<JsUnknown>(&id.to_string())?;
+    let processor = processors.get_named_property::<JsUnknown>(&id.to_string())?;
 
     // Make sure the processor exists, might run into race conditions
     // between Rust Audio thread and JS Worker thread
@@ -159,6 +158,7 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
     }
 
     // fill AudioWorkletGlobalScope
+    let mut global = env.get_global()?;
     global.set_named_property("currentTime", current_time)?;
     global.set_named_property("currentFrame", current_frame)?;
 
@@ -290,7 +290,7 @@ fn process_audio_worklet(env: &Env, args: ProcessorArguments) -> Result<()> {
 }
 
 /// The entry point into Rust from the Worker
-#[js_function(1)]
+#[js_function(2)]
 pub(crate) fn run_audio_worklet_global_scope(ctx: CallContext) -> Result<JsUndefined> {
     // Set thread priority to highest, if not done already
     if !HAS_THREAD_PRIO.replace(true) {
@@ -300,6 +300,8 @@ pub(crate) fn run_audio_worklet_global_scope(ctx: CallContext) -> Result<JsUndef
 
     // Obtain the unique worker ID
     let worklet_id = ctx.get::<JsNumber>(0)?.get_uint32()? as usize;
+    // List of registered processors
+    let processors = ctx.get::<JsObject>(1)?;
 
     // Wait for an incoming command, the recv_timeout is required for OfflineAudioContext
     // as we have no way to exit the worklet before the graph is dropped, so the worlet
@@ -311,11 +313,11 @@ pub(crate) fn run_audio_worklet_global_scope(ctx: CallContext) -> Result<JsUndef
     {
         match msg {
             WorkletCommand::Drop(id) => {
-                let mut global = ctx.env.get_global()?;
-                global.delete_named_property(&id.to_string()).unwrap();
+                let mut processors = ctx.get::<JsObject>(1)?;
+                processors.delete_named_property(&id.to_string()).unwrap();
             }
             WorkletCommand::Process(args) => {
-                process_audio_worklet(ctx.env, args)?;
+                process_audio_worklet(ctx.env, &processors, args)?;
             }
         }
     }
