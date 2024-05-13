@@ -141,8 +141,8 @@ struct WorkletAbruptCompletionResult {
 /// Note that we don't check the number of inputs / outputs as they is defined
 /// at construction and cannot change
 fn check_same_io_layout(js_io: &JsObject, rs_io: &'static [&'static [&'static [f32]]]) -> bool {
-    for i in 0..rs_io.len() {
-        if rs_io[i].len()
+    for (i, io) in rs_io.iter().enumerate() {
+        if io.len()
             != js_io
                 .get_element::<JsObject>(i as u32)
                 .unwrap()
@@ -156,6 +156,8 @@ fn check_same_io_layout(js_io: &JsObject, rs_io: &'static [&'static [&'static [f
     true
 }
 
+/// Recreate the whole JS inputs and output data structure. It is required to start
+/// from scratch because Array are frozen with prevents us to add, remove or modify items.
 fn rebuild_io_layout(
     env: &Env,
     js_io: JsObject,
@@ -164,11 +166,11 @@ fn rebuild_io_layout(
 ) -> JsObject {
     let mut new_js_io = env.create_array(rs_io.len() as u32).unwrap();
 
-    for i in 0..rs_io.len() {
+    for (i, io) in rs_io.iter().enumerate() {
         let mut channels = env.create_array(rs_io[i].len() as u32).unwrap();
         let old_channels = js_io.get_element::<JsObject>(i as u32).unwrap();
 
-        for j in 0..rs_io[i].len() {
+        for j in 0..io.len() {
             // Try to reuse existing Float32Array
             let float32_arr = if old_channels.has_element(j as u32).unwrap() {
                 old_channels.get_element::<JsTypedArray>(j as u32).unwrap()
