@@ -1,4 +1,3 @@
-use crate::utils::float_buffer_to_js;
 use crate::{NapiAudioContext, NapiAudioParam, NapiOfflineAudioContext};
 
 use crossbeam_channel::{self, Receiver, Sender};
@@ -136,6 +135,66 @@ struct WorkletAbruptCompletionResult {
     err: Error,
 }
 
+/// Check that given JS and Rust input / output layout are the same, i.e. check
+/// that each input / output have the same number of channels
+///
+/// Note that we don't check the number of inputs / outputs as they is defined
+/// at construction and cannot change
+fn check_same_io_layout(js_io: &JsObject, rs_io: &'static [&'static [&'static [f32]]]) -> bool {
+    for i in 0..rs_io.len() {
+        if rs_io[i].len()
+            != js_io
+                .get_element::<JsObject>(i as u32)
+                .unwrap()
+                .get_array_length_unchecked()
+                .unwrap() as usize
+        {
+            return false;
+        }
+    }
+
+    true
+}
+
+fn rebuild_io_layout(
+    env: &Env,
+    js_io: JsObject,
+    rs_io: &'static [&'static [&'static [f32]]],
+    render_quantum_size: usize,
+) -> JsObject {
+    let mut new_js_io = env.create_array(rs_io.len() as u32).unwrap();
+
+    for i in 0..rs_io.len() {
+        let mut channels = env.create_array(rs_io[i].len() as u32).unwrap();
+        let old_channels = js_io.get_element::<JsObject>(i as u32).unwrap();
+
+        for j in 0..rs_io[i].len() {
+            // Try to reuse existing Float32Array
+            let float32_arr = if old_channels.has_element(j as u32).unwrap() {
+                old_channels.get_element::<JsTypedArray>(j as u32).unwrap()
+            } else {
+                env.create_arraybuffer(render_quantum_size * 4)
+                    .unwrap()
+                    .into_raw()
+                    .into_typedarray(napi::TypedArrayType::Float32, render_quantum_size, 0)
+                    .unwrap()
+            };
+
+            let _ = channels.set(j as u32, float32_arr);
+        }
+
+        let mut channels = channels.coerce_to_object().unwrap();
+        let _ = channels.freeze();
+
+        new_js_io.set(i as u32, channels).unwrap();
+    }
+
+    let mut new_js_io = new_js_io.coerce_to_object().unwrap();
+    let _ = new_js_io.freeze();
+
+    new_js_io
+}
+
 /// Handle a AudioWorkletProcessor::process call in the Worker
 fn process_audio_worklet(env: &Env, processors: &JsObject, args: ProcessorArguments) -> Result<()> {
     let ProcessorArguments {
@@ -162,7 +221,7 @@ fn process_audio_worklet(env: &Env, processors: &JsObject, args: ProcessorArgume
     global.set_named_property("currentTime", current_time)?;
     global.set_named_property("currentFrame", current_frame)?;
 
-    let processor = processor.coerce_to_object()?;
+    let mut processor = processor.coerce_to_object()?;
 
     let k_worklet_callable_process =
         env.symbol_for("node-web-audio-api:worklet-callable-process")?;
@@ -188,44 +247,46 @@ fn process_audio_worklet(env: &Env, processors: &JsObject, args: ProcessorArgume
             let k_worklet_params_cache =
                 env.symbol_for("node-web-audio-api:worklet-params-cache")?;
 
-            let js_inputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_inputs)?;
-
-            for (input_number, input) in inputs.iter().enumerate() {
-                let mut channels = js_inputs.get_element::<JsObject>(input_number as u32)?;
-
-                for (channel_number, channel) in input.iter().enumerate() {
-                    let samples =
-                        float_buffer_to_js(env, channel.as_ptr() as *mut _, channel.len());
-                    channels.set_element(channel_number as u32, samples)?;
-                }
-
-                // delete remaining channels, if any
-                for i in input.len() as u32..channels.get_array_length().unwrap() {
-                    channels.delete_element(i)?;
-                }
-            }
-
-            let js_outputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_outputs)?;
-
-            for (output_number, output) in outputs.iter().enumerate() {
-                let mut channels = js_outputs.get_element::<JsObject>(output_number as u32)?;
-
-                for (channel_number, channel) in output.iter().enumerate() {
-                    let samples =
-                        float_buffer_to_js(env, channel.as_ptr() as *mut _, channel.len());
-                    channels.set_element(channel_number as u32, samples)?;
-                }
-
-                // delete remaining channels, if any
-                for i in output.len() as u32..channels.get_array_length().unwrap() {
-                    channels.delete_element(i)?;
-                }
-            }
-
+            // @todo - get from global
+            let render_quantum_size = 128;
+            let mut js_inputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_inputs)?;
+            let mut js_outputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_outputs)?;
             let mut js_params = processor.get_property::<JsSymbol, JsObject>(k_worklet_params)?;
             let js_params_cache =
                 processor.get_property::<JsSymbol, JsObject>(k_worklet_params_cache)?;
 
+            // Check JS input and output, and rebuild JS object if layout changed
+            if !check_same_io_layout(&js_inputs, inputs) {
+                let new_js_inputs = rebuild_io_layout(env, js_inputs, inputs, render_quantum_size);
+                // Store new layout in processor
+                processor.set_property(k_worklet_inputs, new_js_inputs)?;
+                // Override js_inputs with new reference
+                js_inputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_inputs)?;
+            }
+
+            if !check_same_io_layout(&js_outputs, outputs) {
+                let new_js_outputs =
+                    rebuild_io_layout(env, js_outputs, outputs, render_quantum_size);
+                // Store new layout in processor
+                processor.set_property(k_worklet_outputs, new_js_outputs)?;
+                // Override js_outputs with new reference
+                js_outputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_outputs)?;
+            }
+
+            // Copy inputs into JS inputs buffers
+            for (input_number, input) in inputs.iter().enumerate() {
+                let js_input = js_inputs.get_element::<JsObject>(input_number as u32)?;
+
+                for (channel_number, channel) in input.iter().enumerate() {
+                    let js_channel = js_input.get_element::<JsTypedArray>(channel_number as u32)?;
+                    let mut js_channel_value = js_channel.into_value()?;
+                    let js_channel_buffer: &mut [f32] = js_channel_value.as_mut();
+                    js_channel_buffer.copy_from_slice(channel);
+                }
+            }
+
+            // Copy params values into JS params buffers
+            //
             // @perf - We could rely on the fact that ParameterDescriptors
             // are ordered maps to avoid sending param names in `param_values`
             for (name, data) in param_values.iter() {
@@ -247,6 +308,31 @@ fn process_audio_worklet(env: &Env, processors: &JsObject, args: ProcessorArgume
 
             match res {
                 Ok(js_ret) => {
+                    // Grab back new owned value processor and js_ouputs, has been
+                    // consumed by `apply` call
+                    let processor = processors.get_named_property::<JsObject>(&id.to_string())?;
+                    let js_outputs =
+                        processor.get_property::<JsSymbol, JsObject>(k_worklet_outputs)?;
+
+                    // copy JS output buffers back into outputs
+                    for (output_number, output) in outputs.iter().enumerate() {
+                        let js_output = js_outputs.get_element::<JsObject>(output_number as u32)?;
+
+                        for (channel_number, channel) in output.iter().enumerate() {
+                            let js_channel =
+                                js_output.get_element::<JsTypedArray>(channel_number as u32)?;
+                            let js_channel_value = js_channel.into_value()?;
+                            let js_channel_buffer: &[f32] = js_channel_value.as_ref();
+
+                            let src = js_channel_buffer.as_ptr();
+                            let dst = channel.as_ptr() as *mut f32;
+
+                            unsafe {
+                                std::ptr::copy_nonoverlapping(src, dst, render_quantum_size);
+                            }
+                        }
+                    }
+
                     let ret = js_ret.coerce_to_bool()?.get_value()?;
                     let _ = tail_time_sender.send(ret); // allowed to fail
                 }

@@ -21,20 +21,3 @@ pub(crate) fn get_class_ctor(env: &Env, name: &str) -> Result<JsFunction> {
     let ctor: JsFunction = store.get_named_property(name)?;
     Ok(ctor)
 }
-
-pub(crate) fn float_buffer_to_js(env: &Env, data: *mut f32, length: usize) -> napi::JsTypedArray {
-    let data: &mut [u8] = unsafe { std::slice::from_raw_parts_mut(data as *mut _, length * 4) };
-    let data_ptr = data.as_ptr() as *mut _;
-    let ptr_length = data.len();
-
-    unsafe {
-        env.create_arraybuffer_with_borrowed_data(data_ptr, ptr_length, (), napi::noop_finalize)
-            .map(|array_buffer| {
-                array_buffer
-                    .into_raw()
-                    .into_typedarray(napi::TypedArrayType::Float32, length, 0)
-                    .unwrap()
-            })
-            .unwrap()
-    }
-}
