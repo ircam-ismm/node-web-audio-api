@@ -391,14 +391,10 @@ pub(crate) fn run_audio_worklet_global_scope(ctx: CallContext) -> Result<JsUndef
     // List of registered processors
     let processors = ctx.get::<JsObject>(1)?;
 
-    // Wait for an incoming command, the recv_timeout is required for OfflineAudioContext
-    // as we have no way to exit the worklet before the graph is dropped, so the worlet
-    // would stay stuck here waiting for an incoming message
-    // Note that 100 microseconds is arbitrary, but seems to maintain the js event loop
-    // in some kind of higher piority behavior, preventing enexpected peak loads
-    while let Ok(msg) =
-        process_call_receiver(worklet_id).recv_timeout(std::time::Duration::from_micros(100))
-    {
+    // Poll for incoming commands and yield back to the event loop if there are none.
+    // recv_timeout is not an option due to realtime safety, see discussion of
+    // https://github.com/ircam-ismm/node-web-audio-api/pull/124#pullrequestreview-2053515583
+    while let Ok(msg) = process_call_receiver(worklet_id).try_recv() {
         match msg {
             WorkletCommand::Drop(id) => {
                 let mut processors = ctx.get::<JsObject>(1)?;
