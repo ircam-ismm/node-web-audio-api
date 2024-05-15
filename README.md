@@ -65,9 +65,7 @@ node examples/granular-scrub.mjs
 
 ## Caveats
 
-- Missing nodes: `ScriptProcessorNode`, `AudioWorkletNode`.
-- Streams: only a minimial audio input stream and the `MediaStreamSourceNode` are provided. All other `MediaStream` features are left on the side for now as they principaly concern a different API specification, which is not a trivial problem.
-- Some async methods (e.g. `decodeAudioData`, `setSinkId`) are not trully async yet. This will evolve with the implemetation of the async version in the upstream crate.
+- `Streams`: only a minimial audio input stream and the `MediaStreamSourceNode` are provided. All other `MediaStream` features are left on the side for now as they principaly concern a different API specification, which is not a trivial problem.
 
 ## Supported Platforms
 
