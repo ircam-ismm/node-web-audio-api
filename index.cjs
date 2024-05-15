@@ -1,90 +1,88 @@
-const { platform, arch } = process;
+// -------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
+//                                                                            //
+//                                                                            //
+//                                                                            //
+//    ██╗    ██╗ █████╗ ██████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗               //
+//    ██║    ██║██╔══██╗██╔══██╗████╗  ██║██║████╗  ██║██╔════╝               //
+//    ██║ █╗ ██║███████║██████╔╝██╔██╗ ██║██║██╔██╗ ██║██║  ███╗              //
+//    ██║███╗██║██╔══██║██╔══██╗██║╚██╗██║██║██║╚██╗██║██║   ██║              //
+//    ╚███╔███╔╝██║  ██║██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝              //
+//     ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝               //
+//                                                                            //
+//                                                                            //
+//    - This file has been generated ---------------------------              //
+//                                                                            //
+//                                                                            //
+// -------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
 
-let nativeBinding = null;
-let loadError = null;
+const nativeBinding = require('./load-native.cjs');
+const jsExport = {};
 
-switch (platform) {
-  case 'win32':
-    switch (arch) {
-      case 'x64':
-        try {
-          nativeBinding = require('./node-web-audio-api.win32-x64-msvc.node');
-        } catch (e) {
-          loadError = e;
-        }
-        break;
-      case 'arm64':
-        try {
-          nativeBinding = require('./node-web-audio-api.win32-arm64-msvc.node');
-        } catch (e) {
-          loadError = e;
-        }
-        break;
-      default:
-        throw new Error(`Unsupported architecture on Windows: ${arch}`);
-    }
-    break;
-  case 'darwin':
-    switch (arch) {
-      case 'x64':
-        try {
-          nativeBinding = require('./node-web-audio-api.darwin-x64.node');
-        } catch (e) {
-          loadError = e;
-        }
-        break;
-      case 'arm64':
-        try {
-          nativeBinding = require('./node-web-audio-api.darwin-arm64.node');
-        } catch (e) {
-          loadError = e;
-        }
-        break;
-      default:
-        throw new Error(`Unsupported architecture on macOS: ${arch}`);
-    }
-    break;
-  case 'linux':
-    switch (arch) {
-      case 'x64':
-        try {
-          nativeBinding = require('./node-web-audio-api.linux-x64-gnu.node');
-        } catch (e) {
-          loadError = e;
-        }
-        break;
-      case 'arm64':
-        try {
-          nativeBinding = require('./node-web-audio-api.linux-arm64-gnu.node');
-        } catch (e) {
-          loadError = e;
-        }
-        break;
-      case 'arm':
-        try {
-          nativeBinding = require('./node-web-audio-api.linux-arm-gnueabihf.node');
-        } catch (e) {
-          loadError = e;
-        }
-        break;
-      default:
-        throw new Error(`Unsupported architecture on Linux: ${arch}`);
-    }
-    break;
-  default:
-    throw new Error(`Unsupported OS: ${platform}, architecture: ${arch}`);
-}
+// --------------------------------------------------------------------------
+// Events
+// --------------------------------------------------------------------------
+jsExport.OfflineAudioCompletionEvent = require('./js/Events').OfflineAudioCompletionEvent;
+jsExport.AudioProcessingEvent = require('./js/Events').AudioProcessingEvent;
+jsExport.AudioRenderCapacityEvent = require('./js/Events').AudioRenderCapacityEvent;
+// --------------------------------------------------------------------------
+// Create Web Audio API facade
+// --------------------------------------------------------------------------
+jsExport.BaseAudioContext = require('./js/BaseAudioContext.js')(jsExport, nativeBinding);
+jsExport.AudioContext = require('./js/AudioContext.js')(jsExport, nativeBinding);
+jsExport.OfflineAudioContext = require('./js/OfflineAudioContext.js')(jsExport, nativeBinding);
 
-if (!nativeBinding) {
-  if (loadError) {
-    throw loadError;
+jsExport.ScriptProcessorNode = require('./js/ScriptProcessorNode.js')(jsExport, nativeBinding);
+jsExport.AudioWorkletNode = require('./js/AudioWorkletNode.js')(jsExport, nativeBinding);
+jsExport.AnalyserNode = require('./js/AnalyserNode.js')(jsExport, nativeBinding);
+jsExport.AudioBufferSourceNode = require('./js/AudioBufferSourceNode.js')(jsExport, nativeBinding);
+jsExport.BiquadFilterNode = require('./js/BiquadFilterNode.js')(jsExport, nativeBinding);
+jsExport.ChannelMergerNode = require('./js/ChannelMergerNode.js')(jsExport, nativeBinding);
+jsExport.ChannelSplitterNode = require('./js/ChannelSplitterNode.js')(jsExport, nativeBinding);
+jsExport.ConstantSourceNode = require('./js/ConstantSourceNode.js')(jsExport, nativeBinding);
+jsExport.ConvolverNode = require('./js/ConvolverNode.js')(jsExport, nativeBinding);
+jsExport.DelayNode = require('./js/DelayNode.js')(jsExport, nativeBinding);
+jsExport.DynamicsCompressorNode = require('./js/DynamicsCompressorNode.js')(jsExport, nativeBinding);
+jsExport.GainNode = require('./js/GainNode.js')(jsExport, nativeBinding);
+jsExport.IIRFilterNode = require('./js/IIRFilterNode.js')(jsExport, nativeBinding);
+jsExport.MediaStreamAudioSourceNode = require('./js/MediaStreamAudioSourceNode.js')(jsExport, nativeBinding);
+jsExport.OscillatorNode = require('./js/OscillatorNode.js')(jsExport, nativeBinding);
+jsExport.PannerNode = require('./js/PannerNode.js')(jsExport, nativeBinding);
+jsExport.StereoPannerNode = require('./js/StereoPannerNode.js')(jsExport, nativeBinding);
+jsExport.WaveShaperNode = require('./js/WaveShaperNode.js')(jsExport, nativeBinding);
+
+jsExport.AudioNode = require('./js/AudioNode.js');
+jsExport.AudioScheduledSourceNode = require('./js/AudioScheduledSourceNode.js');
+jsExport.AudioParam = require('./js/AudioParam.js');
+jsExport.AudioDestinationNode = require('./js/AudioDestinationNode.js');
+jsExport.AudioListener = require('./js/AudioListener.js');
+jsExport.AudioWorklet = require('./js/AudioWorklet.js');
+jsExport.AudioParamMap = require('./js/AudioParamMap.js');
+jsExport.AudioRenderCapacity = require('./js/AudioRenderCapacity.js');
+
+jsExport.PeriodicWave = require('./js/PeriodicWave.js')(jsExport, nativeBinding);
+jsExport.AudioBuffer = require('./js/AudioBuffer.js')(jsExport, nativeBinding);
+
+// --------------------------------------------------------------------------
+// Promisify MediaDevices API
+// --------------------------------------------------------------------------
+jsExport.mediaDevices = {};
+
+const enumerateDevicesSync = nativeBinding.mediaDevices.enumerateDevices;
+jsExport.mediaDevices.enumerateDevices = async function enumerateDevices() {
+  const list = enumerateDevicesSync();
+  return Promise.resolve(list);
+};
+
+const getUserMediaSync = nativeBinding.mediaDevices.getUserMedia;
+jsExport.mediaDevices.getUserMedia = async function getUserMedia(options) {
+  if (options === undefined) {
+    throw new TypeError('Failed to execute "getUserMedia" on "MediaDevices": audio must be requested');
   }
 
-  throw new Error(`Failed to load native binding for OS: ${platform}, architecture: ${arch}`);
-}
+  const stream = getUserMediaSync(options);
+  return Promise.resolve(stream);
+};
 
-const monkeyPatch = require('./js/monkey-patch.js');
-nativeBinding = monkeyPatch(nativeBinding);
-
-module.exports = nativeBinding;
-
+module.exports = jsExport;

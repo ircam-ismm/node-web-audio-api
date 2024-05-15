@@ -50,6 +50,8 @@ use crate::offline_audio_context::NapiOfflineAudioContext;
 
 mod script_processor_node;
 use crate::script_processor_node::NapiScriptProcessorNode;
+mod audio_worklet_node;
+use crate::audio_worklet_node::NapiAudioWorkletNode;
 mod analyser_node;
 use crate::analyser_node::NapiAnalyserNode;
 mod audio_buffer_source_node;
@@ -82,6 +84,9 @@ mod stereo_panner_node;
 use crate::stereo_panner_node::NapiStereoPannerNode;
 mod wave_shaper_node;
 use crate::wave_shaper_node::NapiWaveShaperNode;
+
+// AudioWorklet internals
+use crate::audio_worklet_node::{exit_audio_worklet_global_scope, run_audio_worklet_global_scope};
 
 // MediaDevices & MediaStream API
 mod media_streams;
@@ -125,6 +130,9 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
 
     let napi_class = NapiScriptProcessorNode::create_js_class(&env)?;
     exports.set_named_property("ScriptProcessorNode", napi_class)?;
+
+    let napi_class = NapiAudioWorkletNode::create_js_class(&env)?;
+    exports.set_named_property("AudioWorkletNode", napi_class)?;
 
     let napi_class = NapiAnalyserNode::create_js_class(&env)?;
     exports.set_named_property("AnalyserNode", napi_class)?;
@@ -175,6 +183,18 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     exports.set_named_property("WaveShaperNode", napi_class)?;
 
     // ----------------------------------------------------------------
+    // AudioWorklet utils (internal)
+    // ----------------------------------------------------------------
+    exports.create_named_method(
+        "run_audio_worklet_global_scope",
+        run_audio_worklet_global_scope,
+    )?;
+    exports.create_named_method(
+        "exit_audio_worklet_global_scope",
+        exit_audio_worklet_global_scope,
+    )?;
+
+    // ----------------------------------------------------------------
     // MediaStream API & Media Devices API
     // ----------------------------------------------------------------
     let mut media_devices = env.create_object()?;
@@ -207,10 +227,9 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     let napi_class = NapiMediaStream::create_js_class(&env)?;
     store.set_named_property("MediaStream", napi_class)?;
 
-    // store the store into instance so that it can be globally accessed
+    // push store into env instance data so that it can be globally accessed
     let store_ref = env.create_reference(store)?;
     env.set_instance_data(store_ref, 0, |mut c| {
-        // don't have any idea of what this does
         c.value.unref(c.env).unwrap();
     })?;
 

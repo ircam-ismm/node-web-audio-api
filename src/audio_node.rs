@@ -200,6 +200,15 @@ macro_rules! audio_node_impl {
                     // proper return value is handled on JS side
                     ctx.env.get_undefined()
                 }
+                "AudioWorkletNode" => {
+                    let napi_dest = ctx
+                        .env
+                        .unwrap::<$crate::audio_worklet_node::NapiAudioWorkletNode>(&js_dest)?;
+                    let native_dest = napi_dest.unwrap();
+                    native_src.connect_from_output_to_input(native_dest, output, input);
+                    // proper return value is handled on JS side
+                    ctx.env.get_undefined()
+                }
                 "AnalyserNode" => {
                     let napi_dest = ctx
                         .env
@@ -425,6 +434,27 @@ macro_rules! audio_node_impl {
                     let napi_dest = ctx
                         .env
                         .unwrap::<$crate::script_processor_node::NapiScriptProcessorNode>(&js_dest)?;
+                    let native_dest = napi_dest.unwrap();
+
+                    if ctx.length == 3 {
+                        let output = ctx.get::<JsNumber>(1)?.get_double()? as usize;
+                        let input = ctx.get::<JsNumber>(2)?.get_double()? as usize;
+                        native_src.disconnect_dest_from_output_to_input(
+                            native_dest,
+                            output,
+                            input
+                        );
+                    } else if ctx.length == 2 {
+                        let output = ctx.get::<JsNumber>(1)?.get_double()? as usize;
+                        native_src.disconnect_dest_from_output(native_dest, output);
+                    } else {
+                        native_src.disconnect_dest(native_dest);
+                    }
+                }
+                "AudioWorkletNode" => {
+                    let napi_dest = ctx
+                        .env
+                        .unwrap::<$crate::audio_worklet_node::NapiAudioWorkletNode>(&js_dest)?;
                     let native_dest = napi_dest.unwrap();
 
                     if ctx.length == 3 {

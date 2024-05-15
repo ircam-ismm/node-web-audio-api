@@ -24,12 +24,16 @@ const {
 } = require('./lib/utils.js');
 const {
   kNapiObj,
+  kPrivateConstructor,
 } = require('./lib/symbols.js');
+
+const AudioWorklet = require('./AudioWorklet.js');
 
 module.exports = (jsExport, _nativeBinding) => {
   class BaseAudioContext extends EventTarget {
-    #listener = null;
+    #audioWorklet = null;
     #destination = null;
+    #listener = null;
 
     constructor(options) {
       // Make constructor "private"
@@ -47,10 +51,31 @@ module.exports = (jsExport, _nativeBinding) => {
         ...kHiddenProperty,
       });
 
-      this.#listener = null; // lazily instanciated
+      this.#audioWorklet = new AudioWorklet({
+        [kPrivateConstructor]: true,
+        workletId: this[kNapiObj].workletId,
+        sampleRate: this[kNapiObj].sampleRate,
+      });
+
       this.#destination = new jsExport.AudioDestinationNode(this, {
         [kNapiObj]: this[kNapiObj].destination,
       });
+    }
+
+    get audioWorklet() {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
+
+      return this.#audioWorklet;
+    }
+
+    get destination() {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
+
+      return this.#destination;
     }
 
     get listener() {
@@ -65,14 +90,6 @@ module.exports = (jsExport, _nativeBinding) => {
       }
 
       return this.#listener;
-    }
-
-    get destination() {
-      if (!(this instanceof BaseAudioContext)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
-      }
-
-      return this.#destination;
     }
 
     get sampleRate() {
@@ -91,6 +108,15 @@ module.exports = (jsExport, _nativeBinding) => {
       return this[kNapiObj].currentTime;
     }
 
+    // @todo - implement in upstream crate + pass to AudioWorkletGlobalScope
+    // get renderQuantumSize() {
+    //   if (!(this instanceof BaseAudioContext)) {
+    //     throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
+    //   }
+
+    //   return this[kNapiObj].renderQuantumSize;
+    // }
+
     get state() {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
@@ -98,9 +124,6 @@ module.exports = (jsExport, _nativeBinding) => {
 
       return this[kNapiObj].state;
     }
-
-    // renderQuantumSize
-    // audioWorklet
 
     get onstatechange() {
       if (!(this instanceof BaseAudioContext)) {

@@ -21,6 +21,8 @@ export const {
   AudioParam,
   AudioDestinationNode,
   AudioListener,
+  AudioWorklet,
+  AudioParamMap,
   AudioRenderCapacity,
 
   PeriodicWave,

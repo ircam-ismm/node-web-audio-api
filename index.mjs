@@ -42,12 +42,15 @@ export const {
   AudioParam,
   AudioDestinationNode,
   AudioListener,
+  AudioWorklet,
+  AudioParamMap,
   AudioRenderCapacity,
 
   PeriodicWave,
   AudioBuffer,
   // generated nodes
   ScriptProcessorNode,
+  AudioWorkletNode,
   AnalyserNode,
   AudioBufferSourceNode,
   BiquadFilterNode,

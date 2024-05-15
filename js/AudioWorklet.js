@@ -1,0 +1,261 @@
+const {
+  resolveObjectURL
+} = require('node:buffer');
+const fs = require('node:fs').promises;
+const { existsSync } = require('node:fs');
+const path = require('node:path');
+const {
+  Worker,
+  MessageChannel,
+} = require('node:worker_threads');
+
+const {
+  kProcessorRegistered,
+  kGetParameterDescriptors,
+  kCreateProcessor,
+  kPrivateConstructor,
+  kWorkletRelease,
+  kCheckProcessorsCreated,
+} = require('./lib/symbols.js');
+const {
+  kEnumerableProperty,
+} = require('./lib/utils.js');
+
+const caller = require('caller');
+// cf. https://www.npmjs.com/package/node-fetch#commonjs
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+
+/**
+ * Retrieve code with different module resolution strategies
+ * - file - absolute or relative to cwd path
+ * - URL
+ * - Blob
+ * - fallback: relative to caller site
+ *   + in fs
+ *   + caller site is url - required for wpt, probably no other use case
+ */
+const resolveModule = async (moduleUrl) => {
+  let code;
+
+  if (existsSync(moduleUrl)) {
+    const pathname = moduleUrl;
+
+    try {
+      const buffer = await fs.readFile(pathname);
+      code = buffer.toString();
+    } catch (err) {
+      throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
+    }
+  } else if (moduleUrl.startsWith('http')) {
+    try {
+        const res = await fetch(moduleUrl);
+        code = await res.text();
+      } catch (err) {
+        throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
+      }
+  } else if (moduleUrl.startsWith('blob:')) {
+    try {
+      const blob = resolveObjectURL(moduleUrl);
+      code = await blob.text();
+    } catch (err) {
+      throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
+    }
+  } else {
+    // get caller site from error stack trace
+    const callerSite = caller(2);
+
+    if (callerSite.startsWith('http')) {
+      let url;
+      // handle origin relative and caller path relative URLs
+      if (moduleUrl.startsWith('/')) {
+        const origin = new URL(baseUrl).origin;
+        url = origin + moduleUrl;
+      } else {
+        // we know separators are '/'
+        const baseUrl = callerSite.substr(0, callerSite.lastIndexOf('/'));
+        url = baseUrl + '/' + moduleUrl;
+      }
+
+      try {
+        const res = await fetch(url);
+        code = await res.text();
+      } catch (err) {
+        throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
+      }
+    } else {
+      const dirname = callerSite.substr(0, callerSite.lastIndexOf(path.sep));
+      const absDirname = dirname.replace('file://', '');
+      const pathname = path.join(absDirname, moduleUrl);
+
+      if (existsSync(pathname)) {
+        try {
+          const buffer = await fs.readFile(pathname);
+          code = buffer.toString();
+        } catch (err) {
+          throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
+        }
+      } else {
+        throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': Cannot resolve module ${moduleUrl}`);
+      }
+    }
+  }
+
+  return code;
+}
+
+class AudioWorklet {
+  #workletId = null;
+  #sampleRate = null;
+  #port = null;
+  #idPromiseMap = new Map();
+  #promiseId = 0;
+  #workletParamDescriptorsMap = new Map();
+  #pendingCreateProcessors = new Set();
+
+  constructor(options) {
+    if (
+      (typeof options !== 'object') ||
+      options[kPrivateConstructor] !== true
+    ) {
+      throw new TypeError('Illegal constructor');
+    }
+
+    this.#workletId = options.workletId;
+    this.#sampleRate = options.sampleRate;
+  }
+
+  #bindEvents() {
+    this.#port.on('message', event => {
+      switch (event.cmd) {
+        case 'node-web-audio-api:worklet:module-added': {
+          const { promiseId } = event;
+          const { resolve } = this.#idPromiseMap.get(promiseId);
+          this.#idPromiseMap.delete(promiseId);
+          resolve();
+          break;
+        }
+        case 'node-web-audio-api:worlet:processor-registered': {
+          const { name, parameterDescriptors } = event;
+          this.#workletParamDescriptorsMap.set(name, parameterDescriptors);
+          break;
+        }
+        case 'node-web-audio-api:worklet:processor-created': {
+          const { id } = event;
+          this.#pendingCreateProcessors.delete(id);
+          break;
+        }
+      }
+    });
+  }
+
+  get port() {
+    return this.#port;
+  }
+
+  async addModule(moduleUrl) {
+    const code = await resolveModule(moduleUrl);
+
+    // launch Worker if not exists
+    if (!this.#port) {
+      await new Promise(resolve => {
+        const workletPathname = path.join(__dirname, 'AudioWorkletGlobalScope.js');
+        this.#port = new Worker(workletPathname, {
+          workerData: {
+            workletId: this.#workletId,
+            sampleRate: this.#sampleRate,
+          },
+        });
+        this.#port.on('online', resolve);
+
+        this.#bindEvents();
+      });
+    }
+
+    const promiseId = this.#promiseId++;
+    // This promise is resolved when the Worker returns the name and
+    // parameterDescriptors from the added module
+    await new Promise((resolve, reject) => {
+      this.#idPromiseMap.set(promiseId, { resolve, reject });
+
+      this.#port.postMessage({
+        cmd: 'node-web-audio-api:worklet:add-module',
+        code,
+        promiseId,
+      });
+    });
+  }
+
+  // For OfflineAudioContext only, check that all processors have been properly
+  // created before actual `startRendering`
+  async [kCheckProcessorsCreated]() {
+    // console.log(this.#pendingCreateProcessors);
+    return new Promise(async resolve => {
+      while (this.#pendingCreateProcessors.size !== 0) {
+        // we need a microtask to ensure message can be received
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+
+      resolve();
+    });
+  }
+
+  [kProcessorRegistered](name) {
+    return Array.from(this.#workletParamDescriptorsMap.keys()).includes(name);
+  }
+
+  [kGetParameterDescriptors](name) {
+    return this.#workletParamDescriptorsMap.get(name);
+  }
+
+  [kCreateProcessor](name, options, id) {
+    this.#pendingCreateProcessors.add(id);
+
+    const { port1, port2 } = new MessageChannel();
+    // @todo - check if some processorOptions must be transfered as well
+    this.#port.postMessage({
+      cmd: 'node-web-audio-api:worklet:create-processor',
+      name,
+      id,
+      options,
+      port: port2,
+    }, [port2]);
+
+    return port1;
+  }
+
+  async [kWorkletRelease]() {
+    if (this.#port) {
+      await new Promise(resolve => {
+        this.#port.on('exit', resolve);
+        this.#port.postMessage({
+          cmd: 'node-web-audio-api:worklet:exit',
+        });
+      });
+    }
+  }
+}
+
+Object.defineProperties(AudioWorklet, {
+  length: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 0,
+  },
+});
+
+Object.defineProperties(AudioWorklet.prototype, {
+  [Symbol.toStringTag]: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 'AudioWorklet',
+  },
+  addModule: kEnumerableProperty,
+  port: kEnumerableProperty,
+});
+
+module.exports = AudioWorklet;
+

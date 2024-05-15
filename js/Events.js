@@ -30,7 +30,6 @@ Object.defineProperties(OfflineAudioCompletionEvent.prototype, {
     configurable: true,
     value: 'OfflineAudioCompletionEvent',
   },
-
   renderedBuffer: kEnumerableProperty,
 });
 
@@ -78,7 +77,6 @@ Object.defineProperties(AudioProcessingEvent.prototype, {
     configurable: true,
     value: 'AudioProcessingEvent',
   },
-
   playbackTime: kEnumerableProperty,
   inputBuffer: kEnumerableProperty,
   outputBuffer: kEnumerableProperty,
@@ -135,13 +133,98 @@ Object.defineProperties(AudioRenderCapacityEvent.prototype, {
     configurable: true,
     value: 'AudioRenderCapacityEvent',
   },
-
   timestamp: kEnumerableProperty,
   averageLoad: kEnumerableProperty,
   peakLoad: kEnumerableProperty,
   underrunRatio: kEnumerableProperty,
 });
 
+// https://html.spec.whatwg.org/multipage/webappapis.html#errorevent
+// interface ErrorEvent : Event {
+//   constructor(DOMString type, optional ErrorEventInit eventInitDict = {});
+
+//   readonly attribute DOMString message;
+//   readonly attribute USVString filename;
+//   readonly attribute unsigned long lineno;
+//   readonly attribute unsigned long colno;
+//   readonly attribute any error;
+// };
+
+// dictionary ErrorEventInit : EventInit {
+//   DOMString message = "";
+//   USVString filename = "";
+//   unsigned long lineno = 0;
+//   unsigned long colno = 0;
+//   any error;
+// };
+class ErrorEvent extends Event {
+  #message = '';
+  #filename = '';
+  #lineno = 0;
+  #colno = 0;
+  #error = undefined;
+
+  constructor(type, eventInitDict = {}) {
+    super(type);
+
+    if (eventInitDict && typeof eventInitDict.message === 'string') {
+      this.#message = eventInitDict.message;
+    }
+
+    if (eventInitDict && typeof eventInitDict.filename === 'string') {
+      this.#filename = eventInitDict.filename;
+    }
+
+    if (eventInitDict && Number.isFinite(eventInitDict.lineno)) {
+      this.#lineno = eventInitDict.lineno;
+    }
+
+    if (eventInitDict && Number.isFinite(eventInitDict.colno)) {
+      this.#colno = eventInitDict.colno;
+    }
+
+    if (eventInitDict && eventInitDict.error instanceof Error) {
+      this.#error = eventInitDict.error;
+    }
+  }
+
+  get message() {
+    return this.#message;
+  }
+
+  get filename() {
+    return this.#filename;
+  }
+
+  get lineno() {
+    return this.#lineno;
+  }
+
+  get colno() {
+    return this.#colno;
+  }
+
+  get error() {
+    return this.#error;
+  }
+}
+
+Object.defineProperties(ErrorEvent.prototype, {
+  [Symbol.toStringTag]: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 'ErrorEvent',
+  },
+  message: kEnumerableProperty,
+  filename: kEnumerableProperty,
+  lineno: kEnumerableProperty,
+  colno: kEnumerableProperty,
+  error: kEnumerableProperty,
+});
+
 module.exports.OfflineAudioCompletionEvent = OfflineAudioCompletionEvent;
 module.exports.AudioProcessingEvent = AudioProcessingEvent;
 module.exports.AudioRenderCapacityEvent = AudioRenderCapacityEvent;
+module.exports.ErrorEvent = ErrorEvent;

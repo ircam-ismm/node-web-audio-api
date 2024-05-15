@@ -32,6 +32,12 @@ ${d.nodes.map(n => { return `
 mod ${d.slug(n)};
 use crate::${d.slug(n)}::${d.napiName(n)};`}).join('')}
 
+// AudioWorklet internals
+use crate::audio_worklet_node::{
+    exit_audio_worklet_global_scope,
+    run_audio_worklet_global_scope,
+};
+
 // MediaDevices & MediaStream API
 mod media_streams;
 use crate::media_streams::NapiMediaStream;
@@ -77,6 +83,18 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     `}).join('')}
 
     // ----------------------------------------------------------------
+    // AudioWorklet utils (internal)
+    // ----------------------------------------------------------------
+    exports.create_named_method(
+        "run_audio_worklet_global_scope",
+        run_audio_worklet_global_scope,
+    )?;
+    exports.create_named_method(
+        "exit_audio_worklet_global_scope",
+        exit_audio_worklet_global_scope,
+    )?;
+
+    // ----------------------------------------------------------------
     // MediaStream API & Media Devices API
     // ----------------------------------------------------------------
     let mut media_devices = env.create_object()?;
@@ -109,10 +127,9 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     let napi_class = NapiMediaStream::create_js_class(&env)?;
     store.set_named_property("MediaStream", napi_class)?;
 
-    // store the store into instance so that it can be globally accessed
+    // push store into env instance data so that it can be globally accessed
     let store_ref = env.create_reference(store)?;
     env.set_instance_data(store_ref, 0, |mut c| {
-        // don't have any idea of what this does
         c.value.unref(c.env).unwrap();
     })?;
 

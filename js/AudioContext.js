@@ -11,6 +11,7 @@ const {
   kNapiObj,
   kOnStateChange,
   kOnSinkChange,
+  kWorkletRelease,
 } = require('./lib/symbols.js');
 const {
   propagateEvent,
@@ -214,6 +215,9 @@ module.exports = function(jsExport, nativeBinding) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioContext\'');
       }
 
+      // Close audioWorklet first so that `run_audio_worklet_global_scope` exit first
+      // The other way around works too because of `recv_timeout` but cleaner this way
+      await this.audioWorklet[kWorkletRelease]();
       await this[kNapiObj].close();
     }
 
