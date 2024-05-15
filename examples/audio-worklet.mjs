@@ -4,8 +4,12 @@ import { AudioContext, OfflineAudioContext, OscillatorNode, AudioWorkletNode } f
 import { sleep } from '@ircam/sc-utils';
 
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
-const audioContext = new AudioContext({ latencyHint });
-// const audioContext = new OfflineAudioContext(2, 1 * 48000, 48000);
+
+const TEST_ONLINE = false;
+
+const audioContext = TEST_ONLINE
+  ? new AudioContext({ latencyHint })
+  : new OfflineAudioContext(2, 8 * 48000, 48000)
 
 await audioContext.audioWorklet.addModule(path.join('examples', 'worklets', 'bitcrusher.js')); // relative to cwd
 await audioContext.audioWorklet.addModule(path.join('worklets', 'white-noise.js')); // relative path to call site
@@ -37,13 +41,20 @@ sine.stop(8);
 const whiteNoise = new AudioWorkletNode(audioContext, 'white-noise');
 whiteNoise.connect(audioContext.destination);
 
-audioContext.renderCapacity.addEventListener('update', e => {
-  const { timestamp, averageLoad, peakLoad, underrunRatio } = e;
-  console.log('AudioRenderCapacityEvent:', { timestamp, averageLoad, peakLoad, underrunRatio });
-});
-audioContext.renderCapacity.start({ updateInterval: 1. });
+if (TEST_ONLINE) {
+  audioContext.renderCapacity.addEventListener('update', e => {
+    const { timestamp, averageLoad, peakLoad, underrunRatio } = e;
+    console.log('AudioRenderCapacityEvent:', { timestamp, averageLoad, peakLoad, underrunRatio });
+  });
+  audioContext.renderCapacity.start({ updateInterval: 1. });
 
-await sleep(8);
-await audioContext.close();
-
-// await audioContext.startRendering();
+  await sleep(8);
+  await audioContext.close();
+} else {
+  const buffer = await audioContext.startRendering();
+  const online = new AudioContext();
+  const src = online.createBufferSource();
+  src.buffer = buffer;
+  src.connect(online.destination);
+  src.start();
+}

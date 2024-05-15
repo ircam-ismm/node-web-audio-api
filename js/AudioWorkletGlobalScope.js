@@ -290,6 +290,8 @@ parentPort.on('message', event => {
       // store in global so that Rust can match the JS processor
       // with its corresponding NapiAudioWorkletProcessor
       processors[`${id}`] = instance;
+      // notify audio worklet back that processor has finished instanciation
+      parentPort.postMessage({ cmd: 'node-web-audio-api:worklet:processor-created', id });
 
       if (!loopStarted) {
         loopStarted = true;

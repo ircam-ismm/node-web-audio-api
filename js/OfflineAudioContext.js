@@ -15,6 +15,7 @@ const {
   kWorkletRelease,
   kOnStateChange,
   kOnComplete,
+  kCheckProcessorsCreated,
 } = require('./lib/symbols.js');
 
 module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
@@ -140,6 +141,9 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
       if (!(this instanceof OfflineAudioContext)) {
         throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'`);
       }
+
+      // ensure all AudioWorkletProcessor have finished their instanciation
+      await this.audioWorklet[kCheckProcessorsCreated]();
 
       let nativeAudioBuffer;
 

@@ -15,6 +15,7 @@ const {
   kCreateProcessor,
   kPrivateConstructor,
   kWorkletRelease,
+  kCheckProcessorsCreated,
 } = require('./lib/symbols.js');
 const {
   kEnumerableProperty,
@@ -109,6 +110,7 @@ class AudioWorklet {
   #idPromiseMap = new Map();
   #promiseId = 0;
   #workletParamDescriptorsMap = new Map();
+  #pendingCreateProcessors = new Set();
 
   constructor(options) {
     if (
@@ -135,6 +137,12 @@ class AudioWorklet {
         case 'node-web-audio-api:worlet:processor-registered': {
           const { name, parameterDescriptors } = event;
           this.#workletParamDescriptorsMap.set(name, parameterDescriptors);
+          break;
+        }
+        case 'node-web-audio-api:worklet:processor-created': {
+          const { id } = event;
+          this.#pendingCreateProcessors.delete(id);
+          break;
         }
       }
     });
@@ -177,6 +185,20 @@ class AudioWorklet {
     });
   }
 
+  // For OfflineAudioContext only, check that all processors have been properly
+  // created before actual `startRendering`
+  async [kCheckProcessorsCreated]() {
+    // console.log(this.#pendingCreateProcessors);
+    return new Promise(async resolve => {
+      while (this.#pendingCreateProcessors.size !== 0) {
+        // we need a microtask to ensure message can be received
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+
+      resolve();
+    });
+  }
+
   [kProcessorRegistered](name) {
     return Array.from(this.#workletParamDescriptorsMap.keys()).includes(name);
   }
@@ -186,6 +208,8 @@ class AudioWorklet {
   }
 
   [kCreateProcessor](name, options, id) {
+    this.#pendingCreateProcessors.add(id);
+
     const { port1, port2 } = new MessageChannel();
     // @todo - check if some processorOptions must be transfered as well
     this.#port.postMessage({
