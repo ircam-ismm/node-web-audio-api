@@ -1,3 +1,7 @@
+## v0.21.0 (17/05/2024)
+
+- Feat: implement AudioWorkletNode
+
 ## v0.20.0 (29/04/2024)
 
 - Update upstream crate to [v0.44.0](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-0440-2024-04-22)
