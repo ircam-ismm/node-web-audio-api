@@ -1,7 +1,6 @@
 import * as dotenv from 'dotenv';
 import { Octokit } from 'octokit';
 import fs from 'node:fs';
-import zlib from 'node:zlib';
 import { execSync } from 'node:child_process';
 
 dotenv.config({ debug: false });
