@@ -5,7 +5,7 @@ import { sleep } from '@ircam/sc-utils';
 
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 
-const TEST_ONLINE = false;
+const TEST_ONLINE = true;
 
 const audioContext = TEST_ONLINE
   ? new AudioContext({ latencyHint })
@@ -57,4 +57,7 @@ if (TEST_ONLINE) {
   src.buffer = buffer;
   src.connect(online.destination);
   src.start();
+
+  await sleep(8);
+  await online.close();
 }
