@@ -34,6 +34,9 @@ const engine = {
     const src = audioContext.createBufferSource();
     src.buffer = buffer;
     src.connect(env);
+    // const src = audioContext.createConstantSource();
+    // src.offset.value = 0;
+    // src.connect(audioContext.destination);
     // add bit of random
     const detune = 4;
     src.detune.value = Math.random() * 2 * detune - detune;

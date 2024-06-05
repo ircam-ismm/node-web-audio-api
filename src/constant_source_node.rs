@@ -136,23 +136,26 @@ fn listen_to_ended_event(
     use napi::threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunctionCallMode};
     use web_audio_api::Event;
 
-    let k_onended = crate::utils::get_symbol_for(env, "node-web-audio-api:onended");
-    let ended_cb = js_this.get_property(k_onended).unwrap();
-    let mut ended_tsfn =
-        env.create_threadsafe_function(&ended_cb, 0, |ctx: ThreadSafeCallContext<Event>| {
-            let mut event = ctx.env.create_object()?;
-            let event_type = ctx.env.create_string(ctx.value.type_)?;
-            event.set_named_property("type", event_type)?;
+    // let k_onended = crate::utils::get_symbol_for(env, "node-web-audio-api:onended");
+    // let ended_cb = js_this.get_property(k_onended).unwrap();
+    // let mut ended_tsfn = env.create_threadsafe_function(
+    //     &ended_cb,
+    //     0,
+    //     |ctx: ThreadSafeCallContext<Event>| {
+    //         let mut event = ctx.env.create_object()?;
+    //         let event_type = ctx.env.create_string(ctx.value.type_)?;
+    //         event.set_named_property("type", event_type)?;
 
-            Ok(vec![event])
-        })?;
+    //         Ok(vec![event])
+    //     },
+    // )?;
 
-    // unref tsfn so they do not prevent the process to exit
-    let _ = ended_tsfn.unref(env);
+    // // unref tsfn so they do not prevent the process to exit
+    // let _ = ended_tsfn.unref(env);
 
-    node.set_onended(move |e| {
-        ended_tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
-    });
+    // node.set_onended(move |e| {
+    //     ended_tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
+    // });
 
     Ok(())
 }
@@ -163,7 +166,7 @@ fn start(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiConstantSourceNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    listen_to_ended_event(ctx.env, &js_this, node)?;
+    // listen_to_ended_event(ctx.env, &js_this, node)?;
 
     let when = ctx.get::<JsNumber>(0)?.get_double()?;
     node.start_at(when);
