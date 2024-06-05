@@ -33,14 +33,14 @@ class AudioScheduledSourceNode extends AudioNode {
 
     // Add function to Napi object to bridge from Rust events to JS EventTarget
     // It will be effectively registered on rust side when `start` is called
-    // this[kNapiObj][kOnEnded] = (err, rawEvent) => {
-    //   if (typeof rawEvent !== 'object' && !('type' in rawEvent)) {
-    //     throw new TypeError('Invalid [kOnEnded] Invocation: rawEvent should have a type property');
-    //   }
+    this[kNapiObj][kOnEnded] = (function(_err, rawEvent) {
+      if (typeof rawEvent !== 'object' && !('type' in rawEvent)) {
+        throw new TypeError('Invalid [kOnEnded] Invocation: rawEvent should have a type property');
+      }
 
-    //   const event = new Event(rawEvent.type);
-    //   propagateEvent(this, event);
-    // };
+      const event = new Event(rawEvent.type);
+      propagateEvent(this, event);
+    }).bind(this);
   }
 
   get onended() {
