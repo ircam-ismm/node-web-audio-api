@@ -107,11 +107,7 @@ module.exports = (jsExport, nativeBinding) => {
         [kNapiObj]: napiObj,
       });
 
-      this[kNapiObj][kOnAudioProcess] = (err, rawEvent) => {
-        if (typeof rawEvent !== 'object' && !('type' in rawEvent)) {
-          throw new TypeError('Invalid [kOnStateChange] Invocation: rawEvent should have a type property');
-        }
-
+      this[kNapiObj][kOnAudioProcess] = (function(err, rawEvent) {
         const audioProcessingEventInit = {
           playbackTime: rawEvent.playbackTime,
           inputBuffer: new jsExport.AudioBuffer({ [kNapiObj]: rawEvent.inputBuffer }),
@@ -120,7 +116,7 @@ module.exports = (jsExport, nativeBinding) => {
 
         const event = new jsExport.AudioProcessingEvent('audioprocess', audioProcessingEventInit);
         propagateEvent(this, event);
-      };
+      }).bind(this);
 
       this[kNapiObj].listen_to_events();
     }

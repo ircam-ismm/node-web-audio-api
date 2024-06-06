@@ -82,22 +82,14 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
 
       // Add function to Napi object to bridge from Rust events to JS EventTarget
       // They will be effectively registered on rust side when `startRendering` is called
-      this[kNapiObj][kOnStateChange] = (err, rawEvent) => {
-        if (typeof rawEvent !== 'object' && !('type' in rawEvent)) {
-          throw new TypeError('Invalid [kOnStateChange] Invocation: rawEvent should have a type property');
-        }
-
+      this[kNapiObj][kOnStateChange] = (function(err, rawEvent) {
         const event = new Event(rawEvent.type);
         propagateEvent(this, event);
-      };
+      }).bind(this);
 
       // This event is, per spec, the last trigerred one
-      this[kNapiObj][kOnComplete] = (err, rawEvent) => {
-        if (typeof rawEvent !== 'object' && !('type' in rawEvent)) {
-          throw new TypeError('Invalid [kOnComplete] Invocation: rawEvent should have a type property');
-        }
-
-        // @fixme: workaround the fact that this event seems to be triggered before
+      this[kNapiObj][kOnComplete] = (function(err, rawEvent) {
+        // workaround the fact that this event seems to be triggered before
         // startRendering fulfills and that we want to return the exact same instance
         if (this.#renderedBuffer === null) {
           this.#renderedBuffer = new jsExport.AudioBuffer({ [kNapiObj]: rawEvent.renderedBuffer });
@@ -108,7 +100,7 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
         });
 
         propagateEvent(this, event);
-      };
+      }).bind(this);
     }
 
     get length() {

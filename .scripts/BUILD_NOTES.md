@@ -5,7 +5,7 @@
 [https://www.rust-lang.org/tools/install](https://www.rust-lang.org/tools/install)
 
 ```sh
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
 ### RPI 4 w/ 32 system
@@ -30,8 +30,7 @@ Profile (which tools and data to install)? (minimal/default/complete) [default]
 ## Install dev libs
 
 ```sh
-sudo apt-get install -y libjack-jackd2-dev
-sudo apt-get install -y libasound2-dev
+sudo apt-get install -y libjack-jackd2-dev libasound2-dev
 ```
 
 
