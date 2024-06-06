@@ -15,7 +15,7 @@ import { requestAnimationFrame, cancelAnimationFrame } from './wpt-mock/requestA
 program
   .option('--list', 'List the name of the test files')
   .option('--with_crashtests', 'Also run crashtests')
-  .option('--filter <string>', 'Filter executed OR listed test files', '.*');
+  .option('--filter <string...>', 'Filter executed OR listed test files', '.*');
 
 program.parse(process.argv);
 
@@ -102,7 +102,7 @@ process
     console.error(err.message);
   });
 
-const filterRe = new RegExp(`${options.filter}`);
+const filterRe = new RegExp(`${options.filter.join('|')}`);
 
 const filter = (name) => {
   if (!options.with_crashtests && name.includes('/crashtests/')) {
@@ -116,7 +116,6 @@ const filter = (name) => {
   // these tests make the runner crash
   if (
       name.includes('the-audiocontext-interface/suspend-with-navigation.html') // timeouts
-      || name.includes('the-audionode-interface/audionode-disconnect-audioparam.html') // FFI fatal error?
   ) {
       return false;
   }
