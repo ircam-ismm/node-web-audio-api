@@ -31,10 +31,10 @@ class AudioRenderCapacity extends EventTarget {
 
     this[kNapiObj] = options[kNapiObj];
 
-    this[kNapiObj][kOnUpdate] = (err, rawEvent) => {
+    this[kNapiObj][kOnUpdate] = (function(err, rawEvent) {
       const event = new AudioRenderCapacityEvent('update', rawEvent);
       propagateEvent(this, event);
-    };
+    }).bind(this);
 
     this[kNapiObj].listen_to_events();
   }
