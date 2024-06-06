@@ -65,7 +65,7 @@ node examples/granular-scrub.mjs
 
 ## Caveats
 
-- `Streams`: only a minimial audio input stream and the `MediaStreamSourceNode` are provided. All other `MediaStream` features are left on the side for now as they principaly concern a different API specification, which is not a trivial problem.
+- `Streams`: only a minimal audio input stream and the `MediaStreamSourceNode` are provided. All other `MediaStream` features are left on the side for now as they principally concern a different API specification, which is not a trivial problem.
 
 ## Supported Platforms
 
@@ -79,24 +79,7 @@ node examples/granular-scrub.mjs
 | Linux arm gnueabihf (RPi)    | ✓        | ✓      |
 | Linux arm64 gnu (RPi)        | ✓        | ✓      |
 
-
-## Notes for Linux users
-
-Using the library on Linux with the ALSA backend might lead to unexpected cranky sound with the default render size (i.e. 128 frames). In such cases, a simple workaround is to pass the `playback` latency hint when creating the audio context, which will increase the render size to 1024 frames:
-
-```js
-const audioContext = new AudioContext({ latencyHint: 'playback' });
-```
-
-For real-time and interactive applications where low latency is crucial, you should instead rely on the JACK backend provided by `cpal`. By default the audio context will use that backend if a running JACK server is found.
-
-If you don't have JACK installed, you can still pass the `WEB_AUDIO_LATENCY=playback` env variable to all examples to create the audio context with the playback latency hint, e.g.:
-
-```sh
-WEB_AUDIO_LATENCY=playback node examples/amplitude-modulation.mjs
-```
-
-### Manual Build
+## Manual Build
 
 If prebuilt binaries are not shippped for your platform, you will need to:
 
@@ -119,7 +102,9 @@ The package will be built on your machine, which might take some time.
 
 Be aware that the package won't be listed on your `package.json` file, and that it won't be re-installed if running `npm install` again. A possible workaround would be to include the above in a postinstall script.
 
-### Notes for Linux users
+## Notes for Linux users
+
+### Build
 
 To build the library, you will need to manually install the `libasound2-dev` package:
 
@@ -127,13 +112,33 @@ To build the library, you will need to manually install the `libasound2-dev` pac
 sudo apt install libasound2-dev
 ```
 
-And, if you use the Jack Audio Backend, the `libjack-jackd2-dev` package:
+Optionally, if you use the Jack Audio Backend, the `libjack-jackd2-dev` package:
 
 ```sh
 sudo apt install libjack-jackd2-dev
 ```
 
+In such case, you can use the `npm run build:jack` script to enable the Jack feature.
+
+### Audio backend and latency
+
+Using the library on Linux with the ALSA backend might lead to unexpected cranky sound with the default render size (i.e. 128 frames). In such cases, a simple workaround is to pass the `playback` latency hint when creating the audio context, which will increase the render size to 1024 frames:
+
+```js
+const audioContext = new AudioContext({ latencyHint: 'playback' });
+```
+
+For real-time and interactive applications where low latency is crucial, you should instead rely on the JACK backend provided by `cpal`. By default the audio context will use that backend if a running JACK server is found.
+
+If you don't have JACK installed, you can still pass the `WEB_AUDIO_LATENCY=playback` environment variable to all examples to create the audio context with the playback latency hint, e.g.:
+
+```sh
+WEB_AUDIO_LATENCY=playback node examples/amplitude-modulation.mjs
+```
+
 ## Development notes
+
+### Synchronize versioning
 
 The npm `postversion` script rely on [`cargo-bump`](https://crates.io/crates/cargo-bump) to maintain versions synced between the `package.json` and the `Cargo.toml` files. Therefore, you will need to install `cargo-bump` on your machine
 
@@ -141,7 +146,7 @@ The npm `postversion` script rely on [`cargo-bump`](https://crates.io/crates/car
 cargo install cargo-bump
 ```
 
-## Running the web-platform-test suite
+### Running the web-platform-test suite
 
 Follow the steps for 'Manual Build' first. Then checkout the web-platform-tests submodule with:
 
