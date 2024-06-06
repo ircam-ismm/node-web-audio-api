@@ -119,6 +119,20 @@ The package will be built on your machine, which might take some time.
 
 Be aware that the package won't be listed on your `package.json` file, and that it won't be re-installed if running `npm install` again. A possible workaround would be to include the above in a postinstall script.
 
+### Notes for Linux users
+
+To build the library, you will need to manually install the `libasound2-dev` package:
+
+```sh
+sudo apt install libasound2-dev
+```
+
+And, if you use the Jack Audio Backend, the `libjack-jackd2-dev` package:
+
+```sh
+sudo apt install libjack-jackd2-dev
+```
+
 ## Development notes
 
 The npm `postversion` script rely on [`cargo-bump`](https://crates.io/crates/cargo-bump) to maintain versions synced between the `package.json` and the `Cargo.toml` files. Therefore, you will need to install `cargo-bump` on your machine
