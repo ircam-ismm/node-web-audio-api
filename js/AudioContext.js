@@ -117,7 +117,6 @@ module.exports = function(jsExport, nativeBinding) {
       });
       // keep process awake until context is closed
       const keepAwakeId = setInterval(() => {}, 10 * 1000);
-
       // clear on close
       this.addEventListener('statechange', () => {
         if (this.state === 'closed') {
@@ -126,6 +125,11 @@ module.exports = function(jsExport, nativeBinding) {
           clearTimeout(keepAwakeId);
         }
       });
+
+      // for wpt tests, see ./.scripts/wpt_harness.mjs for informations
+      if (process.WPT_TEST_RUNNER) {
+        process.WPT_TEST_RUNNER.once('cleanup', () => this.close());
+      }
     }
 
     get baseLatency() {

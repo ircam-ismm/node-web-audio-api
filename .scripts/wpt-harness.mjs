@@ -1,4 +1,5 @@
 import { Blob } from 'node:buffer';
+import EventEmitter from 'node:events';
 
 import path from 'path';
 import wptRunner from 'wpt-runner';
@@ -15,7 +16,7 @@ import { requestAnimationFrame, cancelAnimationFrame } from './wpt-mock/requestA
 program
   .option('--list', 'List the name of the test files')
   .option('--with_crashtests', 'Also run crashtests')
-  .option('--filter <string...>', 'Filter executed OR listed test files', '.*');
+  .option('--filter <string...>', 'Filter executed OR listed test files', ['.*']);
 
 program.parse(process.argv);
 
@@ -38,15 +39,23 @@ const wptRootPath = path.join('wpt');
 const testsPath = path.join('wpt','webaudio');
 const rootURL = 'webaudio';
 
+// wpt tests are all run in the same process, but some tests using AudioContext
+// do not explicitely call the `close` method. As setup is called before each test
+// file we emit a glbal event so that AudioContext created in previous test file
+// can close themselves. This prevents them to pile up and waste CPU
+process.WPT_TEST_RUNNER = new EventEmitter();
+
 // monkey patch `window` with our web audio API
 const setup = window => {
+  process.WPT_TEST_RUNNER.emit('cleanup');
+
   // monkey patch innerText with textContent
   Object.defineProperty(window.HTMLScriptElement.prototype, 'innerText', {
     get: function() {
       return this.textContent;
     },
   })
-  // return;
+
   // This is meant to make some idlharness tests pass:
   // cf. wpt-runnner/testharness/idlharness.js line 1466-1472
   // These tests, which assess the descriptor of the classes according to window,
@@ -106,18 +115,22 @@ const filterRe = new RegExp(`${options.filter.join('|')}`);
 
 const filter = (name) => {
   if (!options.with_crashtests && name.includes('/crashtests/')) {
-      return false;
+    return false;
   }
   if (name.includes('/resources/')) {
-      return false;
+    return false;
   }
 
   // TODO <https://github.com/ircam-ismm/node-web-audio-api/issues/57>
   // these tests make the runner crash
   if (
-      name.includes('the-audiocontext-interface/suspend-with-navigation.html') // timeouts
+     // timeouts
+    name.includes('the-audiocontext-interface/suspend-with-navigation.html')
+    // somehow crahshes the-constantsourcenode-interface/constant-source-basic.html test
+    // npm run wpt:only -- --filter the-channelmergernode-interface/active-processing.https.html the-constantsourcenode-interface/constant-source-basic.html
+    || name.includes('the-channelmergernode-interface/active-processing.https.html')
   ) {
-      return false;
+    return false;
   }
 
   if (filterRe.test(name)) {
