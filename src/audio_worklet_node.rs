@@ -184,7 +184,7 @@ fn rebuild_io_layout(
         let old_channels = js_io.get_element::<JsObject>(i as u32).unwrap();
         // recycle old channels
         for j in 0..old_channels.get_array_length()? {
-            let channel = old_channels.get_element::<JsTypedArray>(j as u32).unwrap();
+            let channel = old_channels.get_element::<JsTypedArray>(j).unwrap();
             let _ = recycle_buffer.call1::<JsTypedArray, JsUndefined>(channel);
         }
         // populate channels
