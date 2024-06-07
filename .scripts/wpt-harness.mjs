@@ -127,9 +127,6 @@ const filter = (name) => {
   if (
      // timeouts
     name.includes('the-audiocontext-interface/suspend-with-navigation.html')
-    // somehow crahshes the-constantsourcenode-interface/constant-source-basic.html test
-    // npm run wpt:only -- --filter the-channelmergernode-interface/active-processing.https.html the-constantsourcenode-interface/constant-source-basic.html
-    || name.includes('the-channelmergernode-interface/active-processing.https.html')
   ) {
     return false;
   }

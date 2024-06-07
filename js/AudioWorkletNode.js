@@ -98,14 +98,16 @@ module.exports = (jsExport, nativeBinding) => {
           throw new DOMException(`Failed to construct 'AudioWorkletNode': Invalid 'outputChannelCount' property from AudioWorkletNodeOptions: 'outputChannelCount' length (${parsedOptions.outputChannelCount.length}) does not equal 'numberOfOutputs' (${parsedOptions.numberOfOutputs})`, 'IndexSizeError');
         }
       } else {
-        // If outputChannelCount does not exists,
         // - If both numberOfInputs and numberOfOutputs are 1, set the initial channel count of the node output to 1 and return.
         //   NOTE: For this case, the output chanel count will change to computedNumberOfChannels dynamically based on the input and the channelCountMode at runtime.
-        // - Otherwise set the channel count of each output of the node to 1 and return.
-
-        // @note - not sure what this means, let's go simple
-        parsedOptions.outputChannelCount = new Uint32Array(parsedOptions.numberOfOutputs);
-        parsedOptions.outputChannelCount.fill(1);
+        if (parsedOptions.numberOfInputs === 1 && parsedOptions.numberOfOutputs === 1) {
+          // rust waits for an empty Vec as the special case value
+          parsedOptions.outputChannelCount = new Uint32Array(0);
+        } else {
+          // - Otherwise set the channel count of each output of the node to 1 and return.
+          parsedOptions.outputChannelCount = new Uint32Array(parsedOptions.numberOfOutputs);
+          parsedOptions.outputChannelCount.fill(1);
+        }
       }
 
       // @todo
