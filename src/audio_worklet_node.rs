@@ -2,6 +2,7 @@ use crate::{NapiAudioContext, NapiAudioParam, NapiOfflineAudioContext};
 
 use crossbeam_channel::{self, Receiver, Sender};
 
+use napi::bindgen_prelude::Array;
 use napi::*;
 use napi_derive::js_function;
 
@@ -162,39 +163,48 @@ fn rebuild_io_layout(
     env: &Env,
     js_io: JsObject,
     rs_io: &'static [&'static [&'static [f32]]],
-    render_quantum_size: usize,
-) -> JsObject {
+) -> Result<JsObject> {
     let mut new_js_io = env.create_array(rs_io.len() as u32).unwrap();
+
+    let global = env.get_global()?;
+
+    let k_worklet_get_buffer = env.symbol_for("node-web-audio-api:worklet-get-buffer")?;
+    let get_buffer = global.get_property::<JsSymbol, JsFunction>(k_worklet_get_buffer)?;
+
+    let k_worklet_recycle_buffer = env.symbol_for("node-web-audio-api:worklet-recycle-buffer")?;
+    let recycle_buffer = global.get_property::<JsSymbol, JsFunction>(k_worklet_recycle_buffer)?;
+
+    let k_worklet_mark_as_untransferable =
+        env.symbol_for("node-web-audio-api:worklet-mark-as-untransferable")?;
+    let mark_as_untransferable =
+        global.get_property::<JsSymbol, JsFunction>(k_worklet_mark_as_untransferable)?;
 
     for (i, io) in rs_io.iter().enumerate() {
         let mut channels = env.create_array(rs_io[i].len() as u32).unwrap();
         let old_channels = js_io.get_element::<JsObject>(i as u32).unwrap();
-
+        // recycle old channels
+        for j in 0..old_channels.get_array_length()? {
+            let channel = old_channels.get_element::<JsTypedArray>(j as u32).unwrap();
+            let _ = recycle_buffer.call1::<JsTypedArray, JsUndefined>(channel);
+        }
+        // populate channels
         for j in 0..io.len() {
-            // Try to reuse existing Float32Array
-            let float32_arr = if old_channels.has_element(j as u32).unwrap() {
-                old_channels.get_element::<JsTypedArray>(j as u32).unwrap()
-            } else {
-                env.create_arraybuffer(render_quantum_size * 4)
-                    .unwrap()
-                    .into_raw()
-                    .into_typedarray(napi::TypedArrayType::Float32, render_quantum_size, 0)
-                    .unwrap()
-            };
-
-            let _ = channels.set(j as u32, float32_arr);
+            let channel = get_buffer.call0::<JsTypedArray>()?;
+            let _ = channels.set(j as u32, channel);
         }
 
+        let channels = mark_as_untransferable.call1::<Array, Array>(channels)?;
         let mut channels = channels.coerce_to_object().unwrap();
         let _ = channels.freeze();
 
         new_js_io.set(i as u32, channels).unwrap();
     }
 
+    let new_js_io = mark_as_untransferable.call1::<Array, Array>(new_js_io)?;
     let mut new_js_io = new_js_io.coerce_to_object().unwrap();
     let _ = new_js_io.freeze();
 
-    new_js_io
+    Ok(new_js_io)
 }
 
 /// Handle a AudioWorkletProcessor::process call in the Worker
@@ -250,7 +260,9 @@ fn process_audio_worklet(env: &Env, processors: &JsObject, args: ProcessorArgume
                 env.symbol_for("node-web-audio-api:worklet-params-cache")?;
 
             // @todo - get from global
-            let render_quantum_size = 128;
+            let render_quantum_size = global
+                .get_named_property::<JsNumber>("renderQuantumSize")?
+                .get_double()? as usize;
             let mut js_inputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_inputs)?;
             let mut js_outputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_outputs)?;
             let mut js_params = processor.get_property::<JsSymbol, JsObject>(k_worklet_params)?;
@@ -259,7 +271,7 @@ fn process_audio_worklet(env: &Env, processors: &JsObject, args: ProcessorArgume
 
             // Check JS input and output, and rebuild JS object if layout changed
             if !check_same_io_layout(&js_inputs, inputs) {
-                let new_js_inputs = rebuild_io_layout(env, js_inputs, inputs, render_quantum_size);
+                let new_js_inputs = rebuild_io_layout(env, js_inputs, inputs)?;
                 // Store new layout in processor
                 processor.set_property(k_worklet_inputs, new_js_inputs)?;
                 // Override js_inputs with new reference
@@ -267,8 +279,7 @@ fn process_audio_worklet(env: &Env, processors: &JsObject, args: ProcessorArgume
             }
 
             if !check_same_io_layout(&js_outputs, outputs) {
-                let new_js_outputs =
-                    rebuild_io_layout(env, js_outputs, outputs, render_quantum_size);
+                let new_js_outputs = rebuild_io_layout(env, js_outputs, outputs)?;
                 // Store new layout in processor
                 processor.set_property(k_worklet_outputs, new_js_outputs)?;
                 // Override js_outputs with new reference

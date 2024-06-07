@@ -1,10 +1,12 @@
 const {
   parentPort,
   workerData,
+  markAsUntransferable,
 } = require('node:worker_threads');
 
 const conversions = require('webidl-conversions');
 
+// these are defined in rust side
 const {
   exit_audio_worklet_global_scope,
   run_audio_worklet_global_scope,
@@ -21,13 +23,66 @@ const kWorkletInputs = Symbol.for('node-web-audio-api:worklet-inputs');
 const kWorkletOutputs = Symbol.for('node-web-audio-api:worklet-outputs');
 const kWorkletParams = Symbol.for('node-web-audio-api:worklet-params');
 const kWorkletParamsCache = Symbol.for('node-web-audio-api:worklet-params-cache');
+const kWorkletGetBuffer = Symbol.for('node-web-audio-api:worklet-get-buffer');
+const kWorkletRecycleBuffer = Symbol.for('node-web-audio-api:worklet-recycle-buffer');
+const kWorkletMarkAsUntransferable = Symbol.for('node-web-audio-api:worklet-mark-as-untransferable');
 // const kWorkletOrderedParamNames = Symbol.for('node-web-audio-api:worklet-ordered-param-names');
+
 
 const nameProcessorCtorMap = new Map();
 const processors = {};
 let pendingProcessorConstructionData = null;
 let loopStarted = false;
 let runLoopImmediateId = null;
+
+class BufferPool {
+  #bufferSize;
+  #pool;
+
+  constructor(bufferSize, initialPoolSize) {
+    this.#bufferSize = bufferSize;
+    this.#pool = new Array(initialPoolSize);
+
+    for (let i = 0; i < this.#pool.length; i++) {
+      this.#pool[i] = this.#allocate();
+    }
+  }
+
+  #allocate() {
+    const float32 = new Float32Array(this.#bufferSize);
+    markAsUntransferable(float32);
+    // Mark underlying buffer as untransfrable too, this will fail one of
+    // the task in `audioworkletprocessor-process-frozen-array.https.html`
+    // but prevent segmentation fault
+    markAsUntransferable(float32.buffer);
+
+    return float32;
+  }
+
+  get() {
+    if (this.#pool.length === 0) {
+      return this.#allocate();
+    }
+
+    return this.#pool.pop();
+  }
+
+  recycle(buffer) {
+    this.#pool.push(buffer);
+  }
+}
+
+const renderQuantumSize = 128;
+
+const pool128 = new BufferPool(renderQuantumSize, 256);
+const pool1 = new BufferPool(1, 64);
+// allow rust to access some methods required when io layout change
+globalThis[kWorkletGetBuffer] = () => pool128.get();
+globalThis[kWorkletRecycleBuffer] = buffer => pool128.recycle(buffer);
+globalThis[kWorkletMarkAsUntransferable] = obj => {
+  markAsUntransferable(obj);
+  return obj;
+}
 
 function isIterable(obj) {
   // checks for null and undefined
@@ -54,12 +109,11 @@ function runLoop() {
   runLoopImmediateId = setImmediate(runLoop);
 }
 
-// s
 globalThis.currentTime = 0
 globalThis.currentFrame = 0;
 globalThis.sampleRate = sampleRate;
 // @todo - implement in upstream crate
-// globalThis.renderQuantumSize = 128;
+globalThis.renderQuantumSize = renderQuantumSize;
 
 globalThis.AudioWorkletProcessor = class AudioWorkletProcessor {
   static get parameterDescriptors() {
@@ -76,13 +130,14 @@ globalThis.AudioWorkletProcessor = class AudioWorkletProcessor {
       parameterDescriptors,
     } = pendingProcessorConstructionData;
 
-    // @todo - Mark [[callable process]] as true, set to false in render quantum
+    // Mark [[callable process]] as true, set to false in render quantum
     // either "process" doese not exists, either it throws an error
     this[kWorkletCallableProcess] = true;
-    // @todo - reuse Float32Arrays between calls + freeze arrays
+
+    // Populate with dummy values which will be replaced in first render call
     this[kWorkletInputs] = new Array(numberOfInputs).fill([]);
-    // @todo - use `outputChannelCount`
     this[kWorkletOutputs] = new Array(numberOfOutputs).fill([]);
+
     // Object to be reused as `process` parameters argument
     this[kWorkletParams] = {};
     // Cache of 2 Float32Array (of length 128 and 1) for each param, to be reused on
@@ -91,8 +146,8 @@ globalThis.AudioWorkletProcessor = class AudioWorkletProcessor {
 
     parameterDescriptors.forEach(desc => {
       this[kWorkletParamsCache][desc.name] = [
-        new Float32Array(128), // should be globalThis.renderQuantumSize
-        new Float32Array(1),
+        pool128.get(), // should be globalThis.renderQuantumSize
+        pool1.get(),
       ]
     });
 

@@ -42,7 +42,7 @@ const rootURL = 'webaudio';
 // wpt tests are all run in the same process, but some tests using AudioContext
 // do not explicitely call the `close` method. As setup is called before each test
 // file we emit a global event so that AudioContext created in previous test file
-// can properly close themselves. This prevents them to pile up, continue running
+// can properly close themselves. This prevents them to pile up, continue running,
 // create all sorts of problems and waste CPU
 process.WPT_TEST_RUNNER = new EventEmitter();
 
@@ -130,9 +130,6 @@ const filter = (name) => {
     // somehow crahshes the-constantsourcenode-interface/constant-source-basic.html test
     // npm run wpt:only -- --filter the-channelmergernode-interface/active-processing.https.html the-constantsourcenode-interface/constant-source-basic.html
     || name.includes('the-channelmergernode-interface/active-processing.https.html')
-    // timeout, but when test is fixed, trigger a segfault
-    // should be fixed with https://nodejs.org/api/worker_threads.html#workermarkasuntransferableobject
-    || name.includes('the-audioworklet-interface/audioworkletprocessor-process-frozen-array.https.html')
   ) {
     return false;
   }
