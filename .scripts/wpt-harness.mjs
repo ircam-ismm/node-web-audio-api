@@ -41,8 +41,9 @@ const rootURL = 'webaudio';
 
 // wpt tests are all run in the same process, but some tests using AudioContext
 // do not explicitely call the `close` method. As setup is called before each test
-// file we emit a glbal event so that AudioContext created in previous test file
-// can close themselves. This prevents them to pile up and waste CPU
+// file we emit a global event so that AudioContext created in previous test file
+// can properly close themselves. This prevents them to pile up, continue running
+// create all sorts of problems and waste CPU
 process.WPT_TEST_RUNNER = new EventEmitter();
 
 // monkey patch `window` with our web audio API
