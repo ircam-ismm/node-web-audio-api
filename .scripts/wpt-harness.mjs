@@ -129,6 +129,9 @@ const filter = (name) => {
     // somehow crahshes the-constantsourcenode-interface/constant-source-basic.html test
     // npm run wpt:only -- --filter the-channelmergernode-interface/active-processing.https.html the-constantsourcenode-interface/constant-source-basic.html
     || name.includes('the-channelmergernode-interface/active-processing.https.html')
+    // timeout, but when test is fixed, trigger a segfault
+    // should be fixed with https://nodejs.org/api/worker_threads.html#workermarkasuntransferableobject
+    || name.includes('the-audioworklet-interface/audioworkletprocessor-process-frozen-array.https.html')
   ) {
     return false;
   }
