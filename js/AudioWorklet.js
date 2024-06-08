@@ -134,6 +134,14 @@ class AudioWorklet {
           resolve();
           break;
         }
+        case 'node-web-audio-api:worklet:add-module-failed': {
+          const { promiseId, ctor, name, message } = event;
+          const { reject } = this.#idPromiseMap.get(promiseId);
+          this.#idPromiseMap.delete(promiseId);
+          const err = new globalThis[ctor](message, name);
+          reject(err);
+          break;
+        }
         case 'node-web-audio-api:worlet:processor-registered': {
           const { name, parameterDescriptors } = event;
           this.#workletParamDescriptorsMap.set(name, parameterDescriptors);
@@ -188,7 +196,6 @@ class AudioWorklet {
   // For OfflineAudioContext only, check that all processors have been properly
   // created before actual `startRendering`
   async [kCheckProcessorsCreated]() {
-    // console.log(this.#pendingCreateProcessors);
     return new Promise(async resolve => {
       while (this.#pendingCreateProcessors.size !== 0) {
         // we need a microtask to ensure message can be received
