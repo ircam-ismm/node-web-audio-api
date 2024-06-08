@@ -183,7 +183,7 @@ fn rebuild_io_layout(
         let mut channels = env.create_array(rs_io[i].len() as u32).unwrap();
         let old_channels = js_io.get_element::<JsObject>(i as u32).unwrap();
         // recycle old channels
-        for j in 0..old_channels.get_array_length()? {
+        for j in 0..old_channels.get_array_length_unchecked()? {
             let channel = old_channels.get_element::<JsTypedArray>(j).unwrap();
             let _ = recycle_buffer.call1::<JsTypedArray, JsUndefined>(channel);
         }
@@ -205,6 +205,52 @@ fn rebuild_io_layout(
     let _ = new_js_io.freeze();
 
     Ok(new_js_io)
+}
+
+/// Recycle all processor buffers on Drop
+fn recycle_processor(env: &Env, processor: JsObject) -> Result<()> {
+    let global = env.get_global()?;
+
+    let k_worklet_recycle_buffer = env.symbol_for("node-web-audio-api:worklet-recycle-buffer")?;
+    let recycle_buffer = global.get_property::<JsSymbol, JsFunction>(k_worklet_recycle_buffer)?;
+
+    let k_worklet_recycle_buffer_1 =
+        env.symbol_for("node-web-audio-api:worklet-recycle-buffer-1")?;
+    let recycle_buffer_1 =
+        global.get_property::<JsSymbol, JsFunction>(k_worklet_recycle_buffer_1)?;
+
+    let k_worklet_inputs = env.symbol_for("node-web-audio-api:worklet-inputs")?;
+    let js_inputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_inputs)?;
+
+    for i in 0..js_inputs.get_array_length_unchecked()? {
+        let input = js_inputs.get_element::<JsObject>(i)?;
+        for j in 0..input.get_array_length_unchecked()? {
+            let channel = input.get_element::<JsTypedArray>(j)?;
+            let _ = recycle_buffer.call1::<JsTypedArray, JsUndefined>(channel)?;
+        }
+    }
+
+    let k_worklet_outputs = env.symbol_for("node-web-audio-api:worklet-outputs")?;
+    let js_outputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_outputs)?;
+
+    for i in 0..js_outputs.get_array_length_unchecked()? {
+        let output = js_outputs.get_element::<JsObject>(i)?;
+        for j in 0..output.get_array_length_unchecked()? {
+            let channel = output.get_element::<JsTypedArray>(j)?;
+            let _ = recycle_buffer.call1::<JsTypedArray, JsUndefined>(channel)?;
+        }
+    }
+
+    let k_worklet_params_cache = env.symbol_for("node-web-audio-api:worklet-params-cache")?;
+    let js_params_cache = processor.get_property::<JsSymbol, JsObject>(k_worklet_params_cache)?;
+
+    let param_cache_128 = js_params_cache.get_element::<JsTypedArray>(0)?;
+    let _ = recycle_buffer.call1::<JsTypedArray, JsUndefined>(param_cache_128)?;
+
+    let param_cache_1 = js_params_cache.get_element::<JsTypedArray>(1)?;
+    let _ = recycle_buffer_1.call1::<JsTypedArray, JsUndefined>(param_cache_1)?;
+
+    Ok(())
 }
 
 /// Handle a AudioWorkletProcessor::process call in the Worker
@@ -258,8 +304,6 @@ fn process_audio_worklet(env: &Env, processors: &JsObject, args: ProcessorArgume
             let k_worklet_params = env.symbol_for("node-web-audio-api:worklet-params")?;
             let k_worklet_params_cache =
                 env.symbol_for("node-web-audio-api:worklet-params-cache")?;
-
-            // @todo - get from global
             let render_quantum_size = global
                 .get_named_property::<JsNumber>("renderQuantumSize")?
                 .get_double()? as usize;
@@ -369,7 +413,7 @@ fn process_audio_worklet(env: &Env, processors: &JsObject, args: ProcessorArgume
     if let Some(value) = completion {
         let WorkletAbruptCompletionResult { cmd, err } = value;
         // Grab back our process which may have been consumed by the process apply
-        let mut processor = global.get_named_property::<JsObject>(&id.to_string())?;
+        let mut processor = processors.get_named_property::<JsObject>(&id.to_string())?;
         let k_worklet_queue_task = env.symbol_for("node-web-audio-api:worklet-queue-task")?;
         // @todo - would be usefull to propagate to rust side too so that the
         // processor can be removed from graph (?)
@@ -409,7 +453,11 @@ pub(crate) fn run_audio_worklet_global_scope(ctx: CallContext) -> Result<JsUndef
         match msg {
             WorkletCommand::Drop(id) => {
                 let mut processors = ctx.get::<JsObject>(1)?;
-                processors.delete_named_property(&id.to_string()).unwrap();
+                // recycle all processor buffers
+                let processor = processors.get_named_property::<JsObject>(&id.to_string())?;
+                let _ = recycle_processor(ctx.env, processor)?;
+
+                processors.delete_named_property(&id.to_string())?;
             }
             WorkletCommand::Process(args) => {
                 process_audio_worklet(ctx.env, &processors, args)?;

@@ -25,6 +25,7 @@ const kWorkletParams = Symbol.for('node-web-audio-api:worklet-params');
 const kWorkletParamsCache = Symbol.for('node-web-audio-api:worklet-params-cache');
 const kWorkletGetBuffer = Symbol.for('node-web-audio-api:worklet-get-buffer');
 const kWorkletRecycleBuffer = Symbol.for('node-web-audio-api:worklet-recycle-buffer');
+const kWorkletRecycleBuffer1 = Symbol.for('node-web-audio-api:worklet-recycle-buffer-1');
 const kWorkletMarkAsUntransferable = Symbol.for('node-web-audio-api:worklet-mark-as-untransferable');
 // const kWorkletOrderedParamNames = Symbol.for('node-web-audio-api:worklet-ordered-param-names');
 
@@ -68,7 +69,10 @@ class BufferPool {
   }
 
   recycle(buffer) {
-    this.#pool.push(buffer);
+    // make sure we cannot polute our pool
+    if (buffer.length === this.#bufferSize) {
+      this.#pool.push(buffer);
+    }
   }
 }
 
@@ -79,6 +83,7 @@ const pool1 = new BufferPool(1, 64);
 // allow rust to access some methods required when io layout change
 globalThis[kWorkletGetBuffer] = () => pool128.get();
 globalThis[kWorkletRecycleBuffer] = buffer => pool128.recycle(buffer);
+globalThis[kWorkletRecycleBuffer1] = buffer => pool1.recycle(buffer);
 globalThis[kWorkletMarkAsUntransferable] = obj => {
   markAsUntransferable(obj);
   return obj;
