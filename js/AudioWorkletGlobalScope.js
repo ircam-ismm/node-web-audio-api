@@ -315,13 +315,23 @@ parentPort.on('message', event => {
     case 'node-web-audio-api:worklet:add-module': {
       const { code, promiseId } = event;
       const func = new Function('AudioWorkletProcessor', 'registerProcessor', code);
-      func(AudioWorkletProcessor, registerProcessor);
 
-      // send registered param descriptors on main thread and resolve Promise
-      parentPort.postMessage({
-        cmd: 'node-web-audio-api:worklet:module-added',
-        promiseId,
-      });
+      try {
+        func(AudioWorkletProcessor, registerProcessor);
+        // send registered param descriptors on main thread and resolve Promise
+        parentPort.postMessage({
+          cmd: 'node-web-audio-api:worklet:module-added',
+          promiseId,
+        });
+      } catch (err) {
+        parentPort.postMessage({
+          cmd: 'node-web-audio-api:worklet:add-module-failed',
+          promiseId,
+          ctor: err.constructor.name,
+          name: err.name,
+          message: err.message,
+        });
+      }
       break;
     }
     case 'node-web-audio-api:worklet:create-processor': {
