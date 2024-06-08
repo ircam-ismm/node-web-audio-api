@@ -234,13 +234,11 @@ globalThis.registerProcessor = function registerProcessor(name, processorCtor) {
 // NOTE: Authors that register an event listener on the "message" event of this
 // port should call close on either end of the MessageChannel (either in the
 // AudioWorklet or the AudioWorkletGlobalScope side) to allow for resources to be collected.
-parentPort.on('exit', () => {
-  process.stdout.write('closing worklet');
-});
+// parentPort.on('exit', () => {
+//   process.stdout.write('closing worklet');
+// });
 
 parentPort.on('message', event => {
-  console.log(event.cmd + '\n');
-
   switch (event.cmd) {
     case 'node-web-audio-api:worklet:init': {
       const { workletId, processors, promiseId } = event;
