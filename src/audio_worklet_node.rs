@@ -455,7 +455,7 @@ pub(crate) fn run_audio_worklet_global_scope(ctx: CallContext) -> Result<JsUndef
                 let mut processors = ctx.get::<JsObject>(1)?;
                 // recycle all processor buffers
                 let processor = processors.get_named_property::<JsObject>(&id.to_string())?;
-                let _ = recycle_processor(ctx.env, processor)?;
+                recycle_processor(ctx.env, processor)?;
 
                 processors.delete_named_property(&id.to_string())?;
             }
