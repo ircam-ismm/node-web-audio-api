@@ -1,6 +1,12 @@
+## v0.21.1 (10/06/2024)
+
+- Feat: Buffer pool for AudioWorketProcessor
+- Fix: Propagate `addModule` errors to main thread
+- Fix: Memory leak due to `onended` events
+
 ## v0.21.0 (17/05/2024)
 
-- Feat: implement AudioWorkletNode
+- Feat: Implement AudioWorkletNode
 
 ## v0.20.0 (29/04/2024)
 
