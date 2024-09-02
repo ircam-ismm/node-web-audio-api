@@ -64,7 +64,7 @@ const resolveModule = async (moduleUrl) => {
     // get caller site from error stack trace
     const callerSite = caller(2);
 
-    if (callerSite.startsWith('http')) {
+    if (callerSite.startsWith('http')) { // this branch exists for wpt where caller site is an url
       let url;
       // handle origin relative and caller path relative URLs
       if (moduleUrl.startsWith('/')) {

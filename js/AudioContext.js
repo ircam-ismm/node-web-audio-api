@@ -104,7 +104,7 @@ module.exports = function(jsExport, nativeBinding) {
       // object after its instantiation, and that we don't have any initial `resume` call.
       this[kNapiObj].listen_to_events();
 
-      // @todo - check if this is still required
+      // @todo - This is probably not requested anymore as the event listeners
       // prevent garbage collection and process exit
       const id = contextId++;
       // store in process to prevent garbage collection
