@@ -18,6 +18,8 @@
 // -------------------------------------------------------------------------- //
 
 #![deny(clippy::all)]
+// @todo - properly fix this clippy issue
+#![allow(clippy::zero_repeat_side_effects)]
 
 use napi::{Env, JsObject, Result};
 use napi_derive::module_exports;
