@@ -426,7 +426,7 @@ fn process_audio_worklet(env: &Env, processors: &JsObject, args: ProcessorArgume
         let queue_task = processor.get_property::<JsSymbol, JsFunction>(k_worklet_queue_task)?;
         let js_cmd = env.create_string(&cmd)?;
         let js_err = env.create_error(err)?;
-        queue_task.apply2(processor, js_cmd, js_err)?;
+        let _: Result<JsUnknown> = queue_task.apply2(processor, js_cmd, js_err);
     }
 
     Ok(())

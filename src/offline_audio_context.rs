@@ -13,7 +13,7 @@ use crate::*;
 #[derive(Clone)]
 pub(crate) struct NapiOfflineAudioContext(Arc<OfflineAudioContext>, usize);
 
-// for debug purpose
+// // for debug purpose
 // impl Drop for NapiOfflineAudioContext {
 //     fn drop(&mut self) {
 //         println!("NAPI: NapiOfflineAudioContext dropped");
@@ -115,21 +115,34 @@ fn start_rendering(ctx: CallContext) -> Result<JsObject> {
         },
     )?;
 
+    // unref tsfn so they do not prevent the process to exit
+    let _ = statechange_tsfn.unref(ctx.env);
+
+    context.set_onstatechange(move |e| {
+        statechange_tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
+    });
+
     let k_oncomplete = crate::utils::get_symbol_for(ctx.env, "node-web-audio-api:oncomplete");
     let complete_cb = js_this.get_property(k_oncomplete).unwrap();
+    let context_clone = Arc::clone(&napi_context.0);
+
     let mut complete_tsfn = ctx.env.create_threadsafe_function(
         &complete_cb,
         0,
-        |ctx: ThreadSafeCallContext<OfflineAudioCompletionEvent>| {
+        move |ctx: ThreadSafeCallContext<OfflineAudioCompletionEvent>| {
+            // This is the last event that can be trigerred by this context, we can
+            // clear the listeners so that the context can be properly garbage collected
+            context_clone.clear_onstatechange();
+            context_clone.clear_oncomplete();
+
             let raw_event = ctx.value;
             let mut event = ctx.env.create_object()?;
 
             let event_type = ctx.env.create_string("complete")?;
             event.set_named_property("type", event_type)?;
 
-            // @fixme: this event is propagated before `startRedering` fulfills
-            // which is probaly wrong, so let's propagate the JS audio buffer
-            // and let JS handle the race condition
+            // This event is propagated before `startRendering` fulfills
+            // which is wrong, order is fixed on JS side.
             let ctor = crate::utils::get_class_ctor(&ctx.env, "AudioBuffer")?;
             let js_audio_buffer = ctor.new_instance(&[ctx.env.get_null()?])?;
             let napi_audio_buffer = ctx.env.unwrap::<NapiAudioBuffer>(&js_audio_buffer)?;
@@ -142,12 +155,7 @@ fn start_rendering(ctx: CallContext) -> Result<JsObject> {
     )?;
 
     // unref tsfn so they do not prevent the process to exit
-    let _ = statechange_tsfn.unref(ctx.env);
     let _ = complete_tsfn.unref(ctx.env);
-
-    context.set_onstatechange(move |e| {
-        statechange_tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
-    });
 
     context.set_oncomplete(move |e| {
         complete_tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);

@@ -82,24 +82,26 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
 
       // Add function to Napi object to bridge from Rust events to JS EventTarget
       // They will be effectively registered on rust side when `startRendering` is called
-      this[kNapiObj][kOnStateChange] = (function(err, rawEvent) {
+      this[kNapiObj][kOnStateChange] = (function(_err, rawEvent) {
         const event = new Event(rawEvent.type);
         propagateEvent(this, event);
       }).bind(this);
 
       // This event is, per spec, the last trigerred one
       this[kNapiObj][kOnComplete] = (function(err, rawEvent) {
-        // workaround the fact that this event seems to be triggered before
+        // workaround the fact that the oncomplete event is triggered before
         // startRendering fulfills and that we want to return the exact same instance
-        if (this.#renderedBuffer === null) {
-          this.#renderedBuffer = new jsExport.AudioBuffer({ [kNapiObj]: rawEvent.renderedBuffer });
-        }
+        this.#renderedBuffer = new jsExport.AudioBuffer({ [kNapiObj]: rawEvent.renderedBuffer });
 
         const event = new jsExport.OfflineAudioCompletionEvent(rawEvent.type, {
           renderedBuffer: this.#renderedBuffer,
         });
 
-        propagateEvent(this, event);
+        // delay event propagation to next tick that it is executed after startRendering fulfills
+        setTimeout(() => {
+          propagateEvent(this, event);
+          this.#renderedBuffer = null;
+        }, 0);
       }).bind(this);
     }
 
@@ -145,14 +147,8 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
         throwSanitizedError(err);
       }
 
-      // release audio worklet, if any
+      // release audio worklets
       await this.audioWorklet[kWorkletRelease]();
-
-      // workaround the fact that this event seems to be triggered before
-      // startRendering fulfills and that we want to return the exact same instance
-      if (this.#renderedBuffer === null) {
-        this.#renderedBuffer = new jsExport.AudioBuffer({ [kNapiObj]: nativeAudioBuffer });
-      }
 
       return this.#renderedBuffer;
     }

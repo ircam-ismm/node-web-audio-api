@@ -5,6 +5,13 @@ use web_audio_api::{AudioBuffer, AudioBufferOptions};
 
 pub(crate) struct NapiAudioBuffer(Option<AudioBuffer>);
 
+// for debug purpose
+// impl Drop for NapiAudioBuffer {
+//     fn drop(&mut self) {
+//         println!("NAPI: NapiAudioBuffer dropped");
+//     }
+// }
+
 impl NapiAudioBuffer {
     pub fn create_js_class(env: &Env) -> Result<JsFunction> {
         env.define_class(

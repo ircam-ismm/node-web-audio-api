@@ -252,10 +252,18 @@ fn listen_to_events(ctx: CallContext) -> Result<JsUndefined> {
 
     let k_onstatechange = crate::utils::get_symbol_for(ctx.env, "node-web-audio-api:onstatechange");
     let statechange_cb = js_this.get_property(k_onstatechange).unwrap();
+    let context_clone = Arc::clone(&napi_context.0);
+
     let mut statechange_tsfn = ctx.env.create_threadsafe_function(
         &statechange_cb,
         0,
-        |ctx: ThreadSafeCallContext<Event>| {
+        move |ctx: ThreadSafeCallContext<Event>| {
+            if context_clone.state() == AudioContextState::Closed {
+                // clear all context listeners, so that it can be garbage collected
+                context_clone.clear_onsinkchange();
+                context_clone.clear_onstatechange();
+            }
+
             let mut event = ctx.env.create_object()?;
             let event_type = ctx.env.create_string(ctx.value.type_)?;
             event.set_named_property("type", event_type)?;

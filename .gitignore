@@ -2,6 +2,15 @@ NOTES.md
 /generator/src
 .DS_Store
 
+# Working files
+TODOS.md
+NOTES.md
+run-wpt.*
+all-check.sh
+tests/junk.mjs
+yarn.lock
+issues
+
 # Created by https://www.toptal.com/developers/gitignore/api/node
 # Edit at https://www.toptal.com/developers/gitignore?templates=node
 
@@ -131,10 +140,3 @@ Cargo.lock
 
 *.env
 
-# Working files
-TODOS.md
-NOTES.md
-run-wpt.*
-all-check.sh
-tests/junk.mjs
-yarn.lock
