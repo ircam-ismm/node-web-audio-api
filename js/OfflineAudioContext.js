@@ -98,9 +98,8 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
         });
 
         // delay event propagation to next tick that it is executed after startRendering fulfills
-        setTimeout(() => {
+        setImmediate(() => {
           propagateEvent(this, event);
-          this.#renderedBuffer = null;
         }, 0);
       }).bind(this);
     }
