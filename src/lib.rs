@@ -18,7 +18,7 @@
 // -------------------------------------------------------------------------- //
 
 #![deny(clippy::all)]
-// @todo - properly fix this clippy issue (really don't understand the problem...)
+// @todo - properly fix this clippy issue
 #![allow(clippy::zero_repeat_side_effects)]
 
 use napi::{Env, JsObject, Result};
