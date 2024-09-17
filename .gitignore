@@ -8,6 +8,7 @@ NOTES.md
 run-wpt.*
 all-check.sh
 tests/junk.mjs
+tests/junk-*.mjs
 yarn.lock
 issues
 
