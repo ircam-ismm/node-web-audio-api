@@ -1,3 +1,11 @@
+# CHANGELOG
+
+## v0.21.2 (20/09/2024)
+
+- - Update upstream crate to [v1.0.1](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-101-2024-09-18)
+- Fix: Make sure `AudioBuffer` returned by `OfflineContext` is valid
+- Fix: Allow contexts to be properly garbage collected
+
 ## v0.21.1 (10/06/2024)
 
 - Feat: Buffer pool for AudioWorketProcessor
@@ -92,7 +100,7 @@
 ## v0.5.0 (19/12/2022)
 
 - Implement AudioParam#setValueCurveAtTime
-- Offline context constructor 
+- Offline context constructor
 
 ## v0.4.0 (07/11/2022)
 
