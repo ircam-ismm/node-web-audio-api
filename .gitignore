@@ -6,7 +6,7 @@ NOTES.md
 TODOS.md
 NOTES.md
 run-wpt.*
-all-check.sh
+all-checks.sh
 tests/junk.mjs
 tests/junk-*.mjs
 yarn.lock
