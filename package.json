@@ -5,7 +5,8 @@
   "description": "Node.js bindings for web-audio-api-rs using napi-rs",
   "exports": {
     "import": "./index.mjs",
-    "require": "./index.cjs"
+    "require": "./index.cjs",
+    "types": "./index.d.ts"
   },
   "repository": {
     "type": "git",
