@@ -1,8 +1,12 @@
 # CHANGELOG
 
+## v0.21.3 (06/10/2024)
+
+- Fix typescript export
+
 ## v0.21.2 (20/09/2024)
 
-- - Update upstream crate to [v1.0.1](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-101-2024-09-18)
+- Update upstream crate to [v1.0.1](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-101-2024-09-18)
 - Fix: Make sure `AudioBuffer` returned by `OfflineContext` is valid
 - Fix: Allow contexts to be properly garbage collected
 
