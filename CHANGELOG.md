@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.21.4 (16/12/2024)
+
+- Update upstream crate to [v1.1.0](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-110-2024-12-11)
+
 ## v0.21.3 (06/10/2024)
 
 - Fix typescript export
