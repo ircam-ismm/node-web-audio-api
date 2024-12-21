@@ -28,24 +28,19 @@ const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch
 /**
  * Retrieve code with different module resolution strategies
  * - file - absolute or relative to cwd path
- * - URL
- * - Blob
+ *
+ * - URL - do not support import within module
+ * - Blob - do not support import within module
  * - fallback: relative to caller site
- *   + in fs
+ *   + in fs - support import within module
  *   + caller site is url - required for wpt, probably no other use case
  */
 const resolveModule = async (moduleUrl) => {
-  let code;
+  let code = null;
+  let absPathname = null;
 
   if (existsSync(moduleUrl)) {
-    const pathname = moduleUrl;
-
-    try {
-      const buffer = await fs.readFile(pathname);
-      code = buffer.toString();
-    } catch (err) {
-      throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
-    }
+    absPathname = path.join(process.cwd(), moduleUrl);
   } else if (moduleUrl.startsWith('http')) {
     try {
         const res = await fetch(moduleUrl);
@@ -88,19 +83,14 @@ const resolveModule = async (moduleUrl) => {
       const pathname = path.join(absDirname, moduleUrl);
 
       if (existsSync(pathname)) {
-        try {
-          const buffer = await fs.readFile(pathname);
-          code = buffer.toString();
-        } catch (err) {
-          throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
-        }
+        absPathname = pathname;
       } else {
         throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': Cannot resolve module ${moduleUrl}`);
       }
     }
   }
 
-  return code;
+  return { absPathname, code };
 }
 
 class AudioWorklet {
@@ -161,7 +151,9 @@ class AudioWorklet {
   }
 
   async addModule(moduleUrl) {
-    const code = await resolveModule(moduleUrl);
+    // @important - `resolveModule` must be called because it uses `caller`
+    // which will return `null` if it is not the in the first line...
+    const resolved = await resolveModule(moduleUrl);
 
     // launch Worker if not exists
     if (!this.#port) {
@@ -187,7 +179,8 @@ class AudioWorklet {
 
       this.#port.postMessage({
         cmd: 'node-web-audio-api:worklet:add-module',
-        code,
+        moduleUrl: resolved.absPathname,
+        code: resolved.code,
         promiseId,
       });
     });
