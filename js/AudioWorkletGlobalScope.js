@@ -324,8 +324,7 @@ parentPort.on('message', async event => {
         } else {
           await import(`data:text/javascript;base64,${btoa(unescape(encodeURIComponent(code)))}`);
         }
-        // func(AudioWorkletProcessor, registerProcessor);
-        // await import(`data:text/javascript;base64,${btoa(code)}`);
+
         // send registered param descriptors on main thread and resolve Promise
         parentPort.postMessage({
           cmd: 'node-web-audio-api:worklet:module-added',
@@ -359,6 +358,7 @@ parentPort.on('message', async event => {
       try {
         instance = new ctor(options);
       } catch (err) {
+        // @todo - this is not clean at all...
         port.postMessage({ cmd: 'node-web-audio-api:worklet:ctor-error', err });
         return;
       }

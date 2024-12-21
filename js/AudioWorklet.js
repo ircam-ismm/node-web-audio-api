@@ -115,6 +115,9 @@ class AudioWorklet {
   }
 
   #bindEvents() {
+    // @todo
+    // - better error handling, stack trace, etc.
+    // - handle 'node-web-audio-api:worklet:ctor-error' message
     this.#port.on('message', event => {
       switch (event.cmd) {
         case 'node-web-audio-api:worklet:module-added': {
@@ -151,8 +154,8 @@ class AudioWorklet {
   }
 
   async addModule(moduleUrl) {
-    // @important - `resolveModule` must be called because it uses `caller`
-    // which will return `null` if it is not the in the first line...
+    // @important - `resolveModule` must be called first because it uses `caller`
+    // which will return `null` if this is not in the first line...
     const resolved = await resolveModule(moduleUrl);
 
     // launch Worker if not exists
