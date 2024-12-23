@@ -12,7 +12,7 @@ const file = fs.readFileSync(path.join('examples', 'samples', 'sample.wav')).buf
 const audioBuffer = await context.decodeAudioData(file);
 
 {
-  console.log("++ play until end");
+  console.log('++ play until end');
   const src = context.createBufferSource();
   src.buffer = audioBuffer;
   src.connect(context.destination);
@@ -22,7 +22,7 @@ const audioBuffer = await context.decodeAudioData(file);
 await new Promise(resolve => setTimeout(resolve, 3500));
 
 {
-  console.log("++ play / stop 1sec");
+  console.log('++ play / stop 1sec');
   const src = context.createBufferSource();
   src.buffer = audioBuffer;
   src.connect(context.destination);
@@ -33,7 +33,7 @@ await new Promise(resolve => setTimeout(resolve, 3500));
 await new Promise(resolve => setTimeout(resolve, 1500));
 
 {
-  console.log("++ play / stop 1sec with offset");
+  console.log('++ play / stop 1sec with offset');
   const src = context.createBufferSource();
   src.buffer = audioBuffer;
   src.connect(context.destination);
@@ -44,7 +44,7 @@ await new Promise(resolve => setTimeout(resolve, 1500));
 await new Promise(resolve => setTimeout(resolve, 1500));
 
 {
-  console.log("++ play 1sec with offset and duration");
+  console.log('++ play 1sec with offset and duration');
   const src = context.createBufferSource();
   src.buffer = audioBuffer;
   src.connect(context.destination);
@@ -54,7 +54,7 @@ await new Promise(resolve => setTimeout(resolve, 1500));
 await new Promise(resolve => setTimeout(resolve, 1500));
 
 {
-  console.log("++ play backward from offset 1.");
+  console.log('++ play backward from offset 1.');
   const src = context.createBufferSource();
   src.buffer = audioBuffer;
   src.connect(context.destination);
@@ -65,7 +65,7 @@ await new Promise(resolve => setTimeout(resolve, 1500));
 await new Promise(resolve => setTimeout(resolve, 1500));
 
 {
-  console.log("++ play backward full buffer");
+  console.log('++ play backward full buffer');
   const src = context.createBufferSource();
   src.buffer = audioBuffer;
   src.connect(context.destination);
@@ -76,7 +76,7 @@ await new Promise(resolve => setTimeout(resolve, 1500));
 await new Promise(resolve => setTimeout(resolve, 3500));
 
 {
-  console.log("++ simple loop (x2)");
+  console.log('++ simple loop (x2)');
   const src = context.createBufferSource();
   src.buffer = audioBuffer;
   src.connect(context.destination);
@@ -88,7 +88,7 @@ await new Promise(resolve => setTimeout(resolve, 3500));
 await new Promise(resolve => setTimeout(resolve, 7000));
 
 {
-  console.log("++ loop between 1 and 2 starting from 0");
+  console.log('++ loop between 1 and 2 starting from 0');
   const src = context.createBufferSource();
   src.buffer = audioBuffer;
   src.connect(context.destination);
@@ -104,7 +104,7 @@ await new Promise(resolve => setTimeout(resolve, 7000));
 await new Promise(resolve => setTimeout(resolve, 2500));
 
 {
-  console.log("++ loop backward between 1 and 2 starting from end");
+  console.log('++ loop backward between 1 and 2 starting from end');
   const src = context.createBufferSource();
   src.buffer = audioBuffer;
   src.connect(context.destination);
@@ -120,7 +120,7 @@ await new Promise(resolve => setTimeout(resolve, 2500));
 
 await new Promise(resolve => setTimeout(resolve, 2500));
 
-console.log("++ end of examples");
+console.log('++ end of examples');
 
 for (let i = 0; i < 9; i++) {
   let offset = i / 2.;
@@ -138,4 +138,4 @@ for (let i = 0; i < 9; i++) {
 
 await new Promise(resolve => setTimeout(resolve, 8000));
 
-await audioContext.close();
+await context.close();

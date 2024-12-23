@@ -13,31 +13,29 @@ let sharedArray = new SharedArrayBuffer(512);
 let sharedFloats = new Float32Array(sharedArray);
 
 async function runSource() {
-    const src = new AudioWorkletNode(audioContext, 'array-source', {
-        processorOptions: { sharedFloats },
-    });
-    src.connect(audioContext.destination);
+  const src = new AudioWorkletNode(audioContext, 'array-source', {
+    processorOptions: { sharedFloats },
+  });
 
-    console.log("Sawtooth");
-    for (let i = 0; i < sharedFloats.length; i++) {
-        sharedFloats[i] = -1. + i / 64; // create saw
-    }
-    await sleep(1);
+  src.connect(audioContext.destination);
 
-    console.log("Square");
-    for (let i = 0; i < sharedFloats.length; i++) {
-        sharedFloats[i] = i > 64 ? 1 : -1;
-    }
-    await sleep(1);
+  console.log('Sawtooth');
+  for (let i = 0; i < sharedFloats.length; i++) {
+    sharedFloats[i] = -1. + i / 64; // create saw
+  }
+  await sleep(1);
 
-    src.disconnect();
+  console.log('Square');
+  for (let i = 0; i < sharedFloats.length; i++) {
+    sharedFloats[i] = i > 64 ? 1 : -1;
+  }
+  await sleep(1);
 
-    // src goes out of scope and is disconnected, so it should be cleaned up
+  src.disconnect();
+  // src goes out of scope and is disconnected, so it should be cleaned up
 }
 
 await runSource();
 
-// @todo - this should close the AudioWorkletGlobalScope properly
-// before closing the "real" context
 console.log('closing');
 await audioContext.close();
