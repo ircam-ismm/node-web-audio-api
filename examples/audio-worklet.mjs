@@ -9,7 +9,7 @@ const TEST_ONLINE = true;
 
 const audioContext = TEST_ONLINE
   ? new AudioContext({ latencyHint })
-  : new OfflineAudioContext(2, 8 * 48000, 48000)
+  : new OfflineAudioContext(2, 8 * 48000, 48000);
 
 await audioContext.audioWorklet.addModule(path.join('examples', 'worklets', 'bitcrusher.js')); // relative to cwd
 await audioContext.audioWorklet.addModule(path.join('worklets', 'white-noise.js')); // relative path to call site

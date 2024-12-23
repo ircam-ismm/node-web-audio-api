@@ -138,10 +138,13 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
       // ensure all AudioWorkletProcessor have finished their instanciation
       await this.audioWorklet[kCheckProcessorsCreated]();
 
-      let nativeAudioBuffer;
+      // keep this to highlight the workaround w/ the oncomplete event
+
+      let _nativeAudioBuffer;
 
       try {
-        nativeAudioBuffer = await this[kNapiObj].startRendering();
+        // eslint-disable-next-line no-unused-vars
+        _nativeAudioBuffer = await this[kNapiObj].startRendering();
       } catch (err) {
         throwSanitizedError(err);
       }

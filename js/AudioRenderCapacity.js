@@ -5,6 +5,7 @@ const {
   kOnUpdate,
 } = require('./lib/symbols.js');
 const {
+  isFunction,
   kEnumerableProperty,
 } = require('./lib/utils.js');
 const {
@@ -70,7 +71,7 @@ class AudioRenderCapacity extends EventTarget {
       }
 
       targetOptions.updateInterval = conversions['double'](options.updateInterval, {
-        context: `Failed to execute 'start' on 'AudioRenderCapacity': Failed to read the 'updateInterval' property on 'AudioRenderCapacityOptions': The provided value ()`
+        context: `Failed to execute 'start' on 'AudioRenderCapacity': Failed to read the 'updateInterval' property on 'AudioRenderCapacityOptions': The provided value ()`,
       });
     } else {
       targetOptions.updateInterval = 1;
@@ -108,7 +109,7 @@ Object.defineProperties(AudioRenderCapacity.prototype, {
   },
 
   onupdate: kEnumerableProperty,
-  stop: kEnumerableProperty,
+  start: kEnumerableProperty,
   stop: kEnumerableProperty,
 });
 

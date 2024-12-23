@@ -87,7 +87,7 @@ globalThis[kWorkletRecycleBuffer1] = buffer => pool1.recycle(buffer);
 globalThis[kWorkletMarkAsUntransferable] = obj => {
   markAsUntransferable(obj);
   return obj;
-}
+};
 
 function isIterable(obj) {
   // checks for null and undefined
@@ -114,7 +114,7 @@ function runLoop() {
   runLoopImmediateId = setImmediate(runLoop);
 }
 
-globalThis.currentTime = 0
+globalThis.currentTime = 0;
 globalThis.currentFrame = 0;
 globalThis.sampleRate = sampleRate;
 // @todo - implement in upstream crate
@@ -153,7 +153,7 @@ globalThis.AudioWorkletProcessor = class AudioWorkletProcessor {
       this[kWorkletParamsCache][desc.name] = [
         pool128.get(), // should be globalThis.renderQuantumSize
         pool1.get(),
-      ]
+      ];
     });
 
     this.#port = port;
@@ -170,7 +170,7 @@ globalThis.AudioWorkletProcessor = class AudioWorkletProcessor {
   [kWorkletQueueTask](cmd, err) {
     this.#port.postMessage({ cmd, err });
   }
-}
+};
 
 // follow algorithm from:
 // https://webaudio.github.io/web-audio-api/#dom-audioworkletglobalscope-registerprocessor
@@ -300,10 +300,6 @@ globalThis.registerProcessor = function registerProcessor(name, processorCtor) {
 
 parentPort.on('message', async event => {
   switch (event.cmd) {
-    case 'node-web-audio-api:worklet:init': {
-      const { workletId, processors, promiseId } = event;
-      break;
-    }
     case 'node-web-audio-api:worklet:exit': {
       clearImmediate(runLoopImmediateId);
       // properly exit audio worklet on rust side
