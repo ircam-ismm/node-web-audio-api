@@ -334,9 +334,7 @@ parentPort.on('message', async event => {
         parentPort.postMessage({
           cmd: 'node-web-audio-api:worklet:add-module-failed',
           promiseId,
-          ctor: err.constructor.name,
-          name: err.name,
-          message: err.message,
+          err,
         });
       }
       break;
@@ -358,7 +356,6 @@ parentPort.on('message', async event => {
       try {
         instance = new ctor(options);
       } catch (err) {
-        // @todo - this is not clean at all...
         port.postMessage({ cmd: 'node-web-audio-api:worklet:ctor-error', err });
         return;
       }

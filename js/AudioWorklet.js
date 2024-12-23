@@ -46,14 +46,14 @@ const resolveModule = async (moduleUrl) => {
         const res = await fetch(moduleUrl);
         code = await res.text();
       } catch (err) {
-        throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
+        throw new DOMException(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`, 'AbortError');
       }
   } else if (moduleUrl.startsWith('blob:')) {
     try {
       const blob = resolveObjectURL(moduleUrl);
       code = await blob.text();
     } catch (err) {
-      throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
+      throw new DOMException(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`, 'AbortError');
     }
   } else {
     // get caller site from error stack trace
@@ -75,7 +75,7 @@ const resolveModule = async (moduleUrl) => {
         const res = await fetch(url);
         code = await res.text();
       } catch (err) {
-        throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
+        throw new DOMException(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`, 'AbortError');
       }
     } else {
       const dirname = callerSite.substr(0, callerSite.lastIndexOf(path.sep));
@@ -85,7 +85,7 @@ const resolveModule = async (moduleUrl) => {
       if (existsSync(pathname)) {
         absPathname = pathname;
       } else {
-        throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': Cannot resolve module ${moduleUrl}`);
+        throw new DOMException(`Failed to execute 'addModule' on 'AudioWorklet': Cannot resolve module ${moduleUrl}`, 'AbortError');
       }
     }
   }
@@ -128,10 +128,9 @@ class AudioWorklet {
           break;
         }
         case 'node-web-audio-api:worklet:add-module-failed': {
-          const { promiseId, ctor, name, message } = event;
+          const { promiseId, err } = event;
           const { reject } = this.#idPromiseMap.get(promiseId);
           this.#idPromiseMap.delete(promiseId);
-          const err = new globalThis[ctor](message, name);
           reject(err);
           break;
         }

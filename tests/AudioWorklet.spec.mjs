@@ -1,6 +1,7 @@
 import { Blob } from 'node:buffer';
 import { assert } from 'chai';
 import { AudioContext, OscillatorNode, AudioWorkletNode } from '../index.mjs';
+import { delay } from '@ircam/sc-utils';
 
 const scriptTexts = `
 class FirstProcessor extends AudioWorkletProcessor {
@@ -62,6 +63,62 @@ describe('AudioWorklet', () => {
 
     it.skip(`should support loading from cwd relative path`, async () => {});
     it.skip(`should support loading from caller relative path`, async () => {});
+    it.skip(`should support loading from node_modules`, async () => {});
     it.skip(`should support loading from url`, async () => {});
+
+    it(`should throw clean error`, async () => {
+      // blob worklets do not support import
+      const blob = new Blob(['import stuff from "./abc"'], { type: 'application/javascript' });
+      const objectUrl = URL.createObjectURL(blob);
+
+      const audioContext = new AudioContext();
+      let errored = false;
+
+      try {
+        await audioContext.audioWorklet.addModule(objectUrl);
+      } catch (err) {
+        console.log(err);
+        errored = true;
+      }
+
+      await audioContext.close();
+      assert.isTrue(errored);
+    });
+
+    it(`should throw clean error`, async () => {
+      const audioContext = new AudioContext();
+      let errored = false;
+
+      try {
+        await audioContext.audioWorklet.addModule('./worklets/invalid.worklet.mjs');
+      } catch (err) {
+        console.log(err);
+        errored = true;
+      }
+
+      await audioContext.close();
+      assert.isTrue(errored);
+    });
   });
 });
+
+describe('AudioWorkletNode', () => {
+  describe('# processor', () => {
+    it('should throw a clean error when processor constructor is invalid', async () => {
+      let errored = false;
+
+      const audioContext = new AudioContext();
+      await audioContext.audioWorklet.addModule('./worklets/invalid-ctor.worklet.mjs');
+
+      const invalid = new AudioWorkletNode(audioContext, 'invalid-ctor');
+      invalid.addEventListener('processorerror', (e) => {
+        console.log(e.error);
+        errored = true;
+      });
+
+      await delay(100);
+      await audioContext.close();
+      assert.isTrue(errored);
+    });
+  });
+})
