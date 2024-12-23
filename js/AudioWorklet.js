@@ -1,8 +1,9 @@
 const {
-  resolveObjectURL
+  resolveObjectURL,
 } = require('node:buffer');
-const fs = require('node:fs').promises;
-const { existsSync } = require('node:fs');
+const {
+  existsSync,
+} = require('node:fs');
 const path = require('node:path');
 const {
   Worker,
@@ -23,7 +24,7 @@ const {
 
 const caller = require('caller');
 // cf. https://www.npmjs.com/package/node-fetch#commonjs
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
 /**
  * Retrieve code with different module resolution strategies
@@ -47,11 +48,11 @@ const resolveModule = async (moduleUrl) => {
     }
   } else if (moduleUrl.startsWith('http')) {
     try {
-        const res = await fetch(moduleUrl);
-        code = await res.text();
-      } catch (err) {
-        throw new DOMException(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`, 'AbortError');
-      }
+      const res = await fetch(moduleUrl);
+      code = await res.text();
+    } catch (err) {
+      throw new DOMException(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`, 'AbortError');
+    }
   } else if (moduleUrl.startsWith('blob:')) {
     try {
       const blob = resolveObjectURL(moduleUrl);
@@ -63,16 +64,8 @@ const resolveModule = async (moduleUrl) => {
     const callerSite = caller(2);
 
     if (callerSite.startsWith('http')) { // this branch exists for wpt where caller site is an url
-      let url;
-      // handle origin relative and caller path relative URLs
-      if (moduleUrl.startsWith('/')) {
-        const origin = new URL(baseUrl).origin;
-        url = origin + moduleUrl;
-      } else {
-        // we know separators are '/'
-        const baseUrl = callerSite.substr(0, callerSite.lastIndexOf('/'));
-        url = baseUrl + '/' + moduleUrl;
-      }
+      const baseUrl = callerSite.substring(0, callerSite.lastIndexOf('/'));
+      const url = baseUrl + '/' + moduleUrl;
 
       try {
         const res = await fetch(url);
@@ -100,7 +93,7 @@ const resolveModule = async (moduleUrl) => {
   }
 
   return { absPathname, code };
-}
+};
 
 class AudioWorklet {
   #workletId = null;
@@ -200,6 +193,7 @@ class AudioWorklet {
   // For OfflineAudioContext only, check that all processors have been properly
   // created before actual `startRendering`
   async [kCheckProcessorsCreated]() {
+    //  eslint-disable-next-line no-async-promise-executor
     return new Promise(async resolve => {
       while (this.#pendingCreateProcessors.size !== 0) {
         // we need a microtask to ensure message can be received
