@@ -1,6 +1,9 @@
 import { Blob } from 'node:buffer';
+import path from 'node:path';
+import fs from 'node:fs';
+
 import { assert } from 'chai';
-import { AudioContext, OscillatorNode, AudioWorkletNode } from '../index.mjs';
+import { AudioContext, OscillatorNode, GainNode, AudioWorkletNode } from '../index.mjs';
 import { delay } from '@ircam/sc-utils';
 
 const scriptTexts = `
@@ -37,8 +40,15 @@ class SecondProcessor extends AudioWorkletProcessor {
 registerProcessor('second-processor', SecondProcessor);
 `;
 
+function prettyPrintErr(err) {
+  const parts = err.stack.split('\n');
+  console.log(parts[0]);
+  console.log(parts[1]);
+  console.log('    ...');
+}
+
 describe('AudioWorklet', () => {
-  describe('# addModule(moduleUrl', () => {
+  describe('# addModule(moduleUrl)', () => {
     it(`should support loading from Blob`, async () => {
       const blob = new Blob([scriptTexts], { type: 'application/javascript' });
       const objectUrl = URL.createObjectURL(blob);
@@ -47,11 +57,10 @@ describe('AudioWorklet', () => {
       let errored = false;
 
       try {
-        // should support blobs
         await audioContext.audioWorklet.addModule(objectUrl);
 
-        const firstProcessor = new AudioWorkletNode(audioContext, 'first-processor');
-        const secondProcessor = new AudioWorkletNode(audioContext, 'second-processor');
+        const _firstProcessor = new AudioWorkletNode(audioContext, 'first-processor');
+        const _secondProcessor = new AudioWorkletNode(audioContext, 'second-processor');
       } catch (err) {
         errored = true;
         console.log(err.message);
@@ -61,12 +70,125 @@ describe('AudioWorklet', () => {
       assert.isFalse(errored);
     });
 
-    it.skip(`should support loading from cwd relative path`, async () => {});
-    it.skip(`should support loading from caller relative path`, async () => {});
-    it.skip(`should support loading from node_modules`, async () => {});
-    it.skip(`should support loading from url`, async () => {});
+    it(`should support loading from cwd relative path`, async () => {
+      const audioContext = new AudioContext();
+      await audioContext.audioWorklet.addModule('./tests/worklets/noise-generator.worklet.mjs');
 
-    it(`should throw clean error`, async () => {
+      const noiseGeneratorNode = new AudioWorkletNode(audioContext, 'noise-generator');
+      noiseGeneratorNode.connect(audioContext.destination);
+
+      assert.isTrue(noiseGeneratorNode instanceof AudioWorkletNode);
+
+      await delay(50);
+      await audioContext.close();
+    });
+
+    it(`should support loading from caller relative path`, async () => {
+      const audioContext = new AudioContext();
+      await audioContext.audioWorklet.addModule('./worklets/noise-generator.worklet.mjs');
+
+      const noiseGeneratorNode = new AudioWorkletNode(audioContext, 'noise-generator');
+      noiseGeneratorNode.connect(audioContext.destination);
+
+      assert.isTrue(noiseGeneratorNode instanceof AudioWorkletNode);
+
+      await delay(50);
+      await audioContext.close();
+    });
+
+    it(`should support loading from absolute path`, async () => {
+      const pathname = path.join(process.cwd(), 'tests/worklets/noise-generator.worklet.mjs');
+      const audioContext = new AudioContext();
+      await audioContext.audioWorklet.addModule(pathname);
+
+      const noiseGeneratorNode = new AudioWorkletNode(audioContext, 'noise-generator');
+      noiseGeneratorNode.connect(audioContext.destination);
+
+      assert.isTrue(noiseGeneratorNode instanceof AudioWorkletNode);
+
+      await delay(50);
+      await audioContext.close();
+    });
+
+    it(`should support loading from node_modules 1: use package.json "main"`, async () => {
+      // const pkg = 'node_modules/audio-worklet-test';
+      fs.mkdirSync('node_modules/audio-worklet-test', { recursive: true });
+      fs.writeFileSync('node_modules/audio-worklet-test/package.json', JSON.stringify({
+        name: 'audio-worklet-test',
+        type: 'module',
+        main: 'noise-generator.js',
+      }, null, 2));
+      fs.copyFileSync(
+        'tests/worklets/noise-generator.worklet.mjs',
+        'node_modules/audio-worklet-test/noise-generator.js',
+      );
+
+      const audioContext = new AudioContext();
+      await audioContext.audioWorklet.addModule('audio-worklet-test');
+
+      const noiseGeneratorNode = new AudioWorkletNode(audioContext, 'noise-generator');
+      noiseGeneratorNode.connect(audioContext.destination);
+
+      assert.isTrue(noiseGeneratorNode instanceof AudioWorkletNode);
+
+      await delay(50);
+      await audioContext.close();
+
+      fs.rmSync('node_modules/audio-worklet-test', { force: true, recursive: true });
+    });
+
+    it(`should support loading from node_modules 2: use filename`, async () => {
+      // const pkg = 'node_modules/audio-worklet-test';
+      fs.mkdirSync('node_modules/audio-worklet-test', { recursive: true });
+      fs.writeFileSync('node_modules/audio-worklet-test/package.json', JSON.stringify({
+        name: 'audio-worklet-test',
+        type: 'module',
+      }, null, 2));
+      fs.copyFileSync(
+        'tests/worklets/noise-generator.worklet.mjs',
+        'node_modules/audio-worklet-test/noise-generator.js',
+      );
+
+      const audioContext = new AudioContext();
+      await audioContext.audioWorklet.addModule('audio-worklet-test/noise-generator.js');
+
+      const noiseGeneratorNode = new AudioWorkletNode(audioContext, 'noise-generator');
+      noiseGeneratorNode.connect(audioContext.destination);
+
+      assert.isTrue(noiseGeneratorNode instanceof AudioWorkletNode);
+
+      await delay(50);
+      await audioContext.close();
+
+      fs.rmSync('node_modules/audio-worklet-test', { force: true, recursive: true });
+    });
+
+    it(`should support loading from url`, async () => {
+      // cf. https://googlechromelabs.github.io/web-audio-samples/audio-worklet/basic/noise-generator/
+      const plugin = 'https://googlechromelabs.github.io/web-audio-samples/audio-worklet/basic/noise-generator/noise-generator.js';
+      const audioContext = new AudioContext();
+      await audioContext.audioWorklet.addModule(plugin);
+
+      const modulatorNode = new OscillatorNode(audioContext);
+      const modGainNode = new GainNode(audioContext);
+      const noiseGeneratorNode = new AudioWorkletNode(audioContext, 'noise-generator');
+      noiseGeneratorNode.connect(audioContext.destination);
+
+      // Connect the oscillator to 'amplitude' AudioParam.
+      const paramAmp = noiseGeneratorNode.parameters.get('amplitude');
+      modulatorNode.connect(modGainNode).connect(paramAmp);
+
+      modulatorNode.frequency.value = 0.5;
+      modGainNode.gain.value = 0.75;
+      modulatorNode.start();
+
+      assert.isTrue(noiseGeneratorNode instanceof AudioWorkletNode);
+
+      await delay(50);
+      await audioContext.close();
+    });
+
+    it(`should throw clean error if worklet is invalid`, async () => {
       // blob worklets do not support import
       const blob = new Blob(['import stuff from "./abc"'], { type: 'application/javascript' });
       const objectUrl = URL.createObjectURL(blob);
@@ -77,7 +199,7 @@ describe('AudioWorklet', () => {
       try {
         await audioContext.audioWorklet.addModule(objectUrl);
       } catch (err) {
-        console.log(err);
+        prettyPrintErr(err);
         errored = true;
       }
 
@@ -85,14 +207,29 @@ describe('AudioWorklet', () => {
       assert.isTrue(errored);
     });
 
-    it(`should throw clean error`, async () => {
+    it(`should throw clean error if worklet is invalid`, async () => {
       const audioContext = new AudioContext();
       let errored = false;
 
       try {
         await audioContext.audioWorklet.addModule('./worklets/invalid.worklet.mjs');
       } catch (err) {
-        console.log(err);
+        prettyPrintErr(err);
+        errored = true;
+      }
+
+      await audioContext.close();
+      assert.isTrue(errored);
+    });
+
+    it(`should throw AbortError if file not found`, async () => {
+      const audioContext = new AudioContext();
+      let errored = false;
+
+      try {
+        await audioContext.audioWorklet.addModule('./worklets/do-not-exists.worklet.mjs');
+      } catch (err) {
+        prettyPrintErr(err);
         errored = true;
       }
 
@@ -102,8 +239,8 @@ describe('AudioWorklet', () => {
   });
 });
 
-describe('AudioWorkletNode', () => {
-  describe('# processor', () => {
+describe('AudioWorkletProcessor', () => {
+  describe('# constructor', () => {
     it('should throw a clean error when processor constructor is invalid', async () => {
       let errored = false;
 
@@ -112,7 +249,7 @@ describe('AudioWorkletNode', () => {
 
       const invalid = new AudioWorkletNode(audioContext, 'invalid-ctor');
       invalid.addEventListener('processorerror', (e) => {
-        console.log(e.error);
+        prettyPrintErr(e.error);
         errored = true;
       });
 

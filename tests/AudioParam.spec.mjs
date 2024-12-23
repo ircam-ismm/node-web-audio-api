@@ -1,19 +1,10 @@
 import { assert } from 'chai';
 import { AudioContext } from '../index.mjs';
 
-describe('# AudioBuffer', () => {
-  let audioContext;
-
-  beforeEach(() => {
-    audioContext = new AudioContext();
-  });
-
-  afterEach(() => {
-    audioContext.close();
-  });
-
-  describe('attributes', () => {
-    it(`should implement all attributes`, () => {
+describe('AudioParam', () => {
+  describe('# attributes', () => {
+    it(`should implement all attributes`, async () => {
+      const audioContext = new AudioContext();
       const gain = audioContext.createGain();
 
       assert.equal(gain.gain.automationRate, 'a-rate');
@@ -22,6 +13,8 @@ describe('# AudioBuffer', () => {
       assert.equal(gain.gain.maxValue, 3.4028234663852886e+38);
       assert.equal(gain.gain.minValue, -3.4028234663852886e+38);
       assert.equal(gain.gain.value, 1);
+
+      await audioContext.close();
     });
   });
 });
