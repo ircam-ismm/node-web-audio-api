@@ -28,40 +28,38 @@ const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch
 /**
  * Retrieve code with different module resolution strategies
  * - file - absolute or relative to cwd path
- * - URL
- * - Blob
+ *
+ * - URL - do not support import within module
+ * - Blob - do not support import within module
  * - fallback: relative to caller site
- *   + in fs
+ *   + in fs - support import within module
  *   + caller site is url - required for wpt, probably no other use case
  */
 const resolveModule = async (moduleUrl) => {
-  let code;
+  let code = null;
+  let absPathname = null;
 
   if (existsSync(moduleUrl)) {
-    const pathname = moduleUrl;
-
-    try {
-      const buffer = await fs.readFile(pathname);
-      code = buffer.toString();
-    } catch (err) {
-      throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
+    if (path.isAbsolute(moduleUrl)) {
+      absPathname = moduleUrl;
+    } else { // moduleUrl is relative to process.cwd();
+      absPathname = path.join(process.cwd(), moduleUrl);
     }
   } else if (moduleUrl.startsWith('http')) {
     try {
         const res = await fetch(moduleUrl);
         code = await res.text();
       } catch (err) {
-        throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
+        throw new DOMException(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`, 'AbortError');
       }
   } else if (moduleUrl.startsWith('blob:')) {
     try {
       const blob = resolveObjectURL(moduleUrl);
       code = await blob.text();
     } catch (err) {
-      throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
+      throw new DOMException(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`, 'AbortError');
     }
   } else {
-    // get caller site from error stack trace
     const callerSite = caller(2);
 
     if (callerSite.startsWith('http')) { // this branch exists for wpt where caller site is an url
@@ -80,27 +78,28 @@ const resolveModule = async (moduleUrl) => {
         const res = await fetch(url);
         code = await res.text();
       } catch (err) {
-        throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
+        throw new DOMException(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`, 'AbortError');
       }
     } else {
-      const dirname = callerSite.substr(0, callerSite.lastIndexOf(path.sep));
+      // filesystem, relative to caller site or in node_modules
+      const dirname = callerSite.substring(0, callerSite.lastIndexOf(path.sep));
       const absDirname = dirname.replace('file://', '');
       const pathname = path.join(absDirname, moduleUrl);
 
-      if (existsSync(pathname)) {
-        try {
-          const buffer = await fs.readFile(pathname);
-          code = buffer.toString();
-        } catch (err) {
-          throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`);
-        }
+      if (existsSync(pathname)) { // relative to caller site
+        absPathname = pathname;
       } else {
-        throw new Error(`Failed to execute 'addModule' on 'AudioWorklet': Cannot resolve module ${moduleUrl}`);
+        try {
+          // try resolve according to process.cwd()
+          absPathname = require.resolve(moduleUrl, { paths: [process.cwd()] });
+        } catch (err) {
+          throw new DOMException(`Failed to execute 'addModule' on 'AudioWorklet': Cannot resolve module ${moduleUrl}`, 'AbortError');
+        }
       }
     }
   }
 
-  return code;
+  return { absPathname, code };
 }
 
 class AudioWorklet {
@@ -125,6 +124,9 @@ class AudioWorklet {
   }
 
   #bindEvents() {
+    // @todo
+    // - better error handling, stack trace, etc.
+    // - handle 'node-web-audio-api:worklet:ctor-error' message
     this.#port.on('message', event => {
       switch (event.cmd) {
         case 'node-web-audio-api:worklet:module-added': {
@@ -135,10 +137,9 @@ class AudioWorklet {
           break;
         }
         case 'node-web-audio-api:worklet:add-module-failed': {
-          const { promiseId, ctor, name, message } = event;
+          const { promiseId, err } = event;
           const { reject } = this.#idPromiseMap.get(promiseId);
           this.#idPromiseMap.delete(promiseId);
-          const err = new globalThis[ctor](message, name);
           reject(err);
           break;
         }
@@ -161,7 +162,9 @@ class AudioWorklet {
   }
 
   async addModule(moduleUrl) {
-    const code = await resolveModule(moduleUrl);
+    // @important - `resolveModule` must be called first because it uses `caller`
+    // which will return `null` if this is not in the first line...
+    const resolved = await resolveModule(moduleUrl);
 
     // launch Worker if not exists
     if (!this.#port) {
@@ -187,7 +190,8 @@ class AudioWorklet {
 
       this.#port.postMessage({
         cmd: 'node-web-audio-api:worklet:add-module',
-        code,
+        moduleUrl: resolved.absPathname,
+        code: resolved.code,
         promiseId,
       });
     });

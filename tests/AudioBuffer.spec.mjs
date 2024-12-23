@@ -9,9 +9,9 @@ import {
   OfflineAudioContext
 } from '../index.mjs';
 
-describe('# AudioBuffer', () => {
+describe('AudioBuffer', () => {
 
-  describe(`## audioContext.createBuffer(numChannels, length, sampleRate)`, () => {
+  describe(`# audioContext.createBuffer(numChannels, length, sampleRate)`, () => {
     it('should properly create audio buffer', () => {
       const audioContext = new AudioContext();
       const audioBuffer = audioContext.createBuffer(1, 100, audioContext.sampleRate);
@@ -35,7 +35,7 @@ describe('# AudioBuffer', () => {
     });
   });
 
-  describe(`## new AudioBuffer(options)`, () => {
+  describe(`# new AudioBuffer(options)`, () => {
     it('should properly create audio buffer', () => {
       const audioBuffer = new AudioBuffer({
         length: 100,
@@ -64,7 +64,7 @@ describe('# AudioBuffer', () => {
     });
   });
 
-  describe(`## AudioBuffer returned by other means`, () => {
+  describe(`# AudioBuffer returned by other means`, () => {
     it(`AudioContext.decodeAudioData() -> AudioBuffer`, async () => {
       const pathname = path.join('examples', 'samples', 'sample.wav');
       const buffer = fs.readFileSync(pathname).buffer;

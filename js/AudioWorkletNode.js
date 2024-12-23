@@ -222,7 +222,8 @@ module.exports = (jsExport, nativeBinding) => {
       );
 
       this.#port.on('message', msg => {
-        // ErrorEvent named processorerror
+        // Handle 'processorerror' ErrorEvent
+        // cf. https://webaudio.github.io/web-audio-api/#dom-audioworkletnode-onprocessorerror
         switch (msg.cmd) {
           case 'node-web-audio-api:worklet:ctor-error': {
             const message = `Failed to construct '${parsedName}' AudioWorkletProcessor: ${msg.err.message}`;

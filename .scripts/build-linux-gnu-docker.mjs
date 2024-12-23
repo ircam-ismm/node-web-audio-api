@@ -6,6 +6,10 @@ console.log(`> executing docker command in dir ${cwd}`);
 // the source code directory is shared with the docker image,
 // so every thing is always up to date
 
+// @todo - rebuild docket image
+// cd ./.scripts/docker_x86_64-unknown-linux-gnu/
+// docker build -t bbmmaa/build-x86_64 .
+
 execSync(`docker run --rm \
   -v ~/.cargo/git:/root/.cargo/git \
   -v ~/.cargo/registry:/root/.cargo/registry \

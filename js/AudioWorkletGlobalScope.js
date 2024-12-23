@@ -298,7 +298,7 @@ globalThis.registerProcessor = function registerProcessor(name, processorCtor) {
 //   process.stdout.write('closing worklet');
 // });
 
-parentPort.on('message', event => {
+parentPort.on('message', async event => {
   switch (event.cmd) {
     case 'node-web-audio-api:worklet:init': {
       const { workletId, processors, promiseId } = event;
@@ -313,11 +313,18 @@ parentPort.on('message', event => {
       break;
     }
     case 'node-web-audio-api:worklet:add-module': {
-      const { code, promiseId } = event;
-      const func = new Function('AudioWorkletProcessor', 'registerProcessor', code);
+      const { moduleUrl, code, promiseId } = event;
 
       try {
-        func(AudioWorkletProcessor, registerProcessor);
+        // 1. If given module is a "real" file, we can import it as is,
+        // 2. If module is a blob or loaded from an URL, we use the raw text as
+        //    input. In this case, if the module uses `import` it will crash
+        if (moduleUrl !== null) {
+          await import(moduleUrl);
+        } else {
+          await import(`data:text/javascript;base64,${btoa(unescape(encodeURIComponent(code)))}`);
+        }
+
         // send registered param descriptors on main thread and resolve Promise
         parentPort.postMessage({
           cmd: 'node-web-audio-api:worklet:module-added',
@@ -327,9 +334,7 @@ parentPort.on('message', event => {
         parentPort.postMessage({
           cmd: 'node-web-audio-api:worklet:add-module-failed',
           promiseId,
-          ctor: err.constructor.name,
-          name: err.name,
-          message: err.message,
+          err,
         });
       }
       break;
@@ -338,7 +343,7 @@ parentPort.on('message', event => {
       const { name, id, options, port } = event;
       const ctor = nameProcessorCtorMap.get(name);
 
-      // rewrap options of interest for the AudioWorkletNodeBaseClass
+      // re-wrap options of interest for the AudioWorkletNodeBaseClass
       pendingProcessorConstructionData = {
         port,
         numberOfInputs: options.numberOfInputs,
@@ -352,6 +357,7 @@ parentPort.on('message', event => {
         instance = new ctor(options);
       } catch (err) {
         port.postMessage({ cmd: 'node-web-audio-api:worklet:ctor-error', err });
+        return;
       }
 
       pendingProcessorConstructionData = null;
