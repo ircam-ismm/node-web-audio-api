@@ -40,7 +40,11 @@ const resolveModule = async (moduleUrl) => {
   let absPathname = null;
 
   if (existsSync(moduleUrl)) {
-    absPathname = path.join(process.cwd(), moduleUrl);
+    if (path.isAbsolute(moduleUrl)) {
+      absPathname = moduleUrl;
+    } else { // moduleUrl is relative to process.cwd();
+      absPathname = path.join(process.cwd(), moduleUrl);
+    }
   } else if (moduleUrl.startsWith('http')) {
     try {
         const res = await fetch(moduleUrl);
@@ -56,7 +60,6 @@ const resolveModule = async (moduleUrl) => {
       throw new DOMException(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`, 'AbortError');
     }
   } else {
-    // get caller site from error stack trace
     const callerSite = caller(2);
 
     if (callerSite.startsWith('http')) { // this branch exists for wpt where caller site is an url
@@ -78,14 +81,20 @@ const resolveModule = async (moduleUrl) => {
         throw new DOMException(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`, 'AbortError');
       }
     } else {
-      const dirname = callerSite.substr(0, callerSite.lastIndexOf(path.sep));
+      // filesystem, relative to caller site or in node_modules
+      const dirname = callerSite.substring(0, callerSite.lastIndexOf(path.sep));
       const absDirname = dirname.replace('file://', '');
       const pathname = path.join(absDirname, moduleUrl);
 
-      if (existsSync(pathname)) {
+      if (existsSync(pathname)) { // relative to caller site
         absPathname = pathname;
       } else {
-        throw new DOMException(`Failed to execute 'addModule' on 'AudioWorklet': Cannot resolve module ${moduleUrl}`, 'AbortError');
+        try {
+          // try resolve according to process.cwd()
+          absPathname = require.resolve(moduleUrl, { paths: [process.cwd()] });
+        } catch (err) {
+          throw new DOMException(`Failed to execute 'addModule' on 'AudioWorklet': Cannot resolve module ${moduleUrl}`, 'AbortError');
+        }
       }
     }
   }
