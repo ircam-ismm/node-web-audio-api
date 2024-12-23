@@ -111,7 +111,7 @@ describe('AudioWorklet', () => {
     });
 
     it(`should support loading from node_modules 1: use package.json "main"`, async () => {
-      // const pkg = 'node_modules/audio-worklet-test';
+      // create dummy npm package
       fs.mkdirSync('node_modules/audio-worklet-test', { recursive: true });
       fs.writeFileSync('node_modules/audio-worklet-test/package.json', JSON.stringify({
         name: 'audio-worklet-test',
@@ -138,7 +138,7 @@ describe('AudioWorklet', () => {
     });
 
     it(`should support loading from node_modules 2: use filename`, async () => {
-      // const pkg = 'node_modules/audio-worklet-test';
+      // create dummy npm package
       fs.mkdirSync('node_modules/audio-worklet-test', { recursive: true });
       fs.writeFileSync('node_modules/audio-worklet-test/package.json', JSON.stringify({
         name: 'audio-worklet-test',
