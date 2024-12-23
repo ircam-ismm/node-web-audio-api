@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.21.5 (23/12/2024)
+
+- Fix: Use module import for `AudioWorklet#addModule`
+- Feat: Resolve `AudioWorkletNode` when installed in `node_modules`
+- Ensure support of `AudioWorkletNode` that use Web Assembly
+
 ## v0.21.4 (16/12/2024)
 
 - Update upstream crate to [v1.1.0](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-110-2024-12-11)
