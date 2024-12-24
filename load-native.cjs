@@ -44,8 +44,12 @@ switch (platform) {
         throw new Error(`Unsupported architecture on macOS: ${arch}`);
     }
     break;
+  //   case 'freebsd': x64 only
   case 'linux':
     switch (arch) {
+      // @todo
+      // - support riscv64 arch
+      // - support musl C lib
       case 'x64':
         try {
           nativeBinding = require('./node-web-audio-api.linux-x64-gnu.node');

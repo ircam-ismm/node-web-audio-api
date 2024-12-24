@@ -3,6 +3,8 @@ import { sleep } from '@ircam/sc-utils';
 
 import { mediaDevices, AudioContext, MediaStreamAudioSourceNode } from '../index.mjs';
 
+const CI = process.argv.includes('--ci');
+
 describe('# mediaDevices.getUserMedia(options)', () => {
   it('should fail if no argument given', async () => {
     let failed = false;
@@ -48,6 +50,12 @@ describe('# mediaDevices.getUserMedia(options)', () => {
   });
 
   it('should not fail if options.audio = true', async () => {
+    // accessing microphone in CI make the process stuck
+    if (CI) {
+      console.log('Run in CI, aborting...');
+      return;
+    }
+
     let failed = false;
     const audioContext = new AudioContext();
 
@@ -67,6 +75,12 @@ describe('# mediaDevices.getUserMedia(options)', () => {
   });
 
   it('should work with MediaStreamAudioSourceNode [1 factory] (make some noise)', async () => {
+    // accessing microphone in CI make the process stuck
+    if (CI) {
+      console.log('Run in CI, aborting...');
+      return;
+    }
+
     let failed = false;
     const audioContext = new AudioContext();
 
@@ -89,6 +103,12 @@ describe('# mediaDevices.getUserMedia(options)', () => {
   });
 
   it('should work with MediaStreamAudioSourceNode [2 ctor] (make some noise)', async () => {
+    // accessing microphone in CI make the process stuck
+    if (CI) {
+      console.log('Run in CI, aborting...');
+      return;
+    }
+
     let failed = false;
     const audioContext = new AudioContext();
 
