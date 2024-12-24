@@ -2,6 +2,7 @@ name: matrix-build
 env:
   DEBUG: napi:*
   PROJECT_NAME: node-web-audio-api
+  CARGO_BUILD_NAME: libnode_web_audio_api
   MACOSX_DEPLOYMENT_TARGET: '10.13'
   CARGO_TERM_COLOR: always
 
@@ -33,10 +34,10 @@ jobs:
             target: x86_64-pc-windows-msvc
             command: cargo
 
-          - name: linux-arm64-gnu
-            runner: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-            command: cross
+          # - name: linux-arm64-gnu
+          #   runner: ubuntu-latest
+          #   target: aarch64-unknown-linux-gnu
+          #   command: cross
 
     name: build - ${{ matrix.name }}
     steps:
@@ -72,11 +73,12 @@ jobs:
         run: npm run generate
 
       - name: Build Binary
+        shell: bash
         run: |
           if [[ "${{ matrix.runner }}" == "ubuntu-latest" ]]; then
-            ${{ matrix.command }} build --verbose --locked  --features jack --release --target ${{ matrix.target }}
+            ${{ matrix.command }} build --locked  --features jack --release --target ${{ matrix.target }}
           else
-            ${{ matrix.command }} build --verbose --locked --release --target ${{ matrix.target }}
+            ${{ matrix.command }} build --locked --release --target ${{ matrix.target }}
           fi
 
       - name: Rename Binary
@@ -92,7 +94,7 @@ jobs:
           fi
 
           # The built binary output location
-          BIN_OUTPUT="target/${{ matrix.target }}/release/lib${PROJECT_NAME}${BIN_SUFFIX}"
+          BIN_OUTPUT="target/${{ matrix.target }}/release/lib${CARGO_BUILD_NAME}${BIN_SUFFIX}"
 
           # Define a better name for the final binary
           BIN_RELEASE="${PROJECT_NAME}.${{ matrix.name }}.node"

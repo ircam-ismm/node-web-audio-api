@@ -14,7 +14,7 @@ on:
   # @todo - to remove - prevents running while testing
   # push:
   #   branches: [main, chore/refactor-ci]
-  pull_request:
+  # pull_request:
   workflow_dispatch:
   workflow_call:
 
