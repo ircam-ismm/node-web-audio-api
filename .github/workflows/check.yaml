@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow
 
-name: build
+name: checks
 
 # read-only repo token, no access to secrets
 permissions:
@@ -9,7 +9,7 @@ permissions:
 # no access to secrets
 on:
   push:
-    branches: [main]
+    branches: [main, chore/refactor-ci]
   pull_request:
   workflow_dispatch:
 
