@@ -11,8 +11,9 @@ permissions:
 
 # no access to secrets
 on:
-  push:
-    branches: [main, chore/refactor-ci]
+  # @todo - to remove - prevents running while testing
+  # push:
+  #   branches: [main, chore/refactor-ci]
   pull_request:
   workflow_dispatch:
   workflow_call:
