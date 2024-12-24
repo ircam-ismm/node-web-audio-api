@@ -1,6 +1,9 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow
 
 name: verify-build
+env:
+  MACOSX_DEPLOYMENT_TARGET: '10.13'
+  CARGO_TERM_COLOR: always
 
 # read-only repo token, no access to secrets
 permissions:
@@ -12,9 +15,7 @@ on:
     branches: [main, chore/refactor-ci]
   pull_request:
   workflow_dispatch:
-
-env:
-  CARGO_TERM_COLOR: always
+  workflow_call:
 
 jobs:
   verify-build:
