@@ -94,7 +94,7 @@ jobs:
           fi
 
           # The built binary output location
-          BIN_OUTPUT="target/${{ matrix.target }}/release/lib${CARGO_BUILD_NAME}${BIN_SUFFIX}"
+          BIN_OUTPUT="target/${{ matrix.target }}/release/${CARGO_BUILD_NAME}${BIN_SUFFIX}"
 
           # Define a better name for the final binary
           BIN_RELEASE="${PROJECT_NAME}.${{ matrix.name }}.node"
