@@ -24,19 +24,24 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - name: darwin-arm64
-          #   runner: macos-latest
-          #   target: aarch64-apple-darwin
-          #   command: cargo
+          - name: darwin-arm64
+            runner: macos-latest
+            target: aarch64-apple-darwin
+            command: cargo
 
-          # - name: win32-x64-msvc
-          #   runner: windows-latest
-          #   target: x86_64-pc-windows-msvc
-          #   command: cargo
+          - name: win32-x64-msvc
+            runner: windows-latest
+            target: x86_64-pc-windows-msvc
+            command: cargo
 
           - name: linux-arm64-gnu
             runner: ubuntu-latest
             target: aarch64-unknown-linux-gnu
+            command: cross
+
+          - name: linux-arm-gnueabihf
+            runner: ubuntu-latest
+            target: arm-unknown-linux-gnueabihf
             command: cross
 
     name: build - ${{ matrix.name }}
@@ -85,22 +90,18 @@ jobs:
       - name: Rename Binary
         shell: bash
         run: |
-          BIN_SUFFIX=""
-          if [[ "${{ matrix.runner }}" == "windows-latest" ]]; then
-            BIN_SUFFIX=".dll"
-          elif [[ "${{ matrix.runner }}" == "macos-latest" ]]; then
-            BIN_SUFFIX=".dylib"
-          elif [[ "${{ matrix.runner }}" == "ubuntu-latest" ]]; then
-            BIN_SUFFIX=".so"
-          fi
-
           BIN_PREFIX=""
+          BIN_SUFFIX=""
+
           if [[ "${{ matrix.runner }}" == "windows-latest" ]]; then
             BIN_PREFIX=""
+            BIN_SUFFIX=".dll"
           elif [[ "${{ matrix.runner }}" == "macos-latest" ]]; then
             BIN_PREFIX="lib"
+            BIN_SUFFIX=".dylib"
           elif [[ "${{ matrix.runner }}" == "ubuntu-latest" ]]; then
             BIN_PREFIX="lib"
+            BIN_SUFFIX=".so"
           fi
 
           ls -al target/${{ matrix.target }}/release/
