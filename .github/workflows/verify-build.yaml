@@ -57,7 +57,8 @@ jobs:
 
       # run  checks and tests
       - name: Clippy
-        run: cargo clippy --all-features -- -D warnings
+        # run: cargo clippy --all-features -- -D warnings
+        run: cargo clippy --all-targets -- -D warnings
       - name: Fmt
         run: cargo fmt -- --check --color always
       - name: Lint
