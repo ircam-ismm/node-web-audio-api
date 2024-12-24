@@ -41,7 +41,7 @@ jobs:
 
           - name: linux-arm-gnueabihf
             runner: ubuntu-latest
-            target: arm-unknown-linux-gnueabihf
+            target: armv7-unknown-linux-gnueabihf
             command: cross
 
     name: build - ${{ matrix.name }}
