@@ -24,10 +24,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: darwin-arm64
-            runner: macos-latest
-            target: aarch64-apple-darwin
-            command: cargo
+          # - name: darwin-arm64
+          #   runner: macos-latest
+          #   target: aarch64-apple-darwin
+          #   command: cargo
 
           - name: win32-x64-msvc
             runner: windows-latest
@@ -92,6 +92,8 @@ jobs:
           elif [[ "${{ matrix.runner }}" == "ubuntu-latest" ]]; then
             BIN_SUFFIX=".so"
           fi
+
+          ls -al target/${{ matrix.target }}/release/
 
           # The built binary output location
           BIN_OUTPUT="target/${{ matrix.target }}/release/${CARGO_BUILD_NAME}${BIN_SUFFIX}"
