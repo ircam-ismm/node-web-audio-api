@@ -49,7 +49,7 @@ jobs:
             target: aarch64-unknown-linux-gnu
             command: cross
 
-          - name: linux-x86-gnu
+          - name: linux-x64-gnu
             runner: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             command: cross
@@ -95,6 +95,8 @@ jobs:
       - name: Build Binary
         shell: bash
         run: |
+          rustup target add ${{ matrix.target }}
+
           if [[ "${{ matrix.runner }}" == "ubuntu-latest" ]]; then
             echo "Build with Jack feature"
             ${{ matrix.command }} build --locked  --features jack --release --target ${{ matrix.target }}
