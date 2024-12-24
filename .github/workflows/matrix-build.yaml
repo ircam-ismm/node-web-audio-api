@@ -2,7 +2,7 @@ name: matrix-build
 env:
   DEBUG: napi:*
   PROJECT_NAME: node-web-audio-api
-  CARGO_BUILD_NAME: libnode_web_audio_api
+  CARGO_BUILD_NAME: node_web_audio_api
   MACOSX_DEPLOYMENT_TARGET: '10.13'
   CARGO_TERM_COLOR: always
 
@@ -24,10 +24,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - name: darwin-arm64
-          #   runner: macos-latest
-          #   target: aarch64-apple-darwin
-          #   command: cargo
+          - name: darwin-arm64
+            runner: macos-latest
+            target: aarch64-apple-darwin
+            command: cargo
 
           - name: win32-x64-msvc
             runner: windows-latest
@@ -93,10 +93,19 @@ jobs:
             BIN_SUFFIX=".so"
           fi
 
+          BIN_PREFIX=""
+          if [[ "${{ matrix.runner }}" == "windows-latest" ]]; then
+            BIN_PREFIX=""
+          elif [[ "${{ matrix.runner }}" == "macos-latest" ]]; then
+            BIN_PREFIX="lib"
+          elif [[ "${{ matrix.runner }}" == "ubuntu-latest" ]]; then
+            BIN_PREFIX="lib"
+          fi
+
           ls -al target/${{ matrix.target }}/release/
 
           # The built binary output location
-          BIN_OUTPUT="target/${{ matrix.target }}/release/${CARGO_BUILD_NAME}${BIN_SUFFIX}"
+          BIN_OUTPUT="target/${{ matrix.target }}/release/${BIN_PREFIX}${CARGO_BUILD_NAME}${BIN_SUFFIX}"
 
           # Define a better name for the final binary
           BIN_RELEASE="${PROJECT_NAME}.${{ matrix.name }}.node"
