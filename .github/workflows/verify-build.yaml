@@ -21,9 +21,9 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - name: Install ALSA and Jack dependencies
-        run: |
-          sudo apt-get update && sudo apt-get install -y libasound2-dev libjack-jackd2-dev
+    #   - name: Install ALSA and Jack dependencies
+    #     run: |
+    #       sudo apt-get update && sudo apt-get install -y libasound2-dev libjack-jackd2-dev
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
