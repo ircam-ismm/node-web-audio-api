@@ -51,6 +51,8 @@ jobs:
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
 
       # only install cross (via cargo-binstall) if we need it
       - name: Install Cross
@@ -63,7 +65,10 @@ jobs:
       - name: Generate Cargo.lock
         run: cargo generate-lockfile
 
-      - name: Generate files from IDL
+      - name: Install Deps
+        run: npm install
+
+      - name: Re-generate files from IDL
         run: npm run generate
 
       - name: Build Binary
