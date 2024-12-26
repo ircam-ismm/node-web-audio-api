@@ -1,3 +1,4 @@
+const fs = require('node:fs');
 const { platform, arch } = process;
 
 let nativeBinding = null;
@@ -21,7 +22,7 @@ switch (platform) {
         }
         break;
       default:
-        throw new Error(`Unsupported architecture on Windows: ${arch}`);
+        loadError = new Error(`Unsupported architecture on Windows: ${arch}`);
     }
     break;
   case 'darwin':
@@ -41,7 +42,7 @@ switch (platform) {
         }
         break;
       default:
-        throw new Error(`Unsupported architecture on macOS: ${arch}`);
+        loadError = new Error(`Unsupported architecture on macOS: ${arch}`);
     }
     break;
   //   case 'freebsd': x64 only
@@ -72,11 +73,20 @@ switch (platform) {
         }
         break;
       default:
-        throw new Error(`Unsupported architecture on Linux: ${arch}`);
+        loadError = new Error(`Unsupported architecture on Linux: ${arch}`);
     }
     break;
   default:
-    throw new Error(`Unsupported OS: ${platform}, architecture: ${arch}`);
+    loadError = new Error(`Unsupported OS: ${platform}, architecture: ${arch}`);
+}
+
+// fallback on local builds
+if (fs.existsSync('node-web-audio-api.build-release.node')) {
+  nativeBinding = require('./node-web-audio-api.build-release.node');
+}
+
+if (fs.existsSync('node-web-audio-api.build-debug.node')) {
+  nativeBinding = require('./node-web-audio-api.build-debug.node');
 }
 
 if (!nativeBinding) {
