@@ -2,7 +2,7 @@
   "name": "node-web-audio-api",
   "version": "0.21.5",
   "author": "Benjamin Matuszewski",
-  "description": "Node.js bindings for web-audio-api-rs using napi-rs",
+  "description": "Web Audio API implementation for Node.js",
   "exports": {
     "import": "./index.mjs",
     "require": "./index.cjs",
@@ -21,7 +21,7 @@
     "music",
     "dsp",
     "rust",
-    "n-api"
+    "node-api"
   ],
   "engines": {
     "node": ">= 14"
@@ -35,17 +35,17 @@
     "access": "public"
   },
   "scripts": {
-    "artifacts": "napi artifacts",
-    "build": "npm run generate && napi build --platform --release",
-    "build:jack": "npm run generate && napi build --platform --features jack --release",
-    "build:debug": "npm run generate && napi build --platform",
-    "build:only": "napi build --platform --release",
+    "build": "npm run generate && cargo build --release && node ./.scripts/move-artifact.mjs --release",
+    "build:jack": "npm run generate && cargo build --features jack --release && node ./.scripts/move-artifact.mjs --release",
+    "build:debug":"npm run generate && cargo build && node ./.scripts/move-artifact.mjs",
+    "build:only": "cargo build --release && node ./.scripts/move-artifact.mjs --release",
     "check": "cargo fmt && cargo clippy",
     "generate": "node generator/index.mjs && cargo fmt",
     "lint": "npx eslint index.cjs index.mjs && npx eslint js/*.js && npx eslint examples/*.mjs",
-    "preversion": "yarn install && npm run generate",
+    "preversion": "npm install && npm run generate",
     "postversion": "cargo bump $npm_package_version && git commit -am \"v$npm_package_version\" && node .scripts/check-changelog.mjs",
     "test": "mocha tests/*.spec.mjs",
+    "test:ci": "mocha tests/*.spec.mjs -- --ci",
     "test:only": "mocha",
     "wpt": "npm run build && node ./.scripts/wpt-harness.mjs",
     "wpt:only": "node ./.scripts/wpt-harness.mjs"
@@ -73,8 +73,6 @@
     "wpt-runner": "^5.0.0"
   },
   "dependencies": {
-    "@napi-rs/cli": "^2.14.3",
-    "@node-rs/helper": "^1.3.3",
     "caller": "^1.1.0",
     "node-fetch": "^3.3.2",
     "webidl-conversions": "^7.0.0"

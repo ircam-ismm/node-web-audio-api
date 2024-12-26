@@ -9,8 +9,8 @@ const owner = process.env.REPO_OWNER;
 const repo = process.env.REPO_NAME;
 const ghToken = process.env.GITHUB_TOKEN;
 
-const workflowName = 'build';
-const numArtifacts = 4; // 2 Mac, 2 windows
+const workflowName = 'matrix-build';
+const numArtifacts = 7; // 2 Mac, 2 windows, 3 linux
 // need a key for downloading job artifacts
 const octokit = new Octokit({ auth: ghToken });
 

@@ -23,8 +23,12 @@ mimalloc = {version = "0.1"}
 [build-dependencies]
 napi-build = "1"
 
+[profile.dev]
+opt-level = 3
+
 [profile.release]
 lto = true
+strip = true
 
 [features]
 jack = ["web-audio-api/cpal-jack"]
