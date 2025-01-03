@@ -1,4 +1,5 @@
-FROM node:20
+FROM node:20-buster
+# buster means minimum GLIBC version is 2.28 (2019)
 
 ENV RUSTUP_HOME=/usr/local/rustup \
     CARGO_HOME=/usr/local/cargo \

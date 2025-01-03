@@ -33,10 +33,19 @@ Profile (which tools and data to install)? (minimal/default/complete) [default]
 sudo apt-get install -y libjack-jackd2-dev libasound2-dev
 ```
 
-
 # Docker image
 
 ```
 cd ./.scripts/docker_x86_64-unknown-linux-gnu/
 docker build -t bbmmaa/build-x86_64 .
 ```
+
+## GLIBC version
+
+The Docker image tag is essential to set the minimum GLIBC version:
+
+-   Debian 12 (Bookworm) -> GLIBC 2.36
+-   Debian 11 (Bullseye) -> GLIBC 2.31
+-   Debian 10 (Buster) -> GLIBC 2.28
+
+Some deployment platforms like Vercel and AWS still use old versions of GLIBC, so we need to build the Docker image with an older GLIBC version.
