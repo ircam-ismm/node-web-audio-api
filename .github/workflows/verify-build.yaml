@@ -11,22 +11,18 @@ permissions:
 
 # no access to secrets
 on:
-  # @todo - to remove - prevents running while testing
-  # push:
-  #   branches: [main, chore/refactor-ci]
-  # pull_request:
+  push:
+    branches: [main]
+  pull_request:
   workflow_dispatch:
-  workflow_call:
+  workflow_call: # make the job callable by matrix-build
 
 jobs:
   verify-build:
+    # run on macos-latest which seems to have a soundcard available
     runs-on: macos-latest
 
     steps:
-    #   - name: Install ALSA and Jack dependencies
-    #     run: |
-    #       sudo apt-get update && sudo apt-get install -y libasound2-dev libjack-jackd2-dev
-
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:

@@ -80,7 +80,7 @@ switch (platform) {
     loadError = new Error(`Unsupported OS: ${platform}, architecture: ${arch}`);
 }
 
-// fallback on local builds
+// use local build if exists
 if (fs.existsSync('node-web-audio-api.build-release.node')) {
   nativeBinding = require('./node-web-audio-api.build-release.node');
 }

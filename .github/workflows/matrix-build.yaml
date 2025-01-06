@@ -8,17 +8,16 @@ env:
 
 on:
   push:
-    branches: [chore/refactor-ci]
     tags:
       - '*'
   workflow_dispatch:
 
 jobs:
-  # verify-build:
-  #   uses: ./.github/workflows/verify-build.yaml
+  verify-build:
+    uses: ./.github/workflows/verify-build.yaml
 
   matrix-build:
-    # needs: verify-build
+    needs: verify-build
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
