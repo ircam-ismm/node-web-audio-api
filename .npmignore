@@ -3,12 +3,15 @@
 .editorconfig
 .env
 .gitmodules
+.eslintrc
 
 build.rs
 Cargo.*
+Cross.toml
 NOTES.md
 dummy.mjs
-all-check.sh
+all-checks.sh
+run-wpt.sh
 
 .scripts
 examples
@@ -22,5 +25,3 @@ issues
 
 *.tgz
 *.bak
-
-

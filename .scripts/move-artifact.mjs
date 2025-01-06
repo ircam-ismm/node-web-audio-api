@@ -1,10 +1,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+import {
+  destReleaseFile,
+  destDebugFile,
+  deleteDevArtifacts,
+} from './utils/dev-artifacts-helpers.mjs';
+
 const { platform } = process;
 const profile = process.argv.includes('--release') ? 'release' : 'debug';
 
-const pkg = fs.readFileSync(path.join('package.json'));
+const pkg = fs.readFileSync('package.json');
 const PROJECT_NAME = JSON.parse(pkg).name;
 const CARGO_BUILD_NAME = PROJECT_NAME.replace(/-/g, '_');
 
@@ -26,16 +32,7 @@ switch (platform) {
     break;
 }
 
-const destReleaseFile = `${PROJECT_NAME}.build-release.node`;
-const destDebugFile = `${PROJECT_NAME}.build-debug.node`;
-
-if (fs.existsSync(destReleaseFile)) {
-  fs.rmSync(destReleaseFile, { force: true });
-}
-
-if (fs.existsSync(destDebugFile)) {
-  fs.rmSync(destDebugFile, { force: true });
-}
+deleteDevArtifacts();
 
 let srcFile = path.join('target', profile, `${buildPrefix}${CARGO_BUILD_NAME}${buildSuffix}`);
 let destFile = profile === 'release' ? destReleaseFile : destDebugFile;

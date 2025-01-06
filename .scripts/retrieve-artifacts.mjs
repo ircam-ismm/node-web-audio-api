@@ -3,6 +3,18 @@ import { Octokit } from 'octokit';
 import fs from 'node:fs';
 import { execSync } from 'node:child_process';
 
+import { deleteDevArtifacts } from './utils/dev-artifacts-helpers.mjs';
+
+// --------------------------------------------------------------
+console.log('');
+console.log(`> clean development workspace`);
+// --------------------------------------------------------------
+deleteDevArtifacts();
+
+// --------------------------------------------------------------
+console.log('');
+console.log(`> get ${workflowName} workflow id`);
+// --------------------------------------------------------------
 dotenv.config({ debug: false });
 
 const owner = process.env.REPO_OWNER;
@@ -26,11 +38,6 @@ function checkResponse(res) {
     process.exit(1);
   }
 }
-
-// --------------------------------------------------------------
-console.log('');
-console.log(`> get ${workflowName} workflow id`);
-// --------------------------------------------------------------
 
 res = await octokit.request(`GET /repos/${owner}/${repo}/actions/workflows`);
 checkResponse(res)
