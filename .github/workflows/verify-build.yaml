@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow
+
+name: verify-build
+env:
+  MACOSX_DEPLOYMENT_TARGET: '10.13'
+  CARGO_TERM_COLOR: always
+
+# read-only repo token, no access to secrets
+permissions:
+  contents: read
+
+# no access to secrets
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  workflow_call: # make the job callable by matrix-build
+
+jobs:
+  verify-build:
+    # run on macos-latest which seems to have a soundcard available
+    runs-on: macos-latest
+
+    steps:
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Generate Cargo.lock
+        run: cargo generate-lockfile
+
+      # restore cargo cache from previous runs
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          # The cache should not be shared between different workflows and jobs.
+          shared-key: ${{ github.workflow }}-${{ github.job }}
+
+      - name: Install Deps
+        run: npm install
+
+      # check it builds
+      - name: Build
+        run: npm run build
+
+      # run  checks and tests
+      - name: Clippy
+        # run: cargo clippy --all-features -- -D warnings
+        run: cargo clippy --all-targets -- -D warnings
+      - name: Fmt
+        run: cargo fmt -- --check --color always
+      - name: Lint
+        run: npm run lint
+      - name: Test
+        run: npm run test:ci
+

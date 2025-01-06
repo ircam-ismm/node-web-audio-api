@@ -139,7 +139,6 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
       await this.audioWorklet[kCheckProcessorsCreated]();
 
       // keep this to highlight the workaround w/ the oncomplete event
-
       let _nativeAudioBuffer;
 
       try {

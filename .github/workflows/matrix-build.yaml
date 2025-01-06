@@ -1,0 +1,140 @@
+name: matrix-build
+env:
+  DEBUG: napi:*
+  PROJECT_NAME: node-web-audio-api
+  CARGO_BUILD_NAME: node_web_audio_api
+  MACOSX_DEPLOYMENT_TARGET: '10.13'
+  CARGO_TERM_COLOR: always
+
+on:
+  push:
+    tags:
+      - '*'
+  workflow_dispatch:
+
+jobs:
+  verify-build:
+    uses: ./.github/workflows/verify-build.yaml
+
+  matrix-build:
+    needs: verify-build
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: darwin-arm64
+            runner: macos-latest
+            target: aarch64-apple-darwin
+            command: cargo
+
+          - name: darwin-x64
+            runner: macos-latest
+            target: x86_64-apple-darwin
+            command: cargo
+
+          - name: win32-arm64-msvc
+            runner: windows-latest
+            target: aarch64-pc-windows-msvc
+            command: cargo
+
+          - name: win32-x64-msvc
+            runner: windows-latest
+            target: x86_64-pc-windows-msvc
+            command: cargo
+
+          - name: linux-arm64-gnu
+            runner: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            command: cross
+
+          - name: linux-x64-gnu
+            runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            command: cross
+
+          - name: linux-arm-gnueabihf
+            runner: ubuntu-latest
+            target: armv7-unknown-linux-gnueabihf
+            command: cross
+
+    name: build - ${{ matrix.name }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      # node is only used to generate the files, can use host architecture
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      # only install cross (via cargo-binstall) if we need it
+      - name: Install Cross
+        if: matrix.command == 'cross'
+        shell: bash
+        run: |
+          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+          cargo binstall --no-confirm cross
+
+      - name: Generate Cargo.lock
+        run: cargo generate-lockfile
+
+      - name: Install Deps
+        run: npm install
+
+      - name: Re-generate files from IDL
+        run: npm run generate
+
+      - name: Build Binary
+        shell: bash
+        run: |
+          rustup target add ${{ matrix.target }}
+
+          if [[ "${{ matrix.runner }}" == "ubuntu-latest" ]]; then
+            echo "Build with Jack feature"
+            ${{ matrix.command }} build --locked  --features jack --release --target ${{ matrix.target }}
+          else
+            ${{ matrix.command }} build --locked --release --target ${{ matrix.target }}
+          fi
+
+      - name: Rename Binary
+        shell: bash
+        run: |
+          BIN_PREFIX=""
+          BIN_SUFFIX=""
+
+          if [[ "${{ matrix.runner }}" == "windows-latest" ]]; then
+            BIN_PREFIX=""
+            BIN_SUFFIX=".dll"
+          elif [[ "${{ matrix.runner }}" == "macos-latest" ]]; then
+            BIN_PREFIX="lib"
+            BIN_SUFFIX=".dylib"
+          elif [[ "${{ matrix.runner }}" == "ubuntu-latest" ]]; then
+            BIN_PREFIX="lib"
+            BIN_SUFFIX=".so"
+          fi
+
+          ls -al target/${{ matrix.target }}/release/
+
+          # The built binary output location
+          BIN_OUTPUT="target/${{ matrix.target }}/release/${BIN_PREFIX}${CARGO_BUILD_NAME}${BIN_SUFFIX}"
+
+          # Define a better name for the final binary
+          BIN_RELEASE="${PROJECT_NAME}.${{ matrix.name }}.node"
+
+          # Move the built binary where you want it
+          mv "${BIN_OUTPUT}" "./${BIN_RELEASE}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bindings-${{ matrix.name }}
+          path: ${{ env.PROJECT_NAME }}.${{ matrix.name }}.node
+          if-no-files-found: error
+
