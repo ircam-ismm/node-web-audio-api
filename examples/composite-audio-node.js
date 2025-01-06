@@ -1,23 +1,24 @@
+import { sleep } from '@ircam/sc-utils';
 import { AudioContext, AudioNode } from '../index.mjs';
 
 // Monkeypatching AudioNode.connect to allow for composite nodes.
 // https://github.com/GoogleChromeLabs/web-audio-samples/wiki/CompositeAudioNode
 
-class CompositeAudioNode {  
+class CompositeAudioNode {
   get _isCompositeAudioNode() {
     return true;
   }
-  
+
   constructor(context) {
     this.context = context;
     this._input = this.context.createGain();
     this._output = this.context.createGain();
   }
-  
+
   connect() {
     this._output.connect.apply(this._output, arguments);
   }
-  
+
   disconnect() {
     this._output.disconnect.apply(this._output, arguments);
   }
@@ -32,7 +33,7 @@ AudioNode.prototype.connect = function() {
   if (args[0]._isCompositeAudioNode) {
     args[0] = args[0]._input;
   }
-  
+
   this._connect.apply(this, args);
 };
 
@@ -65,3 +66,6 @@ gainNode.connect(context.destination);
 
 oscNode.start();
 oscNode.stop(1.0);
+
+await sleep(1.5);
+await context.close();
