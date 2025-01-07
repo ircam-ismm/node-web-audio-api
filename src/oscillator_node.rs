@@ -228,7 +228,7 @@ fn listen_to_ended_event(env: &Env, js_this: &JsObject, node: &mut OscillatorNod
     use napi::threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunctionCallMode};
     use web_audio_api::Event;
 
-    let k_onended = crate::utils::get_symbol_for(env, "node-web-audio-api:onended");
+    let k_onended = env.symbol_for("node-web-audio-api:onended")?;
     let ended_cb = js_this.get_property(k_onended).unwrap();
     let mut ended_tsfn =
         env.create_threadsafe_function(&ended_cb, 0, |ctx: ThreadSafeCallContext<Event>| {

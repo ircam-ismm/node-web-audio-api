@@ -204,18 +204,23 @@ fn get_curve(ctx: CallContext) -> Result<JsUnknown> {
 
     if let Some(arr_f32) = value {
         let length = arr_f32.len();
-        let arr_u8 = crate::utils::to_byte_slice(arr_f32);
 
-        Ok(ctx
-            .env
-            .create_arraybuffer_with_data(arr_u8.to_vec())
-            .map(|array_buffer| {
-                array_buffer
-                    .into_raw()
-                    .into_typedarray(TypedArrayType::Float32, length, 0)
-            })
-            .unwrap()?
-            .into_unknown())
+        let array_buffer = ctx.env.create_arraybuffer(length * 4).unwrap();
+        let js_typed_array =
+            array_buffer
+                .into_raw()
+                .into_typedarray(TypedArrayType::Float32, length, 0)?;
+
+        let mut js_typed_array_value = js_typed_array.into_value()?;
+        let buffer: &mut [f32] = js_typed_array_value.as_mut();
+        buffer.copy_from_slice(arr_f32);
+
+        let js_typed_array =
+            js_typed_array_value
+                .arraybuffer
+                .into_typedarray(TypedArrayType::Float32, length, 0)?;
+
+        Ok(js_typed_array.into_unknown())
     } else {
         Ok(ctx.env.get_null()?.into_unknown())
     }
