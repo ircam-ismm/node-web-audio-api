@@ -101,7 +101,7 @@ fn start_rendering(ctx: CallContext) -> Result<JsObject> {
     let napi_context = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
     let context = napi_context.unwrap();
 
-    let k_onstatechange = crate::utils::get_symbol_for(ctx.env, "node-web-audio-api:onstatechange");
+    let k_onstatechange = ctx.env.symbol_for("node-web-audio-api:onstatechange")?;
     let statechange_cb = js_this.get_property(k_onstatechange).unwrap();
     let mut statechange_tsfn = ctx.env.create_threadsafe_function(
         &statechange_cb,
@@ -122,7 +122,7 @@ fn start_rendering(ctx: CallContext) -> Result<JsObject> {
         statechange_tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
     });
 
-    let k_oncomplete = crate::utils::get_symbol_for(ctx.env, "node-web-audio-api:oncomplete");
+    let k_oncomplete = ctx.env.symbol_for("node-web-audio-api:oncomplete")?;
     let complete_cb = js_this.get_property(k_oncomplete).unwrap();
     let context_clone = Arc::clone(&napi_context.0);
 

@@ -97,7 +97,7 @@ fn listen_to_events(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiAudioRenderCapacity>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let k_onupdate = crate::utils::get_symbol_for(ctx.env, "node-web-audio-api:onupdate");
+    let k_onupdate = ctx.env.symbol_for("node-web-audio-api:onupdate")?;
     let update_cb = js_this.get_property(k_onupdate).unwrap();
     let mut update_tsfn = ctx.env.create_threadsafe_function(
         &update_cb,

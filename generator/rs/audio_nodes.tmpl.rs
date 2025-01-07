@@ -335,7 +335,7 @@ fn listen_to_ended_event(
     use napi::threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunctionCallMode};
     use web_audio_api::Event;
 
-    let k_onended = crate::utils::get_symbol_for(env, "node-web-audio-api:onended");
+    let k_onended = env.symbol_for("node-web-audio-api:onended")?;
     let ended_cb = js_this.get_property(k_onended).unwrap();
     let mut ended_tsfn = env.create_threadsafe_function(
         &ended_cb,
@@ -536,17 +536,20 @@ fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsUnknown> {
 
     if let Some(arr_f32) = value {
         let length = arr_f32.len();
-        let arr_u8 = crate::utils::to_byte_slice(arr_f32);
 
-        Ok(ctx.env
-            .create_arraybuffer_with_data(arr_u8.to_vec())
-            .map(|array_buffer| {
-                array_buffer
-                    .into_raw()
-                    .into_typedarray(TypedArrayType::Float32, length, 0)
-            })
-            .unwrap()?
-            .into_unknown())
+        let array_buffer = ctx.env.create_arraybuffer(length * 4).unwrap();
+        let js_typed_array = array_buffer
+            .into_raw()
+            .into_typedarray(TypedArrayType::Float32, length, 0)?;
+
+        let mut js_typed_array_value = js_typed_array.into_value()?;
+        let buffer: &mut [f32] = js_typed_array_value.as_mut();
+        buffer.copy_from_slice(arr_f32);
+
+        let js_typed_array = js_typed_array_value.arraybuffer
+            .into_typedarray(TypedArrayType::Float32, length, 0)?;
+
+        Ok(js_typed_array.into_unknown())
     } else {
         Ok(ctx.env.get_null()?.into_unknown())
     }

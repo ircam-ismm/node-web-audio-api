@@ -130,8 +130,7 @@ fn listen_to_events(ctx: CallContext) -> Result<JsUndefined> {
     let napi_node = ctx.env.unwrap::<NapiScriptProcessorNode>(&js_this)?;
     let node = napi_node.unwrap();
 
-    let k_onaudioprocess =
-        crate::utils::get_symbol_for(ctx.env, "node-web-audio-api:onaudioprocess");
+    let k_onaudioprocess = ctx.env.symbol_for("node-web-audio-api:onaudioprocess")?;
     let audioprocess_cb: JsFunction = js_this.get_property(k_onaudioprocess).unwrap();
 
     let audioprocess_tsfn = ThreadsafeFunctionPatched::create(
