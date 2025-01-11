@@ -101,7 +101,7 @@ function isIterable(obj) {
 function isConstructor(f) {
   try {
     Reflect.construct(String, [], f);
-  } catch (e) {
+  } catch {
     return false;
   }
   return true;

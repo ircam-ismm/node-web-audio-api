@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { OfflineAudioContext, AudioContext } from '../index.mjs';
-import { getTime } from '@ircam/sc-gettime';
+import { getTime } from '@ircam/sc-utils';
 import Table from 'cli-table';
 
 // benchmarks adapted from https://github.com/padenot/webaudio-benchmark

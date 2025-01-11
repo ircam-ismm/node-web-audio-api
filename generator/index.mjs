@@ -256,7 +256,7 @@ async function beautifyAndLint(pathname, code) {
   });
 
   // lint
-  const eslint = new ESLint({ useEslintrc: true, fix: true });
+  const eslint = new ESLint({ fix: true });
   const results = await eslint.lintText(beautified, {
     filePath: pathname,
   });

@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 const conversions = require('webidl-conversions');
 const {
   toSanitizedSequence,
@@ -22,8 +21,6 @@ const {
 const {
   ErrorEvent,
 } = require('./Events.js');
-
-/* eslint-enable no-unused-vars */
 
 const AudioNode = require('./AudioNode.js');
 const AudioParamMap = require('./AudioParamMap.js');
