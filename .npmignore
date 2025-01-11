@@ -3,8 +3,8 @@
 .editorconfig
 .env
 .gitmodules
-.eslintrc
 
+eslint.config.mjs
 build.rs
 Cargo.*
 Cross.toml
