@@ -21,7 +21,7 @@ web-audio-api = "1.1"
 mimalloc = { version = "0.1" }
 
 [build-dependencies]
-napi-build = "2.1.4"
+napi-build = "2.1"
 
 [profile.dev]
 opt-level = 3
