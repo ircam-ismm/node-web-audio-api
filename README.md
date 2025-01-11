@@ -65,19 +65,20 @@ node examples/granular-scrub.mjs
 
 ## Caveats
 
+- `AudioBuffer#getChannelData` is implemented but not reliable in some situations. Your should prefer `AudioBuffer#copyToChannel` and `AudioBuffer#copyFromChannel` when you want to access or manipulate the underlying samples in a safe way.
 - `Streams`: only a minimal audio input stream and the `MediaStreamSourceNode` are provided. All other `MediaStream` features are left on the side for now as they principally concern a different API specification, which is not a trivial problem.
 
 ## Supported Platforms
 
-|                              | binaries | tested |
-| ---------------------------  | ------   | ------ |
-| Windows x64                  | ✓        |        |
-| Windows arm64                | ✓        |        |
-| macOS x64                    | ✓        | ✓      |
-| macOS aarch64                | ✓        | ✓      |
-| Linux x64 gnu                | ✓        |        |
-| Linux arm gnueabihf (RPi)    | ✓        | ✓      |
-| Linux arm64 gnu (RPi)        | ✓        | ✓      |
+|                              | binaries |
+|------------------------------|:--------:|
+| Windows x64                  | ✓        |
+| Windows arm64                | ✓        |
+| macOS x64                    | ✓        |
+| macOS aarch64                | ✓        |
+| Linux x64 gnu                | ✓        |
+| Linux arm gnueabihf (RPi)    | ✓        |
+| Linux arm64 gnu (RPi)        | ✓        |
 
 ## Manual Build
 
@@ -161,7 +162,7 @@ Then run:
 npm run wpt                      # build in debug mode and run all wpt test
 npm run wpt:only                 # run all wpt test without build
 npm run wpt -- --list            # list all wpt test files
-npm run wpt -- --filter <string> # apply <string> filter on executed/listed wpt tests 
+npm run wpt -- --filter <string> # apply <string> filter on executed/listed wpt tests
 ```
 
 ## License
