@@ -65,9 +65,7 @@
     "eslint": "^8.57.0",
     "js-beautify": "^1.15.1",
     "mocha": "^10.2.0",
-    "node-ssh": "^13.0.0",
     "octokit": "^2.0.11",
-    "ping": "^0.4.2",
     "template-literal": "^1.0.4",
     "webidl2": "^24.2.0",
     "wpt-runner": "^5.0.0"
