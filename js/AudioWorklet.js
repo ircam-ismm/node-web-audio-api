@@ -85,7 +85,7 @@ const resolveModule = async (moduleUrl) => {
         try {
           // try resolve according to process.cwd()
           absPathname = require.resolve(moduleUrl, { paths: [process.cwd()] });
-        } catch (err) {
+        } catch {
           throw new DOMException(`Failed to execute 'addModule' on 'AudioWorklet': Cannot resolve module ${moduleUrl}`, 'AbortError');
         }
       }
