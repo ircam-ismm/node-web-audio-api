@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v1.0.0 (11/01/2024)
+
+- Align version with upsteam crate
+- Refactor CI
+
 ## v0.21.5 (23/12/2024)
 
 - Fix: Use module import for `AudioWorklet#addModule`
