@@ -60,7 +60,7 @@ npm run build
 
 3. Run the examples from the project's root directory
 ```sh
-node examples/granular-scrub.mjs
+node examples/granular-scrub.js
 ```
 
 ## Caveats
@@ -79,8 +79,8 @@ We provide prebuilt binaries for the following platforms:
 | macOS x64                    | ✓        |
 | macOS aarch64                | ✓        |
 | Linux x64 gnu                | ✓        |
-| Linux arm gnueabihf (RPi)    | ✓        |
-| Linux arm64 gnu (RPi)        | ✓        |
+| Linux arm gnueabihf          | ✓        |
+| Linux arm64 gnu              | ✓        |
 
 If you need another platform to be supported, please fill an [issue](https://github.com/ircam-ismm/node-web-audio-api/issues) and we will see what we can do.
 
