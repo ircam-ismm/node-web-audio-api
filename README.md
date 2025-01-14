@@ -72,17 +72,24 @@ node examples/granular-scrub.js
 
 We provide prebuilt binaries for the following platforms:
 
-|                              | binaries |
-|------------------------------|:--------:|
-| Windows x64                  | ✓        |
-| Windows arm64                | ✓        |
-| macOS x64                    | ✓        |
-| macOS aarch64                | ✓        |
-| Linux x64 gnu                | ✓        |
-| Linux arm gnueabihf          | ✓        |
-| Linux arm64 gnu              | ✓        |
+|                                                     | binaries |
+|-----------------------------------------------------|:--------:|
+| Windows x64                                         | ✓        |
+| Windows arm64                                       | ✓        |
+| macOS x64                                           | ✓        |
+| macOS aarch64                                       | ✓        |
+| Linux x64 gnu (jack / pipewire-jack)                | ✓        |
+| Linux arm gnueabihf (jack / pipewire-jack)          | ✓        |
+| Linux arm64 gnu     (jack / pipewire-jack)          | ✓        |
 
-If you need another platform to be supported, please fill an [issue](https://github.com/ircam-ismm/node-web-audio-api/issues) and we will see what we can do.
+
+
+### Important notes
+
+- If you need support for another platform, please fill an [issue](https://github.com/ircam-ismm/node-web-audio-api/issues) and we will see what we can do.
+
+- All provided Linux binaries are built with the `jack` flag, which should work either with properly configured [Jack](https://jackaudio.org/) or [pipewire-jack](https://pipewire.org/) backends (...working on interactive / real-time audio, this is our requirements and thus what we _de facto_ support). If this is a limitation for you, please fill an [issue](https://github.com/ircam-ismm/node-web-audio-api/issues) and we will see what we can do.
+
 
 ## Manual Build
 
