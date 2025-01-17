@@ -1,8 +1,12 @@
 # CHANGELOG
 
-## v1.0.0 (11/01/2024)
+## v1.2.0 (17/01/2025)
 
-- Align version with upsteam crate
+- Update upstream crate to [v1.2.0](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-120-2025-01-16)
+
+## v1.0.0 (11/01/2025)
+
+- Align version with upstream crate
 - Refactor CI
 
 ## v0.21.5 (23/12/2024)
@@ -62,7 +66,7 @@
 
 - Update upstream create to [v0.42.0](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-0420-2024-02-05)
 - Improve Error handling
-- Add channelCounnt to media constraints
+- Add channelCount to media constraints
 
 ## v0.15.0 (16/01/2024)
 
@@ -102,7 +106,7 @@
 
 ## v0.8.0 (19/05/2023)
 
-- Implement MediaDevices enumerateDeviaces and getUserMedia
+- Implement MediaDevices enumerateDevices and getUserMedia
 - Use jack as default output if exists on linux
 
 ## v0.7.0 (23/02/2023)
