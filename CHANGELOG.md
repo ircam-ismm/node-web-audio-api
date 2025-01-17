@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## v1.2.0 (17/01/2025)
+## v1.0.1 (17/01/2025)
 
 - Update upstream crate to [v1.2.0](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-120-2025-01-16)
 
