@@ -376,7 +376,7 @@ ${d.attributes(d.node).map(attr => {
   if (!attr.readonly) {
     // nullable:
     // - Float32Array - WaveshaperNode::curve
-    // - AudioBuffer - AudiobufferSourceNode::buffer & ConvolverNode::buffer
+    // - AudioBuffer - AudioBufferSourceNode::buffer & ConvolverNode::buffer
     const nullable = attr.idlType.nullable;
 
     switch (type) {
@@ -500,7 +500,7 @@ ${d.attributes(d.node).map(attr => {
       if (value === null) {
         console.warn("Setting the '${d.name(attr)}' property on '${d.name(d.node)}' to 'null' is not supported yet");
         return;
-      } else if (!(kNapiObj in value)) {
+      } else if (!(value instanceof jsExport.AudioBuffer)) {
         throw new TypeError("Failed to set the '${d.name(attr)}' property on '${d.name(d.node)}': Failed to convert value to '${type}'");
       }
 

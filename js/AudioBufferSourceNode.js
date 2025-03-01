@@ -179,7 +179,7 @@ module.exports = (jsExport, nativeBinding) => {
       if (value === null) {
         console.warn('Setting the \'buffer\' property on \'AudioBufferSourceNode\' to \'null\' is not supported yet');
         return;
-      } else if (!(kNapiObj in value)) {
+      } else if (!(value instanceof jsExport.AudioBuffer)) {
         throw new TypeError('Failed to set the \'buffer\' property on \'AudioBufferSourceNode\': Failed to convert value to \'AudioBuffer\'');
       }
 

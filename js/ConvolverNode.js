@@ -141,7 +141,7 @@ module.exports = (jsExport, nativeBinding) => {
       if (value === null) {
         console.warn('Setting the \'buffer\' property on \'ConvolverNode\' to \'null\' is not supported yet');
         return;
-      } else if (!(kNapiObj in value)) {
+      } else if (!(value instanceof jsExport.AudioBuffer)) {
         throw new TypeError('Failed to set the \'buffer\' property on \'ConvolverNode\': Failed to convert value to \'AudioBuffer\'');
       }
 
