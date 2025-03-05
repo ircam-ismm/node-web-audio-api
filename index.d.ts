@@ -3,6 +3,8 @@
 declare module "node-web-audio-api" {
   export import OfflineAudioCompletionEvent = globalThis.OfflineAudioCompletionEvent;
   export import AudioProcessingEvent = globalThis.AudioProcessingEvent;
+  // not implemented in browsers yet
+  // export import AudioRenderCapacityEvent = globalThis.AudioRenderCapacityEvent;
 
   export import BaseAudioContext = globalThis.BaseAudioContext;
   export import AudioContext = globalThis.AudioContext;
@@ -15,9 +17,13 @@ declare module "node-web-audio-api" {
   export import AudioListener = globalThis.AudioListener;
   export import AudioWorklet = globalThis.AudioWorklet;
   export import AudioParamMap = globalThis.AudioParamMap;
+  // not implemented in browsers yet
+  // export import AudioRenderCapacity = globalThis.AudioRenderCapacity;
 
   export import PeriodicWave = globalThis.PeriodicWave;
   export import AudioBuffer = globalThis.AudioBuffer;
+
+  export import ScriptProcessorNode = globalThis.ScriptProcessorNode;
   export import AudioWorkletNode = globalThis.AudioWorkletNode;
   export import AnalyserNode = globalThis.AnalyserNode;
   export import AudioBufferSourceNode = globalThis.AudioBufferSourceNode;
