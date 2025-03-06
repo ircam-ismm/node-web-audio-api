@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v1.0.3 - 2025-03-06
+
+- Improve typescript support
+
 ## v1.0.2 - 2025-03-01
 
 - Fix error handling when setting buffer in ABSN and Convolver
