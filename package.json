@@ -1,6 +1,6 @@
 {
   "name": "node-web-audio-api",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "author": "Benjamin Matuszewski",
   "description": "Web Audio API implementation for Node.js",
   "exports": {
