@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v1.0.4 - 2025-03-20
+
+- Fix parsing of parameterData for AudioWorkletNode
+
 ## v1.0.3 - 2025-03-06
 
 - Improve typescript support
