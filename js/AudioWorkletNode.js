@@ -114,7 +114,7 @@ module.exports = (jsExport, nativeBinding) => {
         if (typeof options.parameterData === 'object' && options.parameterData !== null) {
           parsedOptions.parameterData = {};
 
-          for (let [key, value] in Object.entries(options.parameterData)) {
+          for (let [key, value] of Object.entries(options.parameterData)) {
             const parsedKey = conversions['DOMString'](key, {
               context: `Failed to construct 'AudioWorkletNode': Invalid 'parameterData' property from AudioWorkletNodeOptions: Invalid key (${key})`,
             });

@@ -18,6 +18,7 @@ module.exports = function createFetch(basePath) {
         resolve({
           ok: true,
           text: () => buffer.toString(),
+          json: () => JSON.parse(buffer.toString()),
         });
       }
     });
