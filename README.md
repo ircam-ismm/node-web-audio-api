@@ -2,14 +2,14 @@
 
 [![npm version](https://badge.fury.io/js/node-web-audio-api.svg)](https://badge.fury.io/js/node-web-audio-api)
 
-Node.js bindings for the Rust implementation of the [Web Audio API](https://www.w3.org/TR/webaudio/).
+Node.js bindings for the Rust implementation of the [Web Audio API specification](https://www.w3.org/TR/webaudio/).
 
-This library aims to provide an implementation that is both efficient and compliant with the specification.
+The library aims to provide an implementation that is both efficient and compliant with the specification.
 
 - see [`orottier/web-audio-api-rs`](https://github.com/orottier/web-audio-api-rs/) for the "real" audio guts
 - use [`napi-rs`](https://github.com/napi-rs/napi-rs/) for the Node.js bindings
 
-For library authors who want to write components that run both in Node.js and the browser, we also provide [isomorphic-web-audio-api](https://github.com/ircam-ismm/isomorphic-web-audio-api)
+For library authors who want to write components that run both in Node.js and the browser, we also provide [isomorphic-web-audio-api](https://github.com/ircam-ismm/isomorphic-web-audio-api).
 
 ## Install
 
