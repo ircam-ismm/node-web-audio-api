@@ -69,6 +69,7 @@ node examples/granular-scrub.js
 
 - `AudioBuffer#getChannelData` is implemented but not reliable in some situations. Your should prefer `AudioBuffer#copyToChannel` and `AudioBuffer#copyFromChannel` when you want to access or manipulate the underlying samples in a safe way.
 - `Streams`: only a minimal audio input stream and the `MediaStreamSourceNode` are provided. All other `MediaStream` features are left on the side for now as they principally concern a different API specification, which is not a trivial problem.
+- `new AudioContext({sinkId:{type:'none'}})`: if your system has no audio sinks (e.g. docker image) use `{sinkId:{type:'none'}}` when initializing `AudioContext`, else it will crash with `DeviceNotAvailable` [see MDN](https://developer.mozilla.org/en-US/docs/Web/API/AudioContext/AudioContext#sinkid)
 
 ## Supported Platforms - Prebuilt Binaries
 
