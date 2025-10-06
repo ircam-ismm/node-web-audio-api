@@ -58,6 +58,11 @@ jobs:
             target: armv7-unknown-linux-gnueabihf
             command: cross
 
+          - name: linux-armv6-gnueabihf
+            runner: ubuntu-latest
+            target: arm-unknown-linux-gnueabihf
+            command: cross
+
     name: build - ${{ matrix.name }}
     steps:
       - name: Check out repository
