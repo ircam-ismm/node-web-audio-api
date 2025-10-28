@@ -12,7 +12,7 @@ use web_audio_api::media_devices::{
 
 #[js_function(1)]
 pub(crate) fn napi_get_user_media(ctx: CallContext) -> Result<JsObject> {
-    // we never go here, probably because monkey explictely pass undefined (?)
+    // we never go here, probably because monkey explicitly pass undefined (?)
     if ctx.length == 0 {
         return Err(napi::Error::from_reason(
             "TypeError -  Failed to execute 'getUserMedia' on 'MediaDevices': audio must be requested".to_string(),
