@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v1.0.6 - 2025-11-18
+
+- Fix `mjs` exports
+
 ## v1.0.4 - 2025-03-20
 
 - Fix parsing of parameterData for AudioWorkletNode
