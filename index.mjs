@@ -23,8 +23,8 @@
 import {
   createRequire,
 } from 'module';
-
 const require = createRequire(import.meta.url);
+
 const nativeModule = require('./index.cjs');
 // events
 export const OfflineAudioCompletionEvent = nativeModule.OfflineAudioCompletionEvent;
