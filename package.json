@@ -42,7 +42,7 @@
     "check": "cargo fmt && cargo clippy",
     "generate": "node generator/index.mjs && cargo fmt",
     "lint": "npx eslint index.cjs index.mjs && npx eslint js/*.js && npx eslint examples/*.js",
-    "preversion": "npm install && npm run generate",
+    "preversion": "npm install && npm run generate && npm run lint",
     "postversion": "cargo bump $npm_package_version && git commit -am \"v$npm_package_version\" && node .scripts/check-changelog.mjs",
     "test": "mocha tests/*.spec.mjs",
     "test:ci": "mocha tests/*.spec.mjs -- --ci",
