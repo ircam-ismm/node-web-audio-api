@@ -5,34 +5,30 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 
 const nativeModule = require('./index.cjs');
-export const {
-  // events
-  OfflineAudioCompletionEvent,
-  AudioProcessingEvent,
-  AudioRenderCapacityEvent,
+// events
+export const OfflineAudioCompletionEvent = nativeModule.OfflineAudioCompletionEvent;
+export const AudioProcessingEvent = nativeModule.AudioProcessingEvent;
+export const AudioRenderCapacityEvent = nativeModule.AudioRenderCapacityEvent;
+// manually written nodes
+export const BaseAudioContext = nativeModule.BaseAudioContext;
+export const AudioContext = nativeModule.AudioContext;
+export const OfflineAudioContext = nativeModule.OfflineAudioContext;
 
-  // manually written nodes
-  BaseAudioContext,
-  AudioContext,
-  OfflineAudioContext,
+export const AudioNode = nativeModule.AudioNode;
+export const AudioScheduledSourceNode = nativeModule.AudioScheduledSourceNode;
+export const AudioParam = nativeModule.AudioParam;
+export const AudioDestinationNode = nativeModule.AudioDestinationNode;
+export const AudioListener = nativeModule.AudioListener;
+export const AudioWorklet = nativeModule.AudioWorklet;
+export const AudioParamMap = nativeModule.AudioParamMap;
+export const AudioRenderCapacity = nativeModule.AudioRenderCapacity;
 
-  AudioNode,
-  AudioScheduledSourceNode,
-  AudioParam,
-  AudioDestinationNode,
-  AudioListener,
-  AudioWorklet,
-  AudioParamMap,
-  AudioRenderCapacity,
-
-  PeriodicWave,
-  AudioBuffer,
-  // generated nodes
-${d.nodes.map(n => `  ${d.name(n)},`).join('\n')}
-
-  // helper methods
-  mediaDevices,
-} = nativeModule;
+export const PeriodicWave = nativeModule.PeriodicWave;
+export const AudioBuffer = nativeModule.AudioBuffer;
+// generated nodes
+${d.nodes.map(n => `export const ${d.name(n)} = nativeModule.${d.name(n)};`).join('\n')}
+// helper methods
+export const mediaDevices = nativeModule.mediaDevices;
 
 export default nativeModule;
 

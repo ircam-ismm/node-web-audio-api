@@ -1,7 +1,7 @@
 import { assert } from 'chai';
 import {
-  AudioContext,
   AudioBuffer,
+  ConstantSourceNode,
   OfflineAudioContext,
 } from '../index.mjs';
 
@@ -34,6 +34,33 @@ describe('# OfflineAudioContext', () => {
       assert.isTrue(aResult instanceof AudioBuffer);
       assert.isTrue(bResult instanceof AudioBuffer);
       assert.deepEqual(aResult, bResult);
+    });
+  });
+
+  describe('## suspend / resume', () => {
+    it.only('should suspend at right time', async () => {
+      for (let i = 0; i < 100000; i++) {
+        console.log('---------------------------------');
+        console.log('### iteration', i);
+        const audioContext = new OfflineAudioContext(1, 256, 48000);;
+        const src = new ConstantSourceNode(audioContext, { offset: 1 });
+        src.connect(audioContext.destination);
+
+        const suspendTime = 128 / audioContext.sampleRate;
+        let timeInSuspend = null;
+
+        audioContext.suspend(suspendTime).then(() => {
+          timeInSuspend = audioContext.currentTime;
+          audioContext.resume();
+        });
+
+        const buffer = await audioContext.startRendering();
+        if (suspendTime !== timeInSuspend) {
+          console.log(suspendTime, timeInSuspend);
+          assert.fail();
+          return;
+        }
+      }
     });
   });
 });
