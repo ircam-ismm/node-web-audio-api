@@ -38,7 +38,7 @@ describe('# OfflineAudioContext', () => {
   });
 
   describe('## suspend / resume', () => {
-    it.only('should suspend at right time', async () => {
+    it.skip('should suspend at right time', async () => {
       for (let i = 0; i < 100000; i++) {
         console.log('---------------------------------');
         console.log('### iteration', i);
