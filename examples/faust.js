@@ -1,60 +1,58 @@
+
+
+// Example: run a simple Faust oscillator graph using node-web-audio-api.
 // Requires: npm install @grame/faustwasm
-import path from 'node:path';
+// Usage: node faust.js
+
 import { fileURLToPath } from 'node:url';
 import { AudioContext, AudioWorkletNode } from '../index.mjs';
-import {
-  instantiateFaustModuleFromFile,
-  LibFaust,
-  FaustCompiler,
-  FaustMonoDspGenerator,
-} from '@grame/faustwasm/dist/esm/index.js';
 
-// Ensure the AudioWorkletNode constructor is available globally for faustwasm.
+// Expose AudioWorkletNode globally so faustwasm can patch it into worklet factories.
 if (typeof globalThis.AudioWorkletNode === 'undefined') {
   globalThis.AudioWorkletNode = AudioWorkletNode;
 }
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const faustWasmDir = path.resolve(__dirname, '../node_modules/@grame/faustwasm/libfaust-wasm');
+const {
+  instantiateFaustModuleFromFile,
+  LibFaust,
+  FaustCompiler,
+  FaustMonoDspGenerator,
+} = await import('@grame/faustwasm/dist/esm/index.js');
+
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });
 
+// Minimal Faust DSP: two sine oscillators mixed to stereo.
 const dspCode = `
 import("stdfaust.lib");
-process = os.osc(440);
+process = os.osc(440)*0.3, os.osc(800)*0.3;
 `;
 
+// Load the Faust toolchain from the wasm distribution.
 const faustModule = await instantiateFaustModuleFromFile(
-  path.join(faustWasmDir, 'libfaust-wasm.js'),
-  path.join(faustWasmDir, 'libfaust-wasm.data'),
-  path.join(faustWasmDir, 'libfaust-wasm.wasm'),
+  fileURLToPath(import.meta.resolve('@grame/faustwasm/libfaust-wasm/libfaust-wasm.js')),
+  fileURLToPath(import.meta.resolve('@grame/faustwasm/libfaust-wasm/libfaust-wasm.data')),
+  fileURLToPath(import.meta.resolve('@grame/faustwasm/libfaust-wasm/libfaust-wasm.wasm')),
 );
 
 const libFaust = new LibFaust(faustModule);
 const compiler = new FaustCompiler(libFaust);
 const generator = new FaustMonoDspGenerator();
 
-const compiled = await generator.compile(compiler, 'faust-osc', dspCode, '-I libraries/');
+const compiled = await generator.compile(compiler, 'faust-osc', dspCode, '-ftz 2');
 if (!compiled) {
   throw new Error('Faust compilation failed');
 }
 
-const faustNode = await generator.createNode(audioContext, 'faust-osc', generator.factory, false);
+const faustNode = await generator.createNode(audioContext);
 if (!faustNode) {
   throw new Error('Failed to create Faust node');
 }
 
 console.log('Faust node created successfully.', faustNode);
 
-//if (typeof faustNode.connect === 'function') {
-  faustNode.connect(audioContext.destination);
-//}
-
-//if (typeof faustNode.start === 'function') {
-  faustNode.start();
-//}
-
-await audioContext.resume();
+faustNode.connect(audioContext.destination);
+faustNode.start();
 
 console.log('Faust oscillator playing for 4 seconds...');
 await new Promise(resolve => setTimeout(resolve, 4000));
