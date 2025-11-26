@@ -70,6 +70,7 @@
     "wpt-runner": "^5.0.0"
   },
   "dependencies": {
+    "@grame/faustwasm": "^0.12.2",
     "caller": "^1.1.0",
     "node-fetch": "^3.3.2",
     "webidl-conversions": "^7.0.0"
