@@ -78,7 +78,11 @@ const findParam = substrings => {
     const low = p.toLowerCase();
     return substrings.every(s => low.includes(s));
   });
-  if (!match) throw new Error(`Parameter containing "${substrings.join(' & ')}" not found`);
+
+  if (!match) {
+    throw new Error(`Parameter containing "${substrings.join(' & ')}" not found`);
+  }
+
   return match;
 };
 
