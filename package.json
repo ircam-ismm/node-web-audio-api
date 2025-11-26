@@ -51,6 +51,7 @@
     "wpt:only": "node ./.scripts/wpt-harness.mjs"
   },
   "devDependencies": {
+    "@grame/faustwasm": "^0.13.3",
     "@ircam/eslint-config": "^2.0.0",
     "@ircam/sc-scheduling": "^1.0.0",
     "@ircam/sc-utils": "^1.9.0",
@@ -70,7 +71,6 @@
     "wpt-runner": "^5.0.0"
   },
   "dependencies": {
-    "@grame/faustwasm": "^0.13.0",
     "caller": "^1.1.0",
     "node-fetch": "^3.3.2",
     "webidl-conversions": "^7.0.0"
