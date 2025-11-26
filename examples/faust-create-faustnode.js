@@ -67,8 +67,8 @@ async function runMonoPolyTest(modeLabel, sp = false, bufferSize) {
 
   try {
     log(`Starting ${modeLabel} mono test for 5 seconds…`);
-    const monoGenerator = new FaustDspGenerator();
-    const monoNode = await monoGenerator.createFaustNode(
+    const generator = new FaustDspGenerator();
+    const monoNode = await generator.createFaustNode(
       audioContext,
       `${modeLabel}_mono_test`,
       monoCode,
@@ -90,8 +90,7 @@ async function runMonoPolyTest(modeLabel, sp = false, bufferSize) {
     monoNode.disconnect();
     log(`${modeLabel} mono stopped after 5 seconds; starting poly test…`);
 
-    const polyGenerator = new FaustDspGenerator();
-    const polyNode = await polyGenerator.createFaustNode(
+    const polyNode = await generator.createFaustNode(
       audioContext,
       `${modeLabel}_poly_test`,
       polyCode,
