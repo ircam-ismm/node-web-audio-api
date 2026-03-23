@@ -244,11 +244,21 @@ fn recycle_processor(env: &Env, processor: JsObject) -> Result<()> {
     let k_worklet_params_cache = env.symbol_for("node-web-audio-api:worklet-params-cache")?;
     let js_params_cache = processor.get_property::<JsSymbol, JsObject>(k_worklet_params_cache)?;
 
-    let param_cache_128 = js_params_cache.get_element::<JsTypedArray>(0)?;
-    let _ = recycle_buffer.call1::<JsTypedArray, JsUndefined>(param_cache_128)?;
+    let js_params_properties = js_params_cache.get_property_names()?;
+    let len = js_params_properties.get_array_length()?;
 
-    let param_cache_1 = js_params_cache.get_element::<JsTypedArray>(1)?;
-    let _ = recycle_buffer_1.call1::<JsTypedArray, JsUndefined>(param_cache_1)?;
+    for i in 0..len {
+        let js_property_name: JsString = js_params_properties.get_element(i)?;
+        let utf8_str = js_property_name.into_utf8()?.into_owned()?;
+        let property_name = utf8_str.as_str();
+        let cache: JsObject = js_params_cache.get_named_property(property_name)?;
+
+        let param_cache_128 = cache.get_element::<JsTypedArray>(0)?;
+        let _ = recycle_buffer.call1::<JsTypedArray, JsUndefined>(param_cache_128)?;
+
+        let param_cache_1 = cache.get_element::<JsTypedArray>(1)?;
+        let _ = recycle_buffer_1.call1::<JsTypedArray, JsUndefined>(param_cache_1)?;
+    }
 
     Ok(())
 }
