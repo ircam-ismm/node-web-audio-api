@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## v1.0.8 - 2026-02-14
+
+- Fix: AudioRenderCapacity.stop cf. #167
+- Fix: More robust debug build loading
+- Docs: Faust WASM examples
+
+## v1.0.7 - 2025-11-18
 ## v1.0.6 - 2025-11-18
 
 - Fix `mjs` exports

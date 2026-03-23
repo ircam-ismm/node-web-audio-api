@@ -5,6 +5,6 @@ module.exports.propagateEvent = function propagateEvent(eventTarget, event) {
   if (isFunction(eventTarget[`on${event.type}`])) {
     eventTarget[`on${event.type}`](event);
   }
-  // then distach to add event listeners
+  // then dispatch to `addEventListener` callbacks
   eventTarget.dispatchEvent(event);
 }
