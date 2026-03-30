@@ -128,7 +128,7 @@ module.exports = (jsExport, nativeBinding) => {
       let napiObj;
 
       try {
-        napiObj = new nativeBinding.OscillatorNode(context[kNapiObj], parsedOptions);
+        napiObj = new nativeBinding.NapiOscillatorNode(context[kNapiObj], parsedOptions);
       } catch (err) {
         throwSanitizedError(err);
       }

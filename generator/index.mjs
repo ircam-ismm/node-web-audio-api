@@ -13,27 +13,27 @@ import { ESLint } from 'eslint';
 // List of supported nodes. Note that this is list is composed of IDL definitions,
 // and extended with the list of generatedNodes
 let supportedNodes = [
-  'ScriptProcessorNode',
-  'AudioWorkletNode',
+  // 'ScriptProcessorNode',
+  // 'AudioWorkletNode',
 ];
 
 const generatedNodes = [
-  `AnalyserNode`,
-  `AudioBufferSourceNode`,
-  `BiquadFilterNode`,
-  `ChannelMergerNode`,
-  `ChannelSplitterNode`,
-  `ConstantSourceNode`,
-  `ConvolverNode`,
-  `DelayNode`,
-  'DynamicsCompressorNode',
+  // `AnalyserNode`,
+  // `AudioBufferSourceNode`,
+  // `BiquadFilterNode`,
+  // `ChannelMergerNode`,
+  // `ChannelSplitterNode`,
+  // `ConstantSourceNode`,
+  // `ConvolverNode`,
+  // `DelayNode`,
+  // 'DynamicsCompressorNode',
   `GainNode`,
-  `IIRFilterNode`,
-  `MediaStreamAudioSourceNode`,
+  // `IIRFilterNode`,
+  // `MediaStreamAudioSourceNode`,
   `OscillatorNode`,
-  `PannerNode`,
-  `StereoPannerNode`,
-  `WaveShaperNode`,
+  // `PannerNode`,
+  // `StereoPannerNode`,
+  // `WaveShaperNode`,
 ];
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

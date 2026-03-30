@@ -276,7 +276,7 @@ module.exports = (jsExport, nativeBinding) => {
       let napiObj;
 
       try {
-        napiObj = new nativeBinding.${d.name(d.node)}(context[kNapiObj], parsedOptions);
+        napiObj = new nativeBinding.${d.napiName(d.node)}(context[kNapiObj], parsedOptions);
       } catch (err) {
         throwSanitizedError(err);
       }

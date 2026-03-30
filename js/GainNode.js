@@ -89,7 +89,7 @@ module.exports = (jsExport, nativeBinding) => {
       let napiObj;
 
       try {
-        napiObj = new nativeBinding.GainNode(context[kNapiObj], parsedOptions);
+        napiObj = new nativeBinding.NapiGainNode(context[kNapiObj], parsedOptions);
       } catch (err) {
         throwSanitizedError(err);
       }

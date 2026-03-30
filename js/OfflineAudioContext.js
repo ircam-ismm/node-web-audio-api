@@ -73,7 +73,7 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
       let napiObj;
 
       try {
-        napiObj = new nativeBinding.OfflineAudioContext(numberOfChannels, length, sampleRate);
+        napiObj = new nativeBinding.NapiOfflineAudioContext(numberOfChannels, length, sampleRate);
       } catch (err) {
         throwSanitizedError(err);
       }

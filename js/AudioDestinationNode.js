@@ -8,7 +8,7 @@ class AudioDestinationNode extends AudioNode {
     if (
       (typeof options !== 'object')
       || !(kNapiObj in options)
-      || options[kNapiObj]['Symbol.toStringTag'] !== 'AudioDestinationNode'
+      || options[kNapiObj].constructor.name !== 'NapiAudioDestinationNode'
     ) {
       throw new TypeError('Illegal constructor');
     }

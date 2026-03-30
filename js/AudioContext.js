@@ -73,7 +73,7 @@ module.exports = function(jsExport, nativeBinding) {
       let napiObj;
 
       try {
-        napiObj = new nativeBinding.AudioContext(targetOptions);
+        napiObj = new nativeBinding.NapiAudioContext(targetOptions);
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -84,9 +84,10 @@ module.exports = function(jsExport, nativeBinding) {
         this.#sinkId = options.sinkId;
       }
 
-      this.#renderCapacity = new jsExport.AudioRenderCapacity({
-        [kNapiObj]: this[kNapiObj].renderCapacity,
-      });
+      // @fixme - napi-rs 3
+      // this.#renderCapacity = new jsExport.AudioRenderCapacity({
+      //   [kNapiObj]: this[kNapiObj].renderCapacity,
+      // });
 
       // Add function to Napi object to bridge from Rust events to JS EventTarget
       this[kNapiObj][kOnStateChange] = (function(err, rawEvent) {
@@ -102,7 +103,9 @@ module.exports = function(jsExport, nativeBinding) {
       // Workaround to bind the `sinkchange` and `statechange` events to EventTarget.
       // This must be called from JS facade ctor as the JS handler are added to the Napi
       // object after its instantiation, and that we don't have any initial `resume` call.
-      this[kNapiObj].listen_to_events();
+
+      // @fixme - napi-rs 3
+      // this[kNapiObj].listen_to_events();
 
       // @todo - This is probably not requested anymore as the event listeners
       // prevent garbage collection and process exit
