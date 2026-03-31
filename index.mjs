@@ -33,7 +33,7 @@ const nativeModule = require('./index.cjs');
 // manually written nodes
 export const BaseAudioContext = nativeModule.BaseAudioContext;
 export const AudioContext = nativeModule.AudioContext;
-// export const OfflineAudioContext = nativeModule.OfflineAudioContext;
+export const OfflineAudioContext = nativeModule.OfflineAudioContext;
 
 export const AudioNode = nativeModule.AudioNode;
 // export const AudioScheduledSourceNode = nativeModule.AudioScheduledSourceNode;

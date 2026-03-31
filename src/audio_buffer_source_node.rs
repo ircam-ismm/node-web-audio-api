@@ -35,8 +35,12 @@ audio_node_impl!(NapiAudioBufferSourceNode);
 impl NapiAudioBufferSourceNode {
     // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
     #[napi(constructor)]
-    pub fn new(mut this: This<Object>, context: &NapiAudioContext, options: Object) -> Self {
-        // @todo - handle options
+    pub fn new(
+        mut this: This<Object>,
+        context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
+        options: Object,
+    ) -> Self {
+        // @todo - finish options handling
 
         // --------------------------------------------------------
         // Parse AudioBufferSourceOptions
@@ -103,8 +107,16 @@ impl NapiAudioBufferSourceNode {
         // --------------------------------------------------------
         // Create native instance
         // --------------------------------------------------------
-        let native_context = context.unwrap();
-        let native_node = AudioBufferSourceNode::new(native_context, options);
+        let native_node = match context {
+            Either::A(context) => {
+                let native_context = context.unwrap();
+                AudioBufferSourceNode::new(native_context, options)
+            }
+            Either::B(context) => {
+                let native_context = context.unwrap();
+                AudioBufferSourceNode::new(native_context, options)
+            }
+        };
 
         // --------------------------------------------------------
         // Create and bind NapiAudioParam instances

@@ -12,7 +12,7 @@ const jsExport = {};
 // --------------------------------------------------------------------------
 jsExport.BaseAudioContext = require('./js/BaseAudioContext.js')(jsExport, nativeBinding);
 jsExport.AudioContext = require('./js/AudioContext.js')(jsExport, nativeBinding);
-// jsExport.OfflineAudioContext = require('./js/OfflineAudioContext.js')(jsExport, nativeBinding);
+jsExport.OfflineAudioContext = require('./js/OfflineAudioContext.js')(jsExport, nativeBinding);
 
 ${d.nodes.map((node) => {
 return `
@@ -20,7 +20,7 @@ jsExport.${d.name(node)} = require('./js/${d.name(node)}.js')(jsExport, nativeBi
 }).join('')}
 
 jsExport.AudioNode = require('./js/AudioNode.js');
-// jsExport.AudioScheduledSourceNode = require('./js/AudioScheduledSourceNode.js');
+jsExport.AudioScheduledSourceNode = require('./js/AudioScheduledSourceNode.js');
 jsExport.AudioParam = require('./js/AudioParam.js');
 jsExport.AudioDestinationNode = require('./js/AudioDestinationNode.js');
 // jsExport.AudioListener = require('./js/AudioListener.js');

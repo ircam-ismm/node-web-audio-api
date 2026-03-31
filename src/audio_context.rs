@@ -7,6 +7,30 @@ use web_audio_api::context::{AudioContext, BaseAudioContext};
 
 use crate::NapiAudioDestinationNode;
 
+pub struct SetSinkIdTask {
+    context: Arc<AudioContext>,
+    sink_id: String,
+}
+
+#[napi]
+impl Task for SetSinkIdTask {
+    type Output = ();
+    type JsValue = ();
+
+    fn compute(&mut self) -> Result<Self::Output> {
+        let result = self.context.set_sink_id_sync(self.sink_id.clone());
+
+        match result {
+            Ok(audio_buffer) => Ok(audio_buffer),
+            Err(e) => Err(Error::from_reason(e.to_string())),
+        }
+    }
+
+    fn resolve(&mut self, _: Env, _: Self::Output) -> Result<Self::JsValue> {
+        Ok(())
+    }
+}
+
 #[derive(Clone)]
 #[napi]
 pub struct NapiAudioContext {
@@ -30,13 +54,15 @@ base_audio_context_impl!(NapiAudioContext, AudioContext);
 impl NapiAudioContext {
     #[napi(constructor)]
     pub fn new(mut this: This<Object>) -> Self {
-        let native_context = Arc::new(AudioContext::new(Default::default()));
+        // @fixme - napi-3 - handle options
+
+        let native_context = AudioContext::new(Default::default());
 
         let napi_context = Self {
-            inner: native_context,
+            inner: Arc::new(native_context),
         };
 
-        // class instance as JS member
+        // create and bind AudioDestinationNode
         let native_node = napi_context.unwrap().destination();
         let napi_node = NapiAudioDestinationNode::new(native_node);
         let _ = this.set_named_property("destination", napi_node);
@@ -59,22 +85,34 @@ impl NapiAudioContext {
         self.unwrap().sink_id()
     }
 
-    // #[napi(setter, js_name = "sinkId")]
-    // pub fn set_sink_id(&self, sink_id: String) -> Result<()> {
-    //     let result = self.unwrap().set_sink_id_sync(sink_id.as_str());
+    // use task to make delegate async stuff to lib_uv
+    #[napi]
+    pub fn set_sink_id(&self, sink_id: String) -> AsyncTask<SetSinkIdTask> {
+        let context = self.inner.clone();
+        let task = SetSinkIdTask { context, sink_id };
+        AsyncTask::new(task)
+    }
 
-    //     match result {
-    //         Ok(_) => (),
-    //         Err(err) => Error::new(err)
-    //     }
-    // }
+    #[napi]
+    pub async fn resume(&self) -> Result<()> {
+        self.inner.resume().await;
+        Ok(())
+    }
 
-    // #[napi]
-    // pub fn resume()
+    #[napi]
+    pub async fn suspend(&self) -> Result<()> {
+        self.inner.suspend().await;
+        Ok(())
+    }
 
-    // #[napi]
-    // pub fn suspend()
+    #[napi]
+    pub async fn close(&self) -> Result<()> {
+        self.inner.close().await;
+        Ok(())
+    }
 
-    // #[napi]
-    // pub fn close()
+    // attribute EventHandler onsinkchange;
+    // attribute EventHandler onerror;
+    // [SameObject] readonly attribute AudioPlaybackStats playbackStats;
+    // AudioTimestamp getOutputTimestamp ();
 }

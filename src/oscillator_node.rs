@@ -35,8 +35,12 @@ audio_node_impl!(NapiOscillatorNode);
 impl NapiOscillatorNode {
     // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
     #[napi(constructor)]
-    pub fn new(mut this: This<Object>, context: &NapiAudioContext, options: Object) -> Self {
-        // @todo - handle options
+    pub fn new(
+        mut this: This<Object>,
+        context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
+        options: Object,
+    ) -> Self {
+        // @todo - finish options handling
 
         // --------------------------------------------------------
         // Parse OscillatorOptions
@@ -141,8 +145,16 @@ impl NapiOscillatorNode {
         // --------------------------------------------------------
         // Create native instance
         // --------------------------------------------------------
-        let native_context = context.unwrap();
-        let native_node = OscillatorNode::new(native_context, options);
+        let native_node = match context {
+            Either::A(context) => {
+                let native_context = context.unwrap();
+                OscillatorNode::new(native_context, options)
+            }
+            Either::B(context) => {
+                let native_context = context.unwrap();
+                OscillatorNode::new(native_context, options)
+            }
+        };
 
         // --------------------------------------------------------
         // Create and bind NapiAudioParam instances

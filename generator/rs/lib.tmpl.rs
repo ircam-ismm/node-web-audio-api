@@ -13,20 +13,22 @@ mod audio_node;
 // Web Audio API
 mod audio_context;
 use crate::audio_context::NapiAudioContext;
+mod offline_audio_context;
+use crate::offline_audio_context::NapiOfflineAudioContext;
+
 mod audio_destination_node;
 use crate::audio_destination_node::NapiAudioDestinationNode;
 mod audio_param;
 use crate::audio_param::NapiAudioParam;
+mod audio_buffer;
+use crate::audio_buffer::NapiAudioBuffer;
 // mod audio_listener;
 // use crate::audio_listener::NapiAudioListener;
 // mod audio_render_capacity;
 // use crate::audio_render_capacity::NapiAudioRenderCapacity;
-mod audio_buffer;
-use crate::audio_buffer::NapiAudioBuffer;
+
 // mod periodic_wave;
 // use crate::periodic_wave::NapiPeriodicWave;
-// mod offline_audio_context;
-// use crate::offline_audio_context::NapiOfflineAudioContext;
 // Generated audio nodes
 ${d.nodes.map(n => { return `
 mod ${d.slug(n)};

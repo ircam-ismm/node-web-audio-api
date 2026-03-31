@@ -16,8 +16,14 @@ audio_node_impl!(${d.napiName(d.node)});
 impl ${d.napiName(d.node)} {
     // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
     #[napi(constructor)]
-    pub fn new(mut this: This<Object>, context: &NapiAudioContext, options: Object) -> Self {
-        // @todo - handle options
+    pub fn new(
+        mut this: This<Object>,
+        context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
+        options: Object
+    ) -> Self {
+
+        // @todo - finish options handling
+
         ${(function() {
             const optionsArg = d.constructor(d.node).arguments[1];
             const optionsType = d.memberType(optionsArg);
@@ -113,7 +119,7 @@ impl ${d.napiName(d.node)} {
                         case "AudioBuffer": {
                             const idl = d.findInTree(d.memberType(member));
                             return `
-        let js_${slug} = options.get::<Option<ClassInstance<&NapiAudioBuffer>>>("${optionName}").unwrap();
+        let js_${slug} = options.get::<Option<ClassInstance<&Napi${optionType}>>>("${optionName}").unwrap();
         let ${slug} = if let Some(${slug}) = js_${slug}.unwrap() {
             Some(${slug}.inner.clone())
         } else {
@@ -125,6 +131,7 @@ impl ${d.napiName(d.node)} {
                         case "MediaStream": {
                             const napiName = `Napi${member.idlType.idlType}`;
                             return `
+        // @fixme - napi-rs 3
         let ${slug} = node_defaults.${slug};
         // let ${simple_slug}_js = options.get::<&str, JsObject>("${optionName}")?.unwrap();
         // let ${simple_slug}_napi = ctx.env.unwrap::<${napiName}>(&${simple_slug}_js)?;
@@ -249,8 +256,16 @@ impl ${d.napiName(d.node)} {
         // --------------------------------------------------------
         // Create native instance
         // --------------------------------------------------------
-        let native_context = context.unwrap();
-        let native_node = ${d.name(d.node)}::new(native_context, options);
+        let native_node = match context {
+            Either::A(context) => {
+                let native_context = context.unwrap();
+                ${d.name(d.node)}::new(native_context, options)
+            }
+            Either::B(context) => {
+                let native_context = context.unwrap();
+                ${d.name(d.node)}::new(native_context, options)
+            }
+        };
 
         // --------------------------------------------------------
         // Create and bind NapiAudioParam instances

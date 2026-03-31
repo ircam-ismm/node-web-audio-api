@@ -31,14 +31,14 @@ const jsExport = {};
 // --------------------------------------------------------------------------
 jsExport.BaseAudioContext = require('./js/BaseAudioContext.js')(jsExport, nativeBinding);
 jsExport.AudioContext = require('./js/AudioContext.js')(jsExport, nativeBinding);
-// jsExport.OfflineAudioContext = require('./js/OfflineAudioContext.js')(jsExport, nativeBinding);
+jsExport.OfflineAudioContext = require('./js/OfflineAudioContext.js')(jsExport, nativeBinding);
 
 jsExport.AudioBufferSourceNode = require('./js/AudioBufferSourceNode.js')(jsExport, nativeBinding);
 jsExport.GainNode = require('./js/GainNode.js')(jsExport, nativeBinding);
 jsExport.OscillatorNode = require('./js/OscillatorNode.js')(jsExport, nativeBinding);
 
 jsExport.AudioNode = require('./js/AudioNode.js');
-// jsExport.AudioScheduledSourceNode = require('./js/AudioScheduledSourceNode.js');
+jsExport.AudioScheduledSourceNode = require('./js/AudioScheduledSourceNode.js');
 jsExport.AudioParam = require('./js/AudioParam.js');
 jsExport.AudioDestinationNode = require('./js/AudioDestinationNode.js');
 // jsExport.AudioListener = require('./js/AudioListener.js');

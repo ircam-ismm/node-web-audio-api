@@ -121,13 +121,14 @@ module.exports = function(jsExport, nativeBinding) {
       // keep process awake until context is closed
       const keepAwakeId = setInterval(() => {}, 10 * 1000);
       // clear on close
-      this.addEventListener('statechange', () => {
-        if (this.state === 'closed') {
-          // allow to garbage collect the context and to the close the process
-          delete process[kAudioContextId];
-          clearTimeout(keepAwakeId);
-        }
-      });
+      // @fixme - napi-rs
+      // this.addEventListener('statechange', () => {
+      //   if (this.state === 'closed') {
+      //     // allow to garbage collect the context and to the close the process
+      //     delete process[kAudioContextId];
+      //     clearTimeout(keepAwakeId);
+      //   }
+      // });
 
       // for wpt tests, see ./.scripts/wpt_harness.mjs for informations
       if (process.WPT_TEST_RUNNER) {
@@ -216,7 +217,8 @@ module.exports = function(jsExport, nativeBinding) {
 
       // Close audioWorklet first so that `run_audio_worklet_global_scope` exit first
       // The other way around works too because of `recv_timeout` but cleaner this way
-      await this.audioWorklet[kWorkletRelease]();
+      // @fixme - napi-rs 3
+      // await this.audioWorklet[kWorkletRelease]();
       await this[kNapiObj].close();
     }
 

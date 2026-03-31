@@ -6,7 +6,7 @@ import {
   // AudioBufferSourceNode,
   AudioContext,
   // ConvolverNode,
-  // OfflineAudioContext
+  OfflineAudioContext,
 } from '../index.mjs';
 
 describe('AudioBuffer', () => {
@@ -139,13 +139,14 @@ describe('AudioBuffer', () => {
       audioContext.close();
     });
 
-    it(`OfflineAudioContext.startRendering() -> AudioBuffer`, async () => {
+    it.only(`OfflineAudioContext.startRendering() -> AudioBuffer`, async () => {
       const audioContext = new OfflineAudioContext(1, 1000, 48000);
       const src = audioContext.createOscillator();
       src.connect(audioContext.destination);
       src.start(0);
 
       const audioBuffer = await audioContext.startRendering();
+      console.log(audioBuffer);
       assert.equal(audioBuffer instanceof AudioBuffer, true);
       // make sure we use the underlying native buffer
       const emptyBuffer = new Float32Array(audioBuffer.length).fill(0);

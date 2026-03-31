@@ -7,6 +7,7 @@ offline.addEventListener('complete', (e) => {
 });
 
 offline.suspend(128 / 48000).then(async () => {
+  console.log('currentTime (real, logical):', offline.currentTime, 128 / 48000);
   const osc = offline.createOscillator();
   osc.connect(offline.destination);
   osc.frequency.value = 220;

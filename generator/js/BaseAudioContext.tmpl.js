@@ -5,16 +5,16 @@ const {
 } = require('./lib/utils.js');
 const {
   kNapiObj,
-  kPrivateConstructor,
+  // kPrivateConstructor,
 } = require('./lib/symbols.js');
 
 // const AudioWorklet = require('./AudioWorklet.js');
 
 module.exports = (jsExport, _nativeBinding) => {
   class BaseAudioContext extends EventTarget {
-    #audioWorklet = null;
+    // #audioWorklet = null;
     #destination = null;
-    #listener = null;
+    // #listener = null;
 
     constructor(options) {
       // Make constructor "private"
@@ -107,23 +107,25 @@ module.exports = (jsExport, _nativeBinding) => {
       return this[kNapiObj].state;
     }
 
-    // get onstatechange() {
-    //   if (!(this instanceof BaseAudioContext)) {
-    //     throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
-    //   }
+    // @fixme - napi-rs 3
+    get onstatechange() {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
+      }
 
-    //   return this._statechange || null;
-    // }
+      return this._statechange || null;
+    }
 
-    // set onstatechange(value) {
-    //   if (!(this instanceof BaseAudioContext)) {
-    //     throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
-    //   }
+    // @fixme - napi-rs 3
+    set onstatechange(value) {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
+      }
 
-    //   if (isFunction(value) || value === null) {
-    //     this._statechange = value;
-    //   }
-    // }
+      if (isFunction(value) || value === null) {
+        this._statechange = value;
+      }
+    }
 
     // This is not exactly what the spec says, but if we reject the promise
     // when decodeErrorCallback is present the program will crash in an

@@ -80,28 +80,34 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
 
       super({ [kNapiObj]: napiObj });
 
+      // @fixme - napi-rs 3
       // Add function to Napi object to bridge from Rust events to JS EventTarget
       // They will be effectively registered on rust side when `startRendering` is called
-      this[kNapiObj][kOnStateChange] = (function(_err, rawEvent) {
-        const event = new Event(rawEvent.type);
-        propagateEvent(this, event);
-      }).bind(this);
+      // this[kNapiObj][kOnStateChange] = (function(_err, rawEvent) {
+      //   const event = new Event(rawEvent.type);
+      //   propagateEvent(this, event);
+      // }).bind(this);
 
-      // This event is, per spec, the last trigerred one
-      this[kNapiObj][kOnComplete] = (function(err, rawEvent) {
-        // workaround the fact that the oncomplete event is triggered before
-        // startRendering fulfills and that we want to return the exact same instance
-        this.#renderedBuffer = new jsExport.AudioBuffer({ [kNapiObj]: rawEvent.renderedBuffer });
+      // @fixme - napi-rs 3
+      // This event is, per spec, the last triggered one
+      // this[kNapiObj][kOnComplete] = (function(err, rawEvent) {
+      //   // workaround the fact that the oncomplete event is triggered before
+      //   // startRendering fulfills and that we want to return the exact same instance
+      //   this.#renderedBuffer = new jsExport.AudioBuffer({ [kNapiObj]: rawEvent.renderedBuffer });
 
-        const event = new jsExport.OfflineAudioCompletionEvent(rawEvent.type, {
-          renderedBuffer: this.#renderedBuffer,
-        });
+      //   const event = new jsExport.OfflineAudioCompletionEvent(rawEvent.type, {
+      //     renderedBuffer: this.#renderedBuffer,
+      //   });
 
-        // delay event propagation to next tick that it is executed after startRendering fulfills
-        setImmediate(() => {
-          propagateEvent(this, event);
-        }, 0);
-      }).bind(this);
+      //   // delay event propagation to next tick that it is executed after startRendering fulfills
+      //   setImmediate(() => {
+      //     propagateEvent(this, event);
+      //   }, 0);
+      // }).bind(this);
+    }
+
+    #wrapRenderedBuffer(napiAudioBuffer) {
+      this.#renderedBuffer = new jsExport.AudioBuffer({ [kNapiObj]: napiAudioBuffer })
     }
 
     get length() {
@@ -135,21 +141,26 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
         throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'`);
       }
 
+      // @fixme - napi-rs 3
       // ensure all AudioWorkletProcessor have finished their instanciation
-      await this.audioWorklet[kCheckProcessorsCreated]();
+      // await this.audioWorklet[kCheckProcessorsCreated]();
 
       // keep this to highlight the workaround w/ the oncomplete event
       let _nativeAudioBuffer;
 
       try {
+        // @fixme - napi-rs 3 - workaround w/ the oncomplete event
         // eslint-disable-next-line no-unused-vars
-        _nativeAudioBuffer = await this[kNapiObj].startRendering();
+        // _nativeAudioBuffer = await this[kNapiObj].startRendering();
+        const napiAudioBuffer = await this[kNapiObj].startRendering();
+        this.#wrapRenderedBuffer(napiAudioBuffer)
       } catch (err) {
         throwSanitizedError(err);
       }
 
+      // @fixme - napi-rs 3
       // release audio worklets
-      await this.audioWorklet[kWorkletRelease]();
+      // await this.audioWorklet[kWorkletRelease]();
 
       return this.#renderedBuffer;
     }
