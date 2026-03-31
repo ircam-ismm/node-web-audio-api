@@ -33,6 +33,7 @@ jsExport.BaseAudioContext = require('./js/BaseAudioContext.js')(jsExport, native
 jsExport.AudioContext = require('./js/AudioContext.js')(jsExport, nativeBinding);
 // jsExport.OfflineAudioContext = require('./js/OfflineAudioContext.js')(jsExport, nativeBinding);
 
+jsExport.AudioBufferSourceNode = require('./js/AudioBufferSourceNode.js')(jsExport, nativeBinding);
 jsExport.GainNode = require('./js/GainNode.js')(jsExport, nativeBinding);
 jsExport.OscillatorNode = require('./js/OscillatorNode.js')(jsExport, nativeBinding);
 
@@ -46,7 +47,7 @@ jsExport.AudioDestinationNode = require('./js/AudioDestinationNode.js');
 // jsExport.AudioRenderCapacity = require('./js/AudioRenderCapacity.js');
 
 // jsExport.PeriodicWave = require('./js/PeriodicWave.js')(jsExport, nativeBinding);
-// jsExport.AudioBuffer = require('./js/AudioBuffer.js')(jsExport, nativeBinding);
+jsExport.AudioBuffer = require('./js/AudioBuffer.js')(jsExport, nativeBinding);
 
 // --------------------------------------------------------------------------
 // Promisify MediaDevices API

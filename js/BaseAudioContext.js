@@ -18,7 +18,7 @@
 // -------------------------------------------------------------------------- //
 
 const {
-  // isFunction,
+  isFunction,
   kEnumerableProperty,
   kHiddenProperty,
 } = require('./lib/utils.js');
@@ -143,42 +143,44 @@ module.exports = (jsExport, _nativeBinding) => {
     //   }
     // }
 
-    // // This is not exactly what the spec says, but if we reject the promise
-    // // when decodeErrorCallback is present the program will crash in an
-    // // unexpected manner
-    // // cf. https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-decodeaudiodata
-    // async decodeAudioData(arrayBuffer, decodeSuccessCallback = undefined, decodeErrorCallback = undefined) {
-    //   if (!(this instanceof BaseAudioContext)) {
-    //     throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
-    //   }
+    // This is not exactly what the spec says, but if we reject the promise
+    // when decodeErrorCallback is present the program will crash in an
+    // unexpected manner
+    // cf. https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-decodeaudiodata
+    async decodeAudioData(arrayBuffer, decodeSuccessCallback = undefined, decodeErrorCallback = undefined) {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
 
-    //   if (arguments.length < 1) {
-    //     throw new TypeError(`Failed to execute 'decodeAudioData' on 'BaseAudioContext': 1 argument required, but only ${arguments.length} present`);
-    //   }
+      if (arguments.length < 1) {
+        throw new TypeError(`Failed to execute 'decodeAudioData' on 'BaseAudioContext': 1 argument required, but only ${arguments.length} present`);
+      }
 
-    //   if (!(arrayBuffer instanceof ArrayBuffer)) {
-    //     throw new TypeError('Failed to execute "decodeAudioData": parameter 1 is not of type "ArrayBuffer"');
-    //   }
+      if (!(arrayBuffer instanceof ArrayBuffer)) {
+        throw new TypeError('Failed to execute "decodeAudioData": parameter 1 is not of type "ArrayBuffer"');
+      }
 
-    //   try {
-    //     const nativeAudioBuffer = await this[kNapiObj].decodeAudioData(arrayBuffer);
-    //     const audioBuffer = new jsExport.AudioBuffer({ [kNapiObj]: nativeAudioBuffer });
+      try {
+        const nativeAudioBuffer = await this[kNapiObj].decodeAudioData(arrayBuffer);
+        const audioBuffer = new jsExport.AudioBuffer({
+          [kNapiObj]: nativeAudioBuffer,
+        });
 
-    //     if (isFunction(decodeSuccessCallback)) {
-    //       decodeSuccessCallback(audioBuffer);
-    //     } else {
-    //       return audioBuffer;
-    //     }
-    //   } catch (err) {
-    //     const error = new DOMException(`Failed to execute 'decodeAudioData': ${err.message}`, 'EncodingError');
+        if (isFunction(decodeSuccessCallback)) {
+          decodeSuccessCallback(audioBuffer);
+        } else {
+          return audioBuffer;
+        }
+      } catch (err) {
+        const error = new DOMException(`Failed to execute 'decodeAudioData': ${err.message}`, 'EncodingError');
 
-    //     if (isFunction(decodeErrorCallback)) {
-    //       decodeErrorCallback(error);
-    //     } else {
-    //       throw error;
-    //     }
-    //   }
-    // }
+        if (isFunction(decodeErrorCallback)) {
+          decodeErrorCallback(error);
+        } else {
+          throw error;
+        }
+      }
+    }
 
     // createBuffer(numberOfChannels, length, sampleRate) {
     //   if (!(this instanceof BaseAudioContext)) {
@@ -231,6 +233,16 @@ module.exports = (jsExport, _nativeBinding) => {
     // --------------------------------------------------------------------
     // Factory Methods (use the patched AudioNodes)
     // --------------------------------------------------------------------
+    createBufferSource() {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
+
+      const options = {};
+
+      return new jsExport.AudioBufferSourceNode(this, options);
+    }
+
     createGain() {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
@@ -271,6 +283,7 @@ module.exports = (jsExport, _nativeBinding) => {
       configurable: true,
       value: 'BaseAudioContext',
     },
+    createBufferSource: kEnumerableProperty,
     createGain: kEnumerableProperty,
     createOscillator: kEnumerableProperty,
     listener: kEnumerableProperty,

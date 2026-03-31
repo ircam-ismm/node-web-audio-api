@@ -45,8 +45,9 @@ export const AudioDestinationNode = nativeModule.AudioDestinationNode;
 // export const AudioRenderCapacity = nativeModule.AudioRenderCapacity;
 
 // export const PeriodicWave = nativeModule.PeriodicWave;
-// export const AudioBuffer = nativeModule.AudioBuffer;
+export const AudioBuffer = nativeModule.AudioBuffer;
 // generated nodes
+export const AudioBufferSourceNode = nativeModule.AudioBufferSourceNode;
 export const GainNode = nativeModule.GainNode;
 export const OscillatorNode = nativeModule.OscillatorNode;
 // helper methods

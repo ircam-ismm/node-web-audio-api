@@ -22,8 +22,7 @@ use napi_derive::napi;
 
 use web_audio_api::node::*;
 
-use crate::NapiAudioContext;
-use crate::NapiAudioParam;
+use crate::*;
 
 #[napi]
 pub struct NapiOscillatorNode {
@@ -45,25 +44,29 @@ impl NapiOscillatorNode {
         // --------------------------------------------------------
         let node_defaults = OscillatorOptions::default();
 
-        let js_type = options.get::<String>("type").unwrap().unwrap();
-        let type_ = match js_type.as_str() {
-            "sine" => OscillatorType::Sine,
-            "square" => OscillatorType::Square,
-            "sawtooth" => OscillatorType::Sawtooth,
-            "triangle" => OscillatorType::Triangle,
-            "custom" => OscillatorType::Custom,
-            _ => unreachable!(),
+        let some_type_ = options.get::<Option<String>>("type").unwrap();
+        let type_ = if let Some(type_) = some_type_.unwrap() {
+            match type_.as_str() {
+                "sine" => OscillatorType::Sine,
+                "square" => OscillatorType::Square,
+                "sawtooth" => OscillatorType::Sawtooth,
+                "triangle" => OscillatorType::Triangle,
+                "custom" => OscillatorType::Custom,
+                _ => unreachable!(),
+            }
+        } else {
+            node_defaults.type_
         };
 
-        let some_frequency = options.get::<f64>("frequency").unwrap();
-        let frequency = if let Some(frequency) = some_frequency {
+        let some_frequency = options.get::<Option<f64>>("frequency").unwrap();
+        let frequency = if let Some(frequency) = some_frequency.unwrap() {
             frequency as f32
         } else {
             node_defaults.frequency
         };
 
-        let some_detune = options.get::<f64>("detune").unwrap();
-        let detune = if let Some(detune) = some_detune {
+        let some_detune = options.get::<Option<f64>>("detune").unwrap();
+        let detune = if let Some(detune) = some_detune.unwrap() {
             detune as f32
         } else {
             node_defaults.detune
@@ -71,14 +74,13 @@ impl NapiOscillatorNode {
 
         let periodic_wave = node_defaults.periodic_wave;
         // let periodic_wave_js = options.get::<&str, JsUnknown>("periodicWave")?.unwrap();
-        // let periodic_wave = match periodic_wave_js.get_type()? {
-        //     ValueType::Object => {
-        //         let periodic_wave_js = periodic_wave_js.coerce_to_object()?;
-        //         let periodic_wave_napi = ctx.env.unwrap::<NapiPeriodicWave>(&periodic_wave_js)?;
-        //         Some(periodic_wave_napi.unwrap().clone())
-        //     },
-        //     ValueType::Null => None,
-        //     _ => unreachable!(),
+        // let periodic_wave = if periodic_wave_js.get_type()? == ValueType::Null {
+        //     None
+        // } else {
+        //     let periodic_wave_js = options.get::<&str, JsTypedArray>("periodicWave")?.unwrap();
+        //     let periodic_wave_value = periodic_wave_js.into_value()?;
+        //     let periodic_wave: &[f64] = periodic_wave_value.as_ref();
+        //     Some(periodic_wave.to_vec())
         // };
 
         // --------------------------------------------------------
@@ -159,12 +161,46 @@ impl NapiOscillatorNode {
     }
 
     #[napi]
-    pub fn start(&mut self, when: f64) {
+    pub fn start(&mut self, when: Option<f64>) {
+        let when = when.unwrap_or(0.);
         self.inner.start_at(when);
     }
 
     #[napi]
-    pub fn stop(&mut self, when: f64) {
+    pub fn stop(&mut self, when: Option<f64>) {
+        let when = when.unwrap_or(0.);
         self.inner.stop_at(when);
+    }
+
+    // -------------------------------------------------
+    // Getters / Setters
+    // -------------------------------------------------
+
+    #[napi(getter, js_name = "type")]
+    pub fn get_type(&self) -> String {
+        let value = self.inner.type_();
+        let value = match value {
+            OscillatorType::Sine => "sine",
+            OscillatorType::Square => "square",
+            OscillatorType::Sawtooth => "sawtooth",
+            OscillatorType::Triangle => "triangle",
+            OscillatorType::Custom => "custom",
+        };
+
+        String::from(value)
+    }
+
+    #[napi(setter, js_name = "type")]
+    pub fn set_type(&mut self, value: String) {
+        let value = match value.as_str() {
+            "sine" => OscillatorType::Sine,
+            "square" => OscillatorType::Square,
+            "sawtooth" => OscillatorType::Sawtooth,
+            "triangle" => OscillatorType::Triangle,
+            "custom" => OscillatorType::Custom,
+            _ => unreachable!(),
+        };
+
+        self.inner.set_type(value);
     }
 }

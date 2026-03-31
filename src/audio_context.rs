@@ -7,6 +7,7 @@ use web_audio_api::context::{AudioContext, BaseAudioContext};
 
 use crate::NapiAudioDestinationNode;
 
+#[derive(Clone)]
 #[napi]
 pub struct NapiAudioContext {
     inner: Arc<AudioContext>, // Arc required for async call / tokyo futures
@@ -23,7 +24,7 @@ impl NapiAudioContext {
     // }
 }
 
-base_audio_context_impl!(NapiAudioContext);
+base_audio_context_impl!(NapiAudioContext, AudioContext);
 
 #[napi]
 impl NapiAudioContext {

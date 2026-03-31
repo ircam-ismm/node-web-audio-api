@@ -40,14 +40,16 @@ use crate::audio_param::NapiAudioParam;
 // use crate::audio_listener::NapiAudioListener;
 // mod audio_render_capacity;
 // use crate::audio_render_capacity::NapiAudioRenderCapacity;
-// mod audio_buffer;
-// use crate::audio_buffer::NapiAudioBuffer;
+mod audio_buffer;
+use crate::audio_buffer::NapiAudioBuffer;
 // mod periodic_wave;
 // use crate::periodic_wave::NapiPeriodicWave;
 // mod offline_audio_context;
 // use crate::offline_audio_context::NapiOfflineAudioContext;
 // Generated audio nodes
 
+mod audio_buffer_source_node;
+// use crate::audio_buffer_source_node::NapiAudioBufferSourceNode;
 mod gain_node;
 // use crate::gain_node::NapiGainNode;
 mod oscillator_node;

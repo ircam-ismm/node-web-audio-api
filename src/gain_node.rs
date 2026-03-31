@@ -22,8 +22,7 @@ use napi_derive::napi;
 
 use web_audio_api::node::*;
 
-use crate::NapiAudioContext;
-use crate::NapiAudioParam;
+use crate::*;
 
 #[napi]
 pub struct NapiGainNode {
@@ -45,8 +44,8 @@ impl NapiGainNode {
         // --------------------------------------------------------
         let node_defaults = GainOptions::default();
 
-        let some_gain = options.get::<f64>("gain").unwrap();
-        let gain = if let Some(gain) = some_gain {
+        let some_gain = options.get::<Option<f64>>("gain").unwrap();
+        let gain = if let Some(gain) = some_gain.unwrap() {
             gain as f32
         } else {
             node_defaults.gain

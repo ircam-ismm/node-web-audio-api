@@ -19,7 +19,7 @@ let supportedNodes = [
 
 const generatedNodes = [
   // `AnalyserNode`,
-  // `AudioBufferSourceNode`,
+  `AudioBufferSourceNode`,
   // `BiquadFilterNode`,
   // `ChannelMergerNode`,
   // `ChannelSplitterNode`,

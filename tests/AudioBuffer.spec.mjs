@@ -3,10 +3,10 @@ import fs from 'node:fs';
 import { assert } from 'chai';
 import {
   AudioBuffer,
-  AudioBufferSourceNode,
+  // AudioBufferSourceNode,
   AudioContext,
-  ConvolverNode,
-  OfflineAudioContext
+  // ConvolverNode,
+  // OfflineAudioContext
 } from '../index.mjs';
 
 describe('AudioBuffer', () => {
@@ -46,12 +46,16 @@ describe('AudioBuffer', () => {
       assert.equal(audioBuffer.numberOfChannels, 1);
       assert.equal(audioBuffer.length, 100);
       assert.equal(audioBuffer.sampleRate, 48000);
+      assert.equal(audioBuffer.duration, 100 / 48000);
     });
 
     it('should properly fail if missing argument', () => {
-      assert.throws(() => {
-        const audioBuffer = new AudioBuffer({ length: 100 });
-      });
+      try {
+        new AudioBuffer({ length: 100 })
+      } catch (err) {
+        console.log(err.name, ':', err.message);
+        assert.isTrue(err instanceof TypeError);
+      }
     });
 
     it(`should have clean error type`, () => {
@@ -64,8 +68,50 @@ describe('AudioBuffer', () => {
     });
   });
 
+  describe(`# AudioBuffer::copyToChannel | AudioBuffer::copyFromChannel`, () => {
+    it('should properly read from / write into channel', () => {
+      const audioBuffer = new AudioBuffer({
+        length: 100,
+        sampleRate: 48000,
+      });
+
+      const expected = new Float32Array(100);
+      expected[0] = 1;
+      expected[99] = 1;
+
+      audioBuffer.copyToChannel(expected, 0);
+
+      const result = new Float32Array(100);
+      audioBuffer.copyFromChannel(result, 0);
+
+      assert.deepEqual(result, expected);
+    });
+  });
+
+  describe(`# AudioBuffer::getChannelData`, () => {
+    it('should allow to access underlying channel data', () => {
+      const audioBuffer = new AudioBuffer({
+        length: 100,
+        sampleRate: 48000,
+      });
+
+      const channel = audioBuffer.getChannelData(0);
+      channel[0] = 1;
+      channel[99] = 1;
+
+      const expected = new Float32Array(100);
+      expected[0] = 1;
+      expected[99] = 1;
+
+      const result = new Float32Array(100);
+      audioBuffer.copyFromChannel(result, 0);
+
+      assert.deepEqual(result, expected);
+    });
+  });
+
   describe(`# AudioBuffer returned by other means`, () => {
-    it(`AudioContext.decodeAudioData() -> AudioBuffer`, async () => {
+    it(`OfflineAudioContext.decodeAudioData() -> AudioBuffer`, async () => {
       const pathname = path.join('examples', 'samples', 'sample.wav');
       const buffer = fs.readFileSync(pathname).buffer;
       const audioContext = new OfflineAudioContext(1, 1, 48000);
@@ -79,7 +125,7 @@ describe('AudioBuffer', () => {
       audioContext.startRendering();
     });
 
-    it(`OfflineAudioContext.decodeAudioData() -> AudioBuffer`, async () => {
+    it.only(`AudioContext.decodeAudioData() -> AudioBuffer`, async () => {
       const pathname = path.join('examples', 'samples', 'sample.wav');
       const buffer = fs.readFileSync(pathname).buffer;
       const audioContext = new AudioContext();

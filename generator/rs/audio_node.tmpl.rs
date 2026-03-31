@@ -13,13 +13,16 @@ macro_rules! audio_node_impl {
                 self.inner.number_of_outputs() as u32
             }
 
+            // @todo - make it dynamic
             #[napi]
             pub fn connect(
                 &mut self,
-                dest: Either3<
-                    &$crate::gain_node::NapiGainNode,
-                    &$crate::audio_destination_node::NapiAudioDestinationNode,
+                dest: Either${d.nodes.length + 2}<
                     &$crate::audio_param::NapiAudioParam,
+                    &$crate::audio_destination_node::NapiAudioDestinationNode,
+                    ${d.nodes.map(n => {
+                        return `&$crate::${d.slug(n)}::${d.napiName(n)}`;
+                    })}
                 >,
                 output: Option<u32>,
                 input: Option<u32>,
@@ -28,18 +31,23 @@ macro_rules! audio_node_impl {
                 let input = input.unwrap_or(0) as usize;
 
                 match dest {
-                    Either3::A(dest) => {
+                    Either${d.nodes.length + 2}::A(dest) => {
                         self.inner
                             .connect_from_output_to_input(&dest.inner, output, input);
                     }
-                    Either3::B(dest) => {
+                    Either${d.nodes.length + 2}::B(dest) => {
                         self.inner
                             .connect_from_output_to_input(&dest.inner, output, input);
                     }
-                    Either3::C(dest) => {
+                    ${d.nodes.map((_, index) => {
+                        // A if 65
+                        return `
+                    Either${d.nodes.length + 2}::${String.fromCharCode(index + 65 + 2)}(dest) => {
                         self.inner
                             .connect_from_output_to_input(&dest.inner, output, input);
                     }
+                        `;
+                    })}
                 }
             }
         }

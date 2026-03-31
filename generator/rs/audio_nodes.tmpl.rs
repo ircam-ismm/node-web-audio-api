@@ -3,8 +3,7 @@ use napi_derive::napi;
 
 use web_audio_api::node::*;
 
-use crate::NapiAudioContext;
-use crate::NapiAudioParam;
+use crate::*;
 
 #[napi]
 pub struct ${d.napiName(d.node)} {
@@ -48,8 +47,8 @@ impl ${d.napiName(d.node)} {
                     switch (optionType) {
                         case "boolean": {
                             return `
-        let some_${slug} = options.get::<Boolean>("${optionName}").unwrap();
-        let ${slug} = if let Some(${slug}) = some_${slug} {
+        let some_${slug} = options.get::<Option<bool>>("${optionName}").unwrap();
+        let ${slug} = if let Some(${slug}) = some_${slug}.unwrap() {
             ${slug}
         } else {
             node_defaults.${slug}
@@ -59,8 +58,8 @@ impl ${d.napiName(d.node)} {
                         }
                         case "float": {
                             return `
-        let some_${slug} = options.get::<f64>("${optionName}").unwrap();
-        let ${slug} = if let Some(${slug}) = some_${slug} {
+        let some_${slug} = options.get::<Option<f64>>("${optionName}").unwrap();
+        let ${slug} = if let Some(${slug}) = some_${slug}.unwrap() {
             ${slug} as f32
         } else {
             node_defaults.${slug}
@@ -70,8 +69,8 @@ impl ${d.napiName(d.node)} {
                         }
                         case "double": {
                             return `
-        let ${slug} = options.get::<f64>("${optionName}").unwrap();
-        let ${slug} = if let Some(${slug}) = some_${slug} {
+        let some_${slug} = options.get::<Option<f64>>("${optionName}").unwrap();
+        let ${slug} = if let Some(${slug}) = some_${slug}.unwrap() {
             ${slug}
         } else {
             node_defaults.${slug}
@@ -81,8 +80,8 @@ impl ${d.napiName(d.node)} {
                         }
                         case "unsigned long": {
                             return `
-        let ${slug} = options.get::<u32>("${optionName}").unwrap();
-        let ${slug} = if let Some(${slug}) = some_${slug} {
+        let some_${slug} = options.get::Option<<>u32>("${optionName}").unwrap();
+        let ${slug} = if let Some(${slug}) = some_${slug}.unwrap() {
             ${slug} as usize
         } else {
             node_defaults.${slug}
@@ -97,31 +96,29 @@ impl ${d.napiName(d.node)} {
                         case "OverSampleType": {
                             const idl = d.findInTree(d.memberType(member));
                             return `
-        let js_${simple_slug} = options.get::<String>("${optionName}").unwrap().unwrap();
-        let ${slug} = match js_${simple_slug}.as_str() {${idl.values.map(v => `
-            "${v.value}" => ${idl.name}::${d.camelcase(v.value)},`).join("")}
-            _ => unreachable!(),
+        let some_${slug} = options.get::<Option<String>>("${optionName}").unwrap();
+        let ${slug} = if let Some(${slug}) = some_${slug}.unwrap() {
+            match ${slug}.as_str() {${idl.values.map(v => `
+                "${v.value}" => ${idl.name}::${d.camelcase(v.value)},`).join("")}
+                _ => unreachable!(),
+            }
+        } else {
+            node_defaults.${slug}
         };
                             `;
                             break;
                         }
-        // @fixme - napi-rs 3
-                        // default values are null
-                        case "PeriodicWave":
+                        // @fixme - napi-rs 3
+                        // case "PeriodicWave":
                         case "AudioBuffer": {
                             const idl = d.findInTree(d.memberType(member));
                             return `
-        let ${slug} = node_defaults.${slug};
-        // let ${simple_slug}_js = options.get::<&str, JsUnknown>("${optionName}")?.unwrap();
-        // let ${slug} = match ${simple_slug}_js.get_type()? {
-        //     ValueType::Object => {
-        //         let ${simple_slug}_js = ${simple_slug}_js.coerce_to_object()?;
-        //         let ${simple_slug}_napi = ctx.env.unwrap::<${d.napiName(idl)}>(&${simple_slug}_js)?;
-        //         Some(${simple_slug}_napi.unwrap().clone())
-        //     },
-        //     ValueType::Null => None,
-        //     _ => unreachable!(),
-        // };
+        let js_${slug} = options.get::<Option<ClassInstance<&NapiAudioBuffer>>>("${optionName}").unwrap();
+        let ${slug} = if let Some(${slug}) = js_${slug}.unwrap() {
+            Some(${slug}.inner.clone())
+        } else {
+            None
+        };
                             `;
                             break;
                        }
@@ -284,26 +281,263 @@ impl ${d.napiName(d.node)} {
         if (d.name(d.node) !== "AudioBufferSourceNode") {
             methods += `
     #[napi]
-    pub fn start(&mut self, when: f64) {
+    pub fn start(&mut self, when: Option<f64>) {
+        let when = when.unwrap_or(0.);
         self.inner.start_at(when);
     }
             `;
         } else {
             methods += `
     #[napi]
-    pub fn start(&mut self, when: f64, offset: f64, duration: f64) {
-        self.inner.start_at_with_offset_and_duration(when, offset, duration);
+    pub fn start(&mut self, when: Option<f64>, offset: Option<f64>, duration: Option<f64>) {
+        let when = when.unwrap_or(0.);
+        let offset = offset.unwrap_or(0.);
+
+        if !duration.is_some() {
+            self.inner.start_at_with_offset(when, offset);
+        } else {
+            self.inner.start_at_with_offset_and_duration(when, offset, duration.unwrap());
+        }
+
     }
             `;
         }
 
         methods += `
     #[napi]
-    pub fn stop(&mut self, when: f64) {
+    pub fn stop(&mut self, when: Option<f64>) {
+        let when = when.unwrap_or(0.);
         self.inner.stop_at(when);
     }
         `;
 
         return methods;
     }())}
+
+
+    ${d.attributes(d.node).length > 0 ? `
+    // -------------------------------------------------
+    // Getters / Setters
+    // -------------------------------------------------\
+    ` : ``}
+    ${d.attributes(d.node).map(attr => {
+        const attrType = d.memberType(attr);
+        let getter = ``;
+        let setter = ``;
+
+        // -------------------------------------------------
+        // Getters
+        // -------------------------------------------------
+        switch (attrType) {
+            case "boolean": {
+                getter = `
+    #[napi(getter, js_name = "${d.name(attr)}")]
+    pub fn get_${d.slug(attr)}(&self) -> bool {
+        self.inner.${d.slug(attr, true)}()
+    }
+                `;
+                break;
+            }
+            case "float": {
+                getter = `
+    #[napi(getter, js_name = "${d.name(attr)}")]
+    pub fn get_${d.slug(attr)}(&self) -> f64 {
+        self.inner.${d.slug(attr, true)}() as f64
+    }
+                `;
+                break;
+            }
+            case "double": {
+                getter = `
+    #[napi(getter, js_name = "${d.name(attr)}")]
+    pub fn get_${d.slug(attr)}(&self) -> f64 {
+        self.inner.${d.slug(attr, true)}()
+    }
+                `;
+                break;
+            }
+            case "unsigned long": {
+                getter = `
+    #[napi(getter, js_name = "${d.name(attr)}")]
+    pub fn get_${d.slug(attr)}(&self) -> u32 {
+        self.inner.${d.slug(attr, true)}()
+    }
+                `;
+            }
+                break;
+            case "BiquadFilterType":
+            case "OscillatorType":
+            case "PanningModelType":
+            case "DistanceModelType":
+            case "OverSampleType": {
+                let typeIdl = d.findInTree(attrType);
+
+                getter = `
+    #[napi(getter, js_name = "${d.name(attr)}")]
+    pub fn get_${d.slug(attr)}(&self) -> String {
+        let value = self.inner.${d.slug(attr, true)}();
+        let value = match value {${typeIdl.values.map(v => `
+            ${typeIdl.name}::${d.camelcase(v.value)} => "${v.value}",`).join("")}
+        };
+
+        String::from(value)
+    }
+                `;
+                break;
+            }
+    //         case "Float32Array": {
+    //             // WaveShaperNode::curve
+    //             getter = `
+    // #[js_function(0)]
+    // fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsUnknown> {
+    //     let js_this = ctx.this_unchecked::<JsObject>();
+    //     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+    //     let node = napi_node.unwrap();
+
+    //     let value = node.${d.slug(attr, true)}();
+
+    //     if let Some(arr_f32) = value {
+    //         let length = arr_f32.len();
+
+    //         let array_buffer = ctx.env.create_arraybuffer(length * 4).unwrap();
+    //         let js_typed_array = array_buffer
+    //             .into_raw()
+    //             .into_typedarray(TypedArrayType::Float32, length, 0)?;
+
+    //         let mut js_typed_array_value = js_typed_array.into_value()?;
+    //         let buffer: &mut [f32] = js_typed_array_value.as_mut();
+    //         buffer.copy_from_slice(arr_f32);
+
+    //         let js_typed_array = js_typed_array_value.arraybuffer
+    //             .into_typedarray(TypedArrayType::Float32, length, 0)?;
+
+    //         Ok(js_typed_array.into_unknown())
+    //     } else {
+    //         Ok(ctx.env.get_null()?.into_unknown())
+    //     }
+    // }
+    //                     `;
+    //             break;
+    //         }
+            case "AudioBuffer": {
+                // This should never be called as the AudioBuffer is stored directly
+                // on the JS side to retrieve the exact same AudioBuffer reference.
+                // - AudioBufferSourceNode::buffer
+                // - ConvolverNode::curve
+                getter = `
+    #[napi(getter, js_name = "${d.name(attr)}")]
+    pub fn get_${d.slug(attr)}(&self) {
+        unreachable!();
+    }
+                `
+                break;
+            }
+            // IDL types
+            default: {
+                console.log(`[warning] Unhandled getter ${d.name(d.node)}::${d.name(attr)}: type: ${attrType}`);
+                break;
+            }
+        }
+
+        // -------------------------------------------------
+        // Setters
+        // -------------------------------------------------
+        if (!attr.readonly) {
+            switch (attrType) {
+                case "boolean": {
+                    setter = `
+    #[napi(setter, js_name = "${d.name(attr)}")]
+    pub fn set_${d.slug(attr)}(&mut self, value: bool) {
+        self.inner.set_${d.slug(attr)}(value);
+    }
+                    `;
+                    break;
+                }
+                case "float": {
+                    setter = `
+    #[napi(setter, js_name = "${d.name(attr)}")]
+    pub fn set_${d.slug(attr)}(&mut self, value: f64) {
+        self.inner.set_${d.slug(attr)}(value as f32);
+    }
+                    `;
+                    break;
+                }
+                case "double": {
+                    setter = `
+    #[napi(setter, js_name = "${d.name(attr)}")]
+    pub fn set_${d.slug(attr)}(&mut self, value: f64) {
+        self.inner.set_${d.slug(attr)}(value);
+    }
+                    `;
+                    break;
+                }
+                case "unsigned long": {
+                    setter = `
+    #[napi(setter, js_name = "${d.name(attr)}")]
+    pub fn set_${d.slug(attr)}(&mut self, value: u32) {
+        self.inner.set_${d.slug(attr)}(value);
+    }
+                    `;
+                    break;
+                }
+                case "BiquadFilterType":
+                case "OscillatorType":
+                case "PanningModelType":
+                case "DistanceModelType":
+                case "OverSampleType": {
+                    let typeIdl = d.findInTree(attrType);
+
+                    setter = `
+    #[napi(setter, js_name = "${d.name(attr)}")]
+    pub fn set_${d.slug(attr)}(&mut self, value: String) {
+        let value = match value.as_str() {${typeIdl.values.map(v => `
+            "${v.value}" => ${typeIdl.name}::${d.camelcase(v.value)},`).join("")}
+            _ => unreachable!(),
+        };
+
+        self.inner.set_${d.slug(attr)}(value);
+    }
+                    `;
+                    break;
+                }
+    //             case "Float32Array": {
+    //                 // WaveShaperNode::curve
+    //                 setter = `
+    // #[js_function(1)]
+    // fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
+    //     let js_this = ctx.this_unchecked::<JsObject>();
+    //     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
+    //     let node = napi_node.unwrap();
+
+    //     let js_obj = ctx.get::<JsTypedArray>(0)?;
+    //     let buffer = js_obj.into_value()?;
+    //     let buffer_ref: &[f32] = buffer.as_ref();
+    //     node.set_${d.slug(attr)}(buffer_ref.to_vec());
+
+    //     ctx.env.get_undefined()
+    // }
+    //                 `;
+    //                 break;
+    //             }
+                case "AudioBuffer": {
+                    let typeIdl = d.findInTree(attrType);
+
+                    setter = `
+    #[napi(setter, js_name = "${d.name(attr)}")]
+    pub fn set_${d.slug(attr)}(&mut self, value: &NapiAudioBuffer) {
+        self.inner.set_${d.slug(attr)}(value.inner.clone());
+    }
+                    `;
+                    break;
+                }
+                default: {
+                    console.log(`[warning] Unhandled setter ${d.name(d.node)}::${d.name(attr)}: type: ${attrType}`);
+                    break;
+                }
+            }
+        }
+
+        return `${getter}${setter}`
+    }).join('')}
+
 }

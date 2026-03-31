@@ -29,7 +29,7 @@ jsExport.AudioDestinationNode = require('./js/AudioDestinationNode.js');
 // jsExport.AudioRenderCapacity = require('./js/AudioRenderCapacity.js');
 
 // jsExport.PeriodicWave = require('./js/PeriodicWave.js')(jsExport, nativeBinding);
-// jsExport.AudioBuffer = require('./js/AudioBuffer.js')(jsExport, nativeBinding);
+jsExport.AudioBuffer = require('./js/AudioBuffer.js')(jsExport, nativeBinding);
 
 // --------------------------------------------------------------------------
 // Promisify MediaDevices API
