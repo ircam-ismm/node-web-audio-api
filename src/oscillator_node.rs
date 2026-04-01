@@ -213,4 +213,15 @@ impl NapiOscillatorNode {
 
         self.inner.set_type(value);
     }
+
+    // -------------------------------------------------
+    // METHODS
+    // -------------------------------------------------
+
+    #[napi]
+    pub fn set_periodic_wave(&mut self, periodic_wave: &NapiPeriodicWave) {
+        let periodic_wave = periodic_wave.inner.clone();
+
+        self.inner.set_periodic_wave(periodic_wave);
+    }
 }

@@ -108,14 +108,13 @@ module.exports = (jsExport, _nativeBinding) => {
       return this[kNapiObj].currentTime;
     }
 
-    // @todo - implement in upstream crate + pass to AudioWorkletGlobalScope
-    // get renderQuantumSize() {
-    //   if (!(this instanceof BaseAudioContext)) {
-    //     throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
-    //   }
+    get renderQuantumSize() {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
 
-    //   return this[kNapiObj].renderQuantumSize;
-    // }
+      return this[kNapiObj].renderQuantumSize;
+    }
 
     get state() {
       if (!(this instanceof BaseAudioContext)) {
@@ -184,53 +183,53 @@ module.exports = (jsExport, _nativeBinding) => {
       }
     }
 
-    // createBuffer(numberOfChannels, length, sampleRate) {
-    //   if (!(this instanceof BaseAudioContext)) {
-    //     throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
-    //   }
+    createBuffer(numberOfChannels, length, sampleRate) {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
 
-    //   if (arguments.length < 3) {
-    //     throw new TypeError(`Failed to execute 'createBuffer' on 'BaseAudioContext': 3 argument required, but only ${arguments.length} present`);
-    //   }
+      if (arguments.length < 3) {
+        throw new TypeError(`Failed to execute 'createBuffer' on 'BaseAudioContext': 3 argument required, but only ${arguments.length} present`);
+      }
 
-    //   const options = {};
+      const options = {};
 
-    //   if (numberOfChannels !== undefined) {
-    //     options.numberOfChannels = numberOfChannels;
-    //   }
+      if (numberOfChannels !== undefined) {
+        options.numberOfChannels = numberOfChannels;
+      }
 
-    //   if (length !== undefined) {
-    //     options.length = length;
-    //   }
+      if (length !== undefined) {
+        options.length = length;
+      }
 
-    //   if (sampleRate !== undefined) {
-    //     options.sampleRate = sampleRate;
-    //   }
+      if (sampleRate !== undefined) {
+        options.sampleRate = sampleRate;
+      }
 
-    //   return new jsExport.AudioBuffer(options);
-    // }
+      return new jsExport.AudioBuffer(options);
+    }
 
-    // createPeriodicWave(real, imag) {
-    //   if (!(this instanceof BaseAudioContext)) {
-    //     throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
-    //   }
+    createPeriodicWave(real, imag) {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
 
-    //   if (arguments.length < 2) {
-    //     throw new TypeError(`Failed to execute 'createPeriodicWave' on 'BaseAudioContext': 2 argument required, but only ${arguments.length} present`);
-    //   }
+      if (arguments.length < 2) {
+        throw new TypeError(`Failed to execute 'createPeriodicWave' on 'BaseAudioContext': 2 argument required, but only ${arguments.length} present`);
+      }
 
-    //   const options = {};
+      const options = {};
 
-    //   if (real !== undefined) {
-    //     options.real = real;
-    //   }
+      if (real !== undefined) {
+        options.real = real;
+      }
 
-    //   if (imag !== undefined) {
-    //     options.imag = imag;
-    //   }
+      if (imag !== undefined) {
+        options.imag = imag;
+      }
 
-    //   return new jsExport.PeriodicWave(this, options);
-    // }
+      return new jsExport.PeriodicWave(this, options);
+    }
 
     // --------------------------------------------------------------------
     // Factory Methods (use the patched AudioNodes)

@@ -555,4 +555,47 @@ impl ${d.napiName(d.node)} {
         return `${getter}${setter}`
     }).join('')}
 
+    ${d.methods(d.node).length > 0 ? `
+    // -------------------------------------------------
+    // METHODS
+    // -------------------------------------------------\
+    ` : ``}
+    ${d.methods(d.node).map(method => {
+        let args = method.arguments.map((arg, index) => {
+            const attrType = d.memberType(arg);
+
+            switch (attrType) {
+                case 'float':
+                    return [d.slug(arg.name), 'f32'];
+                case 'Float32Array':
+                    return [d.slug(arg.name), '&[f32]'];
+                case 'Uint8Array':
+                    return [d.slug(arg.name), '&[u8]'];
+                case 'PeriodicWave':
+                    return [d.slug(arg.name), '&NapiPeriodicWave'];
+            }
+        });
+        return `
+    #[napi]
+    pub fn ${d.slug(method)}(&mut self, ${args.map(arg => arg.join(': ')).join(', ')}) {
+        ${method.arguments.map((arg, index) => {
+            const attrType = d.memberType(arg);
+
+            switch (attrType) {
+                case 'float':
+                    return ``;
+                case 'Float32Array':
+                    return `let ${d.slug(arg.name)} = { unsafe ${d.slug(arg.name)}.as_mut() };`;
+                case 'Uint8Array':
+                    return `let ${d.slug(arg.name)} = { unsafe ${d.slug(arg.name)}.as_mut() };`;
+                case 'PeriodicWave':
+                    return `let ${d.slug(arg.name)} = ${d.slug(arg.name)}.inner.clone();`;
+            }
+        }).join('\n')};
+
+        self.inner.${d.slug(method)}(${args.map(arg => arg[0]).join(', ')});
+    }
+        `;
+    }).join('')}
+
 }
