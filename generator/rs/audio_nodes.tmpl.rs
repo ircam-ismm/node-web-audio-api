@@ -115,7 +115,7 @@ impl ${d.napiName(d.node)} {
                             break;
                         }
                         // @fixme - napi-rs 3
-                        // case "PeriodicWave":
+                        case "PeriodicWave":
                         case "AudioBuffer": {
                             const idl = d.findInTree(d.memberType(member));
                             return `

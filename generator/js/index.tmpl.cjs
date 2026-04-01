@@ -28,7 +28,7 @@ jsExport.AudioDestinationNode = require('./js/AudioDestinationNode.js');
 // jsExport.AudioParamMap = require('./js/AudioParamMap.js');
 // jsExport.AudioRenderCapacity = require('./js/AudioRenderCapacity.js');
 
-// jsExport.PeriodicWave = require('./js/PeriodicWave.js')(jsExport, nativeBinding);
+jsExport.PeriodicWave = require('./js/PeriodicWave.js')(jsExport, nativeBinding);
 jsExport.AudioBuffer = require('./js/AudioBuffer.js')(jsExport, nativeBinding);
 
 // --------------------------------------------------------------------------

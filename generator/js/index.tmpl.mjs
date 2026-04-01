@@ -23,8 +23,9 @@ export const AudioDestinationNode = nativeModule.AudioDestinationNode;
 // export const AudioParamMap = nativeModule.AudioParamMap;
 // export const AudioRenderCapacity = nativeModule.AudioRenderCapacity;
 
-// export const PeriodicWave = nativeModule.PeriodicWave;
+export const PeriodicWave = nativeModule.PeriodicWave;
 export const AudioBuffer = nativeModule.AudioBuffer;
+
 // generated nodes
 ${d.nodes.map(n => `export const ${d.name(n)} = nativeModule.${d.name(n)};`).join('\n')}
 // helper methods

@@ -47,6 +47,7 @@ macro_rules! base_audio_context_impl {
 
             #[napi(getter, js_name = "renderQuantumSize")]
             pub fn render_quantum_size(&self) -> u32 {
+                // self.inner.render_quantum_size(); // @fixme - implement upstream
                 128
             }
 

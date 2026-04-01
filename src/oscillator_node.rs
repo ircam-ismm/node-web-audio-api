@@ -76,16 +76,14 @@ impl NapiOscillatorNode {
             node_defaults.detune
         };
 
-        let periodic_wave = node_defaults.periodic_wave;
-        // let periodic_wave_js = options.get::<&str, JsUnknown>("periodicWave")?.unwrap();
-        // let periodic_wave = if periodic_wave_js.get_type()? == ValueType::Null {
-        //     None
-        // } else {
-        //     let periodic_wave_js = options.get::<&str, JsTypedArray>("periodicWave")?.unwrap();
-        //     let periodic_wave_value = periodic_wave_js.into_value()?;
-        //     let periodic_wave: &[f64] = periodic_wave_value.as_ref();
-        //     Some(periodic_wave.to_vec())
-        // };
+        let js_periodic_wave = options
+            .get::<Option<ClassInstance<&NapiPeriodicWave>>>("periodicWave")
+            .unwrap();
+        let periodic_wave = if let Some(periodic_wave) = js_periodic_wave.unwrap() {
+            Some(periodic_wave.inner.clone())
+        } else {
+            None
+        };
 
         // --------------------------------------------------------
         // Parse AudioNodeOptions

@@ -8,65 +8,6 @@ use web_audio_api::context::{BaseAudioContext, OfflineAudioContext};
 use crate::NapiAudioBuffer;
 use crate::NapiAudioDestinationNode;
 
-// pub struct StartRenderingTask {
-//     context: Arc<OfflineAudioContext>
-// }
-
-// #[napi]
-// impl Task for StartRenderingTask {
-//     type Output = web_audio_api::AudioBuffer;
-//     type JsValue = crate::NapiAudioBuffer;
-
-//     fn compute(&mut self) -> Result<Self::Output> {
-//         let audio_buffer = self.context.start_rendering_sync();
-//         Ok(audio_buffer)
-//     }
-
-//     fn resolve(&mut self, _: Env, output: Self::Output) -> Result<Self::JsValue> {
-//         let audio_buffer = $crate::NapiAudioBuffer::from(output);
-//         Ok(audio_buffer)
-//     }
-// }
-
-// pub struct ResumeTask {
-//     context: Arc<OfflineAudioContext>
-// }
-
-// #[napi]
-// impl Task for ResumeTask {
-//     type Output = ();
-//     type JsValue = JsUndefined;
-
-//     fn compute(&mut self) -> Result<Self::Output> {
-//         self.context.resume();
-//         Ok(())
-//     }
-
-//     fn resolve(&mut self, _: Env, output: Self::Output) -> Result<Self::JsValue> {
-//         Ok(())
-//     }
-// }
-
-// // pub struct SuspendTask {
-// //     context: Arc<OfflineAudioContext>
-// //     suspend_time: f64,
-// // }
-
-// // #[napi]
-// // impl Task for SuspendTask {
-// //     type Output = ();
-// //     type JsValue = JsUndefined;
-
-// //     async fn compute(&mut self) -> Result<Self::Output> {
-// //         self.context.suspend(self.suspend_time).await;
-// //         Ok(())
-// //     }
-
-// //     fn resolve(&mut self, _: Env, output: Self::Output) -> Result<Self::JsValue> {
-// //         Ok(())
-// //     }
-// // }
-
 #[derive(Clone)]
 #[napi]
 pub struct NapiOfflineAudioContext {
