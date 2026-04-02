@@ -48,7 +48,12 @@ export const PeriodicWave = nativeModule.PeriodicWave;
 export const AudioBuffer = nativeModule.AudioBuffer;
 
 // generated nodes
+export const AnalyserNode = nativeModule.AnalyserNode;
 export const AudioBufferSourceNode = nativeModule.AudioBufferSourceNode;
+export const BiquadFilterNode = nativeModule.BiquadFilterNode;
+export const ChannelMergerNode = nativeModule.ChannelMergerNode;
+export const ChannelSplitterNode = nativeModule.ChannelSplitterNode;
+export const ConstantSourceNode = nativeModule.ConstantSourceNode;
 export const GainNode = nativeModule.GainNode;
 export const OscillatorNode = nativeModule.OscillatorNode;
 // helper methods

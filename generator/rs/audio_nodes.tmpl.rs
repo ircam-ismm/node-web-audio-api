@@ -17,7 +17,7 @@ impl ${d.napiName(d.node)} {
     // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
     #[napi(constructor)]
     pub fn new(
-        mut this: This<Object>,
+        ${d.audioParams(d.node).length ? `mut this: This<Object>,` : ''}
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object
     ) -> Self {
@@ -86,7 +86,7 @@ impl ${d.napiName(d.node)} {
                         }
                         case "unsigned long": {
                             return `
-        let some_${slug} = options.get::Option<<>u32>("${optionName}").unwrap();
+        let some_${slug} = options.get::<Option<u32>>("${optionName}").unwrap();
         let ${slug} = if let Some(${slug}) = some_${slug}.unwrap() {
             ${slug} as usize
         } else {
@@ -329,7 +329,6 @@ impl ${d.napiName(d.node)} {
         return methods;
     }())}
 
-
     ${d.attributes(d.node).length > 0 ? `
     // -------------------------------------------------
     // Getters / Setters
@@ -375,7 +374,7 @@ impl ${d.napiName(d.node)} {
                 getter = `
     #[napi(getter, js_name = "${d.name(attr)}")]
     pub fn get_${d.slug(attr)}(&self) -> u32 {
-        self.inner.${d.slug(attr, true)}()
+        self.inner.${d.slug(attr, true)}() as u32
     }
                 `;
             }
@@ -490,7 +489,7 @@ impl ${d.napiName(d.node)} {
                     setter = `
     #[napi(setter, js_name = "${d.name(attr)}")]
     pub fn set_${d.slug(attr)}(&mut self, value: u32) {
-        self.inner.set_${d.slug(attr)}(value);
+        self.inner.set_${d.slug(attr)}(value as usize);
     }
                     `;
                     break;
@@ -566,36 +565,34 @@ impl ${d.napiName(d.node)} {
 
             switch (attrType) {
                 case 'float':
-                    return [d.slug(arg.name), 'f32'];
+                    return `${d.slug(arg.name)}: f32`;
                 case 'Float32Array':
-                    return [d.slug(arg.name), '&[f32]'];
+                    return `mut ${d.slug(arg.name)}: Float32ArraySlice`;
                 case 'Uint8Array':
-                    return [d.slug(arg.name), '&[u8]'];
+                    return `mut ${d.slug(arg.name)}: Uint8ArraySlice`;
                 case 'PeriodicWave':
-                    return [d.slug(arg.name), '&NapiPeriodicWave'];
+                    return `${d.slug(arg.name)}: &NapiPeriodicWave`;
             }
         });
         return `
     #[napi]
-    pub fn ${d.slug(method)}(&mut self, ${args.map(arg => arg.join(': ')).join(', ')}) {
+    pub fn ${d.slug(method)}(&mut self, ${args.join(', ')}) {
         ${method.arguments.map((arg, index) => {
             const attrType = d.memberType(arg);
 
             switch (attrType) {
                 case 'float':
                     return ``;
-                case 'Float32Array':
-                    return `let ${d.slug(arg.name)} = { unsafe ${d.slug(arg.name)}.as_mut() };`;
-                case 'Uint8Array':
-                    return `let ${d.slug(arg.name)} = { unsafe ${d.slug(arg.name)}.as_mut() };`;
+                case 'Float32Array': // analyser node
+                    return `let ${d.slug(arg.name)} = unsafe { ${d.slug(arg.name)}.as_mut() };`;
+                case 'Uint8Array': // analyser node
+                    return `let ${d.slug(arg.name)} = unsafe { ${d.slug(arg.name)}.as_mut() };`;
                 case 'PeriodicWave':
                     return `let ${d.slug(arg.name)} = ${d.slug(arg.name)}.inner.clone();`;
             }
         }).join('\n')};
-
-        self.inner.${d.slug(method)}(${args.map(arg => arg[0]).join(', ')});
+        self.inner.${d.slug(method)}(${method.arguments.map(arg => d.slug(arg.name)).join(', ')});
     }
         `;
     }).join('')}
-
 }

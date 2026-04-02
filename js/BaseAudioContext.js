@@ -234,6 +234,16 @@ module.exports = (jsExport, _nativeBinding) => {
     // --------------------------------------------------------------------
     // Factory Methods (use the patched AudioNodes)
     // --------------------------------------------------------------------
+    createAnalyser() {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
+
+      const options = {};
+
+      return new jsExport.AnalyserNode(this, options);
+    }
+
     createBufferSource() {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
@@ -242,6 +252,50 @@ module.exports = (jsExport, _nativeBinding) => {
       const options = {};
 
       return new jsExport.AudioBufferSourceNode(this, options);
+    }
+
+    createBiquadFilter() {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
+
+      const options = {};
+
+      return new jsExport.BiquadFilterNode(this, options);
+    }
+
+    createChannelMerger(numberOfInputs = 6) {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
+
+      const options = {
+        numberOfInputs,
+      };
+
+      return new jsExport.ChannelMergerNode(this, options);
+    }
+
+    createChannelSplitter(numberOfOutputs = 6) {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
+
+      const options = {
+        numberOfOutputs,
+      };
+
+      return new jsExport.ChannelSplitterNode(this, options);
+    }
+
+    createConstantSource() {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
+
+      const options = {};
+
+      return new jsExport.ConstantSourceNode(this, options);
     }
 
     createGain() {
@@ -284,7 +338,12 @@ module.exports = (jsExport, _nativeBinding) => {
       configurable: true,
       value: 'BaseAudioContext',
     },
+    createAnalyser: kEnumerableProperty,
     createBufferSource: kEnumerableProperty,
+    createBiquadFilter: kEnumerableProperty,
+    createChannelMerger: kEnumerableProperty,
+    createChannelSplitter: kEnumerableProperty,
+    createConstantSource: kEnumerableProperty,
     createGain: kEnumerableProperty,
     createOscillator: kEnumerableProperty,
     listener: kEnumerableProperty,

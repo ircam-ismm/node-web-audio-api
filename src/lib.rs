@@ -50,8 +50,18 @@ use crate::periodic_wave::NapiPeriodicWave;
 
 // Generated audio nodes
 
+mod analyser_node;
+// use crate::analyser_node::NapiAnalyserNode;
 mod audio_buffer_source_node;
 // use crate::audio_buffer_source_node::NapiAudioBufferSourceNode;
+mod biquad_filter_node;
+// use crate::biquad_filter_node::NapiBiquadFilterNode;
+mod channel_merger_node;
+// use crate::channel_merger_node::NapiChannelMergerNode;
+mod channel_splitter_node;
+// use crate::channel_splitter_node::NapiChannelSplitterNode;
+mod constant_source_node;
+// use crate::constant_source_node::NapiConstantSourceNode;
 mod gain_node;
 // use crate::gain_node::NapiGainNode;
 mod oscillator_node;

@@ -13,7 +13,8 @@ const audioContext = new AudioContext();
 
 console.log('> Max channel count:', audioContext.destination.maxChannelCount);
 
-const numChannels = audioContext.destination.maxChannelCount;
+// const numChannels = audioContext.destination.maxChannelCount;
+const numChannels = 8;
 
 audioContext.destination.channelCount = numChannels;
 audioContext.destination.channelInterpretation = 'discrete';

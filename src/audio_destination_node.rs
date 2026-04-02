@@ -2,7 +2,9 @@
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
 
-use web_audio_api::node::{AudioDestinationNode, AudioNode};
+use web_audio_api::node::*;
+
+use crate::*;
 
 #[napi]
 pub struct NapiAudioDestinationNode {

@@ -25,6 +25,8 @@ module.exports = function(jsExport, nativeBinding) {
     #sinkId = '';
     #renderCapacity = null;
     #onsinkchange = null;
+    // @todo - review
+    #keepAwakeId = null;
 
     constructor(options = {}) {
       if (typeof options !== 'object') {
@@ -107,6 +109,7 @@ module.exports = function(jsExport, nativeBinding) {
       // @fixme - napi-rs 3
       // this[kNapiObj].listen_to_events();
 
+      // @fixme - napi-rs 3
       // @todo - This is probably not requested anymore as the event listeners
       // prevent garbage collection and process exit
       const id = contextId++;
@@ -119,9 +122,9 @@ module.exports = function(jsExport, nativeBinding) {
         value: this,
       });
       // keep process awake until context is closed
-      const keepAwakeId = setInterval(() => {}, 10 * 1000);
+      this.#keepAwakeId = setInterval(() => {}, 10 * 1000);
       // clear on close
-      // @fixme - napi-rs
+      // @fixme - napi-rs 3 - define if this is the right approach
       // this.addEventListener('statechange', () => {
       //   if (this.state === 'closed') {
       //     // allow to garbage collect the context and to the close the process
@@ -220,6 +223,8 @@ module.exports = function(jsExport, nativeBinding) {
       // @fixme - napi-rs 3
       // await this.audioWorklet[kWorkletRelease]();
       await this[kNapiObj].close();
+      // allow process to terminate
+      clearInterval(this.#keepAwakeId);
     }
 
     async setSinkId(sinkId) {
