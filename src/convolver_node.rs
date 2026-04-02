@@ -39,8 +39,6 @@ impl NapiConvolverNode {
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object,
     ) -> Self {
-        // @todo - finish options handling
-
         // --------------------------------------------------------
         // Parse ConvolverOptions
         // by bindings construction all fields are populated on the JS side
@@ -137,10 +135,9 @@ impl NapiConvolverNode {
         };
 
         // --------------------------------------------------------
-        // Create and bind NapiAudioParam instances
+        // Bind NapiAudioParam instances
         // --------------------------------------------------------
 
-        // create js instance
         Self { inner: native_node }
     }
 

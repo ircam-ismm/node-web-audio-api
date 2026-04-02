@@ -40,8 +40,6 @@ impl NapiDelayNode {
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object,
     ) -> Self {
-        // @todo - finish options handling
-
         // --------------------------------------------------------
         // Parse DelayOptions
         // by bindings construction all fields are populated on the JS side
@@ -136,13 +134,12 @@ impl NapiDelayNode {
         };
 
         // --------------------------------------------------------
-        // Create and bind NapiAudioParam instances
+        // Bind NapiAudioParam instances
         // --------------------------------------------------------
 
         let native_param = native_node.delay_time().clone();
         let param_delay_time = NapiAudioParam::new(native_param);
 
-        // create js instance
         Self {
             inner: native_node,
             param_delay_time: param_delay_time,

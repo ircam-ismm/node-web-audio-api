@@ -44,8 +44,6 @@ impl NapiDynamicsCompressorNode {
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object,
     ) -> Self {
-        // @todo - finish options handling
-
         // --------------------------------------------------------
         // Parse DynamicsCompressorOptions
         // by bindings construction all fields are populated on the JS side
@@ -171,7 +169,7 @@ impl NapiDynamicsCompressorNode {
         };
 
         // --------------------------------------------------------
-        // Create and bind NapiAudioParam instances
+        // Bind NapiAudioParam instances
         // --------------------------------------------------------
 
         let native_param = native_node.threshold().clone();
@@ -189,7 +187,6 @@ impl NapiDynamicsCompressorNode {
         let native_param = native_node.release().clone();
         let param_release = NapiAudioParam::new(native_param);
 
-        // create js instance
         Self {
             inner: native_node,
             param_threshold: param_threshold,

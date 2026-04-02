@@ -41,8 +41,6 @@ impl NapiOscillatorNode {
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object,
     ) -> Self {
-        // @todo - finish options handling
-
         // --------------------------------------------------------
         // Parse OscillatorOptions
         // by bindings construction all fields are populated on the JS side
@@ -164,7 +162,7 @@ impl NapiOscillatorNode {
         };
 
         // --------------------------------------------------------
-        // Create and bind NapiAudioParam instances
+        // Bind NapiAudioParam instances
         // --------------------------------------------------------
 
         let native_param = native_node.frequency().clone();
@@ -173,7 +171,6 @@ impl NapiOscillatorNode {
         let native_param = native_node.detune().clone();
         let param_detune = NapiAudioParam::new(native_param);
 
-        // create js instance
         Self {
             inner: native_node,
             param_frequency: param_frequency,

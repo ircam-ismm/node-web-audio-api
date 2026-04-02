@@ -23,9 +23,6 @@ impl ${d.napiName(d.node)} {
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object
     ) -> Self {
-
-        // @todo - finish options handling
-
         ${(function() {
             const optionsArg = d.constructor(d.node).arguments[1];
             const optionsType = d.memberType(optionsArg);
@@ -259,7 +256,7 @@ impl ${d.napiName(d.node)} {
         };
 
         // --------------------------------------------------------
-        // Create and bind NapiAudioParam instances
+        // Bind NapiAudioParam instances
         // --------------------------------------------------------
         ${d.audioParams(d.node).map((param) => {
             return `
@@ -268,7 +265,6 @@ impl ${d.napiName(d.node)} {
             `;
         }).join('')}
 
-        // create js instance
         Self {
             inner: native_node,
             ${d.audioParams(d.node).map((param) => {

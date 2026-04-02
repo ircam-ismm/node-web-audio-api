@@ -41,8 +41,6 @@ impl NapiAudioBufferSourceNode {
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object,
     ) -> Self {
-        // @todo - finish options handling
-
         // --------------------------------------------------------
         // Parse AudioBufferSourceOptions
         // by bindings construction all fields are populated on the JS side
@@ -132,7 +130,7 @@ impl NapiAudioBufferSourceNode {
         };
 
         // --------------------------------------------------------
-        // Create and bind NapiAudioParam instances
+        // Bind NapiAudioParam instances
         // --------------------------------------------------------
 
         let native_param = native_node.playback_rate().clone();
@@ -141,7 +139,6 @@ impl NapiAudioBufferSourceNode {
         let native_param = native_node.detune().clone();
         let param_detune = NapiAudioParam::new(native_param);
 
-        // create js instance
         Self {
             inner: native_node,
             param_playback_rate: param_playback_rate,

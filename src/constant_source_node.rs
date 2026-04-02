@@ -40,8 +40,6 @@ impl NapiConstantSourceNode {
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object,
     ) -> Self {
-        // @todo - finish options handling
-
         // --------------------------------------------------------
         // Parse ConstantSourceOptions
         // by bindings construction all fields are populated on the JS side
@@ -78,13 +76,12 @@ impl NapiConstantSourceNode {
         };
 
         // --------------------------------------------------------
-        // Create and bind NapiAudioParam instances
+        // Bind NapiAudioParam instances
         // --------------------------------------------------------
 
         let native_param = native_node.offset().clone();
         let param_offset = NapiAudioParam::new(native_param);
 
-        // create js instance
         Self {
             inner: native_node,
             param_offset: param_offset,

@@ -40,8 +40,6 @@ impl NapiStereoPannerNode {
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object,
     ) -> Self {
-        // @todo - finish options handling
-
         // --------------------------------------------------------
         // Parse StereoPannerOptions
         // by bindings construction all fields are populated on the JS side
@@ -126,13 +124,12 @@ impl NapiStereoPannerNode {
         };
 
         // --------------------------------------------------------
-        // Create and bind NapiAudioParam instances
+        // Bind NapiAudioParam instances
         // --------------------------------------------------------
 
         let native_param = native_node.pan().clone();
         let param_pan = NapiAudioParam::new(native_param);
 
-        // create js instance
         Self {
             inner: native_node,
             param_pan: param_pan,

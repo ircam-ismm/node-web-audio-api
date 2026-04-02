@@ -43,8 +43,6 @@ impl NapiBiquadFilterNode {
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object,
     ) -> Self {
-        // @todo - finish options handling
-
         // --------------------------------------------------------
         // Parse BiquadFilterOptions
         // by bindings construction all fields are populated on the JS side
@@ -179,7 +177,7 @@ impl NapiBiquadFilterNode {
         };
 
         // --------------------------------------------------------
-        // Create and bind NapiAudioParam instances
+        // Bind NapiAudioParam instances
         // --------------------------------------------------------
 
         let native_param = native_node.frequency().clone();
@@ -194,7 +192,6 @@ impl NapiBiquadFilterNode {
         let native_param = native_node.gain().clone();
         let param_gain = NapiAudioParam::new(native_param);
 
-        // create js instance
         Self {
             inner: native_node,
             param_frequency: param_frequency,
