@@ -27,7 +27,7 @@ use crate::*;
 #[napi(js_name = NapiConstantSourceNode)]
 pub struct NapiConstantSourceNode {
     pub(crate) inner: ConstantSourceNode,
-    pub(crate) param_offset: NapiAudioParam,
+    pub(crate) offset: NapiAudioParam,
 }
 
 audio_node_impl!(NapiConstantSourceNode);
@@ -80,17 +80,17 @@ impl NapiConstantSourceNode {
         // --------------------------------------------------------
 
         let native_param = native_node.offset().clone();
-        let param_offset = NapiAudioParam::new(native_param);
+        let offset = NapiAudioParam::new(native_param);
 
         Self {
             inner: native_node,
-            param_offset: param_offset,
+            offset: offset,
         }
     }
 
     #[napi(getter)]
     pub fn offset(&self) -> NapiAudioParam {
-        self.param_offset.clone()
+        self.offset.clone()
     }
 
     #[napi]

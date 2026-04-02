@@ -21,8 +21,8 @@ mod audio_buffer;
 use crate::audio_buffer::NapiAudioBuffer;
 mod periodic_wave;
 use crate::periodic_wave::NapiPeriodicWave;
-// mod audio_listener;
-// use crate::audio_listener::NapiAudioListener;
+mod audio_listener;
+use crate::audio_listener::NapiAudioListener;
 // mod audio_render_capacity;
 // use crate::audio_render_capacity::NapiAudioRenderCapacity;
 

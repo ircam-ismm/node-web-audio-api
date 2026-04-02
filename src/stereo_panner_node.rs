@@ -27,7 +27,7 @@ use crate::*;
 #[napi(js_name = NapiStereoPannerNode)]
 pub struct NapiStereoPannerNode {
     pub(crate) inner: StereoPannerNode,
-    pub(crate) param_pan: NapiAudioParam,
+    pub(crate) pan: NapiAudioParam,
 }
 
 audio_node_impl!(NapiStereoPannerNode);
@@ -128,16 +128,16 @@ impl NapiStereoPannerNode {
         // --------------------------------------------------------
 
         let native_param = native_node.pan().clone();
-        let param_pan = NapiAudioParam::new(native_param);
+        let pan = NapiAudioParam::new(native_param);
 
         Self {
             inner: native_node,
-            param_pan: param_pan,
+            pan: pan,
         }
     }
 
     #[napi(getter)]
     pub fn pan(&self) -> NapiAudioParam {
-        self.param_pan.clone()
+        self.pan.clone()
     }
 }

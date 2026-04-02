@@ -7,12 +7,14 @@ use web_audio_api::context::{BaseAudioContext, OfflineAudioContext};
 
 use crate::NapiAudioBuffer;
 use crate::NapiAudioDestinationNode;
+use crate::NapiAudioListener;
 
 #[derive(Clone)]
 #[napi]
 pub struct NapiOfflineAudioContext {
     inner: Arc<OfflineAudioContext>, // Arc required for async call / tokyo futures
-                                     // worklet_id: usize
+    listener: Option<NapiAudioListener>,
+    // worklet_id: usize
 }
 
 impl NapiOfflineAudioContext {
@@ -44,6 +46,7 @@ impl NapiOfflineAudioContext {
 
         let napi_context = Self {
             inner: Arc::new(native_context),
+            listener: None,
         };
 
         // create and bind AudioDestinationNode

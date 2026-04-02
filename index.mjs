@@ -39,7 +39,7 @@ export const AudioNode = nativeModule.AudioNode;
 // export const AudioScheduledSourceNode = nativeModule.AudioScheduledSourceNode;
 export const AudioParam = nativeModule.AudioParam;
 export const AudioDestinationNode = nativeModule.AudioDestinationNode;
-// export const AudioListener = nativeModule.AudioListener;
+export const AudioListener = nativeModule.AudioListener;
 // export const AudioWorklet = nativeModule.AudioWorklet;
 // export const AudioParamMap = nativeModule.AudioParamMap;
 // export const AudioRenderCapacity = nativeModule.AudioRenderCapacity;
@@ -60,6 +60,7 @@ export const DynamicsCompressorNode = nativeModule.DynamicsCompressorNode;
 export const GainNode = nativeModule.GainNode;
 export const IIRFilterNode = nativeModule.IIRFilterNode;
 export const OscillatorNode = nativeModule.OscillatorNode;
+export const PannerNode = nativeModule.PannerNode;
 export const StereoPannerNode = nativeModule.StereoPannerNode;
 export const WaveShaperNode = nativeModule.WaveShaperNode;
 // helper methods

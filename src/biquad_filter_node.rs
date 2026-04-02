@@ -27,10 +27,10 @@ use crate::*;
 #[napi(js_name = NapiBiquadFilterNode)]
 pub struct NapiBiquadFilterNode {
     pub(crate) inner: BiquadFilterNode,
-    pub(crate) param_frequency: NapiAudioParam,
-    pub(crate) param_detune: NapiAudioParam,
-    pub(crate) param_q: NapiAudioParam,
-    pub(crate) param_gain: NapiAudioParam,
+    pub(crate) frequency: NapiAudioParam,
+    pub(crate) detune: NapiAudioParam,
+    pub(crate) q: NapiAudioParam,
+    pub(crate) gain: NapiAudioParam,
 }
 
 audio_node_impl!(NapiBiquadFilterNode);
@@ -181,44 +181,44 @@ impl NapiBiquadFilterNode {
         // --------------------------------------------------------
 
         let native_param = native_node.frequency().clone();
-        let param_frequency = NapiAudioParam::new(native_param);
+        let frequency = NapiAudioParam::new(native_param);
 
         let native_param = native_node.detune().clone();
-        let param_detune = NapiAudioParam::new(native_param);
+        let detune = NapiAudioParam::new(native_param);
 
         let native_param = native_node.q().clone();
-        let param_q = NapiAudioParam::new(native_param);
+        let q = NapiAudioParam::new(native_param);
 
         let native_param = native_node.gain().clone();
-        let param_gain = NapiAudioParam::new(native_param);
+        let gain = NapiAudioParam::new(native_param);
 
         Self {
             inner: native_node,
-            param_frequency: param_frequency,
-            param_detune: param_detune,
-            param_q: param_q,
-            param_gain: param_gain,
+            frequency: frequency,
+            detune: detune,
+            q: q,
+            gain: gain,
         }
     }
 
     #[napi(getter)]
     pub fn frequency(&self) -> NapiAudioParam {
-        self.param_frequency.clone()
+        self.frequency.clone()
     }
 
     #[napi(getter)]
     pub fn detune(&self) -> NapiAudioParam {
-        self.param_detune.clone()
+        self.detune.clone()
     }
 
     #[napi(getter)]
     pub fn q(&self) -> NapiAudioParam {
-        self.param_q.clone()
+        self.q.clone()
     }
 
     #[napi(getter)]
     pub fn gain(&self) -> NapiAudioParam {
-        self.param_gain.clone()
+        self.gain.clone()
     }
 
     // -------------------------------------------------

@@ -27,7 +27,7 @@ use crate::*;
 #[napi(js_name = NapiGainNode)]
 pub struct NapiGainNode {
     pub(crate) inner: GainNode,
-    pub(crate) param_gain: NapiAudioParam,
+    pub(crate) gain: NapiAudioParam,
 }
 
 audio_node_impl!(NapiGainNode);
@@ -128,16 +128,16 @@ impl NapiGainNode {
         // --------------------------------------------------------
 
         let native_param = native_node.gain().clone();
-        let param_gain = NapiAudioParam::new(native_param);
+        let gain = NapiAudioParam::new(native_param);
 
         Self {
             inner: native_node,
-            param_gain: param_gain,
+            gain: gain,
         }
     }
 
     #[napi(getter)]
     pub fn gain(&self) -> NapiAudioParam {
-        self.param_gain.clone()
+        self.gain.clone()
     }
 }

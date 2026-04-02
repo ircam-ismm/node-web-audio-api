@@ -27,8 +27,8 @@ use crate::*;
 #[napi(js_name = NapiAudioBufferSourceNode)]
 pub struct NapiAudioBufferSourceNode {
     pub(crate) inner: AudioBufferSourceNode,
-    pub(crate) param_playback_rate: NapiAudioParam,
-    pub(crate) param_detune: NapiAudioParam,
+    pub(crate) playback_rate: NapiAudioParam,
+    pub(crate) detune: NapiAudioParam,
 }
 
 audio_node_impl!(NapiAudioBufferSourceNode);
@@ -134,26 +134,26 @@ impl NapiAudioBufferSourceNode {
         // --------------------------------------------------------
 
         let native_param = native_node.playback_rate().clone();
-        let param_playback_rate = NapiAudioParam::new(native_param);
+        let playback_rate = NapiAudioParam::new(native_param);
 
         let native_param = native_node.detune().clone();
-        let param_detune = NapiAudioParam::new(native_param);
+        let detune = NapiAudioParam::new(native_param);
 
         Self {
             inner: native_node,
-            param_playback_rate: param_playback_rate,
-            param_detune: param_detune,
+            playback_rate: playback_rate,
+            detune: detune,
         }
     }
 
     #[napi(getter)]
     pub fn playback_rate(&self) -> NapiAudioParam {
-        self.param_playback_rate.clone()
+        self.playback_rate.clone()
     }
 
     #[napi(getter)]
     pub fn detune(&self) -> NapiAudioParam {
-        self.param_detune.clone()
+        self.detune.clone()
     }
 
     #[napi]

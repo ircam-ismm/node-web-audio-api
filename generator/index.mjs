@@ -31,7 +31,7 @@ const generatedNodes = [
   `IIRFilterNode`,
   // `MediaStreamAudioSourceNode`,
   `OscillatorNode`,
-  // `PannerNode`,
+  `PannerNode`,
   `StereoPannerNode`,
   `WaveShaperNode`,
 ];

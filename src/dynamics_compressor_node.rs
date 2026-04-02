@@ -27,11 +27,11 @@ use crate::*;
 #[napi(js_name = NapiDynamicsCompressorNode)]
 pub struct NapiDynamicsCompressorNode {
     pub(crate) inner: DynamicsCompressorNode,
-    pub(crate) param_threshold: NapiAudioParam,
-    pub(crate) param_knee: NapiAudioParam,
-    pub(crate) param_ratio: NapiAudioParam,
-    pub(crate) param_attack: NapiAudioParam,
-    pub(crate) param_release: NapiAudioParam,
+    pub(crate) threshold: NapiAudioParam,
+    pub(crate) knee: NapiAudioParam,
+    pub(crate) ratio: NapiAudioParam,
+    pub(crate) attack: NapiAudioParam,
+    pub(crate) release: NapiAudioParam,
 }
 
 audio_node_impl!(NapiDynamicsCompressorNode);
@@ -173,53 +173,53 @@ impl NapiDynamicsCompressorNode {
         // --------------------------------------------------------
 
         let native_param = native_node.threshold().clone();
-        let param_threshold = NapiAudioParam::new(native_param);
+        let threshold = NapiAudioParam::new(native_param);
 
         let native_param = native_node.knee().clone();
-        let param_knee = NapiAudioParam::new(native_param);
+        let knee = NapiAudioParam::new(native_param);
 
         let native_param = native_node.ratio().clone();
-        let param_ratio = NapiAudioParam::new(native_param);
+        let ratio = NapiAudioParam::new(native_param);
 
         let native_param = native_node.attack().clone();
-        let param_attack = NapiAudioParam::new(native_param);
+        let attack = NapiAudioParam::new(native_param);
 
         let native_param = native_node.release().clone();
-        let param_release = NapiAudioParam::new(native_param);
+        let release = NapiAudioParam::new(native_param);
 
         Self {
             inner: native_node,
-            param_threshold: param_threshold,
-            param_knee: param_knee,
-            param_ratio: param_ratio,
-            param_attack: param_attack,
-            param_release: param_release,
+            threshold: threshold,
+            knee: knee,
+            ratio: ratio,
+            attack: attack,
+            release: release,
         }
     }
 
     #[napi(getter)]
     pub fn threshold(&self) -> NapiAudioParam {
-        self.param_threshold.clone()
+        self.threshold.clone()
     }
 
     #[napi(getter)]
     pub fn knee(&self) -> NapiAudioParam {
-        self.param_knee.clone()
+        self.knee.clone()
     }
 
     #[napi(getter)]
     pub fn ratio(&self) -> NapiAudioParam {
-        self.param_ratio.clone()
+        self.ratio.clone()
     }
 
     #[napi(getter)]
     pub fn attack(&self) -> NapiAudioParam {
-        self.param_attack.clone()
+        self.attack.clone()
     }
 
     #[napi(getter)]
     pub fn release(&self) -> NapiAudioParam {
-        self.param_release.clone()
+        self.release.clone()
     }
 
     // -------------------------------------------------
@@ -227,7 +227,7 @@ impl NapiDynamicsCompressorNode {
     // -------------------------------------------------
 
     #[napi(getter, js_name = "reduction")]
-    pub fn get_reduction(&self) -> f64 {
-        self.inner.reduction() as f64
+    pub fn get_reduction(&self) -> f32 {
+        self.inner.reduction()
     }
 }

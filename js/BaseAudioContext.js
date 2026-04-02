@@ -33,7 +33,7 @@ module.exports = (jsExport, _nativeBinding) => {
   class BaseAudioContext extends EventTarget {
     // #audioWorklet = null;
     #destination = null;
-    // #listener = null;
+    #listener = null;
 
     constructor(options) {
       // Make constructor "private"
@@ -78,19 +78,19 @@ module.exports = (jsExport, _nativeBinding) => {
       return this.#destination;
     }
 
-    // get listener() {
-    //   if (!(this instanceof BaseAudioContext)) {
-    //     throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
-    //   }
+    get listener() {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
 
-    //   if (this.#listener === null) {
-    //     this.#listener = new jsExport.AudioListener({
-    //       [kNapiObj]: this[kNapiObj].listener,
-    //     });
-    //   }
+      if (this.#listener === null) {
+        this.#listener = new jsExport.AudioListener({
+          [kNapiObj]: this[kNapiObj].listener,
+        });
+      }
 
-    //   return this.#listener;
-    // }
+      return this.#listener;
+    }
 
     get sampleRate() {
       if (!(this instanceof BaseAudioContext)) {
@@ -363,6 +363,16 @@ module.exports = (jsExport, _nativeBinding) => {
       return new jsExport.OscillatorNode(this, options);
     }
 
+    createPanner() {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
+
+      const options = {};
+
+      return new jsExport.PannerNode(this, options);
+    }
+
     createStereoPanner() {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
@@ -415,6 +425,7 @@ module.exports = (jsExport, _nativeBinding) => {
     createGain: kEnumerableProperty,
     createIIRFilter: kEnumerableProperty,
     createOscillator: kEnumerableProperty,
+    createPanner: kEnumerableProperty,
     createStereoPanner: kEnumerableProperty,
     createWaveShaper: kEnumerableProperty,
     listener: kEnumerableProperty,

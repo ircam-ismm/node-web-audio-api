@@ -27,7 +27,7 @@ use crate::*;
 #[napi(js_name = NapiDelayNode)]
 pub struct NapiDelayNode {
     pub(crate) inner: DelayNode,
-    pub(crate) param_delay_time: NapiAudioParam,
+    pub(crate) delay_time: NapiAudioParam,
 }
 
 audio_node_impl!(NapiDelayNode);
@@ -138,16 +138,16 @@ impl NapiDelayNode {
         // --------------------------------------------------------
 
         let native_param = native_node.delay_time().clone();
-        let param_delay_time = NapiAudioParam::new(native_param);
+        let delay_time = NapiAudioParam::new(native_param);
 
         Self {
             inner: native_node,
-            param_delay_time: param_delay_time,
+            delay_time: delay_time,
         }
     }
 
     #[napi(getter)]
     pub fn delay_time(&self) -> NapiAudioParam {
-        self.param_delay_time.clone()
+        self.delay_time.clone()
     }
 }

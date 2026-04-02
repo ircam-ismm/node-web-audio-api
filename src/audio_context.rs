@@ -6,6 +6,7 @@ use napi_derive::napi;
 use web_audio_api::context::{AudioContext, BaseAudioContext};
 
 use crate::NapiAudioDestinationNode;
+use crate::NapiAudioListener;
 
 pub struct SetSinkIdTask {
     context: Arc<AudioContext>,
@@ -35,7 +36,8 @@ impl Task for SetSinkIdTask {
 #[napi]
 pub struct NapiAudioContext {
     inner: Arc<AudioContext>, // Arc required for async call / tokyo futures
-                              // worklet_id: usize
+    listener: Option<NapiAudioListener>,
+    // worklet_id: usize
 }
 
 impl NapiAudioContext {
@@ -60,6 +62,7 @@ impl NapiAudioContext {
 
         let napi_context = Self {
             inner: Arc::new(native_context),
+            listener: None,
         };
 
         // create and bind AudioDestinationNode

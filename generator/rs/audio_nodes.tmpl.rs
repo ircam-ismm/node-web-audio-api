@@ -9,7 +9,7 @@ use crate::*;
 pub struct ${d.napiName(d.node)} {
     pub(crate) inner: ${d.name(d.node)},
     ${d.audioParams(d.node).map((param) => {
-        return `pub(crate) param_${d.slug(param)}: NapiAudioParam,`;
+        return `pub(crate) ${d.slug(param)}: NapiAudioParam,`;
     }).join('\n')}
 }
 
@@ -261,14 +261,14 @@ impl ${d.napiName(d.node)} {
         ${d.audioParams(d.node).map((param) => {
             return `
                 let native_param = native_node.${d.slug(param.name)}().clone();
-                let param_${d.slug(param)} = NapiAudioParam::new(native_param);
+                let ${d.slug(param)} = NapiAudioParam::new(native_param);
             `;
         }).join('')}
 
         Self {
             inner: native_node,
             ${d.audioParams(d.node).map((param) => {
-                return `param_${d.slug(param)}: param_${d.slug(param)},`;
+                return `${d.slug(param)}: ${d.slug(param)},`;
             }).join('\n')}
         }
     }
@@ -277,7 +277,7 @@ impl ${d.napiName(d.node)} {
         return `
     #[napi(getter)]
     pub fn ${d.slug(param.name)}(&self) -> NapiAudioParam {
-        self.param_${d.slug(param.name)}.clone()
+        self.${d.slug(param.name)}.clone()
     }
         `;
     }).join('')}
@@ -355,8 +355,8 @@ impl ${d.napiName(d.node)} {
             case "float": {
                 getter = `
     #[napi(getter, js_name = "${d.name(attr)}")]
-    pub fn get_${d.slug(attr)}(&self) -> f64 {
-        self.inner.${d.slug(attr, true)}() as f64
+    pub fn get_${d.slug(attr)}(&self) -> f32 {
+        self.inner.${d.slug(attr, true)}()
     }
                 `;
                 break;
@@ -538,7 +538,7 @@ impl ${d.napiName(d.node)} {
 
             switch (attrType) {
                 case 'float':
-                    return `${d.slug(arg.name)}: f32`;
+                    return `${d.slug(arg.name)}: f64`;
                 case 'Float32Array':
                     return `mut ${d.slug(arg.name)}: Float32ArraySlice`;
                 case 'Uint8Array':
@@ -555,7 +555,7 @@ impl ${d.napiName(d.node)} {
 
             switch (attrType) {
                 case 'float':
-                    return ``;
+                    return `let ${d.slug(arg.name)} = ${d.slug(arg.name)} as f32;`;
                 case 'Float32Array': // analyser node
                     return `let ${d.slug(arg.name)} = unsafe { ${d.slug(arg.name)}.as_mut() };`;
                 case 'Uint8Array': // analyser node

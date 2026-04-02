@@ -45,6 +45,7 @@ jsExport.DynamicsCompressorNode = require('./js/DynamicsCompressorNode.js')(jsEx
 jsExport.GainNode = require('./js/GainNode.js')(jsExport, nativeBinding);
 jsExport.IIRFilterNode = require('./js/IIRFilterNode.js')(jsExport, nativeBinding);
 jsExport.OscillatorNode = require('./js/OscillatorNode.js')(jsExport, nativeBinding);
+jsExport.PannerNode = require('./js/PannerNode.js')(jsExport, nativeBinding);
 jsExport.StereoPannerNode = require('./js/StereoPannerNode.js')(jsExport, nativeBinding);
 jsExport.WaveShaperNode = require('./js/WaveShaperNode.js')(jsExport, nativeBinding);
 
@@ -52,7 +53,7 @@ jsExport.AudioNode = require('./js/AudioNode.js');
 jsExport.AudioScheduledSourceNode = require('./js/AudioScheduledSourceNode.js');
 jsExport.AudioParam = require('./js/AudioParam.js');
 jsExport.AudioDestinationNode = require('./js/AudioDestinationNode.js');
-// jsExport.AudioListener = require('./js/AudioListener.js');
+jsExport.AudioListener = require('./js/AudioListener.js');
 // jsExport.AudioWorklet = require('./js/AudioWorklet.js');
 // jsExport.AudioParamMap = require('./js/AudioParamMap.js');
 // jsExport.AudioRenderCapacity = require('./js/AudioRenderCapacity.js');
