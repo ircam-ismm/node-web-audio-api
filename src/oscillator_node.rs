@@ -77,7 +77,7 @@ impl NapiOscillatorNode {
         };
 
         let js_periodic_wave = options
-            .get::<Option<ClassInstance<&NapiPeriodicWave>>>("periodicWave")
+            .get::<Option<ClassInstance<NapiPeriodicWave>>>("periodicWave")
             .unwrap();
         let periodic_wave = if let Some(periodic_wave) = js_periodic_wave.unwrap() {
             Some(periodic_wave.inner.clone())

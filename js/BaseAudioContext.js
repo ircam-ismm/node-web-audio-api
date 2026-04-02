@@ -298,6 +298,16 @@ module.exports = (jsExport, _nativeBinding) => {
       return new jsExport.ConstantSourceNode(this, options);
     }
 
+    createConvolver() {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
+
+      const options = {};
+
+      return new jsExport.ConvolverNode(this, options);
+    }
+
     createGain() {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
@@ -344,6 +354,7 @@ module.exports = (jsExport, _nativeBinding) => {
     createChannelMerger: kEnumerableProperty,
     createChannelSplitter: kEnumerableProperty,
     createConstantSource: kEnumerableProperty,
+    createConvolver: kEnumerableProperty,
     createGain: kEnumerableProperty,
     createOscillator: kEnumerableProperty,
     listener: kEnumerableProperty,

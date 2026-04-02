@@ -24,7 +24,7 @@ const generatedNodes = [
   `ChannelMergerNode`,
   `ChannelSplitterNode`,
   `ConstantSourceNode`,
-  // `ConvolverNode`,
+  `ConvolverNode`,
   // `DelayNode`,
   // 'DynamicsCompressorNode',
   `GainNode`,

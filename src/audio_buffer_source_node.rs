@@ -49,7 +49,7 @@ impl NapiAudioBufferSourceNode {
         let node_defaults = AudioBufferSourceOptions::default();
 
         let js_buffer = options
-            .get::<Option<ClassInstance<&NapiAudioBuffer>>>("buffer")
+            .get::<Option<ClassInstance<NapiAudioBuffer>>>("buffer")
             .unwrap();
         let buffer = if let Some(buffer) = js_buffer.unwrap() {
             Some(buffer.inner.clone())

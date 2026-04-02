@@ -1,7 +1,6 @@
 import { AudioContext } from '../index.mjs';
 
-// Example of multichannel routing, for now the library can only handle up to
-// 32 channels.
+// Example of multichannel routing.
 //
 // The example can be tested with a virtual soundcard such as Blackhole
 // https://github.com/ExistentialAudio/BlackHole

@@ -54,6 +54,7 @@ export const BiquadFilterNode = nativeModule.BiquadFilterNode;
 export const ChannelMergerNode = nativeModule.ChannelMergerNode;
 export const ChannelSplitterNode = nativeModule.ChannelSplitterNode;
 export const ConstantSourceNode = nativeModule.ConstantSourceNode;
+export const ConvolverNode = nativeModule.ConvolverNode;
 export const GainNode = nativeModule.GainNode;
 export const OscillatorNode = nativeModule.OscillatorNode;
 // helper methods

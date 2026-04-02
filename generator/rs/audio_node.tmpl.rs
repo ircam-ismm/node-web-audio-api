@@ -122,22 +122,29 @@ macro_rules! audio_node_impl {
                     panic!("Invalid disconnect call");
                 }
 
+                // undefined disconnect ();
                 if let (None, None, None) = (output_or_dest, output, input) {
                     self.inner.disconnect();
                     return;
                 }
 
-                // disconnect output channel
+                // undefined disconnect (unsigned long output);
                 if let Some(Either${d.nodes.length + 3}::A(output)) = output_or_dest {
                     let output: usize = output.try_into().unwrap();
                     self.inner.disconnect_output(output);
                     return;
                 }
 
-                // from this point, we are sure arg[0] is an AudioNode or an AudioParam
+                // from this point, we are sure arg[0] is either an AudioNode or an AudioParam
                 let dest = output_or_dest.unwrap();
 
+                if output.is_none() && input.is_some() {
+                    panic!("Invalid disconnect call");
+                }
+
                 match dest {
+                    // undefined disconnect (AudioParam destinationParam);
+                    // undefined disconnect (AudioParam destinationParam, unsigned long output);
                     Either${d.nodes.length + 3}::B(dest) => {
                         let dest = &dest.inner;
 
@@ -147,14 +154,12 @@ macro_rules! audio_node_impl {
                                 let output: usize = output.try_into().unwrap();
                                 self.inner.disconnect_dest_from_output(dest, output);
                             },
-                            (Some(output), Some(input)) => {
-                                let output: usize = output.try_into().unwrap();
-                                let input: usize = input.try_into().unwrap();
-                                self.inner.connect_from_output_to_input(dest, output, input);
-                            }
                             _ => unreachable!(),
                         }
                     }
+                    // undefined disconnect (AudioNode destinationNode);
+                    // undefined disconnect (AudioNode destinationNode, unsigned long output);
+                    // undefined disconnect (AudioNode destinationNode, unsigned long output, unsigned long input);
                     Either${d.nodes.length + 3}::C(dest) => {
                         let dest = &dest.inner;
 
@@ -167,7 +172,7 @@ macro_rules! audio_node_impl {
                             (Some(output), Some(input)) => {
                                 let output: usize = output.try_into().unwrap();
                                 let input: usize = input.try_into().unwrap();
-                                self.inner.connect_from_output_to_input(dest, output, input);
+                                self.inner.disconnect_dest_from_output_to_input(dest, output, input);
                             }
                             _ => unreachable!(),
                         }
@@ -187,7 +192,7 @@ macro_rules! audio_node_impl {
                             (Some(output), Some(input)) => {
                                 let output: usize = output.try_into().unwrap();
                                 let input: usize = input.try_into().unwrap();
-                                self.inner.connect_from_output_to_input(dest, output, input);
+                                self.inner.disconnect_dest_from_output_to_input(dest, output, input);
                             }
                             _ => unreachable!(),
                         }

@@ -39,6 +39,7 @@ jsExport.BiquadFilterNode = require('./js/BiquadFilterNode.js')(jsExport, native
 jsExport.ChannelMergerNode = require('./js/ChannelMergerNode.js')(jsExport, nativeBinding);
 jsExport.ChannelSplitterNode = require('./js/ChannelSplitterNode.js')(jsExport, nativeBinding);
 jsExport.ConstantSourceNode = require('./js/ConstantSourceNode.js')(jsExport, nativeBinding);
+jsExport.ConvolverNode = require('./js/ConvolverNode.js')(jsExport, nativeBinding);
 jsExport.GainNode = require('./js/GainNode.js')(jsExport, nativeBinding);
 jsExport.OscillatorNode = require('./js/OscillatorNode.js')(jsExport, nativeBinding);
 

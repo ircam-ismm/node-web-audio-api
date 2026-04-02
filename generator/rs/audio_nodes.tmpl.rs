@@ -119,7 +119,7 @@ impl ${d.napiName(d.node)} {
                         case "AudioBuffer": {
                             const idl = d.findInTree(d.memberType(member));
                             return `
-        let js_${slug} = options.get::<Option<ClassInstance<&Napi${optionType}>>>("${optionName}").unwrap();
+        let js_${slug} = options.get::<Option<ClassInstance<Napi${optionType}>>>("${optionName}").unwrap();
         let ${slug} = if let Some(${slug}) = js_${slug}.unwrap() {
             Some(${slug}.inner.clone())
         } else {

@@ -62,6 +62,8 @@ mod channel_splitter_node;
 // use crate::channel_splitter_node::NapiChannelSplitterNode;
 mod constant_source_node;
 // use crate::constant_source_node::NapiConstantSourceNode;
+mod convolver_node;
+// use crate::convolver_node::NapiConvolverNode;
 mod gain_node;
 // use crate::gain_node::NapiGainNode;
 mod oscillator_node;
