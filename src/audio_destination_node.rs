@@ -1,4 +1,6 @@
 // use napi::bindgen_prelude::*;
+use std::sync::Arc;
+
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
 
@@ -6,16 +8,19 @@ use web_audio_api::node::*;
 
 use crate::*;
 
+#[derive(Clone)]
 #[napi]
 pub struct NapiAudioDestinationNode {
-    pub(crate) inner: AudioDestinationNode,
+    pub(crate) inner: Arc<AudioDestinationNode>,
 }
 
 audio_node_impl!(NapiAudioDestinationNode);
 
 impl NapiAudioDestinationNode {
     pub(crate) fn new(native_node: AudioDestinationNode) -> Self {
-        Self { inner: native_node }
+        Self {
+            inner: Arc::new(native_node),
+        }
     }
 }
 

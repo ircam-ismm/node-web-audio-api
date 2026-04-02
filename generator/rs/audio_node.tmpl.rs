@@ -89,7 +89,7 @@ macro_rules! audio_node_impl {
                     }
                     Either${d.nodes.length + 2}::B(dest) => {
                         self.inner
-                            .connect_from_output_to_input(&dest.inner, output, input);
+                            .connect_from_output_to_input(dest.inner.as_ref(), output, input);
                     }
                     ${d.nodes.map((_, index) => {
                         // A if 65
@@ -161,7 +161,7 @@ macro_rules! audio_node_impl {
                     // undefined disconnect (AudioNode destinationNode, unsigned long output);
                     // undefined disconnect (AudioNode destinationNode, unsigned long output, unsigned long input);
                     Either${d.nodes.length + 3}::C(dest) => {
-                        let dest = &dest.inner;
+                        let dest = dest.inner.as_ref();
 
                         match (output, input) {
                             (None, None) => self.inner.disconnect_dest(dest),

@@ -35,7 +35,8 @@ impl Task for SetSinkIdTask {
 #[derive(Clone)]
 #[napi]
 pub struct NapiAudioContext {
-    inner: Arc<AudioContext>, // Arc required for async call / tokyo futures
+    inner: Arc<AudioContext>,
+    destination: NapiAudioDestinationNode,
     listener: Option<NapiAudioListener>,
     // worklet_id: usize
 }
@@ -44,10 +45,6 @@ impl NapiAudioContext {
     pub(crate) fn unwrap(&self) -> &AudioContext {
         &self.inner
     }
-
-    // pub(crate) fn worklet_id(&self) -> usize {
-    //     self.worklet_id
-    // }
 }
 
 base_audio_context_impl!(NapiAudioContext, AudioContext);
@@ -55,22 +52,24 @@ base_audio_context_impl!(NapiAudioContext, AudioContext);
 #[napi]
 impl NapiAudioContext {
     #[napi(constructor)]
-    pub fn new(mut this: This<Object>) -> Self {
+    pub fn new() -> Self {
         // @fixme - napi-3 - handle options
 
         let native_context = AudioContext::new(Default::default());
 
-        let napi_context = Self {
+        let native_destination = native_context.destination();
+        let napi_destination = NapiAudioDestinationNode::new(native_destination);
+
+        Self {
             inner: Arc::new(native_context),
+            destination: napi_destination,
             listener: None,
-        };
+        }
+    }
 
-        // create and bind AudioDestinationNode
-        let native_node = napi_context.unwrap().destination();
-        let napi_node = NapiAudioDestinationNode::new(native_node);
-        let _ = this.set_named_property("destination", napi_node);
-
-        napi_context
+    #[napi(getter, js_name = "destination")]
+    pub fn destination(&self) -> NapiAudioDestinationNode {
+        self.destination.clone()
     }
 
     #[napi(getter, js_name = "baseLatency")]

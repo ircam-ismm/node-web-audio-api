@@ -12,7 +12,8 @@ use crate::NapiAudioListener;
 #[derive(Clone)]
 #[napi]
 pub struct NapiOfflineAudioContext {
-    inner: Arc<OfflineAudioContext>, // Arc required for async call / tokyo futures
+    inner: Arc<OfflineAudioContext>,
+    destination: NapiAudioDestinationNode,
     listener: Option<NapiAudioListener>,
     // worklet_id: usize
 }
@@ -21,10 +22,6 @@ impl NapiOfflineAudioContext {
     pub(crate) fn unwrap(&self) -> &OfflineAudioContext {
         &self.inner
     }
-
-    // pub(crate) fn worklet_id(&self) -> usize {
-    //     self.worklet_id
-    // }
 }
 
 base_audio_context_impl!(NapiOfflineAudioContext, OfflineAudioContext);
@@ -32,29 +29,26 @@ base_audio_context_impl!(NapiOfflineAudioContext, OfflineAudioContext);
 #[napi]
 impl NapiOfflineAudioContext {
     #[napi(constructor)]
-    pub fn new(
-        mut this: This<Object>,
-        number_of_channels: u32,
-        length: u32,
-        sample_rate: f64,
-    ) -> Self {
+    pub fn new(number_of_channels: u32, length: u32, sample_rate: f64) -> Self {
         let number_of_channels = number_of_channels as usize;
         let length = length as usize;
         let sample_rate = sample_rate as f32;
-        // @fixme - napi-3 - handle options
+
         let native_context = OfflineAudioContext::new(number_of_channels, length, sample_rate);
 
-        let napi_context = Self {
+        let native_destination = native_context.destination();
+        let napi_destination = NapiAudioDestinationNode::new(native_destination);
+
+        Self {
             inner: Arc::new(native_context),
+            destination: napi_destination,
             listener: None,
-        };
+        }
+    }
 
-        // create and bind AudioDestinationNode
-        let native_node = napi_context.unwrap().destination();
-        let napi_node = NapiAudioDestinationNode::new(native_node);
-        let _ = this.set_named_property("destination", napi_node);
-
-        napi_context
+    #[napi(getter)]
+    pub fn destination(&self) -> NapiAudioDestinationNode {
+        self.destination.clone()
     }
 
     #[napi(getter)]
