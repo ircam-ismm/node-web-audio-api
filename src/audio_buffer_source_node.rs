@@ -24,9 +24,11 @@ use web_audio_api::node::*;
 
 use crate::*;
 
-#[napi]
+#[napi(js_name = NapiAudioBufferSourceNode)]
 pub struct NapiAudioBufferSourceNode {
     pub(crate) inner: AudioBufferSourceNode,
+    pub(crate) param_playback_rate: NapiAudioParam,
+    pub(crate) param_detune: NapiAudioParam,
 }
 
 audio_node_impl!(NapiAudioBufferSourceNode);
@@ -36,7 +38,6 @@ impl NapiAudioBufferSourceNode {
     // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
     #[napi(constructor)]
     pub fn new(
-        mut this: This<Object>,
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object,
     ) -> Self {
@@ -46,7 +47,9 @@ impl NapiAudioBufferSourceNode {
         // Parse AudioBufferSourceOptions
         // by bindings construction all fields are populated on the JS side
         // --------------------------------------------------------
-        let node_defaults = AudioBufferSourceOptions::default();
+
+        let node_defaults: Option<AudioBufferSourceOptions> =
+            Some(AudioBufferSourceOptions::default());
 
         let js_buffer = options
             .get::<Option<ClassInstance<NapiAudioBuffer>>>("buffer")
@@ -60,36 +63,46 @@ impl NapiAudioBufferSourceNode {
         let some_detune = options.get::<Option<f64>>("detune").unwrap();
         let detune = if let Some(detune) = some_detune.unwrap() {
             detune as f32
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().detune
         } else {
-            node_defaults.detune
+            panic!("No default value for detune in AudioBufferSourceOptions")
         };
 
         let some_loop_ = options.get::<Option<bool>>("loop").unwrap();
         let loop_ = if let Some(loop_) = some_loop_.unwrap() {
             loop_
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().loop_
         } else {
-            node_defaults.loop_
+            panic!("No default value for loop_ in AudioBufferSourceOptions")
         };
 
         let some_loop_end = options.get::<Option<f64>>("loopEnd").unwrap();
         let loop_end = if let Some(loop_end) = some_loop_end.unwrap() {
             loop_end
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().loop_end
         } else {
-            node_defaults.loop_end
+            panic!("No default value for loop_end in AudioBufferSourceOptions")
         };
 
         let some_loop_start = options.get::<Option<f64>>("loopStart").unwrap();
         let loop_start = if let Some(loop_start) = some_loop_start.unwrap() {
             loop_start
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().loop_start
         } else {
-            node_defaults.loop_start
+            panic!("No default value for loop_start in AudioBufferSourceOptions")
         };
 
         let some_playback_rate = options.get::<Option<f64>>("playbackRate").unwrap();
         let playback_rate = if let Some(playback_rate) = some_playback_rate.unwrap() {
             playback_rate as f32
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().playback_rate
         } else {
-            node_defaults.playback_rate
+            panic!("No default value for playback_rate in AudioBufferSourceOptions")
         };
 
         // --------------------------------------------------------
@@ -123,15 +136,27 @@ impl NapiAudioBufferSourceNode {
         // --------------------------------------------------------
 
         let native_param = native_node.playback_rate().clone();
-        let napi_param = NapiAudioParam::new(native_param);
-        let _ = this.set_named_property("playbackRate", napi_param);
+        let param_playback_rate = NapiAudioParam::new(native_param);
 
         let native_param = native_node.detune().clone();
-        let napi_param = NapiAudioParam::new(native_param);
-        let _ = this.set_named_property("detune", napi_param);
+        let param_detune = NapiAudioParam::new(native_param);
 
         // create js instance
-        Self { inner: native_node }
+        Self {
+            inner: native_node,
+            param_playback_rate: param_playback_rate,
+            param_detune: param_detune,
+        }
+    }
+
+    #[napi(getter)]
+    pub fn playback_rate(&self) -> NapiAudioParam {
+        self.param_playback_rate.clone()
+    }
+
+    #[napi(getter)]
+    pub fn detune(&self) -> NapiAudioParam {
+        self.param_detune.clone()
     }
 
     #[napi]

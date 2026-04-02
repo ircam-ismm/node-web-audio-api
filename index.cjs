@@ -40,8 +40,13 @@ jsExport.ChannelMergerNode = require('./js/ChannelMergerNode.js')(jsExport, nati
 jsExport.ChannelSplitterNode = require('./js/ChannelSplitterNode.js')(jsExport, nativeBinding);
 jsExport.ConstantSourceNode = require('./js/ConstantSourceNode.js')(jsExport, nativeBinding);
 jsExport.ConvolverNode = require('./js/ConvolverNode.js')(jsExport, nativeBinding);
+jsExport.DelayNode = require('./js/DelayNode.js')(jsExport, nativeBinding);
+jsExport.DynamicsCompressorNode = require('./js/DynamicsCompressorNode.js')(jsExport, nativeBinding);
 jsExport.GainNode = require('./js/GainNode.js')(jsExport, nativeBinding);
+jsExport.IIRFilterNode = require('./js/IIRFilterNode.js')(jsExport, nativeBinding);
 jsExport.OscillatorNode = require('./js/OscillatorNode.js')(jsExport, nativeBinding);
+jsExport.StereoPannerNode = require('./js/StereoPannerNode.js')(jsExport, nativeBinding);
+jsExport.WaveShaperNode = require('./js/WaveShaperNode.js')(jsExport, nativeBinding);
 
 jsExport.AudioNode = require('./js/AudioNode.js');
 jsExport.AudioScheduledSourceNode = require('./js/AudioScheduledSourceNode.js');

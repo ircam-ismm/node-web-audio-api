@@ -24,7 +24,7 @@ use web_audio_api::node::*;
 
 use crate::*;
 
-#[napi]
+#[napi(js_name = NapiChannelSplitterNode)]
 pub struct NapiChannelSplitterNode {
     pub(crate) inner: ChannelSplitterNode,
 }
@@ -45,22 +45,26 @@ impl NapiChannelSplitterNode {
         // Parse ChannelSplitterOptions
         // by bindings construction all fields are populated on the JS side
         // --------------------------------------------------------
-        let node_defaults = ChannelSplitterOptions::default();
+
+        let node_defaults: Option<ChannelSplitterOptions> = Some(ChannelSplitterOptions::default());
 
         let some_number_of_outputs = options.get::<Option<u32>>("numberOfOutputs").unwrap();
         let number_of_outputs = if let Some(number_of_outputs) = some_number_of_outputs.unwrap() {
             number_of_outputs as usize
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().number_of_outputs
         } else {
-            node_defaults.number_of_outputs
+            panic!("No default value for number_of_outputs in ChannelSplitterOptions")
         };
 
         // --------------------------------------------------------
         // Parse AudioNodeOptions
         // - Note that these are not enforced by JS facade
         // --------------------------------------------------------
-        // @fixme - napi-rs 3
-        // let node_defaults = ChannelSplitterOptions::default();
-        let audio_node_options_default = node_defaults.audio_node_options;
+        let audio_node_options_default = match node_defaults {
+            Some(node_defaults) => node_defaults.audio_node_options,
+            None => AudioNodeOptions::default(),
+        };
 
         let some_channel_count = options.get::<u32>("channelCount").unwrap();
         let channel_count = if let Some(channel_count) = some_channel_count {

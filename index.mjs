@@ -55,8 +55,13 @@ export const ChannelMergerNode = nativeModule.ChannelMergerNode;
 export const ChannelSplitterNode = nativeModule.ChannelSplitterNode;
 export const ConstantSourceNode = nativeModule.ConstantSourceNode;
 export const ConvolverNode = nativeModule.ConvolverNode;
+export const DelayNode = nativeModule.DelayNode;
+export const DynamicsCompressorNode = nativeModule.DynamicsCompressorNode;
 export const GainNode = nativeModule.GainNode;
+export const IIRFilterNode = nativeModule.IIRFilterNode;
 export const OscillatorNode = nativeModule.OscillatorNode;
+export const StereoPannerNode = nativeModule.StereoPannerNode;
+export const WaveShaperNode = nativeModule.WaveShaperNode;
 // helper methods
 export const mediaDevices = nativeModule.mediaDevices;
 

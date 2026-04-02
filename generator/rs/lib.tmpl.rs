@@ -1,8 +1,5 @@
 #![deny(clippy::all)]
 
-// use napi::{Env, JsObject, Result};
-// use napi_derive::module_exports;
-
 #[macro_use]
 mod base_audio_context;
 #[macro_use]

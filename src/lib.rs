@@ -19,9 +19,6 @@
 
 #![deny(clippy::all)]
 
-// use napi::{Env, JsObject, Result};
-// use napi_derive::module_exports;
-
 #[macro_use]
 mod base_audio_context;
 #[macro_use]
@@ -64,10 +61,20 @@ mod constant_source_node;
 // use crate::constant_source_node::NapiConstantSourceNode;
 mod convolver_node;
 // use crate::convolver_node::NapiConvolverNode;
+mod delay_node;
+// use crate::delay_node::NapiDelayNode;
+mod dynamics_compressor_node;
+// use crate::dynamics_compressor_node::NapiDynamicsCompressorNode;
 mod gain_node;
 // use crate::gain_node::NapiGainNode;
+mod iir_filter_node;
+// use crate::iir_filter_node::NapiIIRFilterNode;
 mod oscillator_node;
 // use crate::oscillator_node::NapiOscillatorNode;
+mod stereo_panner_node;
+// use crate::stereo_panner_node::NapiStereoPannerNode;
+mod wave_shaper_node;
+// use crate::wave_shaper_node::NapiWaveShaperNode;
 
 // AudioWorklet internals
 // use crate::audio_worklet_node::{

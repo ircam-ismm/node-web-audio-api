@@ -24,7 +24,7 @@ use web_audio_api::node::*;
 
 use crate::*;
 
-#[napi]
+#[napi(js_name = NapiConvolverNode)]
 pub struct NapiConvolverNode {
     pub(crate) inner: ConvolverNode,
 }
@@ -45,7 +45,8 @@ impl NapiConvolverNode {
         // Parse ConvolverOptions
         // by bindings construction all fields are populated on the JS side
         // --------------------------------------------------------
-        let node_defaults = ConvolverOptions::default();
+
+        let node_defaults: Option<ConvolverOptions> = Some(ConvolverOptions::default());
 
         let js_buffer = options
             .get::<Option<ClassInstance<NapiAudioBuffer>>>("buffer")
@@ -61,17 +62,20 @@ impl NapiConvolverNode {
         let disable_normalization =
             if let Some(disable_normalization) = some_disable_normalization.unwrap() {
                 disable_normalization
+            } else if node_defaults.is_some() {
+                node_defaults.clone().unwrap().disable_normalization
             } else {
-                node_defaults.disable_normalization
+                panic!("No default value for disable_normalization in ConvolverOptions")
             };
 
         // --------------------------------------------------------
         // Parse AudioNodeOptions
         // - Note that these are not enforced by JS facade
         // --------------------------------------------------------
-        // @fixme - napi-rs 3
-        // let node_defaults = ConvolverOptions::default();
-        let audio_node_options_default = node_defaults.audio_node_options;
+        let audio_node_options_default = match node_defaults {
+            Some(node_defaults) => node_defaults.audio_node_options,
+            None => AudioNodeOptions::default(),
+        };
 
         let some_channel_count = options.get::<u32>("channelCount").unwrap();
         let channel_count = if let Some(channel_count) = some_channel_count {

@@ -24,9 +24,10 @@ use web_audio_api::node::*;
 
 use crate::*;
 
-#[napi]
+#[napi(js_name = NapiGainNode)]
 pub struct NapiGainNode {
     pub(crate) inner: GainNode,
+    pub(crate) param_gain: NapiAudioParam,
 }
 
 audio_node_impl!(NapiGainNode);
@@ -36,7 +37,6 @@ impl NapiGainNode {
     // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
     #[napi(constructor)]
     pub fn new(
-        mut this: This<Object>,
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object,
     ) -> Self {
@@ -46,22 +46,26 @@ impl NapiGainNode {
         // Parse GainOptions
         // by bindings construction all fields are populated on the JS side
         // --------------------------------------------------------
-        let node_defaults = GainOptions::default();
+
+        let node_defaults: Option<GainOptions> = Some(GainOptions::default());
 
         let some_gain = options.get::<Option<f64>>("gain").unwrap();
         let gain = if let Some(gain) = some_gain.unwrap() {
             gain as f32
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().gain
         } else {
-            node_defaults.gain
+            panic!("No default value for gain in GainOptions")
         };
 
         // --------------------------------------------------------
         // Parse AudioNodeOptions
         // - Note that these are not enforced by JS facade
         // --------------------------------------------------------
-        // @fixme - napi-rs 3
-        // let node_defaults = GainOptions::default();
-        let audio_node_options_default = node_defaults.audio_node_options;
+        let audio_node_options_default = match node_defaults {
+            Some(node_defaults) => node_defaults.audio_node_options,
+            None => AudioNodeOptions::default(),
+        };
 
         let some_channel_count = options.get::<u32>("channelCount").unwrap();
         let channel_count = if let Some(channel_count) = some_channel_count {
@@ -126,10 +130,17 @@ impl NapiGainNode {
         // --------------------------------------------------------
 
         let native_param = native_node.gain().clone();
-        let napi_param = NapiAudioParam::new(native_param);
-        let _ = this.set_named_property("gain", napi_param);
+        let param_gain = NapiAudioParam::new(native_param);
 
         // create js instance
-        Self { inner: native_node }
+        Self {
+            inner: native_node,
+            param_gain: param_gain,
+        }
+    }
+
+    #[napi(getter)]
+    pub fn gain(&self) -> NapiAudioParam {
+        self.param_gain.clone()
     }
 }

@@ -25,15 +25,15 @@ const generatedNodes = [
   `ChannelSplitterNode`,
   `ConstantSourceNode`,
   `ConvolverNode`,
-  // `DelayNode`,
-  // 'DynamicsCompressorNode',
+  `DelayNode`,
+  'DynamicsCompressorNode',
   `GainNode`,
-  // `IIRFilterNode`,
+  `IIRFilterNode`,
   // `MediaStreamAudioSourceNode`,
   `OscillatorNode`,
   // `PannerNode`,
-  // `StereoPannerNode`,
-  // `WaveShaperNode`,
+  `StereoPannerNode`,
+  `WaveShaperNode`,
 ];
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

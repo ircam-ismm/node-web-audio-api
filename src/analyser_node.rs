@@ -24,7 +24,7 @@ use web_audio_api::node::*;
 
 use crate::*;
 
-#[napi]
+#[napi(js_name = NapiAnalyserNode)]
 pub struct NapiAnalyserNode {
     pub(crate) inner: AnalyserNode,
 }
@@ -45,27 +45,34 @@ impl NapiAnalyserNode {
         // Parse AnalyserOptions
         // by bindings construction all fields are populated on the JS side
         // --------------------------------------------------------
-        let node_defaults = AnalyserOptions::default();
+
+        let node_defaults: Option<AnalyserOptions> = Some(AnalyserOptions::default());
 
         let some_fft_size = options.get::<Option<u32>>("fftSize").unwrap();
         let fft_size = if let Some(fft_size) = some_fft_size.unwrap() {
             fft_size as usize
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().fft_size
         } else {
-            node_defaults.fft_size
+            panic!("No default value for fft_size in AnalyserOptions")
         };
 
         let some_max_decibels = options.get::<Option<f64>>("maxDecibels").unwrap();
         let max_decibels = if let Some(max_decibels) = some_max_decibels.unwrap() {
             max_decibels
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().max_decibels
         } else {
-            node_defaults.max_decibels
+            panic!("No default value for max_decibels in AnalyserOptions")
         };
 
         let some_min_decibels = options.get::<Option<f64>>("minDecibels").unwrap();
         let min_decibels = if let Some(min_decibels) = some_min_decibels.unwrap() {
             min_decibels
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().min_decibels
         } else {
-            node_defaults.min_decibels
+            panic!("No default value for min_decibels in AnalyserOptions")
         };
 
         let some_smoothing_time_constant =
@@ -73,17 +80,20 @@ impl NapiAnalyserNode {
         let smoothing_time_constant =
             if let Some(smoothing_time_constant) = some_smoothing_time_constant.unwrap() {
                 smoothing_time_constant
+            } else if node_defaults.is_some() {
+                node_defaults.clone().unwrap().smoothing_time_constant
             } else {
-                node_defaults.smoothing_time_constant
+                panic!("No default value for smoothing_time_constant in AnalyserOptions")
             };
 
         // --------------------------------------------------------
         // Parse AudioNodeOptions
         // - Note that these are not enforced by JS facade
         // --------------------------------------------------------
-        // @fixme - napi-rs 3
-        // let node_defaults = AnalyserOptions::default();
-        let audio_node_options_default = node_defaults.audio_node_options;
+        let audio_node_options_default = match node_defaults {
+            Some(node_defaults) => node_defaults.audio_node_options,
+            None => AudioNodeOptions::default(),
+        };
 
         let some_channel_count = options.get::<u32>("channelCount").unwrap();
         let channel_count = if let Some(channel_count) = some_channel_count {

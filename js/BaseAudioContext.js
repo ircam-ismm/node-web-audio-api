@@ -308,6 +308,28 @@ module.exports = (jsExport, _nativeBinding) => {
       return new jsExport.ConvolverNode(this, options);
     }
 
+    createDelay(maxDelayTime = 1.0) {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
+
+      const options = {
+        maxDelayTime,
+      };
+
+      return new jsExport.DelayNode(this, options);
+    }
+
+    createDynamicsCompressor() {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
+
+      const options = {};
+
+      return new jsExport.DynamicsCompressorNode(this, options);
+    }
+
     createGain() {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
@@ -318,6 +340,19 @@ module.exports = (jsExport, _nativeBinding) => {
       return new jsExport.GainNode(this, options);
     }
 
+    createIIRFilter(feedforward, feedback) {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
+
+      const options = {
+        feedforward,
+        feedback,
+      };
+
+      return new jsExport.IIRFilterNode(this, options);
+    }
+
     createOscillator() {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
@@ -326,6 +361,26 @@ module.exports = (jsExport, _nativeBinding) => {
       const options = {};
 
       return new jsExport.OscillatorNode(this, options);
+    }
+
+    createStereoPanner() {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
+
+      const options = {};
+
+      return new jsExport.StereoPannerNode(this, options);
+    }
+
+    createWaveShaper() {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
+      }
+
+      const options = {};
+
+      return new jsExport.WaveShaperNode(this, options);
     }
 
   }
@@ -355,8 +410,13 @@ module.exports = (jsExport, _nativeBinding) => {
     createChannelSplitter: kEnumerableProperty,
     createConstantSource: kEnumerableProperty,
     createConvolver: kEnumerableProperty,
+    createDelay: kEnumerableProperty,
+    createDynamicsCompressor: kEnumerableProperty,
     createGain: kEnumerableProperty,
+    createIIRFilter: kEnumerableProperty,
     createOscillator: kEnumerableProperty,
+    createStereoPanner: kEnumerableProperty,
+    createWaveShaper: kEnumerableProperty,
     listener: kEnumerableProperty,
     destination: kEnumerableProperty,
     sampleRate: kEnumerableProperty,

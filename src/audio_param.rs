@@ -3,6 +3,7 @@ use napi_derive::napi;
 // use web_audio_api::context::BaseAudioContext;
 use web_audio_api::{AudioParam, AutomationRate};
 
+#[derive(Clone)]
 #[napi]
 pub struct NapiAudioParam {
     pub(crate) inner: AudioParam,

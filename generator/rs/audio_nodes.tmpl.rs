@@ -5,9 +5,12 @@ use web_audio_api::node::*;
 
 use crate::*;
 
-#[napi]
+#[napi(js_name = ${d.napiName(d.node)})]
 pub struct ${d.napiName(d.node)} {
     pub(crate) inner: ${d.name(d.node)},
+    ${d.audioParams(d.node).map((param) => {
+        return `pub(crate) param_${d.slug(param)}: NapiAudioParam,`;
+    }).join('\n')}
 }
 
 audio_node_impl!(${d.napiName(d.node)});
@@ -17,7 +20,6 @@ impl ${d.napiName(d.node)} {
     // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
     #[napi(constructor)]
     pub fn new(
-        ${d.audioParams(d.node).length ? `mut this: This<Object>,` : ''}
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object
     ) -> Self {
@@ -28,7 +30,7 @@ impl ${d.napiName(d.node)} {
             const optionsArg = d.constructor(d.node).arguments[1];
             const optionsType = d.memberType(optionsArg);
             const optionsIdl = d.findInTree(optionsType);
-            let hasRequiredMember = false;
+            let hasRequiredMember = optionsIdl.members.reduce((acc, member) => acc || member.required, false);
             let parseOptions = ``;
 
             parseOptions += `
@@ -36,19 +38,19 @@ impl ${d.napiName(d.node)} {
         // Parse ${optionsType}
         // by bindings construction all fields are populated on the JS side
         // --------------------------------------------------------
-        let node_defaults = ${optionsType}::default();
+                ${!hasRequiredMember ? `
+        let node_defaults: Option<${optionsType}> = Some(${optionsType}::default());
+                ` : `
+        let node_defaults: Option<${optionsType}> = None;
+                `}
 
                 ${optionsIdl.members.map(member => {
                     const optionName = d.name(member);
                     const optionType = d.memberType(member);
-                    const required = member.required;
                     const defaultValue = member.default; // null or object
                     const nullable = member.idlType.nullable; // only AudioBuffer is actually nullable
                     const simple_slug = d.slug(member);
                     const slug = d.slug(member, true); // append _ to protect from protected keywords
-
-                    // Note that the options object has required member for AudioNodeOptions parsing
-                    hasRequiredMember = hasRequiredMember || required;
 
                     switch (optionType) {
                         case "boolean": {
@@ -56,8 +58,10 @@ impl ${d.napiName(d.node)} {
         let some_${slug} = options.get::<Option<bool>>("${optionName}").unwrap();
         let ${slug} = if let Some(${slug}) = some_${slug}.unwrap() {
             ${slug}
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().${slug}
         } else {
-            node_defaults.${slug}
+            panic!("No default value for ${slug} in ${optionsType}")
         };
                             `;
                             break;
@@ -67,8 +71,10 @@ impl ${d.napiName(d.node)} {
         let some_${slug} = options.get::<Option<f64>>("${optionName}").unwrap();
         let ${slug} = if let Some(${slug}) = some_${slug}.unwrap() {
             ${slug} as f32
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().${slug}
         } else {
-            node_defaults.${slug}
+            panic!("No default value for ${slug} in ${optionsType}")
         };
                             `;
                             break;
@@ -78,8 +84,10 @@ impl ${d.napiName(d.node)} {
         let some_${slug} = options.get::<Option<f64>>("${optionName}").unwrap();
         let ${slug} = if let Some(${slug}) = some_${slug}.unwrap() {
             ${slug}
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().${slug}
         } else {
-            node_defaults.${slug}
+            panic!("No default value for ${slug} in ${optionsType}")
         };
                             `;
                             break;
@@ -89,8 +97,10 @@ impl ${d.napiName(d.node)} {
         let some_${slug} = options.get::<Option<u32>>("${optionName}").unwrap();
         let ${slug} = if let Some(${slug}) = some_${slug}.unwrap() {
             ${slug} as usize
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().${slug}
         } else {
-            node_defaults.${slug}
+            panic!("No default value for ${slug} in ${optionsType}")
         };
                             `;
                             break;
@@ -108,13 +118,14 @@ impl ${d.napiName(d.node)} {
                 "${v.value}" => ${idl.name}::${d.camelcase(v.value)},`).join("")}
                 _ => unreachable!(),
             }
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().${slug}
         } else {
-            node_defaults.${slug}
+            panic!("No default value for ${slug} in ${optionsType}")
         };
                             `;
                             break;
                         }
-                        // @fixme - napi-rs 3
                         case "PeriodicWave":
                         case "AudioBuffer": {
                             const idl = d.findInTree(d.memberType(member));
@@ -142,31 +153,23 @@ impl ${d.napiName(d.node)} {
                         default: {
                             // sequences:
                             let targetType = member.idlType.idlType[0].idlType === "float" ? "f32" : "f64";
-                            // - IIRFIlterOptions::feedforward
-                            // - IIRFIlterOptions::feedback
-                            if (member.required) {
-                                return `
-        let ${slug} = node_defaults.${slug};
-        // let ${simple_slug}_js = options.get::<&str, JsTypedArray>("${optionName}")?.unwrap();
-        // let ${simple_slug}_value = ${simple_slug}_js.into_value()?;
-        // let ${slug}: &[${targetType}] = ${simple_slug}_value.as_ref();
-        // let ${slug} = ${slug}.to_vec();
-                                `;
+                            // - IIRFIlterOptions::feedforward (required)
+                            // - IIRFIlterOptions::feedback (required)
                             // - WaveShaperOptions::curve
-                            } else {
-                                return `
-        let ${slug} = node_defaults.${slug};
-        // let ${simple_slug}_js = options.get::<&str, JsUnknown>("${optionName}")?.unwrap();
-        // let ${slug} = if ${simple_slug}_js.get_type()? == ValueType::Null {
-        //     None
-        // } else {
-        //     let ${simple_slug}_js = options.get::<&str, JsTypedArray>("${optionName}")?.unwrap();
-        //     let ${simple_slug}_value = ${simple_slug}_js.into_value()?;
-        //     let ${slug}: &[${targetType}] = ${simple_slug}_value.as_ref();
-        //     Some(${slug}.to_vec())
-        // };
-                                `;
-                            }
+                            return `
+        let some_${slug} = options.get::<Option<&[${targetType}]>>("${optionName}").unwrap();
+        let ${slug} = if let Some(${slug}) = some_${slug}.unwrap() {
+            ${member.required
+                ? `${slug}.to_vec()`
+                : `Some(${slug}.to_vec())`
+            }
+
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().${slug}
+        } else {
+            panic!("No default value for ${slug} in ${optionsType}")
+        };
+                            `;
                             break;
                         }
                     }
@@ -179,24 +182,12 @@ impl ${d.napiName(d.node)} {
         // --------------------------------------------------------
         // Parse AudioNodeOptions
         // - Note that these are not enforced by JS facade
-        // --------------------------------------------------------\
-                `;
-                // If the node options object has required member, e.g. IIRFilterNodeOptions,
-                // then it does not implement Default. In this case we need to grab the default
-                // directly from AudioNodeOptions
-                if (hasRequiredMember) {
-                    parseOptions += `
-        let audio_node_options_default = AudioNodeOptions::default();
-                    `;
-                } else {
-                    parseOptions += `
-        // @fixme - napi-rs 3
-        // let node_defaults = ${optionsType}::default();
-        let audio_node_options_default = node_defaults.audio_node_options;
-                    `;
-                }
+        // --------------------------------------------------------
+        let audio_node_options_default = match node_defaults {
+            Some(node_defaults) => node_defaults.audio_node_options,
+            None => AudioNodeOptions::default(),
+        };
 
-                parseOptions += `
         let some_channel_count = options.get::<u32>("channelCount").unwrap();
         let channel_count = if let Some(channel_count) = some_channel_count {
             channel_count as usize
@@ -273,14 +264,27 @@ impl ${d.napiName(d.node)} {
         ${d.audioParams(d.node).map((param) => {
             return `
                 let native_param = native_node.${d.slug(param.name)}().clone();
-                let napi_param = NapiAudioParam::new(native_param);
-                let _ = this.set_named_property("${param.name}", napi_param);
+                let param_${d.slug(param)} = NapiAudioParam::new(native_param);
             `;
         }).join('')}
 
         // create js instance
-        Self { inner: native_node }
+        Self {
+            inner: native_node,
+            ${d.audioParams(d.node).map((param) => {
+                return `param_${d.slug(param)}: param_${d.slug(param)},`;
+            }).join('\n')}
+        }
     }
+
+    ${d.audioParams(d.node).map((param) => {
+        return `
+    #[napi(getter)]
+    pub fn ${d.slug(param.name)}(&self) -> NapiAudioParam {
+        self.param_${d.slug(param.name)}.clone()
+    }
+        `;
+    }).join('')}
 
     ${(function() {
         // -------------------------------------------------
@@ -399,40 +403,21 @@ impl ${d.napiName(d.node)} {
                 `;
                 break;
             }
-    //         case "Float32Array": {
-    //             // WaveShaperNode::curve
-    //             getter = `
-    // #[js_function(0)]
-    // fn get_${d.slug(attr)}(ctx: CallContext) -> Result<JsUnknown> {
-    //     let js_this = ctx.this_unchecked::<JsObject>();
-    //     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    //     let node = napi_node.unwrap();
+            // WaveShaperNode::curve
+            case "Float32Array": {
+                getter += `
+    #[napi(getter, js_name = "${d.name(attr)}")]
+    pub fn get_${d.slug(attr)}(&self) -> Either<Float32Array, Null> {
+        let value = self.inner.${d.slug(attr, true)}();
 
-    //     let value = node.${d.slug(attr, true)}();
-
-    //     if let Some(arr_f32) = value {
-    //         let length = arr_f32.len();
-
-    //         let array_buffer = ctx.env.create_arraybuffer(length * 4).unwrap();
-    //         let js_typed_array = array_buffer
-    //             .into_raw()
-    //             .into_typedarray(TypedArrayType::Float32, length, 0)?;
-
-    //         let mut js_typed_array_value = js_typed_array.into_value()?;
-    //         let buffer: &mut [f32] = js_typed_array_value.as_mut();
-    //         buffer.copy_from_slice(arr_f32);
-
-    //         let js_typed_array = js_typed_array_value.arraybuffer
-    //             .into_typedarray(TypedArrayType::Float32, length, 0)?;
-
-    //         Ok(js_typed_array.into_unknown())
-    //     } else {
-    //         Ok(ctx.env.get_null()?.into_unknown())
-    //     }
-    // }
-    //                     `;
-    //             break;
-    //         }
+        match value {
+            Some(value) => Either::A(Float32Array::new(value.to_vec())),
+            None => Either::B(Null)
+        }
+    }
+                `;
+                break;
+            }
             case "AudioBuffer": {
                 // This should never be called as the AudioBuffer is stored directly
                 // on the JS side to retrieve the exact same AudioBuffer reference.
@@ -514,25 +499,17 @@ impl ${d.napiName(d.node)} {
                     `;
                     break;
                 }
-    //             case "Float32Array": {
-    //                 // WaveShaperNode::curve
-    //                 setter = `
-    // #[js_function(1)]
-    // fn set_${d.slug(attr)}(ctx: CallContext) -> Result<JsUndefined> {
-    //     let js_this = ctx.this_unchecked::<JsObject>();
-    //     let napi_node = ctx.env.unwrap::<${d.napiName(d.node)}>(&js_this)?;
-    //     let node = napi_node.unwrap();
 
-    //     let js_obj = ctx.get::<JsTypedArray>(0)?;
-    //     let buffer = js_obj.into_value()?;
-    //     let buffer_ref: &[f32] = buffer.as_ref();
-    //     node.set_${d.slug(attr)}(buffer_ref.to_vec());
-
-    //     ctx.env.get_undefined()
-    // }
-    //                 `;
-    //                 break;
-    //             }
+                // WaveShaperNode::curve
+                case "Float32Array": {
+                    setter += `
+    #[napi(setter, js_name = "${d.name(attr)}")]
+    pub fn set_${d.slug(attr)}(&mut self, value: &[f32]) {
+        self.inner.set_${d.slug(attr)}(value.to_vec());
+    }
+                    `
+                    break;
+                }
                 case "AudioBuffer": {
                     let typeIdl = d.findInTree(attrType);
 

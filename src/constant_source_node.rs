@@ -24,9 +24,10 @@ use web_audio_api::node::*;
 
 use crate::*;
 
-#[napi]
+#[napi(js_name = NapiConstantSourceNode)]
 pub struct NapiConstantSourceNode {
     pub(crate) inner: ConstantSourceNode,
+    pub(crate) param_offset: NapiAudioParam,
 }
 
 audio_node_impl!(NapiConstantSourceNode);
@@ -36,7 +37,6 @@ impl NapiConstantSourceNode {
     // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
     #[napi(constructor)]
     pub fn new(
-        mut this: This<Object>,
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object,
     ) -> Self {
@@ -46,13 +46,16 @@ impl NapiConstantSourceNode {
         // Parse ConstantSourceOptions
         // by bindings construction all fields are populated on the JS side
         // --------------------------------------------------------
-        let node_defaults = ConstantSourceOptions::default();
+
+        let node_defaults: Option<ConstantSourceOptions> = Some(ConstantSourceOptions::default());
 
         let some_offset = options.get::<Option<f64>>("offset").unwrap();
         let offset = if let Some(offset) = some_offset.unwrap() {
             offset as f32
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().offset
         } else {
-            node_defaults.offset
+            panic!("No default value for offset in ConstantSourceOptions")
         };
 
         // --------------------------------------------------------
@@ -79,11 +82,18 @@ impl NapiConstantSourceNode {
         // --------------------------------------------------------
 
         let native_param = native_node.offset().clone();
-        let napi_param = NapiAudioParam::new(native_param);
-        let _ = this.set_named_property("offset", napi_param);
+        let param_offset = NapiAudioParam::new(native_param);
 
         // create js instance
-        Self { inner: native_node }
+        Self {
+            inner: native_node,
+            param_offset: param_offset,
+        }
+    }
+
+    #[napi(getter)]
+    pub fn offset(&self) -> NapiAudioParam {
+        self.param_offset.clone()
     }
 
     #[napi]

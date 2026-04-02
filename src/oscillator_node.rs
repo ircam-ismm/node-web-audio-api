@@ -24,9 +24,11 @@ use web_audio_api::node::*;
 
 use crate::*;
 
-#[napi]
+#[napi(js_name = NapiOscillatorNode)]
 pub struct NapiOscillatorNode {
     pub(crate) inner: OscillatorNode,
+    pub(crate) param_frequency: NapiAudioParam,
+    pub(crate) param_detune: NapiAudioParam,
 }
 
 audio_node_impl!(NapiOscillatorNode);
@@ -36,7 +38,6 @@ impl NapiOscillatorNode {
     // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
     #[napi(constructor)]
     pub fn new(
-        mut this: This<Object>,
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object,
     ) -> Self {
@@ -46,7 +47,8 @@ impl NapiOscillatorNode {
         // Parse OscillatorOptions
         // by bindings construction all fields are populated on the JS side
         // --------------------------------------------------------
-        let node_defaults = OscillatorOptions::default();
+
+        let node_defaults: Option<OscillatorOptions> = Some(OscillatorOptions::default());
 
         let some_type_ = options.get::<Option<String>>("type").unwrap();
         let type_ = if let Some(type_) = some_type_.unwrap() {
@@ -58,22 +60,28 @@ impl NapiOscillatorNode {
                 "custom" => OscillatorType::Custom,
                 _ => unreachable!(),
             }
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().type_
         } else {
-            node_defaults.type_
+            panic!("No default value for type_ in OscillatorOptions")
         };
 
         let some_frequency = options.get::<Option<f64>>("frequency").unwrap();
         let frequency = if let Some(frequency) = some_frequency.unwrap() {
             frequency as f32
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().frequency
         } else {
-            node_defaults.frequency
+            panic!("No default value for frequency in OscillatorOptions")
         };
 
         let some_detune = options.get::<Option<f64>>("detune").unwrap();
         let detune = if let Some(detune) = some_detune.unwrap() {
             detune as f32
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().detune
         } else {
-            node_defaults.detune
+            panic!("No default value for detune in OscillatorOptions")
         };
 
         let js_periodic_wave = options
@@ -89,9 +97,10 @@ impl NapiOscillatorNode {
         // Parse AudioNodeOptions
         // - Note that these are not enforced by JS facade
         // --------------------------------------------------------
-        // @fixme - napi-rs 3
-        // let node_defaults = OscillatorOptions::default();
-        let audio_node_options_default = node_defaults.audio_node_options;
+        let audio_node_options_default = match node_defaults {
+            Some(node_defaults) => node_defaults.audio_node_options,
+            None => AudioNodeOptions::default(),
+        };
 
         let some_channel_count = options.get::<u32>("channelCount").unwrap();
         let channel_count = if let Some(channel_count) = some_channel_count {
@@ -159,15 +168,27 @@ impl NapiOscillatorNode {
         // --------------------------------------------------------
 
         let native_param = native_node.frequency().clone();
-        let napi_param = NapiAudioParam::new(native_param);
-        let _ = this.set_named_property("frequency", napi_param);
+        let param_frequency = NapiAudioParam::new(native_param);
 
         let native_param = native_node.detune().clone();
-        let napi_param = NapiAudioParam::new(native_param);
-        let _ = this.set_named_property("detune", napi_param);
+        let param_detune = NapiAudioParam::new(native_param);
 
         // create js instance
-        Self { inner: native_node }
+        Self {
+            inner: native_node,
+            param_frequency: param_frequency,
+            param_detune: param_detune,
+        }
+    }
+
+    #[napi(getter)]
+    pub fn frequency(&self) -> NapiAudioParam {
+        self.param_frequency.clone()
+    }
+
+    #[napi(getter)]
+    pub fn detune(&self) -> NapiAudioParam {
+        self.param_detune.clone()
     }
 
     #[napi]
