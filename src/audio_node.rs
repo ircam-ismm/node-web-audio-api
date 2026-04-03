@@ -88,7 +88,7 @@ macro_rules! audio_node_impl {
             #[napi]
             pub fn connect(
                 &mut self,
-                dest: Either17<
+                dest: Either18<
                     &$crate::audio_param::NapiAudioParam,
                     &$crate::audio_destination_node::NapiAudioDestinationNode,
                     &$crate::analyser_node::NapiAnalyserNode,
@@ -102,6 +102,7 @@ macro_rules! audio_node_impl {
                     &$crate::dynamics_compressor_node::NapiDynamicsCompressorNode,
                     &$crate::gain_node::NapiGainNode,
                     &$crate::iir_filter_node::NapiIIRFilterNode,
+                    &$crate::media_stream_audio_source_node::NapiMediaStreamAudioSourceNode,
                     &$crate::oscillator_node::NapiOscillatorNode,
                     &$crate::panner_node::NapiPannerNode,
                     &$crate::stereo_panner_node::NapiStereoPannerNode,
@@ -114,72 +115,76 @@ macro_rules! audio_node_impl {
                 let input: usize = input.unwrap_or(0).try_into().unwrap();
 
                 match dest {
-                    Either17::A(dest) => {
+                    Either18::A(dest) => {
                         self.inner
                             .connect_from_output_to_input(&dest.inner, output, input);
                     }
-                    Either17::B(dest) => {
+                    Either18::B(dest) => {
                         self.inner
                             .connect_from_output_to_input(dest.inner.as_ref(), output, input);
                     }
 
-                    Either17::C(dest) => {
+                    Either18::C(dest) => {
                         self.inner
                             .connect_from_output_to_input(&dest.inner, output, input);
                     }
-                    Either17::D(dest) => {
+                    Either18::D(dest) => {
                         self.inner
                             .connect_from_output_to_input(&dest.inner, output, input);
                     }
-                    Either17::E(dest) => {
+                    Either18::E(dest) => {
                         self.inner
                             .connect_from_output_to_input(&dest.inner, output, input);
                     }
-                    Either17::F(dest) => {
+                    Either18::F(dest) => {
                         self.inner
                             .connect_from_output_to_input(&dest.inner, output, input);
                     }
-                    Either17::G(dest) => {
+                    Either18::G(dest) => {
                         self.inner
                             .connect_from_output_to_input(&dest.inner, output, input);
                     }
-                    Either17::H(dest) => {
+                    Either18::H(dest) => {
                         self.inner
                             .connect_from_output_to_input(&dest.inner, output, input);
                     }
-                    Either17::I(dest) => {
+                    Either18::I(dest) => {
                         self.inner
                             .connect_from_output_to_input(&dest.inner, output, input);
                     }
-                    Either17::J(dest) => {
+                    Either18::J(dest) => {
                         self.inner
                             .connect_from_output_to_input(&dest.inner, output, input);
                     }
-                    Either17::K(dest) => {
+                    Either18::K(dest) => {
                         self.inner
                             .connect_from_output_to_input(&dest.inner, output, input);
                     }
-                    Either17::L(dest) => {
+                    Either18::L(dest) => {
                         self.inner
                             .connect_from_output_to_input(&dest.inner, output, input);
                     }
-                    Either17::M(dest) => {
+                    Either18::M(dest) => {
                         self.inner
                             .connect_from_output_to_input(&dest.inner, output, input);
                     }
-                    Either17::N(dest) => {
+                    Either18::N(dest) => {
                         self.inner
                             .connect_from_output_to_input(&dest.inner, output, input);
                     }
-                    Either17::O(dest) => {
+                    Either18::O(dest) => {
                         self.inner
                             .connect_from_output_to_input(&dest.inner, output, input);
                     }
-                    Either17::P(dest) => {
+                    Either18::P(dest) => {
                         self.inner
                             .connect_from_output_to_input(&dest.inner, output, input);
                     }
-                    Either17::Q(dest) => {
+                    Either18::Q(dest) => {
+                        self.inner
+                            .connect_from_output_to_input(&dest.inner, output, input);
+                    }
+                    Either18::R(dest) => {
                         self.inner
                             .connect_from_output_to_input(&dest.inner, output, input);
                     }
@@ -190,7 +195,7 @@ macro_rules! audio_node_impl {
             pub fn disconnect(
                 &mut self,
                 output_or_dest: Option<
-                    Either18<
+                    Either19<
                         u32,
                         &$crate::audio_param::NapiAudioParam,
                         &$crate::audio_destination_node::NapiAudioDestinationNode,
@@ -205,6 +210,7 @@ macro_rules! audio_node_impl {
                         &$crate::dynamics_compressor_node::NapiDynamicsCompressorNode,
                         &$crate::gain_node::NapiGainNode,
                         &$crate::iir_filter_node::NapiIIRFilterNode,
+                        &$crate::media_stream_audio_source_node::NapiMediaStreamAudioSourceNode,
                         &$crate::oscillator_node::NapiOscillatorNode,
                         &$crate::panner_node::NapiPannerNode,
                         &$crate::stereo_panner_node::NapiStereoPannerNode,
@@ -225,7 +231,7 @@ macro_rules! audio_node_impl {
                 }
 
                 // undefined disconnect (unsigned long output);
-                if let Some(Either18::A(output)) = output_or_dest {
+                if let Some(Either19::A(output)) = output_or_dest {
                     let output: usize = output.try_into().unwrap();
                     self.inner.disconnect_output(output);
                     return;
@@ -241,7 +247,7 @@ macro_rules! audio_node_impl {
                 match dest {
                     // undefined disconnect (AudioParam destinationParam);
                     // undefined disconnect (AudioParam destinationParam, unsigned long output);
-                    Either18::B(dest) => {
+                    Either19::B(dest) => {
                         let dest = &dest.inner;
 
                         match (output, input) {
@@ -256,7 +262,7 @@ macro_rules! audio_node_impl {
                     // undefined disconnect (AudioNode destinationNode);
                     // undefined disconnect (AudioNode destinationNode, unsigned long output);
                     // undefined disconnect (AudioNode destinationNode, unsigned long output, unsigned long input);
-                    Either18::C(dest) => {
+                    Either19::C(dest) => {
                         let dest = dest.inner.as_ref();
 
                         match (output, input) {
@@ -275,7 +281,7 @@ macro_rules! audio_node_impl {
                         }
                     }
 
-                    Either18::D(dest) => {
+                    Either19::D(dest) => {
                         let dest = &dest.inner;
 
                         match (output, input) {
@@ -293,7 +299,7 @@ macro_rules! audio_node_impl {
                             _ => unreachable!(),
                         }
                     }
-                    Either18::E(dest) => {
+                    Either19::E(dest) => {
                         let dest = &dest.inner;
 
                         match (output, input) {
@@ -311,7 +317,7 @@ macro_rules! audio_node_impl {
                             _ => unreachable!(),
                         }
                     }
-                    Either18::F(dest) => {
+                    Either19::F(dest) => {
                         let dest = &dest.inner;
 
                         match (output, input) {
@@ -329,7 +335,7 @@ macro_rules! audio_node_impl {
                             _ => unreachable!(),
                         }
                     }
-                    Either18::G(dest) => {
+                    Either19::G(dest) => {
                         let dest = &dest.inner;
 
                         match (output, input) {
@@ -347,7 +353,7 @@ macro_rules! audio_node_impl {
                             _ => unreachable!(),
                         }
                     }
-                    Either18::H(dest) => {
+                    Either19::H(dest) => {
                         let dest = &dest.inner;
 
                         match (output, input) {
@@ -365,7 +371,7 @@ macro_rules! audio_node_impl {
                             _ => unreachable!(),
                         }
                     }
-                    Either18::I(dest) => {
+                    Either19::I(dest) => {
                         let dest = &dest.inner;
 
                         match (output, input) {
@@ -383,7 +389,7 @@ macro_rules! audio_node_impl {
                             _ => unreachable!(),
                         }
                     }
-                    Either18::J(dest) => {
+                    Either19::J(dest) => {
                         let dest = &dest.inner;
 
                         match (output, input) {
@@ -401,7 +407,7 @@ macro_rules! audio_node_impl {
                             _ => unreachable!(),
                         }
                     }
-                    Either18::K(dest) => {
+                    Either19::K(dest) => {
                         let dest = &dest.inner;
 
                         match (output, input) {
@@ -419,7 +425,7 @@ macro_rules! audio_node_impl {
                             _ => unreachable!(),
                         }
                     }
-                    Either18::L(dest) => {
+                    Either19::L(dest) => {
                         let dest = &dest.inner;
 
                         match (output, input) {
@@ -437,7 +443,7 @@ macro_rules! audio_node_impl {
                             _ => unreachable!(),
                         }
                     }
-                    Either18::M(dest) => {
+                    Either19::M(dest) => {
                         let dest = &dest.inner;
 
                         match (output, input) {
@@ -455,7 +461,7 @@ macro_rules! audio_node_impl {
                             _ => unreachable!(),
                         }
                     }
-                    Either18::N(dest) => {
+                    Either19::N(dest) => {
                         let dest = &dest.inner;
 
                         match (output, input) {
@@ -473,7 +479,7 @@ macro_rules! audio_node_impl {
                             _ => unreachable!(),
                         }
                     }
-                    Either18::O(dest) => {
+                    Either19::O(dest) => {
                         let dest = &dest.inner;
 
                         match (output, input) {
@@ -491,7 +497,7 @@ macro_rules! audio_node_impl {
                             _ => unreachable!(),
                         }
                     }
-                    Either18::P(dest) => {
+                    Either19::P(dest) => {
                         let dest = &dest.inner;
 
                         match (output, input) {
@@ -509,7 +515,7 @@ macro_rules! audio_node_impl {
                             _ => unreachable!(),
                         }
                     }
-                    Either18::Q(dest) => {
+                    Either19::Q(dest) => {
                         let dest = &dest.inner;
 
                         match (output, input) {
@@ -527,7 +533,25 @@ macro_rules! audio_node_impl {
                             _ => unreachable!(),
                         }
                     }
-                    Either18::R(dest) => {
+                    Either19::R(dest) => {
+                        let dest = &dest.inner;
+
+                        match (output, input) {
+                            (None, None) => self.inner.disconnect_dest(dest),
+                            (Some(output), None) => {
+                                let output: usize = output.try_into().unwrap();
+                                self.inner.disconnect_dest_from_output(dest, output);
+                            }
+                            (Some(output), Some(input)) => {
+                                let output: usize = output.try_into().unwrap();
+                                let input: usize = input.try_into().unwrap();
+                                self.inner
+                                    .disconnect_dest_from_output_to_input(dest, output, input);
+                            }
+                            _ => unreachable!(),
+                        }
+                    }
+                    Either19::S(dest) => {
                         let dest = &dest.inner;
 
                         match (output, input) {

@@ -34,6 +34,7 @@ module.exports = (jsExport, _nativeBinding) => {
     // #audioWorklet = null;
     #destination = null;
     #listener = null;
+    #statechange = null;
 
     constructor(options) {
       // Make constructor "private"
@@ -130,7 +131,7 @@ module.exports = (jsExport, _nativeBinding) => {
         throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'BaseAudioContext\'');
       }
 
-      return this._statechange || null;
+      return this.#statechange;
     }
 
     // @fixme - napi-rs 3
@@ -140,7 +141,7 @@ module.exports = (jsExport, _nativeBinding) => {
       }
 
       if (isFunction(value) || value === null) {
-        this._statechange = value;
+        this.#statechange = value;
       }
     }
 

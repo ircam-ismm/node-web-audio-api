@@ -31,17 +31,14 @@ class AudioScheduledSourceNode extends AudioNode {
 
     super(context, options);
 
-    // Add function to Napi object to bridge from Rust events to JS EventTarget
-    // It will be effectively registered on rust side when `start` is called
-    //
     // Note 2024-06-05 - We use bind instead of arrow function because arrow function
     // prevent the node to be collected by Scavenge step of GC, which can lead to
     // oversized graphs and performance issues.
     // cf. https://github.com/ircam-ismm/node-web-audio-api/tree/fix/118
-    this[kNapiObj][kOnEnded] = (function(_err, rawEvent) {
-      const event = new Event(rawEvent.type);
+    this[kNapiObj].onended((function(napiEvent) {
+      const event = new Event(napiEvent.type);
       propagateEvent(this, event);
-    }).bind(this);
+    }).bind(this));
   }
 
   get onended() {

@@ -44,6 +44,7 @@ impl NapiIIRFilterNode {
         // by bindings construction all fields are populated on the JS side
         // --------------------------------------------------------
 
+        #[allow(unused)]
         let node_defaults: Option<IIRFilterOptions> = None;
 
         let some_feedforward = options.get::<Option<&[f64]>>("feedforward").unwrap();

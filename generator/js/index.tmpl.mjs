@@ -6,9 +6,9 @@ const require = createRequire(import.meta.url);
 
 const nativeModule = require('./index.cjs');
 // events
-// export const OfflineAudioCompletionEvent = nativeModule.OfflineAudioCompletionEvent;
-// export const AudioProcessingEvent = nativeModule.AudioProcessingEvent;
-// export const AudioRenderCapacityEvent = nativeModule.AudioRenderCapacityEvent;
+export const OfflineAudioCompletionEvent = nativeModule.OfflineAudioCompletionEvent;
+export const AudioProcessingEvent = nativeModule.AudioProcessingEvent;
+export const AudioRenderCapacityEvent = nativeModule.AudioRenderCapacityEvent;
 // manually written nodes
 export const BaseAudioContext = nativeModule.BaseAudioContext;
 export const AudioContext = nativeModule.AudioContext;

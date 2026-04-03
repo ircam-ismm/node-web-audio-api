@@ -24,13 +24,13 @@ mod base_audio_context;
 #[macro_use]
 mod audio_node;
 
-// halpers
-// mod utils;
 // Web Audio API
 mod audio_context;
 use crate::audio_context::NapiAudioContext;
 mod offline_audio_context;
 use crate::offline_audio_context::NapiOfflineAudioContext;
+mod events;
+use crate::events::*;
 
 mod audio_destination_node;
 use crate::audio_destination_node::NapiAudioDestinationNode;
@@ -69,6 +69,8 @@ mod gain_node;
 // use crate::gain_node::NapiGainNode;
 mod iir_filter_node;
 // use crate::iir_filter_node::NapiIIRFilterNode;
+mod media_stream_audio_source_node;
+// use crate::media_stream_audio_source_node::NapiMediaStreamAudioSourceNode;
 mod oscillator_node;
 // use crate::oscillator_node::NapiOscillatorNode;
 mod panner_node;
@@ -85,8 +87,8 @@ mod wave_shaper_node;
 // };
 
 // MediaDevices & MediaStream API
-// mod media_streams;
-// use crate::media_streams::NapiMediaStream;
-// mod media_devices;
+mod media_streams;
+use crate::media_streams::MediaStream;
+mod media_devices;
 // use crate::media_devices::napi_enumerate_devices;
 // use crate::media_devices::napi_get_user_media;

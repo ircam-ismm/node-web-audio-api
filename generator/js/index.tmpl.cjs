@@ -4,9 +4,9 @@ const jsExport = {};
 // --------------------------------------------------------------------------
 // Events
 // --------------------------------------------------------------------------
-// jsExport.OfflineAudioCompletionEvent = require('./js/Events').OfflineAudioCompletionEvent;
-// jsExport.AudioProcessingEvent = require('./js/Events').AudioProcessingEvent;
-// jsExport.AudioRenderCapacityEvent = require('./js/Events').AudioRenderCapacityEvent;
+jsExport.OfflineAudioCompletionEvent = require('./js/Events').OfflineAudioCompletionEvent;
+jsExport.AudioProcessingEvent = require('./js/Events').AudioProcessingEvent;
+jsExport.AudioRenderCapacityEvent = require('./js/Events').AudioRenderCapacityEvent;
 // --------------------------------------------------------------------------
 // Create Web Audio API facade
 // --------------------------------------------------------------------------
@@ -34,23 +34,21 @@ jsExport.AudioBuffer = require('./js/AudioBuffer.js')(jsExport, nativeBinding);
 // --------------------------------------------------------------------------
 // Promisify MediaDevices API
 // --------------------------------------------------------------------------
-// jsExport.mediaDevices = {};
+jsExport.mediaDevices = {};
 
-// const enumerateDevicesSync = nativeBinding.mediaDevices.enumerateDevices;
-// jsExport.mediaDevices.enumerateDevices = async function enumerateDevices() {
-//   const list = enumerateDevicesSync();
-//   return Promise.resolve(list);
-// };
+jsExport.mediaDevices.enumerateDevices = async function enumerateDevices() {
+  const list = nativeBinding.napiEnumerateDevices();
+  return Promise.resolve(list);
+};
 
-// const getUserMediaSync = nativeBinding.mediaDevices.getUserMedia;
-// jsExport.mediaDevices.getUserMedia = async function getUserMedia(options) {
-//   if (options === undefined) {
-//     throw new TypeError('Failed to execute "getUserMedia" on "MediaDevices": audio must be requested');
-//   }
+jsExport.mediaDevices.getUserMedia = async function getUserMedia(options) {
+  if (options === undefined) {
+    throw new TypeError('Failed to execute "getUserMedia" on "MediaDevices": audio must be requested');
+  }
 
-//   const stream = getUserMediaSync(options);
-//   return Promise.resolve(stream);
-// };
+  const stream = nativeBinding.napiGetUserMedia(options);
+  return Promise.resolve(stream);
+};
 
 module.exports = jsExport;
 

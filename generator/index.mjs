@@ -29,7 +29,7 @@ const generatedNodes = [
   'DynamicsCompressorNode',
   `GainNode`,
   `IIRFilterNode`,
-  // `MediaStreamAudioSourceNode`,
+  `MediaStreamAudioSourceNode`,
   `OscillatorNode`,
   `PannerNode`,
   `StereoPannerNode`,

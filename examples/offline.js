@@ -2,6 +2,10 @@ import { AudioContext, OfflineAudioContext } from '../index.mjs';
 
 const offline = new OfflineAudioContext(1, 48000, 48000);
 
+offline.addEventListener('statechange', (e) => {
+  console.log('+ statechange event:', offline.state);
+});
+
 offline.addEventListener('complete', (e) => {
   console.log('+ complete event:', e.renderedBuffer.toString());
 });

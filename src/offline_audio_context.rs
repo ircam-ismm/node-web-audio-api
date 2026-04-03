@@ -74,5 +74,5 @@ impl NapiOfflineAudioContext {
         Ok(())
     }
 
-    // @fixme - napi-rs 3 - oncomplete
+    // on complete is handle on JS side only
 }

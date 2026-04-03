@@ -3,10 +3,13 @@ use std::sync::Arc;
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
 
-use web_audio_api::context::{AudioContext, BaseAudioContext};
+use web_audio_api::context::{
+    AudioContext, AudioContextLatencyCategory, AudioContextOptions, BaseAudioContext,
+};
 
 use crate::NapiAudioDestinationNode;
 use crate::NapiAudioListener;
+use crate::NapiEvent;
 
 pub struct SetSinkIdTask {
     context: Arc<AudioContext>,
@@ -52,10 +55,50 @@ base_audio_context_impl!(NapiAudioContext, AudioContext);
 #[napi]
 impl NapiAudioContext {
     #[napi(constructor)]
-    pub fn new() -> Self {
-        // @fixme - napi-3 - handle options
+    pub fn new(options: Object) -> Self {
+        let default_latency_hint = Either::A("interactive".into());
+        let default_sample_rate = None;
+        let default_sink_id = "".to_string();
 
-        let native_context = AudioContext::new(Default::default());
+        let latency_hint = options.get::<Either<String, f64>>("latencyHint");
+        let latency_hint = latency_hint
+            .or::<Result<Option<Either<String, f64>>>>(Ok(Some(default_latency_hint.clone())));
+        let latency_hint = latency_hint.unwrap().unwrap_or(default_latency_hint);
+        let latency_hint = match latency_hint {
+            Either::A(latency_hint) => match latency_hint.as_str() {
+                "interactive" => AudioContextLatencyCategory::Interactive,
+                "balanced" => AudioContextLatencyCategory::Balanced,
+                "playback" => AudioContextLatencyCategory::Playback,
+                _ => unreachable!(),
+            },
+            Either::B(latency_hint) => AudioContextLatencyCategory::Custom(latency_hint),
+        };
+
+        let sample_rate = options.get::<Either<f64, Null>>("sampleRate");
+        let sample_rate = sample_rate.or::<Result<Option<Either<f64, Null>>>>(Ok(None));
+        let sample_rate = match sample_rate.unwrap() {
+            Some(sample_rate) => match sample_rate {
+                Either::A(sample_rate) => Some(sample_rate as f32),
+                Either::B(_) => default_sample_rate,
+            },
+            None => default_sample_rate,
+        };
+
+        let sink_id = options.get::<String>("sinkId");
+        let sink_id = sink_id.or::<Result<Option<String>>>(Ok(Some(default_sink_id.clone())));
+        let sink_id = match sink_id.unwrap() {
+            Some(sink_id) => sink_id.into(),
+            None => default_sink_id,
+        };
+
+        let options = AudioContextOptions {
+            latency_hint,
+            sample_rate,
+            sink_id,
+            ..Default::default()
+        };
+
+        let native_context = AudioContext::new(options);
 
         let native_destination = native_context.destination();
         let napi_destination = NapiAudioDestinationNode::new(native_destination);
@@ -87,7 +130,7 @@ impl NapiAudioContext {
         self.unwrap().sink_id()
     }
 
-    // use task to make delegate async stuff to lib_uv
+    // use task to delegate async stuff to lib_uv
     #[napi]
     pub fn set_sink_id(&self, sink_id: String) -> AsyncTask<SetSinkIdTask> {
         let context = self.inner.clone();
@@ -110,6 +153,31 @@ impl NapiAudioContext {
     #[napi]
     pub async fn close(&self) -> Result<()> {
         self.inner.close().await;
+        Ok(())
+    }
+
+    #[napi]
+    pub fn onsinkchange(&self, callback: Function<NapiEvent, ()>) -> Result<()> {
+        let tsfn = callback
+            .build_threadsafe_function()
+            .weak::<true>() // do not prevent process to exit
+            .build_callback(
+                move |ctx: napi::threadsafe_function::ThreadsafeCallContext<
+                    web_audio_api::Event,
+                >| {
+                    Ok(NapiEvent {
+                        type_: ctx.value.type_.to_string(),
+                    })
+                },
+            )?;
+
+        self.unwrap().set_onsinkchange(move |e| {
+            tsfn.call(
+                e,
+                napi::threadsafe_function::ThreadsafeFunctionCallMode::Blocking,
+            );
+        });
+
         Ok(())
     }
 

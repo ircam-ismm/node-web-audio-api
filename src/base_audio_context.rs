@@ -88,6 +88,31 @@ macro_rules! base_audio_context_impl {
                 let task = DecodeAudioDataTask::new(context, Some(cursor));
                 AsyncTask::new(task)
             }
+
+            #[napi]
+            pub fn onstatechange(&self, callback: Function<$crate::NapiEvent, ()>) -> Result<()> {
+                let tsfn = callback
+                    .build_threadsafe_function()
+                    .weak::<true>() // do not prevent process to exit
+                    .build_callback(
+                        move |ctx: napi::threadsafe_function::ThreadsafeCallContext<
+                            web_audio_api::Event,
+                        >| {
+                            Ok($crate::NapiEvent {
+                                type_: ctx.value.type_.to_string(),
+                            })
+                        },
+                    )?;
+
+                self.unwrap().set_onstatechange(move |e| {
+                    tsfn.call(
+                        e,
+                        napi::threadsafe_function::ThreadsafeFunctionCallMode::Blocking,
+                    );
+                });
+
+                Ok(())
+            }
         }
     };
 }

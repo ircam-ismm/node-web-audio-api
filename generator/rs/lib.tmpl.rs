@@ -5,13 +5,13 @@ mod base_audio_context;
 #[macro_use]
 mod audio_node;
 
-// halpers
-// mod utils;
 // Web Audio API
 mod audio_context;
 use crate::audio_context::NapiAudioContext;
 mod offline_audio_context;
 use crate::offline_audio_context::NapiOfflineAudioContext;
+mod events;
+use crate::events::*;
 
 mod audio_destination_node;
 use crate::audio_destination_node::NapiAudioDestinationNode;
@@ -38,9 +38,9 @@ mod ${d.slug(n)};
 // };
 
 // MediaDevices & MediaStream API
-// mod media_streams;
-// use crate::media_streams::NapiMediaStream;
-// mod media_devices;
+mod media_streams;
+use crate::media_streams::MediaStream;
+mod media_devices;
 // use crate::media_devices::napi_enumerate_devices;
 // use crate::media_devices::napi_get_user_media;
 

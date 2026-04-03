@@ -38,6 +38,7 @@ impl ${d.napiName(d.node)} {
                 ${!hasRequiredMember ? `
         let node_defaults: Option<${optionsType}> = Some(${optionsType}::default());
                 ` : `
+        #[allow(unused)]
         let node_defaults: Option<${optionsType}> = None;
                 `}
 
@@ -139,11 +140,12 @@ impl ${d.napiName(d.node)} {
                         case "MediaStream": {
                             const napiName = `Napi${member.idlType.idlType}`;
                             return `
-        // @fixme - napi-rs 3
-        let ${slug} = node_defaults.${slug};
-        // let ${simple_slug}_js = options.get::<&str, JsObject>("${optionName}")?.unwrap();
-        // let ${simple_slug}_napi = ctx.env.unwrap::<${napiName}>(&${simple_slug}_js)?;
-        // let ${slug} = ${simple_slug}_napi.unwrap();
+        let js_${slug} = options.get::<ClassInstance<${optionType}>>("${optionName}").unwrap_or(None);
+        let ${slug} = match js_${slug} {
+            Some(js_${slug}) => js_${slug},
+            None => panic!("No default value for ${slug} in ${optionsType}"),
+        };
+        let ${slug} = ${slug}.inner();
                             `;
                             break;
                         }
@@ -323,6 +325,33 @@ impl ${d.napiName(d.node)} {
     pub fn stop(&mut self, when: Option<f64>) {
         let when = when.unwrap_or(0.);
         self.inner.stop_at(when);
+    }
+        `;
+
+        methods += `
+    #[napi]
+    pub fn onended(&self, callback: Function<NapiEvent, ()>) -> Result<()> {
+        let tsfn = callback
+            .build_threadsafe_function()
+            .weak::<true>() // do not prevent process to exit
+            .build_callback(
+                move |ctx: napi::threadsafe_function::ThreadsafeCallContext<
+                    web_audio_api::Event,
+                >| {
+                    Ok(NapiEvent {
+                        type_: ctx.value.type_.to_string(),
+                    })
+                },
+            )?;
+
+        self.inner.set_onended(move |e| {
+            tsfn.call(
+                e,
+                napi::threadsafe_function::ThreadsafeFunctionCallMode::Blocking,
+            );
+        });
+
+        Ok(())
     }
         `;
 

@@ -200,6 +200,31 @@ impl NapiOscillatorNode {
         self.inner.stop_at(when);
     }
 
+    #[napi]
+    pub fn onended(&self, callback: Function<NapiEvent, ()>) -> Result<()> {
+        let tsfn = callback
+            .build_threadsafe_function()
+            .weak::<true>() // do not prevent process to exit
+            .build_callback(
+                move |ctx: napi::threadsafe_function::ThreadsafeCallContext<
+                    web_audio_api::Event,
+                >| {
+                    Ok(NapiEvent {
+                        type_: ctx.value.type_.to_string(),
+                    })
+                },
+            )?;
+
+        self.inner.set_onended(move |e| {
+            tsfn.call(
+                e,
+                napi::threadsafe_function::ThreadsafeFunctionCallMode::Blocking,
+            );
+        });
+
+        Ok(())
+    }
+
     // -------------------------------------------------
     // Getters / Setters
     // -------------------------------------------------

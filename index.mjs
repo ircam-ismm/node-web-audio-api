@@ -27,9 +27,9 @@ const require = createRequire(import.meta.url);
 
 const nativeModule = require('./index.cjs');
 // events
-// export const OfflineAudioCompletionEvent = nativeModule.OfflineAudioCompletionEvent;
-// export const AudioProcessingEvent = nativeModule.AudioProcessingEvent;
-// export const AudioRenderCapacityEvent = nativeModule.AudioRenderCapacityEvent;
+export const OfflineAudioCompletionEvent = nativeModule.OfflineAudioCompletionEvent;
+export const AudioProcessingEvent = nativeModule.AudioProcessingEvent;
+export const AudioRenderCapacityEvent = nativeModule.AudioRenderCapacityEvent;
 // manually written nodes
 export const BaseAudioContext = nativeModule.BaseAudioContext;
 export const AudioContext = nativeModule.AudioContext;
@@ -59,6 +59,7 @@ export const DelayNode = nativeModule.DelayNode;
 export const DynamicsCompressorNode = nativeModule.DynamicsCompressorNode;
 export const GainNode = nativeModule.GainNode;
 export const IIRFilterNode = nativeModule.IIRFilterNode;
+export const MediaStreamAudioSourceNode = nativeModule.MediaStreamAudioSourceNode;
 export const OscillatorNode = nativeModule.OscillatorNode;
 export const PannerNode = nativeModule.PannerNode;
 export const StereoPannerNode = nativeModule.StereoPannerNode;
