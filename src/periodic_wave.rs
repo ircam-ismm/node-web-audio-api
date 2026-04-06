@@ -12,7 +12,7 @@ pub struct NapiPeriodicWave {
 
 #[napi]
 impl NapiPeriodicWave {
-    #[napi(constructor)]
+    #[napi(constructor, catch_unwind)]
     pub fn new(
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Option<Object>,

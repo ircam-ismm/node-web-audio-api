@@ -35,7 +35,7 @@ audio_node_impl!(NapiConstantSourceNode);
 #[napi]
 impl NapiConstantSourceNode {
     // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
-    #[napi(constructor)]
+    #[napi(constructor, catch_unwind)]
     pub fn new(
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object,
@@ -93,13 +93,13 @@ impl NapiConstantSourceNode {
         self.offset.clone()
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn start(&mut self, when: Option<f64>) {
         let when = when.unwrap_or(0.);
         self.inner.start_at(when);
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn stop(&mut self, when: Option<f64>) {
         let when = when.unwrap_or(0.);
         self.inner.stop_at(when);

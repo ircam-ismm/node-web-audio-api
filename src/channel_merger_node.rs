@@ -34,7 +34,7 @@ audio_node_impl!(NapiChannelMergerNode);
 #[napi]
 impl NapiChannelMergerNode {
     // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
-    #[napi(constructor)]
+    #[napi(constructor, catch_unwind)]
     pub fn new(
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object,

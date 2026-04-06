@@ -34,7 +34,7 @@ audio_node_impl!(NapiWaveShaperNode);
 #[napi]
 impl NapiWaveShaperNode {
     // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
-    #[napi(constructor)]
+    #[napi(constructor, catch_unwind)]
     pub fn new(
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object,
@@ -158,7 +158,7 @@ impl NapiWaveShaperNode {
         }
     }
 
-    #[napi(setter, js_name = "curve")]
+    #[napi(setter, catch_unwind, js_name = "curve")]
     pub fn set_curve(&mut self, value: &[f32]) {
         self.inner.set_curve(value.to_vec());
     }
@@ -175,7 +175,7 @@ impl NapiWaveShaperNode {
         String::from(value)
     }
 
-    #[napi(setter, js_name = "oversample")]
+    #[napi(setter, catch_unwind, js_name = "oversample")]
     pub fn set_oversample(&mut self, value: String) {
         let value = match value.as_str() {
             "none" => OverSampleType::None,

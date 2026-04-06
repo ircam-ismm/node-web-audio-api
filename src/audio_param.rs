@@ -30,7 +30,7 @@ impl NapiAudioParam {
         automation_rate.into()
     }
 
-    #[napi(setter, js_name = "automationRate")]
+    #[napi(setter, catch_unwind, js_name = "automationRate")]
     pub fn set_automation_rate(&self, automation_rate: String) {
         let automation_rate = match automation_rate.as_str() {
             "a-rate" => AutomationRate::A,
@@ -65,41 +65,41 @@ impl NapiAudioParam {
         self.inner.set_value(value as f32);
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn set_value_at_time(&self, value: f64, time: f64) {
         self.inner.set_value_at_time(value as f32, time);
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn linear_ramp_to_value_at_time(&self, value: f64, end_time: f64) {
         self.inner
             .linear_ramp_to_value_at_time(value as f32, end_time);
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn exponential_ramp_to_value_at_time(&self, value: f64, end_time: f64) {
         self.inner
             .exponential_ramp_to_value_at_time(value as f32, end_time);
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn set_value_curve_at_time(&self, values: &[f32], start_time: f64, duration: f64) {
         self.inner
             .set_value_curve_at_time(values, start_time, duration);
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn set_target_at_time(&self, value: f64, start_time: f64, time_constant: f64) {
         self.inner
             .set_target_at_time(value as f32, start_time, time_constant);
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn cancel_scheduled_values(&self, cancel_time: f64) {
         self.inner.cancel_scheduled_values(cancel_time);
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn cancel_and_hold_at_time(&self, cancel_time: f64) {
         self.inner.cancel_and_hold_at_time(cancel_time);
     }

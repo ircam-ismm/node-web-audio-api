@@ -18,12 +18,12 @@ macro_rules! audio_node_impl {
                 self.inner.channel_count() as u32
             }
 
-            #[napi(setter, js_name = "channelCount")]
+            #[napi(setter, catch_unwind, js_name = "channelCount")]
             pub fn set_channel_count(&self, channel_count: u32) {
                 self.inner.set_channel_count(channel_count as usize);
             }
 
-            #[napi(setter, js_name = "channelCountMode")]
+            #[napi(getter, js_name = "channelCountMode")]
             pub fn get_channel_count_mode(&self) -> String {
                 let channel_count_mode = self.inner.channel_count_mode();
                 let channel_count_mode = match channel_count_mode {
@@ -34,7 +34,7 @@ macro_rules! audio_node_impl {
                 channel_count_mode.into()
             }
 
-            #[napi(setter, js_name = "channelCountMode")]
+            #[napi(setter, catch_unwind, js_name = "channelCountMode")]
             pub fn set_channel_count_mode(&self, channel_count_mode: String) {
                 let channel_count_mode = match channel_count_mode.as_str() {
                     "max" => ChannelCountMode::Max,
@@ -45,7 +45,7 @@ macro_rules! audio_node_impl {
                 self.inner.set_channel_count_mode(channel_count_mode);
             }
 
-            #[napi(setter, js_name = "channelInterpretation")]
+            #[napi(getter, js_name = "channelInterpretation")]
             pub fn get_channel_interpretation(&self) -> String {
                 let channel_interpretation = self.inner.channel_interpretation();
                 let channel_interpretation = match channel_interpretation {
@@ -55,7 +55,7 @@ macro_rules! audio_node_impl {
                 channel_interpretation.into()
             }
 
-            #[napi(setter, js_name = "channelInterpretation")]
+            #[napi(setter, catch_unwind, js_name = "channelInterpretation")]
             pub fn set_channel_interpretation(&self, channel_interpretation: String) {
                 let channel_interpretation = match channel_interpretation.as_str() {
                     "speakers" => ChannelInterpretation::Speakers,
@@ -65,7 +65,7 @@ macro_rules! audio_node_impl {
                 self.inner.set_channel_interpretation(channel_interpretation);
             }
 
-            #[napi]
+            #[napi(catch_unwind)]
             pub fn connect(
                 &mut self,
                 dest: Either${d.nodes.length + 2}<
@@ -103,7 +103,7 @@ macro_rules! audio_node_impl {
                 }
             }
 
-            #[napi]
+            #[napi(catch_unwind)]
             pub fn disconnect(
                 &mut self,
                 output_or_dest: Option<Either${d.nodes.length + 3}<

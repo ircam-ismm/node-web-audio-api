@@ -69,7 +69,7 @@
     "octokit": "^4.1.0",
     "template-literal": "^1.0.4",
     "webidl2": "^24.2.0",
-    "wpt-runner": "^5.0.0"
+    "wpt-runner": "^7.0.0"
   },
   "dependencies": {
     "caller": "^1.1.0",

@@ -38,7 +38,7 @@ audio_node_impl!(NapiBiquadFilterNode);
 #[napi]
 impl NapiBiquadFilterNode {
     // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
-    #[napi(constructor)]
+    #[napi(constructor, catch_unwind)]
     pub fn new(
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object,
@@ -242,7 +242,7 @@ impl NapiBiquadFilterNode {
         String::from(value)
     }
 
-    #[napi(setter, js_name = "type")]
+    #[napi(setter, catch_unwind, js_name = "type")]
     pub fn set_type(&mut self, value: String) {
         let value = match value.as_str() {
             "lowpass" => BiquadFilterType::Lowpass,
@@ -263,7 +263,7 @@ impl NapiBiquadFilterNode {
     // METHODS
     // -------------------------------------------------
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn get_frequency_response(
         &mut self,
         mut frequency_hz: Float32ArraySlice,

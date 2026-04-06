@@ -19,7 +19,7 @@ impl From<AudioBuffer> for NapiAudioBuffer {
 
 #[napi]
 impl NapiAudioBuffer {
-    #[napi(constructor)]
+    #[napi(constructor, catch_unwind)]
     pub fn new(options: Object) -> Self {
         let number_of_channels = options.get::<u32>("numberOfChannels").unwrap().unwrap() as usize;
         let length = options.get::<u32>("length").unwrap().unwrap() as usize;
@@ -56,7 +56,7 @@ impl NapiAudioBuffer {
         self.inner.number_of_channels() as u32
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn copy_to_channel(&mut self, source: &[f32], channel_number: u32, offset: Option<u32>) {
         let channel_number = channel_number as usize;
         let offset = offset.unwrap_or(0) as usize;
@@ -64,7 +64,7 @@ impl NapiAudioBuffer {
             .copy_to_channel_with_offset(source, channel_number, offset);
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn copy_from_channel(
         &self,
         mut dest: Float32ArraySlice,
@@ -81,7 +81,7 @@ impl NapiAudioBuffer {
 
     // cf. https://napi.rs/docs/concepts/typed-array#external-buffers
     // @FIXME - cf. https://github.com/ircam-ismm/node-web-audio-api/issues/80
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn get_channel_data(
         &mut self,
         env: &Env,

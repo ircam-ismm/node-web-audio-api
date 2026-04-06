@@ -76,7 +76,7 @@ macro_rules! base_audio_context_impl {
                 self.listener.as_ref().unwrap().clone()
             }
 
-            #[napi(js_name = "decodeAudioData")]
+            #[napi(catch_unwind, js_name = "decodeAudioData")]
             pub fn decode_audio_data(
                 &self,
                 array_buffer: ArrayBuffer<'_>,

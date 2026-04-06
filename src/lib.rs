@@ -92,3 +92,9 @@ use crate::media_streams::MediaStream;
 mod media_devices;
 // use crate::media_devices::napi_enumerate_devices;
 // use crate::media_devices::napi_get_user_media;
+
+#[napi_derive::module_init]
+fn init() {
+    // Do not print panic messages, handle through JS errors
+    std::panic::set_hook(Box::new(|_panic_info| {}));
+}

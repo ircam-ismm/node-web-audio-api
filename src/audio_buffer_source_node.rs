@@ -36,7 +36,7 @@ audio_node_impl!(NapiAudioBufferSourceNode);
 #[napi]
 impl NapiAudioBufferSourceNode {
     // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
-    #[napi(constructor)]
+    #[napi(constructor, catch_unwind)]
     pub fn new(
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object,
@@ -156,7 +156,7 @@ impl NapiAudioBufferSourceNode {
         self.detune.clone()
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn start(&mut self, when: Option<f64>, offset: Option<f64>, duration: Option<f64>) {
         let when = when.unwrap_or(0.);
         let offset = offset.unwrap_or(0.);
@@ -169,7 +169,7 @@ impl NapiAudioBufferSourceNode {
         }
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn stop(&mut self, when: Option<f64>) {
         let when = when.unwrap_or(0.);
         self.inner.stop_at(when);
@@ -209,7 +209,7 @@ impl NapiAudioBufferSourceNode {
         unreachable!();
     }
 
-    #[napi(setter, js_name = "buffer")]
+    #[napi(setter, catch_unwind, js_name = "buffer")]
     pub fn set_buffer(&mut self, value: &NapiAudioBuffer) {
         self.inner.set_buffer(value.inner.clone());
     }
@@ -219,7 +219,7 @@ impl NapiAudioBufferSourceNode {
         self.inner.loop_()
     }
 
-    #[napi(setter, js_name = "loop")]
+    #[napi(setter, catch_unwind, js_name = "loop")]
     pub fn set_loop(&mut self, value: bool) {
         self.inner.set_loop(value);
     }
@@ -229,7 +229,7 @@ impl NapiAudioBufferSourceNode {
         self.inner.loop_start()
     }
 
-    #[napi(setter, js_name = "loopStart")]
+    #[napi(setter, catch_unwind, js_name = "loopStart")]
     pub fn set_loop_start(&mut self, value: f64) {
         self.inner.set_loop_start(value);
     }
@@ -239,7 +239,7 @@ impl NapiAudioBufferSourceNode {
         self.inner.loop_end()
     }
 
-    #[napi(setter, js_name = "loopEnd")]
+    #[napi(setter, catch_unwind, js_name = "loopEnd")]
     pub fn set_loop_end(&mut self, value: f64) {
         self.inner.set_loop_end(value);
     }

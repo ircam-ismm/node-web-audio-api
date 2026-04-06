@@ -34,7 +34,7 @@ audio_node_impl!(NapiIIRFilterNode);
 #[napi]
 impl NapiIIRFilterNode {
     // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
-    #[napi(constructor)]
+    #[napi(constructor, catch_unwind)]
     pub fn new(
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object,
@@ -144,7 +144,7 @@ impl NapiIIRFilterNode {
     // METHODS
     // -------------------------------------------------
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn get_frequency_response(
         &mut self,
         mut frequency_hz: Float32ArraySlice,

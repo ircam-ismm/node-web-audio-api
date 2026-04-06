@@ -54,7 +54,7 @@ base_audio_context_impl!(NapiAudioContext, AudioContext);
 
 #[napi]
 impl NapiAudioContext {
-    #[napi(constructor)]
+    #[napi(constructor, catch_unwind)]
     pub fn new(options: Object) -> Self {
         let default_latency_hint = Either::A("interactive".into());
         let default_sample_rate = None;
@@ -131,32 +131,32 @@ impl NapiAudioContext {
     }
 
     // use task to delegate async stuff to lib_uv
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn set_sink_id(&self, sink_id: String) -> AsyncTask<SetSinkIdTask> {
         let context = self.inner.clone();
         let task = SetSinkIdTask { context, sink_id };
         AsyncTask::new(task)
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub async fn resume(&self) -> Result<()> {
         self.inner.resume().await;
         Ok(())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub async fn suspend(&self) -> Result<()> {
         self.inner.suspend().await;
         Ok(())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub async fn close(&self) -> Result<()> {
         self.inner.close().await;
         Ok(())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn onsinkchange(&self, callback: Function<NapiEvent, ()>) -> Result<()> {
         let tsfn = callback
             .build_threadsafe_function()

@@ -34,7 +34,7 @@ audio_node_impl!(NapiConvolverNode);
 #[napi]
 impl NapiConvolverNode {
     // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
-    #[napi(constructor)]
+    #[napi(constructor, catch_unwind)]
     pub fn new(
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object,
@@ -150,7 +150,7 @@ impl NapiConvolverNode {
         unreachable!();
     }
 
-    #[napi(setter, js_name = "buffer")]
+    #[napi(setter, catch_unwind, js_name = "buffer")]
     pub fn set_buffer(&mut self, value: &NapiAudioBuffer) {
         self.inner.set_buffer(value.inner.clone());
     }
@@ -160,7 +160,7 @@ impl NapiConvolverNode {
         self.inner.normalize()
     }
 
-    #[napi(setter, js_name = "normalize")]
+    #[napi(setter, catch_unwind, js_name = "normalize")]
     pub fn set_normalize(&mut self, value: bool) {
         self.inner.set_normalize(value);
     }

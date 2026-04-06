@@ -18,7 +18,7 @@ audio_node_impl!(${d.napiName(d.node)});
 #[napi]
 impl ${d.napiName(d.node)} {
     // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
-    #[napi(constructor)]
+    #[napi(constructor, catch_unwind)]
     pub fn new(
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object
@@ -297,7 +297,7 @@ impl ${d.napiName(d.node)} {
 
         if (d.name(d.node) !== "AudioBufferSourceNode") {
             methods += `
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn start(&mut self, when: Option<f64>) {
         let when = when.unwrap_or(0.);
         self.inner.start_at(when);
@@ -305,7 +305,7 @@ impl ${d.napiName(d.node)} {
             `;
         } else {
             methods += `
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn start(&mut self, when: Option<f64>, offset: Option<f64>, duration: Option<f64>) {
         let when = when.unwrap_or(0.);
         let offset = offset.unwrap_or(0.);
@@ -321,7 +321,7 @@ impl ${d.napiName(d.node)} {
         }
 
         methods += `
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn stop(&mut self, when: Option<f64>) {
         let when = when.unwrap_or(0.);
         self.inner.stop_at(when);
@@ -470,7 +470,7 @@ impl ${d.napiName(d.node)} {
             switch (attrType) {
                 case "boolean": {
                     setter = `
-    #[napi(setter, js_name = "${d.name(attr)}")]
+    #[napi(setter, catch_unwind, js_name = "${d.name(attr)}")]
     pub fn set_${d.slug(attr)}(&mut self, value: bool) {
         self.inner.set_${d.slug(attr)}(value);
     }
@@ -479,7 +479,7 @@ impl ${d.napiName(d.node)} {
                 }
                 case "float": {
                     setter = `
-    #[napi(setter, js_name = "${d.name(attr)}")]
+    #[napi(setter, catch_unwind, js_name = "${d.name(attr)}")]
     pub fn set_${d.slug(attr)}(&mut self, value: f64) {
         self.inner.set_${d.slug(attr)}(value as f32);
     }
@@ -488,7 +488,7 @@ impl ${d.napiName(d.node)} {
                 }
                 case "double": {
                     setter = `
-    #[napi(setter, js_name = "${d.name(attr)}")]
+    #[napi(setter, catch_unwind, js_name = "${d.name(attr)}")]
     pub fn set_${d.slug(attr)}(&mut self, value: f64) {
         self.inner.set_${d.slug(attr)}(value);
     }
@@ -497,7 +497,7 @@ impl ${d.napiName(d.node)} {
                 }
                 case "unsigned long": {
                     setter = `
-    #[napi(setter, js_name = "${d.name(attr)}")]
+    #[napi(setter, catch_unwind, js_name = "${d.name(attr)}")]
     pub fn set_${d.slug(attr)}(&mut self, value: u32) {
         self.inner.set_${d.slug(attr)}(value as usize);
     }
@@ -512,7 +512,7 @@ impl ${d.napiName(d.node)} {
                     let typeIdl = d.findInTree(attrType);
 
                     setter = `
-    #[napi(setter, js_name = "${d.name(attr)}")]
+    #[napi(setter, catch_unwind, js_name = "${d.name(attr)}")]
     pub fn set_${d.slug(attr)}(&mut self, value: String) {
         let value = match value.as_str() {${typeIdl.values.map(v => `
             "${v.value}" => ${typeIdl.name}::${d.camelcase(v.value)},`).join("")}
@@ -528,7 +528,7 @@ impl ${d.napiName(d.node)} {
                 // WaveShaperNode::curve
                 case "Float32Array": {
                     setter += `
-    #[napi(setter, js_name = "${d.name(attr)}")]
+    #[napi(setter, catch_unwind, js_name = "${d.name(attr)}")]
     pub fn set_${d.slug(attr)}(&mut self, value: &[f32]) {
         self.inner.set_${d.slug(attr)}(value.to_vec());
     }
@@ -539,7 +539,7 @@ impl ${d.napiName(d.node)} {
                     let typeIdl = d.findInTree(attrType);
 
                     setter = `
-    #[napi(setter, js_name = "${d.name(attr)}")]
+    #[napi(setter, catch_unwind, js_name = "${d.name(attr)}")]
     pub fn set_${d.slug(attr)}(&mut self, value: &NapiAudioBuffer) {
         self.inner.set_${d.slug(attr)}(value.inner.clone());
     }
@@ -577,7 +577,7 @@ impl ${d.napiName(d.node)} {
             }
         });
         return `
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn ${d.slug(method)}(&mut self, ${args.join(', ')}) {
         ${method.arguments.map((arg, index) => {
             const attrType = d.memberType(arg);

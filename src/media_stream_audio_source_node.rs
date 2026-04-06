@@ -34,7 +34,7 @@ audio_node_impl!(NapiMediaStreamAudioSourceNode);
 #[napi]
 impl NapiMediaStreamAudioSourceNode {
     // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
-    #[napi(constructor)]
+    #[napi(constructor, catch_unwind)]
     pub fn new(
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object,

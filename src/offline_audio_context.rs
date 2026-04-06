@@ -28,7 +28,7 @@ base_audio_context_impl!(NapiOfflineAudioContext, OfflineAudioContext);
 
 #[napi]
 impl NapiOfflineAudioContext {
-    #[napi(constructor)]
+    #[napi(constructor, catch_unwind)]
     pub fn new(number_of_channels: u32, length: u32, sample_rate: f64) -> Self {
         let number_of_channels = number_of_channels as usize;
         let length = length as usize;
@@ -56,19 +56,19 @@ impl NapiOfflineAudioContext {
         self.inner.length() as u32
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub async fn start_rendering(&self) -> Result<NapiAudioBuffer> {
         let audio_buffer = self.inner.start_rendering().await;
         Ok(NapiAudioBuffer::from(audio_buffer))
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub async fn suspend(&self, suspend_time: f64) -> Result<()> {
         self.inner.suspend(suspend_time).await;
         Ok(())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub async fn resume(&self) -> Result<()> {
         self.inner.resume().await;
         Ok(())

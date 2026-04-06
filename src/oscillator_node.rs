@@ -36,7 +36,7 @@ audio_node_impl!(NapiOscillatorNode);
 #[napi]
 impl NapiOscillatorNode {
     // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
-    #[napi(constructor)]
+    #[napi(constructor, catch_unwind)]
     pub fn new(
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object,
@@ -188,13 +188,13 @@ impl NapiOscillatorNode {
         self.detune.clone()
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn start(&mut self, when: Option<f64>) {
         let when = when.unwrap_or(0.);
         self.inner.start_at(when);
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn stop(&mut self, when: Option<f64>) {
         let when = when.unwrap_or(0.);
         self.inner.stop_at(when);
@@ -243,7 +243,7 @@ impl NapiOscillatorNode {
         String::from(value)
     }
 
-    #[napi(setter, js_name = "type")]
+    #[napi(setter, catch_unwind, js_name = "type")]
     pub fn set_type(&mut self, value: String) {
         let value = match value.as_str() {
             "sine" => OscillatorType::Sine,
@@ -261,7 +261,7 @@ impl NapiOscillatorNode {
     // METHODS
     // -------------------------------------------------
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn set_periodic_wave(&mut self, periodic_wave: &NapiPeriodicWave) {
         let periodic_wave = periodic_wave.inner.clone();
         self.inner.set_periodic_wave(periodic_wave);

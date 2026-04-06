@@ -40,7 +40,7 @@ audio_node_impl!(NapiPannerNode);
 #[napi]
 impl NapiPannerNode {
     // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
-    #[napi(constructor)]
+    #[napi(constructor, catch_unwind)]
     pub fn new(
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object,
@@ -345,7 +345,7 @@ impl NapiPannerNode {
         String::from(value)
     }
 
-    #[napi(setter, js_name = "panningModel")]
+    #[napi(setter, catch_unwind, js_name = "panningModel")]
     pub fn set_panning_model(&mut self, value: String) {
         let value = match value.as_str() {
             "equalpower" => PanningModelType::EqualPower,
@@ -368,7 +368,7 @@ impl NapiPannerNode {
         String::from(value)
     }
 
-    #[napi(setter, js_name = "distanceModel")]
+    #[napi(setter, catch_unwind, js_name = "distanceModel")]
     pub fn set_distance_model(&mut self, value: String) {
         let value = match value.as_str() {
             "linear" => DistanceModelType::Linear,
@@ -385,7 +385,7 @@ impl NapiPannerNode {
         self.inner.ref_distance()
     }
 
-    #[napi(setter, js_name = "refDistance")]
+    #[napi(setter, catch_unwind, js_name = "refDistance")]
     pub fn set_ref_distance(&mut self, value: f64) {
         self.inner.set_ref_distance(value);
     }
@@ -395,7 +395,7 @@ impl NapiPannerNode {
         self.inner.max_distance()
     }
 
-    #[napi(setter, js_name = "maxDistance")]
+    #[napi(setter, catch_unwind, js_name = "maxDistance")]
     pub fn set_max_distance(&mut self, value: f64) {
         self.inner.set_max_distance(value);
     }
@@ -405,7 +405,7 @@ impl NapiPannerNode {
         self.inner.rolloff_factor()
     }
 
-    #[napi(setter, js_name = "rolloffFactor")]
+    #[napi(setter, catch_unwind, js_name = "rolloffFactor")]
     pub fn set_rolloff_factor(&mut self, value: f64) {
         self.inner.set_rolloff_factor(value);
     }
@@ -415,7 +415,7 @@ impl NapiPannerNode {
         self.inner.cone_inner_angle()
     }
 
-    #[napi(setter, js_name = "coneInnerAngle")]
+    #[napi(setter, catch_unwind, js_name = "coneInnerAngle")]
     pub fn set_cone_inner_angle(&mut self, value: f64) {
         self.inner.set_cone_inner_angle(value);
     }
@@ -425,7 +425,7 @@ impl NapiPannerNode {
         self.inner.cone_outer_angle()
     }
 
-    #[napi(setter, js_name = "coneOuterAngle")]
+    #[napi(setter, catch_unwind, js_name = "coneOuterAngle")]
     pub fn set_cone_outer_angle(&mut self, value: f64) {
         self.inner.set_cone_outer_angle(value);
     }
@@ -435,7 +435,7 @@ impl NapiPannerNode {
         self.inner.cone_outer_gain()
     }
 
-    #[napi(setter, js_name = "coneOuterGain")]
+    #[napi(setter, catch_unwind, js_name = "coneOuterGain")]
     pub fn set_cone_outer_gain(&mut self, value: f64) {
         self.inner.set_cone_outer_gain(value);
     }
@@ -444,7 +444,7 @@ impl NapiPannerNode {
     // METHODS
     // -------------------------------------------------
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn set_position(&mut self, x: f64, y: f64, z: f64) {
         let x = x as f32;
         let y = y as f32;
@@ -452,7 +452,7 @@ impl NapiPannerNode {
         self.inner.set_position(x, y, z);
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn set_orientation(&mut self, x: f64, y: f64, z: f64) {
         let x = x as f32;
         let y = y as f32;

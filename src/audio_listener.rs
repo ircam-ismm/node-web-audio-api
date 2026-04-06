@@ -111,7 +111,7 @@ impl NapiAudioListener {
         self.up_z.clone()
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn set_position(&self, x: f64, y: f64, z: f64) {
         // TODO https://webaudio.github.io/web-audio-api/#dom-audiolistener-setposition
         //
@@ -123,7 +123,7 @@ impl NapiAudioListener {
         self.inner.position_z().set_value(z as f32);
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn set_orientation(
         &self,
         x_forward: f64,

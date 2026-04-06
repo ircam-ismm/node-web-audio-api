@@ -34,7 +34,7 @@ audio_node_impl!(NapiAnalyserNode);
 #[napi]
 impl NapiAnalyserNode {
     // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
-    #[napi(constructor)]
+    #[napi(constructor, catch_unwind)]
     pub fn new(
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
         options: Object,
@@ -170,7 +170,7 @@ impl NapiAnalyserNode {
         self.inner.fft_size() as u32
     }
 
-    #[napi(setter, js_name = "fftSize")]
+    #[napi(setter, catch_unwind, js_name = "fftSize")]
     pub fn set_fft_size(&mut self, value: u32) {
         self.inner.set_fft_size(value as usize);
     }
@@ -185,7 +185,7 @@ impl NapiAnalyserNode {
         self.inner.min_decibels()
     }
 
-    #[napi(setter, js_name = "minDecibels")]
+    #[napi(setter, catch_unwind, js_name = "minDecibels")]
     pub fn set_min_decibels(&mut self, value: f64) {
         self.inner.set_min_decibels(value);
     }
@@ -195,7 +195,7 @@ impl NapiAnalyserNode {
         self.inner.max_decibels()
     }
 
-    #[napi(setter, js_name = "maxDecibels")]
+    #[napi(setter, catch_unwind, js_name = "maxDecibels")]
     pub fn set_max_decibels(&mut self, value: f64) {
         self.inner.set_max_decibels(value);
     }
@@ -205,7 +205,7 @@ impl NapiAnalyserNode {
         self.inner.smoothing_time_constant()
     }
 
-    #[napi(setter, js_name = "smoothingTimeConstant")]
+    #[napi(setter, catch_unwind, js_name = "smoothingTimeConstant")]
     pub fn set_smoothing_time_constant(&mut self, value: f64) {
         self.inner.set_smoothing_time_constant(value);
     }
@@ -214,25 +214,25 @@ impl NapiAnalyserNode {
     // METHODS
     // -------------------------------------------------
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn get_float_frequency_data(&mut self, mut array: Float32ArraySlice) {
         let array = unsafe { array.as_mut() };
         self.inner.get_float_frequency_data(array);
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn get_byte_frequency_data(&mut self, mut array: Uint8ArraySlice) {
         let array = unsafe { array.as_mut() };
         self.inner.get_byte_frequency_data(array);
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn get_float_time_domain_data(&mut self, mut array: Float32ArraySlice) {
         let array = unsafe { array.as_mut() };
         self.inner.get_float_time_domain_data(array);
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn get_byte_time_domain_data(&mut self, mut array: Uint8ArraySlice) {
         let array = unsafe { array.as_mut() };
         self.inner.get_byte_time_domain_data(array);

@@ -73,6 +73,8 @@ const setup = window => {
     }
   }
 
+  Object.assign(window, nodeWebAudioAPI);
+
   // expose media devices API in navigator
   window.navigator.mediaDevices = nodeWebAudioAPI.mediaDevices;
   // window.MediaStream = nodeWebAudioAPI.mediaDevices.MediaStream;
