@@ -22,6 +22,25 @@ program.parse(process.argv);
 
 const options = program.opts();
 
+// these have unconventional html markup with crashes the runner somehow
+// e.g.
+// ```html
+// <!doctype html>
+// <link rel="help" href="https://github.com/servo/servo/issues/36844">
+// <script>
+// var context = new AudioContext();
+// var stream = (new MediaStreamAudioDestinationNode(context)).stream;
+// new MediaStreamAudioSourceNode(context,{mediaStream:stream}) ;
+// new MediaStreamAudioSourceNode(context,{mediaStream:stream});
+// </script>
+// ```
+// > ReferenceError: AudioContext is not defined
+const ignoreCases = [
+  'the-audio-api/the-iirfilternode-interface/iir-filter-silent-block-crash.html',
+  'the-audio-api/the-mediaelementaudiosourcenode-interface/mediaElementAudioSource-mediaStreamAudioDestination-stream-crash.html',
+  'the-audio-api/the-mediaelementaudiosourcenode-interface/mediaElementAudioSource_closed_context-crash.html',
+]
+
 // -------------------------------------------------------
 // Some helpers
 // -------------------------------------------------------
@@ -114,9 +133,26 @@ process
     console.error(err.message);
   });
 
+// clean filters, allow both
+// npm run wpt:only -- --filter wpt/webaudio/the-audio-api/the-gainnode-interface/gain.html
+// npm run wpt:only -- --filter the-audio-api/the-gainnode-interface/gain.html
+
+options.filter = options.filter.map(filter => {
+  filter = filter.replace(new RegExp(`^${testsPath}/`), '');
+  filter = filter.replace(/^\//, '');
+  return filter;
+});
+
+console.log(options.filter);
+
 const filterRe = new RegExp(`${options.filter.join('|')}`);
 
 const filter = (name) => {
+  // remove
+  if (ignoreCases.includes(name)) {
+    return false;
+  }
+
   if (!options.with_crashtests && name.includes('/crashtests/')) {
     return false;
   }
@@ -169,6 +205,7 @@ const reporter = {
     }
   },
   reportStack: stack => {
+    console.log(stack);
     console.log(chalk.dim(indent(stack, INDENT_SIZE * 2)));
   },
 };

@@ -1,4 +1,5 @@
 use napi::bindgen_prelude::*;
+use napi::noop_finalize;
 use napi_derive::napi;
 
 use web_audio_api::*;
@@ -7,12 +8,14 @@ use web_audio_api::*;
 #[napi]
 pub struct NapiAudioBuffer {
     pub(crate) inner: AudioBuffer,
+    // pub(crate) js_channel_data: Vec<Option<ObjectRef>>,
 }
 
 impl From<AudioBuffer> for NapiAudioBuffer {
     fn from(audio_buffer: AudioBuffer) -> Self {
         Self {
             inner: audio_buffer,
+            // js_channel_data: vec![],
         }
     }
 }
@@ -33,6 +36,7 @@ impl NapiAudioBuffer {
 
         Self {
             inner: AudioBuffer::new(options),
+            // js_channel_data: vec![],
         }
     }
 
@@ -84,7 +88,9 @@ impl NapiAudioBuffer {
     #[napi(catch_unwind)]
     pub fn get_channel_data(
         &mut self,
-        env: &Env,
+        // reference: Reference<ExternalRef<Float32ArraySlice>>,
+        env: Env,
+        this: This,
         channel_number: u32,
     ) -> Result<Float32ArraySlice<'_>> {
         let channel_number = channel_number as usize;
@@ -92,11 +98,14 @@ impl NapiAudioBuffer {
         let data_ptr = channel_data.as_mut_ptr();
         let len = channel_data.len();
 
-        unsafe {
-            Float32ArraySlice::from_external(env, data_ptr, len, data_ptr, move |_, ptr| {
-                // Cleanup data when JavaScript GC runs
-                std::mem::drop(Vec::from_raw_parts(ptr, len, len));
-            })
-        }
+        let channel_data = unsafe {
+            // noop_finalize as we don't want to drop the underlying data when the buffer is GC
+            // which could cause a double-free error when AudioBuffer is actually dropped
+            Float32ArraySlice::from_external(&env, data_ptr, len, data_ptr, noop_finalize)?
+        };
+
+        Ok(channel_data)
     }
 }
+
+//
