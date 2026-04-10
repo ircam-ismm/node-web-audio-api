@@ -9,9 +9,7 @@ const {
 } = require('./lib/utils.js');
 const {
   kNapiObj,
-  kOnStateChange,
-  kOnSinkChange,
-  kWorkletRelease,
+  // kWorkletRelease,
 } = require('./lib/symbols.js');
 const {
   propagateEvent,
@@ -25,7 +23,6 @@ module.exports = function(jsExport, nativeBinding) {
     #sinkId = '';
     #renderCapacity = null;
     #onsinkchange = null;
-    // @todo - review
     #keepAwakeId = null;
     #kAudioContextId = null;
 
@@ -87,10 +84,9 @@ module.exports = function(jsExport, nativeBinding) {
         this.#sinkId = options.sinkId;
       }
 
-      // @fixme - napi-rs 3
-      // this.#renderCapacity = new jsExport.AudioRenderCapacity({
-      //   [kNapiObj]: this[kNapiObj].renderCapacity,
-      // });
+      this.#renderCapacity = new jsExport.AudioRenderCapacity({
+        [kNapiObj]: this[kNapiObj].renderCapacity,
+      });
 
       this[kNapiObj].onstatechange((function(napiEvent) {
         const event = new Event(napiEvent.type);
@@ -113,7 +109,7 @@ module.exports = function(jsExport, nativeBinding) {
 
       this.#keepAwakeId = setInterval(() => {}, 10 * 1000);
 
-      // for wpt tests, see ./.scripts/wpt_harness.mjs for informations
+      // force the context to close in WPT, see ./.scripts/wpt_harness.mjs for information
       if (process.WPT_TEST_RUNNER) {
         process.WPT_TEST_RUNNER.once('cleanup', () => this.close());
       }

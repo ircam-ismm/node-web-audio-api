@@ -9,6 +9,7 @@ use web_audio_api::context::{
 
 use crate::NapiAudioDestinationNode;
 use crate::NapiAudioListener;
+use crate::NapiAudioRenderCapacity;
 use crate::NapiEvent;
 
 pub struct SetSinkIdTask {
@@ -40,6 +41,7 @@ impl Task for SetSinkIdTask {
 pub struct NapiAudioContext {
     inner: Arc<AudioContext>,
     destination: NapiAudioDestinationNode,
+    render_capacity: NapiAudioRenderCapacity,
     listener: Option<NapiAudioListener>,
     // worklet_id: usize
 }
@@ -103,9 +105,13 @@ impl NapiAudioContext {
         let native_destination = native_context.destination();
         let napi_destination = NapiAudioDestinationNode::new(native_destination);
 
+        let native_render_capacity = native_context.render_capacity();
+        let napi_render_capacity = NapiAudioRenderCapacity::new(native_render_capacity);
+
         Self {
             inner: Arc::new(native_context),
             destination: napi_destination,
+            render_capacity: napi_render_capacity,
             listener: None,
         }
     }
@@ -113,6 +119,11 @@ impl NapiAudioContext {
     #[napi(getter, js_name = "destination")]
     pub fn destination(&self) -> NapiAudioDestinationNode {
         self.destination.clone()
+    }
+
+    #[napi(getter, js_name = "renderCapacity")]
+    pub fn render_capacity(&self) -> NapiAudioRenderCapacity {
+        self.render_capacity.clone()
     }
 
     #[napi(getter, js_name = "baseLatency")]
@@ -181,7 +192,6 @@ impl NapiAudioContext {
         Ok(())
     }
 
-    // attribute EventHandler onsinkchange;
     // attribute EventHandler onerror;
     // [SameObject] readonly attribute AudioPlaybackStats playbackStats;
     // AudioTimestamp getOutputTimestamp ();

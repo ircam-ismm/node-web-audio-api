@@ -23,8 +23,8 @@ mod periodic_wave;
 use crate::periodic_wave::NapiPeriodicWave;
 mod audio_listener;
 use crate::audio_listener::NapiAudioListener;
-// mod audio_render_capacity;
-// use crate::audio_render_capacity::NapiAudioRenderCapacity;
+mod audio_render_capacity;
+use crate::audio_render_capacity::NapiAudioRenderCapacity;
 
 // Generated audio nodes
 ${d.nodes.map(n => { return `

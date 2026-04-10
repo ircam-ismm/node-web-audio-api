@@ -27,15 +27,13 @@ const engine = (currentTime) => {
   }
 
   const now = currentTime + Math.random() * 0.005;
-
-    // add bit of random
+  // add bit of random detune
   const detuneRange = 10;
   const detune = Math.random() * detuneRange - (detuneRange / 2);
 
   const src = new AudioBufferSourceNode(audioContext, { buffer, detune });
   const env = new GainNode(audioContext, { gain: 0 });
   src.connect(env).connect(audioContext.destination);
-;
 
   env.gain
     .setValueAtTime(0, now)

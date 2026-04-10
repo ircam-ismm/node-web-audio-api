@@ -12,7 +12,6 @@ const {
 } = require('./lib/utils.js');
 const {
   kNapiObj,
-  kOnEnded,
 } = require('./lib/symbols.js');
 
 const AudioNode = require('./AudioNode.js');

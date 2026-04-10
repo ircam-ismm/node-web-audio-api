@@ -12,8 +12,6 @@ const {
 } = require('./lib/errors.js');
 const {
   kNapiObj,
-  kAudioBuffer,
-  kOnAudioProcess,
 } = require('./lib/symbols.js');
 const {
   propagateEvent,

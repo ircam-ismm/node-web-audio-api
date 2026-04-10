@@ -18,12 +18,6 @@ fn to_byte_slice_f64(double: &[f64]) -> &[u8] {
     unsafe { std::slice::from_raw_parts(double.as_ptr() as *const _, double.len() * 8) }
 }
 
-// #[napi]
-// pub struct AudioProcessingEventIn {
-//     pub playback_time: f64,
-//     pub input_channels: Buffer,
-// }
-
 #[napi(js_name = NapiScriptProcessorNode)]
 pub struct NapiScriptProcessorNode {
     pub(crate) inner: ScriptProcessorNode,
@@ -96,8 +90,8 @@ impl NapiScriptProcessorNode {
             .build_threadsafe_function()
             .weak::<true>() // do not prevent process to exit
             .build_callback(
-                move |ctx: napi::threadsafe_function::ThreadsafeCallContext<Vec<u8>>| {
-                    // JS thread
+                |ctx: napi::threadsafe_function::ThreadsafeCallContext<Vec<u8>>| {
+                    // just convert Vec<u8> into JS Buffer
                     let data: Buffer = ctx.value.into();
                     Ok(data)
                 },
@@ -107,7 +101,11 @@ impl NapiScriptProcessorNode {
             // Pack playback time and input buffer channels into JS Buffer
             let playback_time = e.playback_time;
             let input_buffer = e.input_buffer.clone();
-            let mut data: Vec<u8> = Vec::new();
+            let buffer_len = std::mem::size_of::<f64>()
+                + (input_buffer.number_of_channels()
+                    * input_buffer.length()
+                    * std::mem::size_of::<f32>());
+            let mut data: Vec<u8> = Vec::with_capacity(buffer_len);
 
             let playback_time = [playback_time];
             let playback_time: &[u8] = to_byte_slice_f64(&playback_time);

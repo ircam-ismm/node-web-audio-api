@@ -1,4 +1,8 @@
-import { AudioContext, ConstantSourceNode, OscillatorNode } from '../index.mjs';
+import {
+  AudioContext,
+  // ConstantSourceNode,
+  OscillatorNode,
+} from '../index.mjs';
 
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });

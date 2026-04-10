@@ -21,7 +21,7 @@ export const AudioDestinationNode = nativeModule.AudioDestinationNode;
 export const AudioListener = nativeModule.AudioListener;
 // export const AudioWorklet = nativeModule.AudioWorklet;
 // export const AudioParamMap = nativeModule.AudioParamMap;
-// export const AudioRenderCapacity = nativeModule.AudioRenderCapacity;
+export const AudioRenderCapacity = nativeModule.AudioRenderCapacity;
 
 export const PeriodicWave = nativeModule.PeriodicWave;
 export const AudioBuffer = nativeModule.AudioBuffer;

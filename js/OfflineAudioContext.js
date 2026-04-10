@@ -12,10 +12,8 @@ const {
 } = require('./lib/utils.js');
 const {
   kNapiObj,
-  kWorkletRelease,
-  // kOnStateChange,
-  // kOnComplete,
-  kCheckProcessorsCreated,
+  // kWorkletRelease,
+  // kCheckProcessorsCreated,
 } = require('./lib/symbols.js');
 
 module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
@@ -116,7 +114,7 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
       }
 
       // @fixme - napi-rs 3
-      // ensure all AudioWorkletProcessor have finished their instanciation
+      // ensure all AudioWorkletProcessor have finished their instantiation
       // await this.audioWorklet[kCheckProcessorsCreated]();
 
       // keep this to highlight the workaround w/ the oncomplete event
@@ -130,7 +128,7 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
 
       const renderedBuffer = new jsExport.AudioBuffer({ [kNapiObj]: napiAudioBuffer });
 
-      const event = new jsExport.OfflineAudioCompletionEvent("complete", {
+      const event = new jsExport.OfflineAudioCompletionEvent('complete', {
         renderedBuffer: renderedBuffer,
       });
 
