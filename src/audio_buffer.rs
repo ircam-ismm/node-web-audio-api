@@ -88,9 +88,7 @@ impl NapiAudioBuffer {
     #[napi(catch_unwind)]
     pub fn get_channel_data(
         &mut self,
-        // reference: Reference<ExternalRef<Float32ArraySlice>>,
         env: Env,
-        this: This,
         channel_number: u32,
     ) -> Result<Float32ArraySlice<'_>> {
         let channel_number = channel_number as usize;

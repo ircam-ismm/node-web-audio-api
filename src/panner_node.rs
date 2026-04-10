@@ -291,12 +291,12 @@ impl NapiPannerNode {
 
         Self {
             inner: native_node,
-            position_x: position_x,
-            position_y: position_y,
-            position_z: position_z,
-            orientation_x: orientation_x,
-            orientation_y: orientation_y,
-            orientation_z: orientation_z,
+            position_x,
+            position_y,
+            position_z,
+            orientation_x,
+            orientation_y,
+            orientation_z,
         }
     }
 

@@ -49,11 +49,7 @@ impl NapiConvolverNode {
         let js_buffer = options
             .get::<Option<ClassInstance<NapiAudioBuffer>>>("buffer")
             .unwrap();
-        let buffer = if let Some(buffer) = js_buffer.unwrap() {
-            Some(buffer.inner.clone())
-        } else {
-            None
-        };
+        let buffer = js_buffer.unwrap().map(|js_buffer| js_buffer.inner.clone());
 
         let some_disable_normalization =
             options.get::<Option<bool>>("disableNormalization").unwrap();

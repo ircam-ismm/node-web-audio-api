@@ -85,11 +85,9 @@ impl NapiOscillatorNode {
         let js_periodic_wave = options
             .get::<Option<ClassInstance<NapiPeriodicWave>>>("periodicWave")
             .unwrap();
-        let periodic_wave = if let Some(periodic_wave) = js_periodic_wave.unwrap() {
-            Some(periodic_wave.inner.clone())
-        } else {
-            None
-        };
+        let periodic_wave = js_periodic_wave
+            .unwrap()
+            .map(|js_periodic_wave| js_periodic_wave.inner.clone());
 
         // --------------------------------------------------------
         // Parse AudioNodeOptions
@@ -173,8 +171,8 @@ impl NapiOscillatorNode {
 
         Self {
             inner: native_node,
-            frequency: frequency,
-            detune: detune,
+            frequency,
+            detune,
         }
     }
 

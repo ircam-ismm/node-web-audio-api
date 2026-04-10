@@ -51,15 +51,15 @@ impl NapiAudioListener {
 
         Self {
             inner: Arc::new(native_listener),
-            position_x: position_x,
-            position_y: position_y,
-            position_z: position_z,
-            forward_x: forward_x,
-            forward_y: forward_y,
-            forward_z: forward_z,
-            up_x: up_x,
-            up_y: up_y,
-            up_z: up_z,
+            position_x,
+            position_y,
+            position_z,
+            forward_x,
+            forward_y,
+            forward_z,
+            up_x,
+            up_y,
+            up_z,
         }
     }
 }

@@ -3,6 +3,7 @@ use napi_derive::napi;
 
 use web_audio_api::media_devices::{enumerate_devices_sync, MediaDeviceInfoKind};
 
+#[allow(dead_code)]
 #[napi]
 pub fn napi_enumerate_devices(env: &Env) -> Vec<Object<'_>> {
     let list = enumerate_devices_sync();

@@ -142,7 +142,7 @@ impl NapiDelayNode {
 
         Self {
             inner: native_node,
-            delay_time: delay_time,
+            delay_time,
         }
     }
 

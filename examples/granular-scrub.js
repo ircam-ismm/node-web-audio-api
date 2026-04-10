@@ -1,7 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { Scheduler } from '@ircam/sc-scheduling';
-import { AudioContext } from '../index.mjs';
+import { AudioBufferSourceNode, AudioContext, GainNode } from '../index.mjs';
 
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });
@@ -28,20 +28,19 @@ const engine = (currentTime) => {
 
   const now = currentTime + Math.random() * 0.005;
 
-  const env = audioContext.createGain();
-  env.connect(audioContext.destination);
-  env.gain.value = 0;
+    // add bit of random
+  const detuneRange = 10;
+  const detune = Math.random() * detuneRange - (detuneRange / 2);
 
-  const src = audioContext.createBufferSource();
-  src.buffer = buffer;
-  src.connect(env);
-  // add bit of random
-  const detune = 4;
-  src.detune.value = Math.random() * 2 * detune - detune;
+  const src = new AudioBufferSourceNode(audioContext, { buffer, detune });
+  const env = new GainNode(audioContext, { gain: 0 });
+  src.connect(env).connect(audioContext.destination);
+;
 
-  env.gain.setValueAtTime(0, now);
-  env.gain.linearRampToValueAtTime(1, now + grainDuration / 2);
-  env.gain.linearRampToValueAtTime(0, now + grainDuration);
+  env.gain
+    .setValueAtTime(0, now)
+    .linearRampToValueAtTime(1, now + grainDuration / 2)
+    .linearRampToValueAtTime(0, now + grainDuration);
 
   src.start(now, position);
   src.stop(now + grainDuration);

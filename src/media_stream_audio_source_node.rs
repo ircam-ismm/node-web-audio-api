@@ -48,7 +48,7 @@ impl NapiMediaStreamAudioSourceNode {
         let node_defaults: Option<MediaStreamAudioSourceOptions> = None;
 
         let js_media_stream = options
-            .get::<ClassInstance<MediaStream>>("mediaStream")
+            .get::<ClassInstance<crate::media_streams::media_stream::MediaStream>>("mediaStream")
             .unwrap_or(None);
         let media_stream = match js_media_stream {
             Some(js_media_stream) => js_media_stream,

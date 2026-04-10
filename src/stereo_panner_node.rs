@@ -132,7 +132,7 @@ impl NapiStereoPannerNode {
 
         Self {
             inner: native_node,
-            pan: pan,
+            pan,
         }
     }
 

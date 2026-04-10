@@ -84,7 +84,7 @@ impl NapiConstantSourceNode {
 
         Self {
             inner: native_node,
-            offset: offset,
+            offset,
         }
     }
 

@@ -87,11 +87,8 @@ mod wave_shaper_node;
 // };
 
 // MediaDevices & MediaStream API
-mod media_streams;
-use crate::media_streams::MediaStream;
 mod media_devices;
-// use crate::media_devices::napi_enumerate_devices;
-// use crate::media_devices::napi_get_user_media;
+mod media_streams;
 
 #[napi_derive::module_init]
 fn init() {

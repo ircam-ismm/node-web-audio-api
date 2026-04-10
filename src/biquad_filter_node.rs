@@ -194,10 +194,10 @@ impl NapiBiquadFilterNode {
 
         Self {
             inner: native_node,
-            frequency: frequency,
-            detune: detune,
-            q: q,
-            gain: gain,
+            frequency,
+            detune,
+            q,
+            gain,
         }
     }
 

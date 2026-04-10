@@ -52,11 +52,7 @@ impl NapiAudioBufferSourceNode {
         let js_buffer = options
             .get::<Option<ClassInstance<NapiAudioBuffer>>>("buffer")
             .unwrap();
-        let buffer = if let Some(buffer) = js_buffer.unwrap() {
-            Some(buffer.inner.clone())
-        } else {
-            None
-        };
+        let buffer = js_buffer.unwrap().map(|js_buffer| js_buffer.inner.clone());
 
         let some_detune = options.get::<Option<f64>>("detune").unwrap();
         let detune = if let Some(detune) = some_detune.unwrap() {
@@ -141,8 +137,8 @@ impl NapiAudioBufferSourceNode {
 
         Self {
             inner: native_node,
-            playback_rate: playback_rate,
-            detune: detune,
+            playback_rate,
+            detune,
         }
     }
 
@@ -161,11 +157,11 @@ impl NapiAudioBufferSourceNode {
         let when = when.unwrap_or(0.);
         let offset = offset.unwrap_or(0.);
 
-        if !duration.is_some() {
-            self.inner.start_at_with_offset(when, offset);
-        } else {
-            self.inner
-                .start_at_with_offset_and_duration(when, offset, duration.unwrap());
+        match duration {
+            Some(duration) => self
+                .inner
+                .start_at_with_offset_and_duration(when, offset, duration),
+            None => self.inner.start_at_with_offset(when, offset),
         }
     }
 

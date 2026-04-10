@@ -189,11 +189,11 @@ impl NapiDynamicsCompressorNode {
 
         Self {
             inner: native_node,
-            threshold: threshold,
-            knee: knee,
-            ratio: ratio,
-            attack: attack,
-            release: release,
+            threshold,
+            knee,
+            ratio,
+            attack,
+            release,
         }
     }
 

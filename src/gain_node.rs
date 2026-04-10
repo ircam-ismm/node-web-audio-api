@@ -132,7 +132,7 @@ impl NapiGainNode {
 
         Self {
             inner: native_node,
-            gain: gain,
+            gain,
         }
     }
 

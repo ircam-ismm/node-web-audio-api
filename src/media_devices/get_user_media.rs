@@ -5,8 +5,9 @@ use web_audio_api::media_devices::{
     get_user_media_sync, MediaStreamConstraints, MediaTrackConstraints,
 };
 
-use crate::MediaStream;
+use crate::media_streams::media_stream::MediaStream;
 
+#[allow(dead_code)]
 #[napi]
 pub fn napi_get_user_media(options: Option<Object>) -> Result<MediaStream> {
     if options.is_none() {

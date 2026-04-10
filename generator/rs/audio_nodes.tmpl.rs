@@ -129,18 +129,14 @@ impl ${d.napiName(d.node)} {
                             const idl = d.findInTree(d.memberType(member));
                             return `
         let js_${slug} = options.get::<Option<ClassInstance<Napi${optionType}>>>("${optionName}").unwrap();
-        let ${slug} = if let Some(${slug}) = js_${slug}.unwrap() {
-            Some(${slug}.inner.clone())
-        } else {
-            None
-        };
+        let ${slug} = js_${slug}.unwrap().map(|js_${slug}| js_${slug}.inner.clone());
                             `;
                             break;
                        }
                         case "MediaStream": {
                             const napiName = `Napi${member.idlType.idlType}`;
                             return `
-        let js_${slug} = options.get::<ClassInstance<${optionType}>>("${optionName}").unwrap_or(None);
+        let js_${slug} = options.get::<ClassInstance<crate::media_streams::media_stream::${optionType}>>("${optionName}").unwrap_or(None);
         let ${slug} = match js_${slug} {
             Some(js_${slug}) => js_${slug},
             None => panic!("No default value for ${slug} in ${optionsType}"),
@@ -270,7 +266,7 @@ impl ${d.napiName(d.node)} {
         Self {
             inner: native_node,
             ${d.audioParams(d.node).map((param) => {
-                return `${d.slug(param)}: ${d.slug(param)},`;
+                return `${d.slug(param)},`;
             }).join('\n')}
         }
     }
@@ -310,12 +306,10 @@ impl ${d.napiName(d.node)} {
         let when = when.unwrap_or(0.);
         let offset = offset.unwrap_or(0.);
 
-        if !duration.is_some() {
-            self.inner.start_at_with_offset(when, offset);
-        } else {
-            self.inner.start_at_with_offset_and_duration(when, offset, duration.unwrap());
+        match duration {
+            Some(duration) => self.inner.start_at_with_offset_and_duration(when, offset, duration),
+            None => self.inner.start_at_with_offset(when, offset),
         }
-
     }
             `;
         }

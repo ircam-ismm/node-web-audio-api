@@ -87,7 +87,7 @@ impl NapiAudioContext {
         let sink_id = options.get::<String>("sinkId");
         let sink_id = sink_id.or::<Result<Option<String>>>(Ok(Some(default_sink_id.clone())));
         let sink_id = match sink_id.unwrap() {
-            Some(sink_id) => sink_id.into(),
+            Some(sink_id) => sink_id,
             None => default_sink_id,
         };
 
