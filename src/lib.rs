@@ -47,6 +47,8 @@ use crate::audio_listener::NapiAudioListener;
 
 // Generated audio nodes
 
+mod script_processor_node;
+// use crate::script_processor_node::NapiScriptProcessorNode;
 mod analyser_node;
 // use crate::analyser_node::NapiAnalyserNode;
 mod audio_buffer_source_node;

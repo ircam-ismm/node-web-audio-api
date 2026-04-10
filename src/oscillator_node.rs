@@ -35,7 +35,6 @@ audio_node_impl!(NapiOscillatorNode);
 
 #[napi]
 impl NapiOscillatorNode {
-    // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
     #[napi(constructor, catch_unwind)]
     pub fn new(
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,

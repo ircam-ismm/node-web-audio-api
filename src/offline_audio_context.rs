@@ -74,5 +74,5 @@ impl NapiOfflineAudioContext {
         Ok(())
     }
 
-    // on complete is handle on JS side only
+    // oncomplete event is handled on JS side only
 }

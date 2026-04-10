@@ -33,7 +33,6 @@ audio_node_impl!(NapiIIRFilterNode);
 
 #[napi]
 impl NapiIIRFilterNode {
-    // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
     #[napi(constructor, catch_unwind)]
     pub fn new(
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,

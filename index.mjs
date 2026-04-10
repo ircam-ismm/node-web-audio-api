@@ -48,6 +48,7 @@ export const PeriodicWave = nativeModule.PeriodicWave;
 export const AudioBuffer = nativeModule.AudioBuffer;
 
 // generated nodes
+export const ScriptProcessorNode = nativeModule.ScriptProcessorNode;
 export const AnalyserNode = nativeModule.AnalyserNode;
 export const AudioBufferSourceNode = nativeModule.AudioBufferSourceNode;
 export const BiquadFilterNode = nativeModule.BiquadFilterNode;

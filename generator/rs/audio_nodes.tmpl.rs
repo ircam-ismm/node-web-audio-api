@@ -17,7 +17,6 @@ audio_node_impl!(${d.napiName(d.node)});
 
 #[napi]
 impl ${d.napiName(d.node)} {
-    // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
     #[napi(constructor, catch_unwind)]
     pub fn new(
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,

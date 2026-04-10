@@ -35,7 +35,6 @@ audio_node_impl!(NapiAudioBufferSourceNode);
 
 #[napi]
 impl NapiAudioBufferSourceNode {
-    // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
     #[napi(constructor, catch_unwind)]
     pub fn new(
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,

@@ -33,6 +33,7 @@ jsExport.BaseAudioContext = require('./js/BaseAudioContext.js')(jsExport, native
 jsExport.AudioContext = require('./js/AudioContext.js')(jsExport, nativeBinding);
 jsExport.OfflineAudioContext = require('./js/OfflineAudioContext.js')(jsExport, nativeBinding);
 
+jsExport.ScriptProcessorNode = require('./js/ScriptProcessorNode.js')(jsExport, nativeBinding);
 jsExport.AnalyserNode = require('./js/AnalyserNode.js')(jsExport, nativeBinding);
 jsExport.AudioBufferSourceNode = require('./js/AudioBufferSourceNode.js')(jsExport, nativeBinding);
 jsExport.BiquadFilterNode = require('./js/BiquadFilterNode.js')(jsExport, nativeBinding);

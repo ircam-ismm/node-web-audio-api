@@ -34,7 +34,6 @@ audio_node_impl!(NapiGainNode);
 
 #[napi]
 impl NapiGainNode {
-    // @todo - context: Either<&NapiAudioContext, &NapiOfflineAudioContext>
     #[napi(constructor, catch_unwind)]
     pub fn new(
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,

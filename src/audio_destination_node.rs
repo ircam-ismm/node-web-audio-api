@@ -6,8 +6,6 @@ use napi_derive::napi;
 
 use web_audio_api::node::*;
 
-use crate::*;
-
 #[derive(Clone)]
 #[napi]
 pub struct NapiAudioDestinationNode {
