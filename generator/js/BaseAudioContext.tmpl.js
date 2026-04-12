@@ -5,14 +5,14 @@ const {
 } = require('./lib/utils.js');
 const {
   kNapiObj,
-  // kPrivateConstructor,
+  kPrivateConstructor,
 } = require('./lib/symbols.js');
 
-// const AudioWorklet = require('./AudioWorklet.js');
+const AudioWorklet = require('./AudioWorklet.js');
 
 module.exports = (jsExport, _nativeBinding) => {
   class BaseAudioContext extends EventTarget {
-    // #audioWorklet = null;
+    #audioWorklet = null;
     #destination = null;
     #listener = null;
     #statechange = null;
@@ -34,24 +34,24 @@ module.exports = (jsExport, _nativeBinding) => {
         ...kHiddenProperty,
       });
 
-      // this.#audioWorklet = new AudioWorklet({
-      //   [kPrivateConstructor]: true,
-      //   workletId: this[kNapiObj].workletId,
-      //   sampleRate: this[kNapiObj].sampleRate,
-      // });
+      this.#audioWorklet = new AudioWorklet({
+        [kPrivateConstructor]: true,
+        workletId: this[kNapiObj].workletId,
+        sampleRate: this[kNapiObj].sampleRate,
+      });
 
       this.#destination = new jsExport.AudioDestinationNode(this, {
         [kNapiObj]: this[kNapiObj].destination,
       });
     }
 
-    // get audioWorklet() {
-    //   if (!(this instanceof BaseAudioContext)) {
-    //     throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
-    //   }
+    get audioWorklet() {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
+      }
 
-    //   return this.#audioWorklet;
-    // }
+      return this.#audioWorklet;
+    }
 
     get destination() {
       if (!(this instanceof BaseAudioContext)) {

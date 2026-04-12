@@ -15,12 +15,12 @@ export const AudioContext = nativeModule.AudioContext;
 export const OfflineAudioContext = nativeModule.OfflineAudioContext;
 
 export const AudioNode = nativeModule.AudioNode;
-// export const AudioScheduledSourceNode = nativeModule.AudioScheduledSourceNode;
+export const AudioScheduledSourceNode = nativeModule.AudioScheduledSourceNode;
 export const AudioParam = nativeModule.AudioParam;
 export const AudioDestinationNode = nativeModule.AudioDestinationNode;
 export const AudioListener = nativeModule.AudioListener;
-// export const AudioWorklet = nativeModule.AudioWorklet;
-// export const AudioParamMap = nativeModule.AudioParamMap;
+export const AudioWorklet = nativeModule.AudioWorklet;
+export const AudioParamMap = nativeModule.AudioParamMap;
 export const AudioRenderCapacity = nativeModule.AudioRenderCapacity;
 
 export const PeriodicWave = nativeModule.PeriodicWave;

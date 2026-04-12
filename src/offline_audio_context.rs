@@ -15,7 +15,7 @@ pub struct NapiOfflineAudioContext {
     inner: Arc<OfflineAudioContext>,
     destination: NapiAudioDestinationNode,
     listener: Option<NapiAudioListener>,
-    // worklet_id: usize
+    pub(crate) worklet_id: usize,
 }
 
 impl NapiOfflineAudioContext {
@@ -39,11 +39,19 @@ impl NapiOfflineAudioContext {
         let native_destination = native_context.destination();
         let napi_destination = NapiAudioDestinationNode::new(native_destination);
 
+        let worklet_id = crate::audio_worklet_node::allocate_process_call_channel();
+
         Self {
             inner: Arc::new(native_context),
             destination: napi_destination,
             listener: None,
+            worklet_id,
         }
+    }
+
+    #[napi(getter, js_name = "worketId")]
+    pub fn worklet_id(&self) -> usize {
+        self.worklet_id
     }
 
     #[napi(getter)]

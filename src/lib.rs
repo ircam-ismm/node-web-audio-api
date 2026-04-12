@@ -49,6 +49,8 @@ use crate::audio_render_capacity::NapiAudioRenderCapacity;
 
 mod script_processor_node;
 // use crate::script_processor_node::NapiScriptProcessorNode;
+mod audio_worklet_node;
+// use crate::audio_worklet_node::NapiAudioWorkletNode;
 mod analyser_node;
 // use crate::analyser_node::NapiAnalyserNode;
 mod audio_buffer_source_node;
@@ -83,10 +85,7 @@ mod wave_shaper_node;
 // use crate::wave_shaper_node::NapiWaveShaperNode;
 
 // AudioWorklet internals
-// use crate::audio_worklet_node::{
-//     exit_audio_worklet_global_scope,
-//     run_audio_worklet_global_scope,
-// };
+use crate::audio_worklet_node::{exit_audio_worklet_global_scope, run_audio_worklet_global_scope};
 
 // MediaDevices & MediaStream API
 mod media_devices;

@@ -43,7 +43,7 @@ pub struct NapiAudioContext {
     destination: NapiAudioDestinationNode,
     render_capacity: NapiAudioRenderCapacity,
     listener: Option<NapiAudioListener>,
-    // worklet_id: usize
+    pub(crate) worklet_id: usize,
 }
 
 impl NapiAudioContext {
@@ -108,12 +108,20 @@ impl NapiAudioContext {
         let native_render_capacity = native_context.render_capacity();
         let napi_render_capacity = NapiAudioRenderCapacity::new(native_render_capacity);
 
+        let worklet_id = crate::audio_worklet_node::allocate_process_call_channel();
+
         Self {
             inner: Arc::new(native_context),
             destination: napi_destination,
             render_capacity: napi_render_capacity,
             listener: None,
+            worklet_id,
         }
+    }
+
+    #[napi(getter, js_name = "workletId")]
+    pub fn worklet_id(&self) -> u32 {
+        self.worklet_id as u32
     }
 
     #[napi(getter, js_name = "destination")]

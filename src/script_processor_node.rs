@@ -84,7 +84,7 @@ impl NapiScriptProcessorNode {
         self.inner.buffer_size() as u32
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn onaudioprocess(&self, callback: Function<Buffer, Buffer>) -> Result<()> {
         let tsfn = callback
             .build_threadsafe_function()

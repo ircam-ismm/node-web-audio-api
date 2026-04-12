@@ -32,10 +32,10 @@ mod ${d.slug(n)};
 // use crate::${d.slug(n)}::${d.napiName(n)};`}).join('')}
 
 // AudioWorklet internals
-// use crate::audio_worklet_node::{
-//     exit_audio_worklet_global_scope,
-//     run_audio_worklet_global_scope,
-// };
+use crate::audio_worklet_node::{
+    exit_audio_worklet_global_scope,
+    run_audio_worklet_global_scope,
+};
 
 // MediaDevices & MediaStream API
 mod media_streams;
