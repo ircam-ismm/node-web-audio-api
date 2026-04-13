@@ -38,9 +38,6 @@ paramReduction.exponentialRampToValueAtTime(0.01, 8.);
 sine.start();
 sine.stop(8);
 
-const whiteNoise = new AudioWorkletNode(audioContext, 'white-noise');
-whiteNoise.connect(audioContext.destination);
-
 if (TEST_ONLINE) {
   audioContext.renderCapacity.addEventListener('update', e => {
     const { timestamp, averageLoad, peakLoad, underrunRatio } = e;

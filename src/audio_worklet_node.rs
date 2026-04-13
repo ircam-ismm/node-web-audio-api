@@ -317,22 +317,26 @@ fn process_audio_worklet(
         return Ok(());
     }
 
-    // This value become Some if "process" do not exist or throw an error at execution
-    let mut completion: Option<WorkletAbruptCompletionResult> = None;
-    // The `process` method is not executed directly because napi-rs `apply` implementation
-    // retrieve the arguments as an array in the first argument, then we need to unpack first
-    // cf. `AudioWorkletProcessor[kWorkletUnpackProcess]`
-    // Use `get_named_property` rather than `has_named_property` so that we can check
-    // `process` is a function as well.
-    match processor.get_named_property::<Function<Unknown, Unknown>>("process") {
+    // The `process` method is not executed directly because napi-rs `apply`
+    // implementation retrieve the arguments as an array in the first argument,
+    // then we need to unpack first cf. `AudioWorkletProcessor[kWorkletUnpackProcess]`
+    // Note that we use `get_named_property` rather than `has_named_property` so that
+    // we check that `process` is a function as well.
+    let process_method_result =
+        processor.get_named_property::<Function<Unknown, Unknown>>("process");
+
+    let abrupt_completion = match process_method_result {
         Ok(_process_method) => {
             let render_quantum_size =
                 global.get_named_property::<u32>("renderQuantumSize")? as usize;
 
             let k_worklet_unpack_process =
                 env.symbol_for("node-web-audio-api:worklet-unpack-process")?;
+
+            // The unpack_process wrapper function coerce result from `process` to bool,
+            // therefore if we get some Unknown, this is an error.
             let unpack_process_function = processor
-                .get_property::<JsSymbol, Function<(Array, Array, Object), Unknown>>(
+                .get_property::<JsSymbol, Function<(Array, Array, Object), Either<bool, Unknown>>>(
                     k_worklet_unpack_process,
                 )?;
 
@@ -398,11 +402,11 @@ fn process_audio_worklet(
                 js_params.set_named_property(name, param_values)?;
             }
 
-            let res: Result<Unknown> =
-                unpack_process_function.apply(processor, (js_inputs, js_outputs, js_params));
+            let js_result =
+                unpack_process_function.apply(processor, (js_inputs, js_outputs, js_params))?;
 
-            match res {
-                Ok(js_ret) => {
+            match js_result {
+                Either::A(tail_time) => {
                     // copy JS output buffers back into outputs
                     for (output_number, output) in outputs.iter().enumerate() {
                         let js_output = js_outputs.get_element::<Array>(output_number as u32)?;
@@ -421,48 +425,46 @@ fn process_audio_worklet(
                         }
                     }
 
-                    let ret = js_ret.coerce_to_bool()?;
-                    let _ = tail_time_sender.send(ret); // allowed to fail
+                    let _ = tail_time_sender.send(tail_time); // allowed to fail
+
+                    None
                 }
-                // no process method found
-                Err(err) => {
-                    completion = Some(WorkletAbruptCompletionResult {
-                        cmd: "node-web-audio-api:worklet:process-error".to_string(),
-                        err,
-                    });
-                }
+                // error thrown in process
+                Either::B(err) => Some(WorkletAbruptCompletionResult {
+                    cmd: "node-web-audio-api:worklet:process-error".to_string(),
+                    err: err.into(),
+                }),
             }
         }
-        Err(err) => {
-            completion = Some(WorkletAbruptCompletionResult {
-                cmd: "node-web-audio-api:worklet:process-invalid".to_string(),
-                err,
-            });
-        }
+        // no process method found
+        Err(err) => Some(WorkletAbruptCompletionResult {
+            cmd: "node-web-audio-api:worklet:process-invalid".to_string(),
+            err,
+        }),
+    };
+
+    // Handle errors
+    // @todo - propagate to rust side as well to processor from graph?
+    if let Some(abrupt_completion) = abrupt_completion {
+        let WorkletAbruptCompletionResult { cmd, err } = abrupt_completion;
+
+        // Mark as non callable and dispatch `processorerror` event on main thread
+        let k_worklet_mark_non_callable =
+            env.symbol_for("node-web-audio-api:worklet-mark-non-callable-process")?;
+
+        let mark_non_callable_function = processor
+            .get_property::<JsSymbol, Function<(String, Object), ()>>(
+                k_worklet_mark_non_callable,
+            )?;
+        let js_error = env.create_error(err)?;
+        let _ = mark_non_callable_function.apply(processor, (cmd, js_error));
+
+        // Mark tail time to false in audio graph
+        // https://webaudio.github.io/web-audio-api/#active-source
+        let _ = tail_time_sender.send(false);
     }
 
-    // Handle eventual errors
-    // if let Some(value) = completion {
-    //     let WorkletAbruptCompletionResult { cmd, err } = value;
-    //     // Grab back our process which may have been consumed by the process apply
-    //     // let mut processor = processors.get_named_property::<JsObject>(&id.to_string())?;
-    //     let k_worklet_queue_task = env.symbol_for("node-web-audio-api:worklet-queue-task")?;
-    //     // @todo - would be usefull to propagate to rust side too so that the
-    //     // processor can be removed from graph (?)
-    //     let value = env.get_boolean(false)?;
-    //     processor.set_property(k_worklet_callable_process, false)?;
-    //     // set active source flag to false, same semantic as tail time
-    //     // https://webaudio.github.io/web-audio-api/#active-source
-    //     let _ = tail_time_sender.send(false);
-    //     // Dispatch processorerror event on main thread
-    //     let queue_task = processor
-    //         .get_property::<JsSymbol, Function<(String, Object), ()>>(k_worklet_queue_task)?;
-    //     let js_err = env.create_error(err)?;
-    //     let _ = queue_task.apply(processor, (cmd, js_err));
-    // }
-
     Ok(())
-    // todo!();
 }
 
 /// The entry point into Rust from the Worker

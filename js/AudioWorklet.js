@@ -215,17 +215,22 @@ class AudioWorklet {
   [kCreateProcessor](name, options, id) {
     this.#pendingCreateProcessors.add(id);
 
-    const { port1, port2 } = new MessageChannel();
-    // @todo - check if some processorOptions must be transfered as well
+    const { port1: messagePort1, port2: messagePort2 } = new MessageChannel();
+    const { port1: errorPort1, port2: errorPort2 } = new MessageChannel();
+    // @todo - check if we should transfer some processorOptions as well
     this.#port.postMessage({
       cmd: 'node-web-audio-api:worklet:create-processor',
       name,
       id,
       options,
-      port: port2,
-    }, [port2]);
+      messagePort: messagePort2,
+      errorPort: errorPort2,
+    }, [messagePort2, errorPort2]);
 
-    return port1;
+    return {
+      messagePort: messagePort1,
+      errorPort: errorPort1,
+    };
   }
 
   async [kWorkletRelease]() {

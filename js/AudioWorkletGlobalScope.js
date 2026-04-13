@@ -17,8 +17,9 @@ const {
   sampleRate,
 } = workerData;
 
-const kWorkletQueueTask = Symbol.for('node-web-audio-api:worklet-queue-task');
+// const kWorkletQueueTask = Symbol.for('node-web-audio-api:worklet-queue-task');
 const kWorkletCallableProcess = Symbol.for('node-web-audio-api:worklet-callable-process');
+const kWorkletMarkNonCallableProcess = Symbol.for('node-web-audio-api:worklet-mark-non-callable-process');
 const kWorkletInputs = Symbol.for('node-web-audio-api:worklet-inputs');
 const kWorkletOutputs = Symbol.for('node-web-audio-api:worklet-outputs');
 const kWorkletParams = Symbol.for('node-web-audio-api:worklet-params');
@@ -126,11 +127,13 @@ globalThis.AudioWorkletProcessor = class AudioWorkletProcessor {
     return [];
   }
 
-  #port = null;
+  #messagePort = null;
+  #errorPort = null;
 
   constructor() {
     const {
-      port,
+      messagePort,
+      errorPort,
       numberOfInputs,
       numberOfOutputs,
       parameterDescriptors,
@@ -157,7 +160,8 @@ globalThis.AudioWorkletProcessor = class AudioWorkletProcessor {
       ];
     });
 
-    this.#port = port;
+    this.#messagePort = messagePort;
+    this.#errorPort = errorPort;
   }
 
   get port() {
@@ -165,17 +169,26 @@ globalThis.AudioWorkletProcessor = class AudioWorkletProcessor {
       throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioWorkletProcessor\'');
     }
 
-    return this.#port;
+    return this.#messagePort;
   }
 
-  [kWorkletUnpackProcess](args) {
-    // this is called only if "real" process method has been found in the first place
-    const [inputs, outputs, parameters] = args;
-    return this.process(inputs, outputs, parameters);
+  // Wrapper around the "real" process method, allows to
+  // - unpack arguments from napi-rs `apply` call
+  // - cast return value to boolean
+  // - catch and cleanly return error so that rust can properly handle it
+  //
+  // This method is called only if a "real" process method has been found
+  [kWorkletUnpackProcess]([inputs, outputs, parameters]) {
+    try {
+      return !!this.process(inputs, outputs, parameters);
+    } catch (err) {
+      return err;
+    }
   }
 
-  [kWorkletQueueTask](cmd, err) {
-    this.#port.postMessage({ cmd, err });
+  [kWorkletMarkNonCallableProcess]([cmd, err]) {
+    this[kWorkletCallableProcess] = false;
+    this.#errorPort.postMessage({ cmd, err });
   }
 };
 
@@ -343,12 +356,13 @@ parentPort.on('message', async event => {
       break;
     }
     case 'node-web-audio-api:worklet:create-processor': {
-      const { name, id, options, port } = event;
+      const { name, id, options, messagePort, errorPort } = event;
       const ctor = nameProcessorCtorMap.get(name);
 
-      // re-wrap options of interest for the AudioWorkletNodeBaseClass
+      // re-wrap options of interest for the AudioWorkletProcess base class
       pendingProcessorConstructionData = {
-        port,
+        messagePort,
+        errorPort,
         numberOfInputs: options.numberOfInputs,
         numberOfOutputs: options.numberOfOutputs,
         parameterDescriptors: ctor.parameterDescriptors,

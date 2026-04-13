@@ -13,6 +13,8 @@ const audioContext = TEST_ONLINE
 await audioContext.audioWorklet.addModule(path.join('worklets', 'white-noise.js')); // relative path to call site
 
 const whiteNoise = new AudioWorkletNode(audioContext, 'white-noise');
+whiteNoise.port.on('message', msg => console.log('message:', msg));
+whiteNoise.addEventListener('processorerror', err => console.log('processorerror:', err));
 whiteNoise.connect(audioContext.destination);
 
 if (TEST_ONLINE) {
