@@ -24,6 +24,11 @@ const buffer = await audioContext.decodeAudioData(arrayBuffer);
 console.log('> Max channel count:', audioContext.destination.maxChannelCount);
 console.log('> Buffer numberOfChannels:', buffer.numberOfChannels);
 
+if (audioContext.destination.maxChannelCount < buffer.numberOfChannels) {
+  console.log(`This example requires an output device with at least ${buffer.numberOfChannels} channels`);
+  process.exit();
+}
+
 audioContext.destination.channelCount = buffer.numberOfChannels;
 audioContext.destination.channelInterpretation = 'discrete';
 

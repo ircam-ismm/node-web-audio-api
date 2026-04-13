@@ -22,7 +22,7 @@ program.parse(process.argv);
 
 const options = program.opts();
 
-// these have unconventional html markup with crashes the runner somehow
+// these have unconventional (no head nor body) html markup with crashes the runner somehow
 // e.g.
 // ```html
 // <!doctype html>
@@ -148,7 +148,7 @@ console.log(options.filter);
 const filterRe = new RegExp(`${options.filter.join('|')}`);
 
 const filter = (name) => {
-  // remove
+  // remove once fixed
   if (ignoreCases.includes(name)) {
     return false;
   }
@@ -205,7 +205,7 @@ const reporter = {
     }
   },
   reportStack: stack => {
-    console.log(stack);
+    // console.log(stack);
     console.log(chalk.dim(indent(stack, INDENT_SIZE * 2)));
   },
 };
