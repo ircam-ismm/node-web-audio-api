@@ -205,10 +205,6 @@ fn rebuild_io_layout<'a>(
         }
 
         // freeze and mark channels as untransferable
-        println!(
-            "> mark channels as untransferable (length {:?})",
-            channels.len()
-        );
         let mut channels = mark_as_untransferable.call(channels)?;
         // let mut channels = channels.coerce_to_object().unwrap();
         let _ = channels.freeze();
@@ -217,10 +213,6 @@ fn rebuild_io_layout<'a>(
     }
 
     // freeze and mark input / output as untransferable
-    println!(
-        "> mark input / output as untransferable (length {:?})",
-        new_js_io.len()
-    );
     let mut new_js_io = mark_as_untransferable.call(new_js_io)?;
     let _ = new_js_io.freeze();
 
@@ -299,7 +291,7 @@ fn process_audio_worklet(
         current_frame,
         tail_time_sender,
     } = processor_arguments;
-    println!("retrieve processor {:?}", id);
+
     let mut processor = match processors.get_named_property::<Object>(&id.to_string()) {
         Ok(processor) => processor,
         Err(_) => {
@@ -310,14 +302,10 @@ fn process_audio_worklet(
         }
     };
 
-    println!("processor retrieved {:?}", id);
-
     // fill AudioWorkletGlobalScope
     let mut global = env.get_global()?;
     global.set_named_property("currentTime", current_time)?;
     global.set_named_property("currentFrame", current_frame)?;
-
-    println!("upgrade global {:?}, {:?}", current_time, current_frame);
 
     let k_worklet_callable_process =
         env.symbol_for("node-web-audio-api:worklet-callable-process")?;
@@ -331,10 +319,13 @@ fn process_audio_worklet(
 
     // This value become Some if "process" do not exist or throw an error at execution
     let mut completion: Option<WorkletAbruptCompletionResult> = None;
-    // process_method is not executed directly because apply gives arguments as array
-    // in first slot so we need to unpack them first
+    // The `process` method is not executed directly because napi-rs `apply` implementation
+    // retrieve the arguments as an array in the first argument, then we need to unpack first
+    // cf. `AudioWorkletProcessor[kWorkletUnpackProcess]`
+    // Use `get_named_property` rather than `has_named_property` so that we can check
+    // `process` is a function as well.
     match processor.get_named_property::<Function<Unknown, Unknown>>("process") {
-        Ok(process_method) => {
+        Ok(_process_method) => {
             let render_quantum_size =
                 global.get_named_property::<u32>("renderQuantumSize")? as usize;
 
@@ -360,7 +351,6 @@ fn process_audio_worklet(
             let js_params_cache =
                 processor.get_property::<JsSymbol, Object>(k_worklet_params_cache)?;
 
-            // @fixme - napi-rs
             // Check JS input and output, and rebuild JS object if layout changed
             // @todo - review, do it on JS side?
             if !check_same_io_layout(&js_inputs, inputs) {
@@ -369,7 +359,6 @@ fn process_audio_worklet(
                 processor.set_property(k_worklet_inputs, new_js_inputs)?;
                 // Override js_inputs with new reference
                 js_inputs = processor.get_property::<JsSymbol, Array>(k_worklet_inputs)?;
-                println!("> rebuild input io (length {:?})", js_inputs.len());
             }
 
             if !check_same_io_layout(&js_outputs, outputs) {
@@ -378,7 +367,6 @@ fn process_audio_worklet(
                 processor.set_property(k_worklet_outputs, new_js_outputs)?;
                 // Override js_outputs with new reference
                 js_outputs = processor.get_property::<JsSymbol, Array>(k_worklet_outputs)?;
-                println!("> rebuild output io (length {:?})", js_outputs.len());
             }
 
             // Copy inputs into JS inputs buffers
@@ -396,32 +384,25 @@ fn process_audio_worklet(
 
             // Copy params values into JS params buffers
             //
-            // @perf - We could rely on the fact that ParameterDescriptors
+            // @todo(perf) - We could rely on the fact that ParameterDescriptors
             // are ordered maps to avoid sending param names in `param_values`
-            // for (name, data) in param_values.iter() {
-            //     let float32_arr_cache = js_params_cache.get_named_property::<Object>(name)?;
-            //     // retrieve right Float32Array according to actual param size, i.e. 128 or 1
-            //     let cache_index = if data.len() == 1 { 1 } else { 0 };
-            //     let float32_arr = float32_arr_cache.get_element::<JsTypedArray>(cache_index)?;
-            //     // copy data into underlying ArrayBuffer
-            //     let mut float32_arr_value = float32_arr.into_value()?;
-            //     let buffer: &mut [f32] = float32_arr_value.as_mut();
-            //     buffer.copy_from_slice(data);
-            //     // get new owned value, as `float32_arr` as been consumed by `into_value` call
-            //     let float32_arr = float32_arr_cache.get_element::<JsTypedArray>(cache_index)?;
-            //     js_params.set_named_property(name, float32_arr)?;
-            // }
+            for (name, data) in param_values.iter() {
+                let float32_arr_cache = js_params_cache.get_named_property::<Array>(name)?;
+                // retrieve right Float32Array according to actual param size, i.e. 128 or 1
+                let cache_index = if data.len() == 1 { 1 } else { 0 };
+                let mut param_values = float32_arr_cache.get::<Float32Array>(cache_index)?.unwrap();
+                // copy data into underlying ArrayBuffer
+                let buffer: &mut [f32] = unsafe { param_values.as_mut() };
+                buffer.copy_from_slice(data);
+                // replace current values with new Float32Array
+                js_params.set_named_property(name, param_values)?;
+            }
 
             let res: Result<Unknown> =
                 unpack_process_function.apply(processor, (js_inputs, js_outputs, js_params));
 
             match res {
                 Ok(js_ret) => {
-                    // Grab back new owned value processor and js_outputs, has been consumed by `apply` call
-                    // let processor = processors.get_named_property::<JsObject>(&id.to_string())?;
-                    // let js_outputs =
-                    //     processor.get_property::<JsSymbol, JsObject>(k_worklet_outputs)?;
-
                     // copy JS output buffers back into outputs
                     for (output_number, output) in outputs.iter().enumerate() {
                         let js_output = js_outputs.get_element::<Array>(output_number as u32)?;
@@ -430,8 +411,6 @@ fn process_audio_worklet(
                             let js_channel = js_output
                                 .get::<Float32Array>(channel_number as u32)?
                                 .unwrap();
-                            // let js_channel_value = js_channel.into_value()?;
-                            // let js_channel: &mut [f32] = unsafe { js_channel.as_mut() };
 
                             let src = js_channel.as_ptr();
                             let dst = channel.as_ptr() as *mut f32;
@@ -520,8 +499,6 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
             }
         }
     }
-
-    // ctx.env.get_undefined()
 }
 
 #[allow(dead_code)]

@@ -86,7 +86,6 @@ globalThis[kWorkletGetBuffer] = () => pool128.get();
 globalThis[kWorkletRecycleBuffer] = buffer => pool128.recycle(buffer);
 globalThis[kWorkletRecycleBuffer1] = buffer => pool1.recycle(buffer);
 globalThis[kWorkletMarkAsUntransferable] = obj => {
-  console.log(obj);
   markAsUntransferable(obj);
   return obj;
 };
