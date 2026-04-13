@@ -141,12 +141,12 @@ impl NapiAudioBufferSourceNode {
         }
     }
 
-    #[napi(getter)]
+    #[napi(getter, js_name = "playbackRate")]
     pub fn playback_rate(&self) -> NapiAudioParam {
         self.playback_rate.clone()
     }
 
-    #[napi(getter)]
+    #[napi(getter, js_name = "detune")]
     pub fn detune(&self) -> NapiAudioParam {
         self.detune.clone()
     }

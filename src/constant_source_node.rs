@@ -87,7 +87,7 @@ impl NapiConstantSourceNode {
         }
     }
 
-    #[napi(getter)]
+    #[napi(getter, js_name = "offset")]
     pub fn offset(&self) -> NapiAudioParam {
         self.offset.clone()
     }

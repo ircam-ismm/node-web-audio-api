@@ -117,6 +117,7 @@ function runLoop() {
   runLoopImmediateId = setImmediate(runLoop);
 }
 
+globalThis.port = parentPort;
 globalThis.currentTime = 0;
 globalThis.currentFrame = 0;
 globalThis.sampleRate = sampleRate;
@@ -322,7 +323,6 @@ globalThis.registerProcessor = function registerProcessor(name, processorCtor) {
 parentPort.on('message', async event => {
   switch (event.cmd) {
     case 'node-web-audio-api:worklet:exit': {
-      console.log('node-web-audio-api:worklet:exit');
       clearImmediate(runLoopImmediateId);
       // properly exit audio worklet on rust side
       exit_audio_worklet_global_scope(workletId);

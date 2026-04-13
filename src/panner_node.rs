@@ -299,32 +299,32 @@ impl NapiPannerNode {
         }
     }
 
-    #[napi(getter)]
+    #[napi(getter, js_name = "positionX")]
     pub fn position_x(&self) -> NapiAudioParam {
         self.position_x.clone()
     }
 
-    #[napi(getter)]
+    #[napi(getter, js_name = "positionY")]
     pub fn position_y(&self) -> NapiAudioParam {
         self.position_y.clone()
     }
 
-    #[napi(getter)]
+    #[napi(getter, js_name = "positionZ")]
     pub fn position_z(&self) -> NapiAudioParam {
         self.position_z.clone()
     }
 
-    #[napi(getter)]
+    #[napi(getter, js_name = "orientationX")]
     pub fn orientation_x(&self) -> NapiAudioParam {
         self.orientation_x.clone()
     }
 
-    #[napi(getter)]
+    #[napi(getter, js_name = "orientationY")]
     pub fn orientation_y(&self) -> NapiAudioParam {
         self.orientation_y.clone()
     }
 
-    #[napi(getter)]
+    #[napi(getter, js_name = "orientationZ")]
     pub fn orientation_z(&self) -> NapiAudioParam {
         self.orientation_z.clone()
     }

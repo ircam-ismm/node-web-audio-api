@@ -25,7 +25,7 @@ impl NapiPeriodicWave {
                 let imag = options.get::<&[f32]>("imag");
                 let imag = imag.unwrap_or(None).map(|v| v.to_vec());
 
-                let disable_normalization = options.get::<bool>("disable_normalization");
+                let disable_normalization = options.get::<bool>("disableNormalization");
                 let disable_normalization = disable_normalization.unwrap_or(Some(false));
                 let disable_normalization = disable_normalization.unwrap_or(false);
 

@@ -196,27 +196,27 @@ impl NapiDynamicsCompressorNode {
         }
     }
 
-    #[napi(getter)]
+    #[napi(getter, js_name = "threshold")]
     pub fn threshold(&self) -> NapiAudioParam {
         self.threshold.clone()
     }
 
-    #[napi(getter)]
+    #[napi(getter, js_name = "knee")]
     pub fn knee(&self) -> NapiAudioParam {
         self.knee.clone()
     }
 
-    #[napi(getter)]
+    #[napi(getter, js_name = "ratio")]
     pub fn ratio(&self) -> NapiAudioParam {
         self.ratio.clone()
     }
 
-    #[napi(getter)]
+    #[napi(getter, js_name = "attack")]
     pub fn attack(&self) -> NapiAudioParam {
         self.attack.clone()
     }
 
-    #[napi(getter)]
+    #[napi(getter, js_name = "release")]
     pub fn release(&self) -> NapiAudioParam {
         self.release.clone()
     }

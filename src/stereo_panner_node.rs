@@ -135,7 +135,7 @@ impl NapiStereoPannerNode {
         }
     }
 
-    #[napi(getter)]
+    #[napi(getter, js_name = "pan")]
     pub fn pan(&self) -> NapiAudioParam {
         self.pan.clone()
     }

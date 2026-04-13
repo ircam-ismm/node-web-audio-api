@@ -272,7 +272,7 @@ impl ${d.napiName(d.node)} {
 
     ${d.audioParams(d.node).map((param) => {
         return `
-    #[napi(getter)]
+    #[napi(getter, js_name = "${d.name(param)}")]
     pub fn ${d.slug(param.name)}(&self) -> NapiAudioParam {
         self.${d.slug(param.name)}.clone()
     }

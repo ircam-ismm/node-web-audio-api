@@ -145,7 +145,7 @@ impl NapiDelayNode {
         }
     }
 
-    #[napi(getter)]
+    #[napi(getter, js_name = "delayTime")]
     pub fn delay_time(&self) -> NapiAudioParam {
         self.delay_time.clone()
     }

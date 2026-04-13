@@ -135,7 +135,7 @@ impl NapiGainNode {
         }
     }
 
-    #[napi(getter)]
+    #[napi(getter, js_name = "gain")]
     pub fn gain(&self) -> NapiAudioParam {
         self.gain.clone()
     }

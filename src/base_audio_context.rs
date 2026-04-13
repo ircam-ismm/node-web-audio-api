@@ -64,15 +64,12 @@ macro_rules! base_audio_context_impl {
 
             #[napi(getter, js_name = "listener")]
             pub fn listener(&mut self) -> NapiAudioListener {
-                println!("1");
                 if self.listener.is_none() {
-                    println!("2");
                     let native_listener = self.unwrap().listener();
                     let napi_listener = NapiAudioListener::new(native_listener);
                     self.listener = Some(napi_listener);
                 }
 
-                println!("3");
                 self.listener.as_ref().unwrap().clone()
             }
 

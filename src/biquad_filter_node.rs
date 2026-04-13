@@ -200,22 +200,22 @@ impl NapiBiquadFilterNode {
         }
     }
 
-    #[napi(getter)]
+    #[napi(getter, js_name = "frequency")]
     pub fn frequency(&self) -> NapiAudioParam {
         self.frequency.clone()
     }
 
-    #[napi(getter)]
+    #[napi(getter, js_name = "detune")]
     pub fn detune(&self) -> NapiAudioParam {
         self.detune.clone()
     }
 
-    #[napi(getter)]
+    #[napi(getter, js_name = "Q")]
     pub fn q(&self) -> NapiAudioParam {
         self.q.clone()
     }
 
-    #[napi(getter)]
+    #[napi(getter, js_name = "gain")]
     pub fn gain(&self) -> NapiAudioParam {
         self.gain.clone()
     }
