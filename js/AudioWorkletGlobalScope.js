@@ -328,6 +328,7 @@ parentPort.on('message', async event => {
       exit_audio_worklet_global_scope(workletId);
       // close thread
       process.exit(0);
+      break;
     }
     case 'node-web-audio-api:worklet:add-module': {
       const { moduleUrl, code, promiseId } = event;

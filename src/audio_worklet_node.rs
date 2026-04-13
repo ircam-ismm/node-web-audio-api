@@ -240,7 +240,7 @@ fn recycle_processor(env: &Env, processor: Object) -> Result<()> {
         let input = js_inputs.get_element::<Array>(i)?;
         for j in 0..input.len() {
             let channel = input.get_element::<Float32Array>(j)?;
-            let _ = recycle_buffer.call(channel)?;
+            let _ = recycle_buffer.call(channel);
         }
     }
 
@@ -252,7 +252,7 @@ fn recycle_processor(env: &Env, processor: Object) -> Result<()> {
         let output = js_outputs.get_element::<Array>(i)?;
         for j in 0..output.len() {
             let channel = output.get_element::<Float32Array>(j)?;
-            let _ = recycle_buffer.call(channel)?;
+            let _ = recycle_buffer.call(channel);
         }
     }
 
@@ -268,10 +268,10 @@ fn recycle_processor(env: &Env, processor: Object) -> Result<()> {
         let cache: Object = js_params_cache.get_named_property(&property_name)?;
 
         let param_cache_128 = cache.get_element::<Float32Array>(0)?;
-        let _ = recycle_buffer.call(param_cache_128)?;
+        let _ = recycle_buffer.call(param_cache_128);
 
         let param_cache_1 = cache.get_element::<Float32Array>(1)?;
-        let _ = recycle_buffer_1.call(param_cache_1)?;
+        let _ = recycle_buffer_1.call(param_cache_1);
     }
 
     Ok(())
@@ -486,8 +486,8 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
             WorkletCommand::Drop(id) => {
                 match processors.get_named_property::<Object>(&id.to_string()) {
                     Ok(processor) => {
-                        let _ = recycle_processor(&env, processor).unwrap();
-                        processors.delete_named_property(&id.to_string()).unwrap();
+                        let _ = recycle_processor(&env, processor);
+                        let _ = processors.delete_named_property(id.to_string());
                     }
                     Err(_) => {
                         println!(

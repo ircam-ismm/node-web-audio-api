@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { AudioContext, OfflineAudioContext, OscillatorNode, AudioWorkletNode } from '../index.mjs';
+import { AudioContext, OfflineAudioContext, AudioWorkletNode } from '../index.mjs';
 import { sleep } from '@ircam/sc-utils';
 
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
