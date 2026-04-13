@@ -49,9 +49,9 @@ impl NapiOfflineAudioContext {
         }
     }
 
-    #[napi(getter, js_name = "worketId")]
-    pub fn worklet_id(&self) -> usize {
-        self.worklet_id
+    #[napi(getter, js_name = "workletId")]
+    pub fn worklet_id(&self) -> u32 {
+        self.worklet_id as u32
     }
 
     #[napi(getter)]

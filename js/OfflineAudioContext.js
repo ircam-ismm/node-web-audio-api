@@ -12,8 +12,8 @@ const {
 } = require('./lib/utils.js');
 const {
   kNapiObj,
-  // kWorkletRelease,
-  // kCheckProcessorsCreated,
+  kWorkletRelease,
+  kCheckProcessorsCreated,
 } = require('./lib/symbols.js');
 
 module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
@@ -113,11 +113,9 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
         throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'`);
       }
 
-      // @fixme - napi-rs 3
       // ensure all AudioWorkletProcessor have finished their instantiation
-      // await this.audioWorklet[kCheckProcessorsCreated]();
+      await this.audioWorklet[kCheckProcessorsCreated]();
 
-      // keep this to highlight the workaround w/ the oncomplete event
       let napiAudioBuffer;
 
       try {
@@ -125,19 +123,16 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
       } catch (err) {
         throwSanitizedError(err);
       }
+      // exit AudioWorkletGlobalScope
+      await this.audioWorklet[kWorkletRelease]();
 
       const renderedBuffer = new jsExport.AudioBuffer({ [kNapiObj]: napiAudioBuffer });
-
+      // propagate complete event
       const event = new jsExport.OfflineAudioCompletionEvent('complete', {
         renderedBuffer: renderedBuffer,
       });
-
       // delay event propagation to next tick that it is executed after startRendering fulfills
       setImmediate(() => propagateEvent(this, event), 0);
-
-      // @fixme - napi-rs 3
-      // release audio worklets
-      // await this.audioWorklet[kWorkletRelease]();
 
       return renderedBuffer;
     }

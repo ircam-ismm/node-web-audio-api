@@ -27,20 +27,11 @@ mod audio_render_capacity;
 use crate::audio_render_capacity::NapiAudioRenderCapacity;
 
 // Generated audio nodes
-${d.nodes.map(n => { return `
-mod ${d.slug(n)};
-// use crate::${d.slug(n)}::${d.napiName(n)};`}).join('')}
-
-// AudioWorklet internals
-use crate::audio_worklet_node::{
-    exit_audio_worklet_global_scope,
-    run_audio_worklet_global_scope,
-};
+${d.nodes.map(n => `mod ${d.slug(n)};`).join('\n')}
 
 // MediaDevices & MediaStream API
 mod media_streams;
 mod media_devices;
-
 
 #[napi_derive::module_init]
 fn init() {

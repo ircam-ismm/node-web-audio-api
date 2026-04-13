@@ -221,59 +221,60 @@ fn rebuild_io_layout<'a>(
 
 /// Recycle all processor buffers on Drop
 fn recycle_processor(env: &Env, processor: Object) -> Result<()> {
-    // let global = env.get_global()?;
+    let global = env.get_global()?;
 
-    // let k_worklet_recycle_buffer = env.symbol_for("node-web-audio-api:worklet-recycle-buffer")?;
-    // let recycle_buffer = global.get_property::<JsSymbol, JsFunction>(k_worklet_recycle_buffer)?;
+    let k_worklet_recycle_buffer = env.symbol_for("node-web-audio-api:worklet-recycle-buffer")?;
+    let recycle_buffer =
+        global.get_property::<JsSymbol, Function<Float32Array, ()>>(k_worklet_recycle_buffer)?;
 
-    // let k_worklet_recycle_buffer_1 =
-    //     env.symbol_for("node-web-audio-api:worklet-recycle-buffer-1")?;
-    // let recycle_buffer_1 =
-    //     global.get_property::<JsSymbol, JsFunction>(k_worklet_recycle_buffer_1)?;
+    let k_worklet_recycle_buffer_1 =
+        env.symbol_for("node-web-audio-api:worklet-recycle-buffer-1")?;
+    let recycle_buffer_1 =
+        global.get_property::<JsSymbol, Function<Float32Array, ()>>(k_worklet_recycle_buffer_1)?;
 
-    // let k_worklet_inputs = env.symbol_for("node-web-audio-api:worklet-inputs")?;
-    // let js_inputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_inputs)?;
+    // recycle input channels
+    let k_worklet_inputs = env.symbol_for("node-web-audio-api:worklet-inputs")?;
+    let js_inputs = processor.get_property::<JsSymbol, Array>(k_worklet_inputs)?;
 
-    // for i in 0..js_inputs.get_array_length_unchecked()? {
-    //     let input = js_inputs.get_element::<JsObject>(i)?;
-    //     for j in 0..input.get_array_length_unchecked()? {
-    //         let channel = input.get_element::<JsTypedArray>(j)?;
-    //         let _ = recycle_buffer.call1::<JsTypedArray, JsUndefined>(channel)?;
-    //     }
-    // }
+    for i in 0..js_inputs.len() {
+        let input = js_inputs.get_element::<Array>(i)?;
+        for j in 0..input.len() {
+            let channel = input.get_element::<Float32Array>(j)?;
+            let _ = recycle_buffer.call(channel)?;
+        }
+    }
 
-    // let k_worklet_outputs = env.symbol_for("node-web-audio-api:worklet-outputs")?;
-    // let js_outputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_outputs)?;
+    // recycle output channels
+    let k_worklet_outputs = env.symbol_for("node-web-audio-api:worklet-outputs")?;
+    let js_outputs = processor.get_property::<JsSymbol, Array>(k_worklet_outputs)?;
 
-    // for i in 0..js_outputs.get_array_length_unchecked()? {
-    //     let output = js_outputs.get_element::<JsObject>(i)?;
-    //     for j in 0..output.get_array_length_unchecked()? {
-    //         let channel = output.get_element::<JsTypedArray>(j)?;
-    //         let _ = recycle_buffer.call1::<JsTypedArray, JsUndefined>(channel)?;
-    //     }
-    // }
+    for i in 0..js_outputs.len() {
+        let output = js_outputs.get_element::<Array>(i)?;
+        for j in 0..output.len() {
+            let channel = output.get_element::<Float32Array>(j)?;
+            let _ = recycle_buffer.call(channel)?;
+        }
+    }
 
-    // let k_worklet_params_cache = env.symbol_for("node-web-audio-api:worklet-params-cache")?;
-    // let js_params_cache = processor.get_property::<JsSymbol, JsObject>(k_worklet_params_cache)?;
+    // recycle parameter buffers
+    let k_worklet_params_cache = env.symbol_for("node-web-audio-api:worklet-params-cache")?;
+    let js_params_cache = processor.get_property::<JsSymbol, Object>(k_worklet_params_cache)?;
 
-    // let js_params_properties = js_params_cache.get_property_names()?;
-    // let len = js_params_properties.get_array_length()?;
+    let js_params_properties = js_params_cache.get_property_names()?;
+    let len = js_params_properties.get_array_length()?;
 
-    // for i in 0..len {
-    //     let js_property_name: JsString = js_params_properties.get_element(i)?;
-    //     let utf8_str = js_property_name.into_utf8()?.into_owned()?;
-    //     let property_name = utf8_str.as_str();
-    //     let cache: JsObject = js_params_cache.get_named_property(property_name)?;
+    for i in 0..len {
+        let property_name: String = js_params_properties.get_element(i)?;
+        let cache: Object = js_params_cache.get_named_property(&property_name)?;
 
-    //     let param_cache_128 = cache.get_element::<JsTypedArray>(0)?;
-    //     let _ = recycle_buffer.call1::<JsTypedArray, JsUndefined>(param_cache_128)?;
+        let param_cache_128 = cache.get_element::<Float32Array>(0)?;
+        let _ = recycle_buffer.call(param_cache_128)?;
 
-    //     let param_cache_1 = cache.get_element::<JsTypedArray>(1)?;
-    //     let _ = recycle_buffer_1.call1::<JsTypedArray, JsUndefined>(param_cache_1)?;
-    // }
+        let param_cache_1 = cache.get_element::<Float32Array>(1)?;
+        let _ = recycle_buffer_1.call(param_cache_1)?;
+    }
 
-    // Ok(())
-    todo!();
+    Ok(())
 }
 
 /// Handle a AudioWorkletProcessor::process call in the Worker
@@ -505,18 +506,14 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
 
 #[allow(dead_code)]
 #[napi(js_name = "exit_audio_worklet_global_scope")]
-pub fn exit_audio_worklet_global_scope(worklet_id: u32, processors: Object) {
-    todo!();
-    // Obtain the unique worker ID
-    // let worklet_id = ctx.get::<JsNumber>(0)?.get_uint32()? as usize;
-    // // Flag message channel as exited to prevent any other render call
-    // process_call_exited(worklet_id).store(true, Ordering::SeqCst);
-    // // Handle any pending message from audio thread
-    // if let Ok(WorkletCommand::Process(args)) = process_call_receiver(worklet_id).try_recv() {
-    //     let _ = args.tail_time_sender.send(false);
-    // }
-
-    // ctx.env.get_undefined()
+pub fn exit_audio_worklet_global_scope(worklet_id: u32) {
+    let worklet_id = worklet_id as usize;
+    // Flag message channel as exited to prevent any other render call
+    process_call_exited(worklet_id).store(true, Ordering::SeqCst);
+    // Handle any pending message from audio thread
+    if let Ok(WorkletCommand::Process(args)) = process_call_receiver(worklet_id).try_recv() {
+        let _ = args.tail_time_sender.send(false);
+    }
 }
 
 #[napi(js_name = "NapiAudioWorkletNode")]

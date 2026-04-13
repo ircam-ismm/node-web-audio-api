@@ -46,46 +46,24 @@ mod audio_render_capacity;
 use crate::audio_render_capacity::NapiAudioRenderCapacity;
 
 // Generated audio nodes
-
-mod script_processor_node;
-// use crate::script_processor_node::NapiScriptProcessorNode;
-mod audio_worklet_node;
-// use crate::audio_worklet_node::NapiAudioWorkletNode;
 mod analyser_node;
-// use crate::analyser_node::NapiAnalyserNode;
 mod audio_buffer_source_node;
-// use crate::audio_buffer_source_node::NapiAudioBufferSourceNode;
+mod audio_worklet_node;
 mod biquad_filter_node;
-// use crate::biquad_filter_node::NapiBiquadFilterNode;
 mod channel_merger_node;
-// use crate::channel_merger_node::NapiChannelMergerNode;
 mod channel_splitter_node;
-// use crate::channel_splitter_node::NapiChannelSplitterNode;
 mod constant_source_node;
-// use crate::constant_source_node::NapiConstantSourceNode;
 mod convolver_node;
-// use crate::convolver_node::NapiConvolverNode;
 mod delay_node;
-// use crate::delay_node::NapiDelayNode;
 mod dynamics_compressor_node;
-// use crate::dynamics_compressor_node::NapiDynamicsCompressorNode;
 mod gain_node;
-// use crate::gain_node::NapiGainNode;
 mod iir_filter_node;
-// use crate::iir_filter_node::NapiIIRFilterNode;
 mod media_stream_audio_source_node;
-// use crate::media_stream_audio_source_node::NapiMediaStreamAudioSourceNode;
 mod oscillator_node;
-// use crate::oscillator_node::NapiOscillatorNode;
 mod panner_node;
-// use crate::panner_node::NapiPannerNode;
+mod script_processor_node;
 mod stereo_panner_node;
-// use crate::stereo_panner_node::NapiStereoPannerNode;
 mod wave_shaper_node;
-// use crate::wave_shaper_node::NapiWaveShaperNode;
-
-// AudioWorklet internals
-use crate::audio_worklet_node::{exit_audio_worklet_global_scope, run_audio_worklet_global_scope};
 
 // MediaDevices & MediaStream API
 mod media_devices;

@@ -196,7 +196,7 @@ class AudioWorklet {
     //  eslint-disable-next-line no-async-promise-executor
     return new Promise(async resolve => {
       while (this.#pendingCreateProcessors.size !== 0) {
-        // we need a microtask to ensure message can be received
+        // we need a macrotask to ensure message can be received
         await new Promise(resolve => setTimeout(resolve, 0));
       }
 

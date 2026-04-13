@@ -8,9 +8,8 @@ class WhiteNoiseProcessor extends AudioWorkletProcessor {
       }
     });
 
-    this.port.postMessage({ test: 'coucou' });
-    throw Error('WhiteNoiseProcessor: error in process');
-
+    // this.port.postMessage({ test: 'coucou' });
+    // throw Error('WhiteNoiseProcessor: error in process');
     return true;
   }
 }

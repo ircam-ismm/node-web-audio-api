@@ -17,7 +17,6 @@ const {
   sampleRate,
 } = workerData;
 
-// const kWorkletQueueTask = Symbol.for('node-web-audio-api:worklet-queue-task');
 const kWorkletCallableProcess = Symbol.for('node-web-audio-api:worklet-callable-process');
 const kWorkletMarkNonCallableProcess = Symbol.for('node-web-audio-api:worklet-mark-non-callable-process');
 const kWorkletInputs = Symbol.for('node-web-audio-api:worklet-inputs');
@@ -29,8 +28,6 @@ const kWorkletRecycleBuffer = Symbol.for('node-web-audio-api:worklet-recycle-buf
 const kWorkletRecycleBuffer1 = Symbol.for('node-web-audio-api:worklet-recycle-buffer-1');
 const kWorkletMarkAsUntransferable = Symbol.for('node-web-audio-api:worklet-mark-as-untransferable');
 const kWorkletUnpackProcess = Symbol.for('node-web-audio-api:worklet-unpack-process');
-// const kWorkletOrderedParamNames = Symbol.for('node-web-audio-api:worklet-ordered-param-names');
-
 
 const nameProcessorCtorMap = new Map();
 const processors = {};
@@ -60,6 +57,10 @@ class BufferPool {
     markAsUntransferable(float32.buffer);
 
     return float32;
+  }
+
+  get size() {
+    return this.#pool.length;
   }
 
   get() {
@@ -321,12 +322,12 @@ globalThis.registerProcessor = function registerProcessor(name, processorCtor) {
 parentPort.on('message', async event => {
   switch (event.cmd) {
     case 'node-web-audio-api:worklet:exit': {
+      console.log('node-web-audio-api:worklet:exit');
       clearImmediate(runLoopImmediateId);
       // properly exit audio worklet on rust side
-      exit_audio_worklet_global_scope(workletId, processors);
-      // exit process
+      exit_audio_worklet_global_scope(workletId);
+      // close thread
       process.exit(0);
-      break;
     }
     case 'node-web-audio-api:worklet:add-module': {
       const { moduleUrl, code, promiseId } = event;
