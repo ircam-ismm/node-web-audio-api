@@ -3,9 +3,9 @@ import fs from 'node:fs';
 import { assert } from 'chai';
 import {
   AudioBuffer,
-  // AudioBufferSourceNode,
+  AudioBufferSourceNode,
   AudioContext,
-  // ConvolverNode,
+  ConvolverNode,
   OfflineAudioContext,
 } from '../index.mjs';
 
@@ -125,7 +125,7 @@ describe('AudioBuffer', () => {
       audioContext.startRendering();
     });
 
-    it.only(`AudioContext.decodeAudioData() -> AudioBuffer`, async () => {
+    it(`AudioContext.decodeAudioData() -> AudioBuffer`, async () => {
       const pathname = path.join('examples', 'samples', 'sample.wav');
       const buffer = fs.readFileSync(pathname).buffer;
       const audioContext = new AudioContext();
@@ -139,7 +139,7 @@ describe('AudioBuffer', () => {
       audioContext.close();
     });
 
-    it.only(`OfflineAudioContext.startRendering() -> AudioBuffer`, async () => {
+    it(`OfflineAudioContext.startRendering() -> AudioBuffer`, async () => {
       const audioContext = new OfflineAudioContext(1, 1000, 48000);
       const src = audioContext.createOscillator();
       src.connect(audioContext.destination);

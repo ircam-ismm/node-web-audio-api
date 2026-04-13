@@ -374,7 +374,7 @@ parentPort.on('message', async event => {
       try {
         instance = new ctor(options);
       } catch (err) {
-        port.postMessage({ cmd: 'node-web-audio-api:worklet:ctor-error', err });
+        errorPort.postMessage({ cmd: 'node-web-audio-api:worklet:ctor-error', err });
         return;
       }
 
