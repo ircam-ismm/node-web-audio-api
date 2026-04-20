@@ -227,10 +227,9 @@ module.exports = function(jsExport, nativeBinding) {
         });
       }
 
-      this.#sinkId = sinkId;
-
       try {
-        this[kNapiObj].setSinkId(targetSinkId);
+        await this[kNapiObj].setSinkId(targetSinkId);
+        this.#sinkId = sinkId;
       } catch (err) {
         throwSanitizedError(err);
       }
