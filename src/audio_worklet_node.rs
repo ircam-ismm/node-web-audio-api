@@ -468,6 +468,14 @@ fn process_audio_worklet(
     Ok(())
 }
 
+// #[allow(dead_code)]
+// #[napi(js_name = "init_audio_worklet_global_scope")]
+// pub fn init_audio_worklet_global_scope(env: Env, worklet_id: u32) {
+//     // set thread priority
+//     // init currentTime and currentFrame
+//     todo!();
+// }
+
 /// The entry point into Rust from the Worker
 #[allow(dead_code)]
 #[napi(js_name = "run_audio_worklet_global_scope")]

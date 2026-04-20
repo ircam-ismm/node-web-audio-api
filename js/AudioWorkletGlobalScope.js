@@ -121,7 +121,6 @@ globalThis.port = parentPort;
 globalThis.currentTime = 0;
 globalThis.currentFrame = 0;
 globalThis.sampleRate = sampleRate;
-// @todo - implement in upstream crate
 globalThis.renderQuantumSize = renderQuantumSize;
 
 globalThis.AudioWorkletProcessor = class AudioWorkletProcessor {
@@ -141,6 +140,9 @@ globalThis.AudioWorkletProcessor = class AudioWorkletProcessor {
       parameterDescriptors,
     } = pendingProcessorConstructionData;
 
+    this.#messagePort = messagePort;
+    this.#errorPort = errorPort;
+
     // Mark [[callable process]] as true, set to false in render quantum
     // either if "process" does not exists or if it throws an error
     this[kWorkletCallableProcess] = true;
@@ -156,14 +158,15 @@ globalThis.AudioWorkletProcessor = class AudioWorkletProcessor {
     this[kWorkletParamsCache] = {};
 
     parameterDescriptors.forEach(desc => {
-      this[kWorkletParamsCache][desc.name] = [
-        pool128.get(), // should be globalThis.renderQuantumSize
-        pool1.get(),
-      ];
+      try {
+        this[kWorkletParamsCache][desc.name] = [
+          pool128.get(), // should be globalThis.renderQuantumSize
+          pool1.get(),
+        ];
+      } catch (err) {
+        this[kWorkletMarkNonCallableProcess](['node-web-audio-api:worklet:ctor-error', err]);
+      }
     });
-
-    this.#messagePort = messagePort;
-    this.#errorPort = errorPort;
   }
 
   get port() {
