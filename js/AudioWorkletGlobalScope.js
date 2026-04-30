@@ -117,7 +117,6 @@ function runLoop() {
   runLoopImmediateId = setImmediate(runLoop);
 }
 
-globalThis.port = parentPort;
 globalThis.currentTime = 0;
 globalThis.currentFrame = 0;
 globalThis.sampleRate = sampleRate;
@@ -325,6 +324,16 @@ globalThis.registerProcessor = function registerProcessor(name, processorCtor) {
 
 parentPort.on('message', async event => {
   switch (event.cmd) {
+    case 'node-web-audio-api:worklet:enter': {
+      const { port, promiseId } = event;
+      globalThis.port = port;
+
+      parentPort.postMessage({
+        cmd: 'node-web-audio-api:worklet:enter-ack',
+        promiseId,
+      });
+      break;
+    }
     case 'node-web-audio-api:worklet:exit': {
       clearImmediate(runLoopImmediateId);
       // properly exit audio worklet on rust side
@@ -348,7 +357,7 @@ parentPort.on('message', async event => {
 
         // send registered param descriptors on main thread and resolve Promise
         parentPort.postMessage({
-          cmd: 'node-web-audio-api:worklet:module-added',
+          cmd: 'node-web-audio-api:worklet:add-module-success',
           promiseId,
         });
       } catch (err) {
