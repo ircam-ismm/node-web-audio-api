@@ -249,7 +249,7 @@ macro_rules! audio_node_impl {
                     return;
                 }
 
-                // at this point, we are sure that first argument is either an AudioNode or an AudioParam
+                // from this point, the first argument is either an AudioNode or an AudioParam
                 let dest = output_or_dest.unwrap();
 
                 if output.is_none() && input.is_some() {
