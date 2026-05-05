@@ -28,8 +28,7 @@ const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fet
 
 /**
  * Retrieve code with different module resolution strategies
- * - file - absolute or relative to cwd path
- *
+ * - file - absolute or relative to cwd pathname
  * - URL - do not support import within module
  * - Blob - do not support import within module
  * - fallback: relative to caller site
@@ -171,11 +170,10 @@ class AudioWorklet {
       });
     });
 
-    // AudioWorkletGlobalScope is online, create global message port
+    // AudioWorkletGlobalScope is online, create global public message channel
     const promiseId = this.#promiseId++;
     const { resolve, reject, promise } = Promise.withResolvers();
     this.#idPromiseMap.set(promiseId, { resolve, reject });
-    // create a separate message channel for
     const { port1: publicPort1, port2: publicPort2 } = new MessageChannel();
 
     this.#publicPort = publicPort1;
@@ -194,17 +192,17 @@ class AudioWorklet {
   }
 
   async addModule(moduleUrl) {
-    // @important - `resolveModule` must be called first because it uses `caller`
-    // which will return `null` if this is not in the first line...
+    // @note - `resolveModule` must be called first because it uses `caller`
+    // which will return `null` if this is not in the first line
     const resolved = await resolveModule(moduleUrl);
 
-    // launch Worker if not exists
+    // launch WorkletGlobalScope if not exists
     if (!this.#worker) {
       await this.#initWorkletGlobalScope();
     }
 
     const promiseId = this.#promiseId++;
-    // This promise is resolved when the Worker returns the name and
+    // The promise is resolved when the Worker returns the name and
     // parameterDescriptors from the added module
     await new Promise((resolve, reject) => {
       this.#idPromiseMap.set(promiseId, { resolve, reject });
@@ -219,12 +217,12 @@ class AudioWorklet {
   }
 
   // For OfflineAudioContext only, check that all processors have been properly
-  // created before actual `startRendering`
+  // created before rendering
   async [kCheckProcessorsCreated]() {
-    //  eslint-disable-next-line no-async-promise-executor
+    // eslint-disable-next-line no-async-promise-executor
     return new Promise(async resolve => {
       while (this.#pendingCreateProcessors.size !== 0) {
-        // we need a macrotask to ensure message can be received
+        // we need a macro-task to ensure message can be received
         await new Promise(resolve => setTimeout(resolve, 0));
       }
 

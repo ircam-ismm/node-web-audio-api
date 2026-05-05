@@ -149,7 +149,7 @@ impl NapiAudioContext {
         self.unwrap().sink_id()
     }
 
-    // use task to delegate async stuff to lib_uv
+    // Use task and lib_uv to make rust synchronous method, asynchronous
     #[napi(catch_unwind)]
     pub fn set_sink_id(&self, sink_id: String) -> AsyncTask<SetSinkIdTask> {
         let context = self.inner.clone();

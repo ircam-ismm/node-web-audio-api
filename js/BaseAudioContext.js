@@ -146,7 +146,7 @@ module.exports = (jsExport, _nativeBinding) => {
     }
 
     // This is not exactly what the spec says, but if we reject the promise
-    // when decodeErrorCallback is present the program will crash in an
+    // when decodeErrorCallback is present the program can crash in an
     // unexpected manner
     // cf. https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-decodeaudiodata
     async decodeAudioData(arrayBuffer, decodeSuccessCallback = undefined, decodeErrorCallback = undefined) {

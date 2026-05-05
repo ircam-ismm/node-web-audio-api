@@ -50,7 +50,6 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError(`Failed to construct 'ConvolverNode': argument 1 is not of type BaseAudioContext`);
       }
 
-      // parsed version of the option to be passed to NAPI
       const parsedOptions = {};
 
       if (options && typeof options !== 'object') {
@@ -63,7 +62,6 @@ module.exports = (jsExport, nativeBinding) => {
             throw new TypeError('Failed to construct \'ConvolverNode\': Failed to read the \'buffer\' property from ConvolverOptions: The provided value cannot be converted to \'AudioBuffer\'');
           }
 
-          // unwrap napi audio buffer
           parsedOptions.buffer = options.buffer[kNapiObj];
         } else {
           parsedOptions.buffer = null;

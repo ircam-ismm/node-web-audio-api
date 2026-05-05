@@ -48,7 +48,6 @@ module.exports = (jsExport, nativeBinding) => {
         throw new DOMException(`Failed to construct 'AudioWorkletNode': processor '${parsedName}' is not registered in 'AudioWorklet'`, 'InvalidStateError');
       }
 
-      // parsed version of the option to be passed to NAPI
       const parsedOptions = {};
 
       if (options && (typeof options !== 'object' || options === null)) {
@@ -150,7 +149,7 @@ module.exports = (jsExport, nativeBinding) => {
           context: `Failed to construct 'AudioWorkletNode': Failed to read the 'channelCount' property from AudioWorkletNodeOptions: The provided value '${options.channelCount}'`,
         });
 
-        // if we delegate this check to Rust, this can poison a Mutex
+        // @note - delegating this check to Rust can poison a Mutex
         // (probably the `audio_param_descriptor_channel` one)
         if (parsedOptions.channelCount <= 0 || parsedOptions.channelCount > IMPLEMENTATION_MAX_NUMBER_OF_CHANNELS) {
           throw new DOMException(`Failed to construct 'AudioWorkletNode': Invalid 'channelCount' property: Number of channels: ${parsedOptions.channelCount} is outside range [1, 32]`, 'NotSupportedError');
@@ -177,7 +176,6 @@ module.exports = (jsExport, nativeBinding) => {
         });
       }
 
-      // Create NapiAudioWorkletNode
       const parameterDescriptors = context.audioWorklet[kGetParameterDescriptors](parsedName);
       let napiObj;
 
@@ -220,14 +218,13 @@ module.exports = (jsExport, nativeBinding) => {
 
       this.#port = messagePort;
 
-      // @todo - we must use a dedicated port for these message, as they will
-      // be also propagated to client code
+      // Handle 'processorerror' events
+      // cf. https://webaudio.github.io/web-audio-api/#dom-audioworkletnode-onprocessorerror
       errorPort.on('message', msg => {
         const { cmd, err } = msg;
-        // log error message, to help debugging event if no `processorerror` listener has been set
+        // log error message to help debugging event if no `processorerror` listener has been set
         console.log(err);
-        // Handle 'processorerror' events
-        // cf. https://webaudio.github.io/web-audio-api/#dom-audioworkletnode-onprocessorerror
+
         switch (cmd) {
           case 'node-web-audio-api:worklet:ctor-error': {
             const message = `Failed to construct '${parsedName}' AudioWorkletProcessor: ${err.message}`;

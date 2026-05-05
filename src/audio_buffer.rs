@@ -4,18 +4,15 @@ use napi_derive::napi;
 
 use web_audio_api::*;
 
-// pub(crate) struct NapiAudioBuffer(Option<AudioBuffer>);
 #[napi]
 pub struct NapiAudioBuffer {
     pub(crate) inner: AudioBuffer,
-    // pub(crate) js_channel_data: Vec<Option<ObjectRef>>,
 }
 
 impl From<AudioBuffer> for NapiAudioBuffer {
     fn from(audio_buffer: AudioBuffer) -> Self {
         Self {
             inner: audio_buffer,
-            // js_channel_data: vec![],
         }
     }
 }
@@ -36,7 +33,6 @@ impl NapiAudioBuffer {
 
         Self {
             inner: AudioBuffer::new(options),
-            // js_channel_data: vec![],
         }
     }
 
@@ -75,7 +71,7 @@ impl NapiAudioBuffer {
         channel_number: u32,
         offset: Option<u32>,
     ) {
-        // safety: this is synchronous, then there is no safety problem
+        // Safety: this is all synchronous, then there is no safety problem
         let dest = unsafe { dest.as_mut() };
         let channel_number = channel_number as usize;
         let offset = offset.unwrap_or(0) as usize;
@@ -97,7 +93,7 @@ impl NapiAudioBuffer {
         let len = channel_data.len();
 
         let channel_data = unsafe {
-            // noop_finalize as we don't want to drop the underlying data when the buffer is GC
+            // We don't want to drop the underlying data when the buffer is GCed
             // which could cause a double-free error when AudioBuffer is actually dropped
             Float32ArraySlice::from_external(&env, data_ptr, len, data_ptr, noop_finalize)?
         };

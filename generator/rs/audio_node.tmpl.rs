@@ -135,7 +135,7 @@ macro_rules! audio_node_impl {
                     return;
                 }
 
-                // from this point, we are sure arg[0] is either an AudioNode or an AudioParam
+                // at this point, we are sure that first argument is either an AudioNode or an AudioParam
                 let dest = output_or_dest.unwrap();
 
                 if output.is_none() && input.is_some() {
@@ -199,7 +199,7 @@ macro_rules! audio_node_impl {
                     }
                         `;
                     })}
-                    _ => unreachable!(), // Either::A already handled
+                    _ => unreachable!(), // Either::A handled before match
                 }
             }
         }

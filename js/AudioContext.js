@@ -196,7 +196,6 @@ module.exports = function(jsExport, nativeBinding) {
 
       // Close audioWorklet first so that `run_audio_worklet_global_scope` exit first
       // The other way around works too because of `recv_timeout` but cleaner this way
-      // @fixme - napi-rs 3
       await this.audioWorklet[kWorkletRelease]();
       await this[kNapiObj].close();
       // allow process to terminate

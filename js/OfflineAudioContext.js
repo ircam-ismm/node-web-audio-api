@@ -113,7 +113,7 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
         throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'`);
       }
 
-      // ensure all AudioWorkletProcessor have finished their instantiation
+      // Make sure all AudioWorkletProcessor are instantiated before rendering
       await this.audioWorklet[kCheckProcessorsCreated]();
 
       let napiAudioBuffer;
@@ -123,15 +123,16 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
       } catch (err) {
         throwSanitizedError(err);
       }
-      // exit AudioWorkletGlobalScope
+      // Exit AudioWorkletGlobalScope
       await this.audioWorklet[kWorkletRelease]();
 
       const renderedBuffer = new jsExport.AudioBuffer({ [kNapiObj]: napiAudioBuffer });
-      // propagate complete event
+
+      // Propagate complete event. It is delayed to next tick so that it is executed
+      // after startRendering fulfills.
       const event = new jsExport.OfflineAudioCompletionEvent('complete', {
         renderedBuffer: renderedBuffer,
       });
-      // delay event propagation to next tick that it is executed after startRendering fulfills
       setImmediate(() => propagateEvent(this, event), 0);
 
       return renderedBuffer;

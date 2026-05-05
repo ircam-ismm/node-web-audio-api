@@ -153,7 +153,7 @@ fn check_same_io_layout(js_io: &Array, rs_io: &'static [&'static [&'static [f32]
                             return false;
                         }
                     }
-                    None => return false, // found something but not an array (?)
+                    None => return false, // found something but not an array
                 }
             }
             Err(_) => return false, // could not grab channels at io index
@@ -164,11 +164,9 @@ fn check_same_io_layout(js_io: &Array, rs_io: &'static [&'static [&'static [f32]
 }
 
 /// Recreate the JS inputs or output data structures (input and output are handled separately).
+/// We must rebuild the whole structure from scratch because the resulting Arrays are frozen.
 ///
-/// We must rebuild the whole structure from scratch because the resulting Array are
-/// frozen which prevents us to reuse them.
-///
-/// @todo (?) - move all this logic to JS to minimize language boundary crossing
+/// @todo - move this logic to JS to minimize language boundary crossing (needs benchmarking)
 fn rebuild_io_layout<'a>(
     env: &'a Env,
     js_io: Array,
@@ -204,15 +202,14 @@ fn rebuild_io_layout<'a>(
             let _ = channels.set(j as u32, channel);
         }
 
-        // freeze and mark channels as untransferable
+        // mark channels as untransferable and freeze
         let mut channels = mark_as_untransferable.call(channels)?;
-        // let mut channels = channels.coerce_to_object().unwrap();
         let _ = channels.freeze();
 
         new_js_io.set(i as u32, channels).unwrap();
     }
 
-    // freeze and mark input / output as untransferable
+    // mark input / output as untransferable and freeze
     let mut new_js_io = mark_as_untransferable.call(new_js_io)?;
     let _ = new_js_io.freeze();
 
@@ -297,20 +294,20 @@ fn process_audio_worklet(
         Ok(processor) => processor,
         Err(_) => {
             // we may run into race conditions between Rust and JS, where processor
-            // exists in Rust audio thread side but not yet on JS side worker thread
+            // exists in Rust audio thread side but not yet on JS worker thread side
             let _ = tail_time_sender.send(true); // make sure we will be called back
             return Ok(());
         }
     };
 
-    // fill AudioWorkletGlobalScope
+    // Update AudioWorkletGlobalScope
     let mut global = env.get_global()?;
     global.set_named_property("currentTime", current_time)?;
     global.set_named_property("currentFrame", current_frame)?;
 
     let k_worklet_callable_process =
         env.symbol_for("node-web-audio-api:worklet-callable-process")?;
-    // return early if worklet has been tagged as not callable,
+    // Return early if worklet has been marked not callable,
     let callable_process = processor.get_property::<JsSymbol, bool>(k_worklet_callable_process)?;
 
     if !callable_process {
@@ -319,8 +316,9 @@ fn process_audio_worklet(
     }
 
     // The `process` method is not executed directly because napi-rs `apply`
-    // implementation retrieve the arguments as an array in the first argument,
-    // then we need to unpack first cf. `AudioWorkletProcessor[kWorkletUnpackProcess]`
+    // implementation retrieve the arguments as an array in the first argument, Then
+    // we need to unpack them first (cf. `AudioWorkletProcessor[kWorkletUnpackProcess]`)
+    //
     // Note that we use `get_named_property` rather than `has_named_property` so that
     // we check that `process` is a function as well.
     let process_method_result =
@@ -334,8 +332,8 @@ fn process_audio_worklet(
             let k_worklet_unpack_process =
                 env.symbol_for("node-web-audio-api:worklet-unpack-process")?;
 
-            // The unpack_process wrapper function coerce result from `process` to bool,
-            // therefore if we get some Unknown, this is an error.
+            // The `kWorkletUnpackProcess` wrapper function coerce value returned from `process`
+            // to bool, therefore if we get anything else, i.e. `Unknown`, an error occurred.
             let unpack_process_function = processor
                 .get_property::<JsSymbol, Function<(Array, Array, Object), Either<bool, Unknown>>>(
                     k_worklet_unpack_process,
@@ -356,21 +354,16 @@ fn process_audio_worklet(
             let js_params_cache =
                 processor.get_property::<JsSymbol, Object>(k_worklet_params_cache)?;
 
-            // Check JS input and output, and rebuild JS object if layout changed
-            // @todo - review, do it on JS side?
+            // Check input and output channel layout, and rebuild JS object if something changed
             if !check_same_io_layout(&js_inputs, inputs) {
                 let new_js_inputs = rebuild_io_layout(env, js_inputs, inputs)?;
-                // Store new layout in processor
                 processor.set_property(k_worklet_inputs, new_js_inputs)?;
-                // Override js_inputs with new reference
                 js_inputs = processor.get_property::<JsSymbol, Array>(k_worklet_inputs)?;
             }
 
             if !check_same_io_layout(&js_outputs, outputs) {
                 let new_js_outputs = rebuild_io_layout(env, js_outputs, outputs)?;
-                // Store new layout in processor
                 processor.set_property(k_worklet_outputs, new_js_outputs)?;
-                // Override js_outputs with new reference
                 js_outputs = processor.get_property::<JsSymbol, Array>(k_worklet_outputs)?;
             }
 
@@ -445,7 +438,7 @@ fn process_audio_worklet(
     };
 
     // Handle errors
-    // @todo - propagate to rust side as well to processor from graph?
+    // @todo - propagate back to rust side to remove processor from graph
     if let Some(abrupt_completion) = abrupt_completion {
         let WorkletAbruptCompletionResult { cmd, err } = abrupt_completion;
 

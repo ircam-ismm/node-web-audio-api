@@ -6,7 +6,7 @@ const {
 
 const conversions = require('webidl-conversions');
 
-// these are defined in rust side
+// these function are defined on the rust side
 const {
   exit_audio_worklet_global_scope,
   run_audio_worklet_global_scope,
@@ -72,7 +72,7 @@ class BufferPool {
   }
 
   recycle(buffer) {
-    // make sure we cannot pollute our pool
+    // make sure we can't pollute the pool
     if (buffer.length === this.#bufferSize) {
       this.#pool.push(buffer);
     }
@@ -83,7 +83,8 @@ const renderQuantumSize = 128;
 
 const pool128 = new BufferPool(renderQuantumSize, 256);
 const pool1 = new BufferPool(1, 64);
-// allow rust to access some methods required when io layout change
+// Expose some function to be accessed from rust when io layout changes
+// @todo - possibly transfer while IO layout change to JS to minimize language boundaries crossing
 globalThis[kWorkletGetBuffer] = () => pool128.get();
 globalThis[kWorkletRecycleBuffer] = buffer => pool128.recycle(buffer);
 globalThis[kWorkletRecycleBuffer1] = buffer => pool1.recycle(buffer);
@@ -93,10 +94,10 @@ globalThis[kWorkletMarkAsUntransferable] = obj => {
 };
 
 function isIterable(obj) {
-  // checks for null and undefined
   if (obj === null || obj === undefined) {
     return false;
   }
+
   return typeof obj[Symbol.iterator] === 'function';
 }
 
@@ -159,7 +160,7 @@ globalThis.AudioWorkletProcessor = class AudioWorkletProcessor {
     parameterDescriptors.forEach(desc => {
       try {
         this[kWorkletParamsCache][desc.name] = [
-          pool128.get(), // should be globalThis.renderQuantumSize
+          pool128.get(),
           pool1.get(),
         ];
       } catch (err) {
@@ -176,8 +177,8 @@ globalThis.AudioWorkletProcessor = class AudioWorkletProcessor {
     return this.#messagePort;
   }
 
-  // Wrapper around the "real" process method, allows to
-  // - unpack arguments from napi-rs `apply` call
+  // Wrapper around the "real" process method that allows to
+  // - unpack arguments from napi-rs `apply`
   // - cast return value to boolean
   // - catch and cleanly return error so that rust can properly handle it
   //
@@ -196,8 +197,7 @@ globalThis.AudioWorkletProcessor = class AudioWorkletProcessor {
   }
 };
 
-// follow algorithm from:
-// https://webaudio.github.io/web-audio-api/#dom-audioworkletglobalscope-registerprocessor
+// Algorithm: https://webaudio.github.io/web-audio-api/#dom-audioworkletglobalscope-registerprocessor
 globalThis.registerProcessor = function registerProcessor(name, processorCtor) {
   const parsedName = conversions['DOMString'](name, {
     context: `Cannot execute 'registerProcessor' in 'AudoWorkletGlobalScope': name (${name})`,
@@ -286,7 +286,7 @@ globalThis.registerProcessor = function registerProcessor(name, processorCtor) {
     parsedParamDescriptors.push(parsedDescriptor);
   }
 
-  // check for duplicate parame names and consistency of min, max and default values
+  // check for duplicate param names and consistency of min, max and default values
   const paramNames = [];
 
   for (let i = 0; i < parsedParamDescriptors.length; i++) {
@@ -305,22 +305,13 @@ globalThis.registerProcessor = function registerProcessor(name, processorCtor) {
 
   // store constructor
   nameProcessorCtorMap.set(parsedName, processorCtor);
-  // send param descriptors back to main thread
+  // send worklet name and param descriptors back to main thread
   parentPort.postMessage({
     cmd: 'node-web-audio-api:worlet:processor-registered',
     name: parsedName,
     parameterDescriptors: parsedParamDescriptors,
   });
 };
-
-
-// @todo - recheck this, not sure this is relevant in our case
-// NOTE: Authors that register an event listener on the "message" event of this
-// port should call close on either end of the MessageChannel (either in the
-// AudioWorklet or the AudioWorkletGlobalScope side) to allow for resources to be collected.
-// parentPort.on('exit', () => {
-//   process.stdout.write('closing worklet');
-// });
 
 parentPort.on('message', async event => {
   switch (event.cmd) {
@@ -336,9 +327,7 @@ parentPort.on('message', async event => {
     }
     case 'node-web-audio-api:worklet:exit': {
       clearImmediate(runLoopImmediateId);
-      // properly exit audio worklet on rust side
       exit_audio_worklet_global_scope(workletId);
-      // close thread
       process.exit(0);
       break;
     }
@@ -348,14 +337,13 @@ parentPort.on('message', async event => {
       try {
         // 1. If given module is a "real" file, we can import it as is,
         // 2. If module is a blob or loaded from an URL, we use the raw text as
-        //    input. In this case, if the module uses `import` it will crash
+        //    input. In this case, if the module uses an `import` it will crash
         if (moduleUrl !== null) {
           await import(moduleUrl);
         } else {
           await import(`data:text/javascript;base64,${btoa(unescape(encodeURIComponent(code)))}`);
         }
 
-        // send registered param descriptors on main thread and resolve Promise
         parentPort.postMessage({
           cmd: 'node-web-audio-api:worklet:add-module-success',
           promiseId,
@@ -373,7 +361,7 @@ parentPort.on('message', async event => {
       const { name, id, options, messagePort, errorPort } = event;
       const ctor = nameProcessorCtorMap.get(name);
 
-      // re-wrap options of interest for the AudioWorkletProcess base class
+      // entities of interest for the AudioWorkletProcess base class
       pendingProcessorConstructionData = {
         messagePort,
         errorPort,
@@ -395,7 +383,7 @@ parentPort.on('message', async event => {
       // store in global so that Rust can match the JS processor
       // with its corresponding NapiAudioWorkletProcessor
       processors[`${id}`] = instance;
-      // notify audio worklet back that processor has finished instanciation
+      // notify main thread that instantiation is finished
       parentPort.postMessage({ cmd: 'node-web-audio-api:worklet:processor-created', id });
 
       if (!loopStarted) {

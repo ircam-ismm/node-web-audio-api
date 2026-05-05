@@ -1,7 +1,8 @@
 use napi_derive::napi;
 
-// do not prefix name with Napi as we don't have any JS facade for now, an
-// ClassInstance<MediaStream> does not behaves well when js and rust name doesn't match
+// @note
+// - Name is not prefixed with `Napi` as we don't have any JS facade for now
+// - `ClassInstance<MediaStream>` does not behaves well when js and rust name don't match
 #[napi]
 pub struct MediaStream {
     pub(crate) inner: web_audio_api::media_streams::MediaStream,

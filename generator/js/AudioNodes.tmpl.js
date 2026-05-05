@@ -50,7 +50,6 @@ module.exports = (jsExport, nativeBinding) => {
           `;
       }())}
 
-      // parsed version of the option to be passed to NAPI
       const parsedOptions = {};
 
       ${(function() {
@@ -180,7 +179,6 @@ module.exports = (jsExport, nativeBinding) => {
             throw new TypeError("Failed to construct '${d.name(d.node)}': Failed to read the '${optionName}' property from ${optionsType}: The provided value cannot be converted to 'AudioBuffer'");
           }
 
-          // unwrap napi audio buffer
           parsedOptions.${optionName} = options.${optionName}[kNapiObj];
         } else {
           parsedOptions.${optionName} = ${defaultValue};

@@ -71,6 +71,6 @@ mod media_streams;
 
 #[napi_derive::module_init]
 fn init() {
-    // Do not print panic messages, handle through JS errors
+    // Do not print panic messages, they are handled through JS errors
     std::panic::set_hook(Box::new(|_panic_info| {}));
 }

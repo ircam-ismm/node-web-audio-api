@@ -97,6 +97,7 @@ impl NapiScriptProcessorNode {
                 },
             )?;
 
+        // @todo - cf. https://github.com/ircam-ismm/node-web-audio-api/issues/173
         self.inner.set_onaudioprocess(move |mut e| {
             // Pack playback time and input buffer channels into JS Buffer
             let playback_time = e.playback_time;
