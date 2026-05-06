@@ -52,22 +52,22 @@
     "wpt:only": "node ./.scripts/wpt-harness.mjs"
   },
   "devDependencies": {
-    "@grame/faustwasm": "^0.15.0",
+    "@grame/faustwasm": "^0.16.1",
     "@ircam/eslint-config": "^2.0.0",
     "@ircam/sc-scheduling": "^1.0.0",
     "@ircam/sc-utils": "^1.9.0",
-    "@napi-rs/cli": "^3.2.0",
-    "@sindresorhus/slugify": "^2.1.1",
-    "camelcase": "^8.0.0",
-    "chai": "^5.1.2",
+    "@napi-rs/cli": "^3.6.2",
+    "@sindresorhus/slugify": "^3.0.0",
+    "camelcase": "^9.0.0",
+    "chai": "^6.2.2",
     "chalk": "^5.3.0",
     "cli-table": "^0.3.11",
-    "commander": "^13.0.0",
-    "dotenv": "^16.0.3",
-    "eslint": "^9.18.0",
+    "commander": "^14.0.3",
+    "dotenv": "^17.4.2",
+    "eslint": "^10.3.0",
     "js-beautify": "^1.15.1",
     "mocha": "^11.0.1",
-    "octokit": "^4.1.0",
+    "octokit": "^5.0.5",
     "template-literal": "^1.0.4",
     "webidl2": "^24.2.0",
     "wpt-runner": "^7.0.0"
@@ -75,6 +75,6 @@
   "dependencies": {
     "caller": "^1.1.0",
     "node-fetch": "^3.3.2",
-    "webidl-conversions": "^7.0.0"
+    "webidl-conversions": "^8.0.1"
   }
 }
