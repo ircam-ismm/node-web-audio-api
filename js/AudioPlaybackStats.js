@@ -1,5 +1,3 @@
-const conversions = require('webidl-conversions');
-
 const {
   kNapiObj,
 } = require('./lib/symbols.js');
@@ -59,5 +57,34 @@ class AudioPlaybackStats {
     });
   }
 }
+
+Object.defineProperties(AudioPlaybackStats, {
+  length: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 0,
+  },
+});
+
+Object.defineProperties(AudioPlaybackStats.prototype, {
+  [Symbol.toStringTag]: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 'AudioPlaybackStats',
+  },
+
+  underrunDuration: kEnumerableProperty,
+  underrunEvents: kEnumerableProperty,
+  totalDuration: kEnumerableProperty,
+  averageLatency: kEnumerableProperty,
+  minimumLatency: kEnumerableProperty,
+  maximumLatency: kEnumerableProperty,
+  resetLatency: kEnumerableProperty,
+  toJSON: kEnumerableProperty,
+});
 
 module.exports = AudioPlaybackStats;
