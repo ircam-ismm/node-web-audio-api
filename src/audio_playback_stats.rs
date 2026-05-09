@@ -3,7 +3,30 @@ use std::sync::Arc;
 
 use napi_derive::napi;
 
-use web_audio_api::AudioPlaybackStats;
+use web_audio_api::{AudioPlaybackStats, AudioPlaybackStatsSnapshot};
+
+#[napi(object)]
+pub struct NapiAudioPlaybackStatsSnapshot {
+    pub underrun_duration: f64,
+    pub underrun_events: f64,
+    pub total_duration: f64,
+    pub average_latency: f64,
+    pub minimum_latency: f64,
+    pub maximum_latency: f64,
+}
+
+impl From<AudioPlaybackStatsSnapshot> for NapiAudioPlaybackStatsSnapshot {
+    fn from(snapshot: AudioPlaybackStatsSnapshot) -> Self {
+        Self {
+            underrun_duration: snapshot.underrun_duration,
+            underrun_events: snapshot.underrun_events as f64,
+            total_duration: snapshot.total_duration,
+            average_latency: snapshot.average_latency,
+            minimum_latency: snapshot.minimum_latency,
+            maximum_latency: snapshot.maximum_latency,
+        }
+    }
+}
 
 #[derive(Clone)]
 #[napi]
@@ -18,17 +41,6 @@ impl NapiAudioPlaybackStats {
         }
     }
 }
-
-// interface AudioPlaybackStats {
-//     readonly attribute double underrunDuration;
-//     readonly attribute unsigned long underrunEvents;
-//     readonly attribute double totalDuration;
-//     readonly attribute double averageLatency;
-//     readonly attribute double minimumLatency;
-//     readonly attribute double maximumLatency;
-//     undefined resetLatency();
-//     [Default] object toJSON();
-// };
 
 #[napi]
 impl NapiAudioPlaybackStats {
@@ -67,5 +79,9 @@ impl NapiAudioPlaybackStats {
         self.inner.reset_latency()
     }
 
-    // toJSON is implemented on JS side only
+    #[napi(js_name = "toJSON")]
+    pub fn to_json(&self) -> NapiAudioPlaybackStatsSnapshot {
+        let snapshot: AudioPlaybackStatsSnapshot = self.inner.to_json();
+        NapiAudioPlaybackStatsSnapshot::from(snapshot)
+    }
 }

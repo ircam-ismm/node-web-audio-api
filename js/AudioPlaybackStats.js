@@ -47,14 +47,7 @@ class AudioPlaybackStats {
   }
 
   toJSON() {
-    return JSON.stringify({
-      underrunDuration: this.underrunDuration,
-      underrunEvents: this.underrunEvents,
-      totalDuration: this.totalDuration,
-      averageLatency: this.averageLatency,
-      minimumLatency: this.minimumLatency,
-      maximumLatency: this.maximumLatency,
-    });
+    return this[kNapiObj].toJSON();
   }
 }
 
