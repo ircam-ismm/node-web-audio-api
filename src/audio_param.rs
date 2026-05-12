@@ -60,7 +60,7 @@ impl NapiAudioParam {
         self.inner.value()
     }
 
-    #[napi(setter, js_name = "value")]
+    #[napi(setter, catch_unwind, js_name = "value")]
     pub fn set_value(&self, value: f64) {
         self.inner.set_value(value as f32);
     }
