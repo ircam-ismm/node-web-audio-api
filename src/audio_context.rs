@@ -47,7 +47,7 @@ pub struct NapiAudioContext {
 }
 
 impl NapiAudioContext {
-    pub(crate) fn unwrap(&self) -> &AudioContext {
+    pub(crate) fn inner(&self) -> &AudioContext {
         &self.inner
     }
 }
@@ -136,17 +136,17 @@ impl NapiAudioContext {
 
     #[napi(getter, js_name = "baseLatency")]
     pub fn base_latency(&self) -> f64 {
-        self.unwrap().base_latency()
+        self.inner.base_latency()
     }
 
     #[napi(getter, js_name = "outputLatency")]
     pub fn output_latency(&self) -> f64 {
-        self.unwrap().output_latency()
+        self.inner.output_latency()
     }
 
     #[napi(getter, js_name = "sinkId")]
     pub fn sink_id(&self) -> String {
-        self.unwrap().sink_id()
+        self.inner.sink_id()
     }
 
     // Use task and lib_uv to make rust synchronous method, asynchronous
@@ -190,7 +190,7 @@ impl NapiAudioContext {
                 },
             )?;
 
-        self.unwrap().set_onsinkchange(move |e| {
+        self.inner.set_onsinkchange(move |e| {
             tsfn.call(
                 e,
                 napi::threadsafe_function::ThreadsafeFunctionCallMode::Blocking,

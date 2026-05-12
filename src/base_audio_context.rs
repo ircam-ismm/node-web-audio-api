@@ -65,7 +65,7 @@ macro_rules! base_audio_context_impl {
             #[napi(getter, js_name = "listener")]
             pub fn listener(&mut self) -> NapiAudioListener {
                 if self.listener.is_none() {
-                    let native_listener = self.unwrap().listener();
+                    let native_listener = self.inner.listener();
                     let napi_listener = NapiAudioListener::new(native_listener);
                     self.listener = Some(napi_listener);
                 }
@@ -101,7 +101,7 @@ macro_rules! base_audio_context_impl {
                         },
                     )?;
 
-                self.unwrap().set_onstatechange(move |e| {
+                self.inner.set_onstatechange(move |e| {
                     tsfn.call(
                         e,
                         napi::threadsafe_function::ThreadsafeFunctionCallMode::Blocking,

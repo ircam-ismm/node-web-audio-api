@@ -725,10 +725,10 @@ impl NapiAudioWorkletNode {
         // --------------------------------------------------------
         let native_node = match context {
             Either::A(context) => {
-                AudioWorkletNode::new::<NapiAudioWorkletProcessor>(context.unwrap(), options)
+                AudioWorkletNode::new::<NapiAudioWorkletProcessor>(context.inner(), options)
             }
             Either::B(context) => {
-                AudioWorkletNode::new::<NapiAudioWorkletProcessor>(context.unwrap(), options)
+                AudioWorkletNode::new::<NapiAudioWorkletProcessor>(context.inner(), options)
             }
         };
 
