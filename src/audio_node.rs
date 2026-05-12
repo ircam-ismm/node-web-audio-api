@@ -28,7 +28,7 @@ macro_rules! audio_node_impl {
             }
 
             #[napi(getter, js_name = "numberOfOutputs")]
-            pub fn set_number_of_outputs(&self) -> u32 {
+            pub fn get_number_of_outputs(&self) -> u32 {
                 self.inner.number_of_outputs() as u32
             }
 
