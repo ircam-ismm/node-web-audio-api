@@ -118,9 +118,9 @@ function runLoop() {
   runLoopImmediateId = setImmediate(runLoop);
 }
 
-// catch errors thrown in `onmessage` handlers that should not break the worker
-process.on('uncaughtException', (err, origin) => {
-	console.log('AudioWorkletGlobalScope uncaughtException:', err);
+// catch possible errors thrown in `onmessage` handlers that should not break the worker
+process.on('uncaughtException', err => {
+  console.log('AudioWorkletGlobalScope uncaughtException:', err);
 });
 
 globalThis.currentTime = 0;
