@@ -208,7 +208,11 @@ class AudioNode extends EventTarget {
       throwSanitizedError(err);
     }
 
-    return args[0];
+    // AudioNode connect (AudioNode destinationNode,
+    //    optional unsigned long output = 0,
+    //    optional unsigned long input = 0);
+    // undefined connect (AudioParam destinationParam, optional unsigned long output = 0);
+    return (args[0] instanceof AudioNode) ? args[0] : undefined;
   }
 
   disconnect(...args) {

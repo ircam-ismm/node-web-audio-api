@@ -19,7 +19,7 @@ pub struct NapiOfflineAudioContext {
 }
 
 impl NapiOfflineAudioContext {
-    pub(crate) fn unwrap(&self) -> &OfflineAudioContext {
+    pub(crate) fn inner(&self) -> &OfflineAudioContext {
         &self.inner
     }
 }

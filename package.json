@@ -24,10 +24,7 @@
     "node-api"
   ],
   "engines": {
-    "node": ">= 14"
-  },
-  "napi": {
-    "binaryName": "node-web-audio-api"
+    "node": ">= 22"
   },
   "types": "./index.d.ts",
   "publishConfig": {
@@ -56,7 +53,6 @@
     "@ircam/eslint-config": "^2.0.0",
     "@ircam/sc-scheduling": "^1.0.0",
     "@ircam/sc-utils": "^1.9.0",
-    "@napi-rs/cli": "^3.6.2",
     "@sindresorhus/slugify": "^3.0.0",
     "camelcase": "^9.0.0",
     "chai": "^6.2.2",

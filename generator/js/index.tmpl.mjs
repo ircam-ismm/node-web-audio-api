@@ -4,33 +4,34 @@
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 
-const nativeModule = require('./index.cjs');
+const cjsModule = require('./index.cjs');
 // events
-export const OfflineAudioCompletionEvent = nativeModule.OfflineAudioCompletionEvent;
-export const AudioProcessingEvent = nativeModule.AudioProcessingEvent;
-export const AudioRenderCapacityEvent = nativeModule.AudioRenderCapacityEvent;
+export const OfflineAudioCompletionEvent = cjsModule.OfflineAudioCompletionEvent;
+export const AudioProcessingEvent = cjsModule.AudioProcessingEvent;
+export const AudioRenderCapacityEvent = cjsModule.AudioRenderCapacityEvent;
+export const ErrorEvent = cjsModule.ErrorEvent;
 // manually written nodes
-export const BaseAudioContext = nativeModule.BaseAudioContext;
-export const AudioContext = nativeModule.AudioContext;
-export const OfflineAudioContext = nativeModule.OfflineAudioContext;
+export const BaseAudioContext = cjsModule.BaseAudioContext;
+export const AudioContext = cjsModule.AudioContext;
+export const OfflineAudioContext = cjsModule.OfflineAudioContext;
 
-export const AudioNode = nativeModule.AudioNode;
-export const AudioScheduledSourceNode = nativeModule.AudioScheduledSourceNode;
-export const AudioParam = nativeModule.AudioParam;
-export const AudioDestinationNode = nativeModule.AudioDestinationNode;
-export const AudioListener = nativeModule.AudioListener;
-export const AudioWorklet = nativeModule.AudioWorklet;
-export const AudioParamMap = nativeModule.AudioParamMap;
-export const AudioRenderCapacity = nativeModule.AudioRenderCapacity;
-export const AudioPlaybackStats = nativeModule.AudioPlaybackStats;
+export const AudioNode = cjsModule.AudioNode;
+export const AudioScheduledSourceNode = cjsModule.AudioScheduledSourceNode;
+export const AudioParam = cjsModule.AudioParam;
+export const AudioDestinationNode = cjsModule.AudioDestinationNode;
+export const AudioListener = cjsModule.AudioListener;
+export const AudioWorklet = cjsModule.AudioWorklet;
+export const AudioParamMap = cjsModule.AudioParamMap;
+export const AudioRenderCapacity = cjsModule.AudioRenderCapacity;
+export const AudioPlaybackStats = cjsModule.AudioPlaybackStats;
 
-export const PeriodicWave = nativeModule.PeriodicWave;
-export const AudioBuffer = nativeModule.AudioBuffer;
+export const PeriodicWave = cjsModule.PeriodicWave;
+export const AudioBuffer = cjsModule.AudioBuffer;
 
 // generated nodes
-${d.nodes.map(n => `export const ${d.name(n)} = nativeModule.${d.name(n)};`).join('\n')}
+${d.nodes.map(n => `export const ${d.name(n)} = cjsModule.${d.name(n)};`).join('\n')}
 // helper methods
-export const mediaDevices = nativeModule.mediaDevices;
+export const mediaDevices = cjsModule.mediaDevices;
 
-export default nativeModule;
+export default cjsModule;
 

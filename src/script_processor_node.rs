@@ -67,11 +67,11 @@ impl NapiScriptProcessorNode {
 
         let native_node = match context {
             Either::A(context) => {
-                let native_context = context.unwrap();
+                let native_context = context.inner();
                 ScriptProcessorNode::new(native_context, options)
             }
             Either::B(context) => {
-                let native_context = context.unwrap();
+                let native_context = context.inner();
                 ScriptProcessorNode::new(native_context, options)
             }
         };

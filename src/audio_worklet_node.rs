@@ -303,7 +303,7 @@ fn process_audio_worklet(
     // Update AudioWorkletGlobalScope
     let mut global = env.get_global()?;
     global.set_named_property("currentTime", current_time)?;
-    global.set_named_property("currentFrame", current_frame)?;
+    global.set_named_property("currentFrame", current_frame as f64)?;
 
     let k_worklet_callable_process =
         env.symbol_for("node-web-audio-api:worklet-callable-process")?;
@@ -690,7 +690,7 @@ impl NapiAudioWorkletNode {
         // --------------------------------------------------------
         // Create AudioWorkletNodeOptions object
         // --------------------------------------------------------
-        let id = INCREMENTING_ID.fetch_add(1, Ordering::Relaxed);
+        let id: u32 = INCREMENTING_ID.fetch_add(1, Ordering::Relaxed);
 
         let processor_options = NapiAudioWorkletProcessor {
             id,
@@ -725,10 +725,10 @@ impl NapiAudioWorkletNode {
         // --------------------------------------------------------
         let native_node = match context {
             Either::A(context) => {
-                AudioWorkletNode::new::<NapiAudioWorkletProcessor>(context.unwrap(), options)
+                AudioWorkletNode::new::<NapiAudioWorkletProcessor>(context.inner(), options)
             }
             Either::B(context) => {
-                AudioWorkletNode::new::<NapiAudioWorkletProcessor>(context.unwrap(), options)
+                AudioWorkletNode::new::<NapiAudioWorkletProcessor>(context.inner(), options)
             }
         };
 

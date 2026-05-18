@@ -60,11 +60,15 @@ const resolveModule = async (moduleUrl) => {
       throw new DOMException(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`, 'AbortError');
     }
   } else {
-    const callerSite = caller(2);
+    let callerSite = caller(2);
 
-    if (callerSite.startsWith('http')) { // this branch exists for wpt where caller site is an url
-      const baseUrl = callerSite.substring(0, callerSite.lastIndexOf('/'));
-      const url = baseUrl + '/' + moduleUrl;
+    if (callerSite.startsWith('http')) {
+      // this branch exists for wpt where caller site is an url, moduleUrl can be both relative or absolute
+      const baseUrl = moduleUrl.startsWith('/')
+        ? new URL(callerSite).origin
+        : callerSite.substring(0, callerSite.lastIndexOf('/')) + '/';
+
+      const url = baseUrl + moduleUrl;
 
       try {
         const res = await fetch(url);
@@ -156,12 +160,13 @@ class AudioWorklet {
             reject(err);
             break;
           }
-          case 'node-web-audio-api:worlet:processor-registered': {
+          case 'node-web-audio-api:worklet:processor-registered': {
             const { name, parameterDescriptors } = event;
             this.#workletParamDescriptorsMap.set(name, parameterDescriptors);
             break;
           }
-          case 'node-web-audio-api:worklet:processor-created': {
+          case 'node-web-audio-api:worklet:processor-created':
+          case 'node-web-audio-api:worklet:ctor-error': {
             const { id } = event;
             this.#pendingCreateProcessors.delete(id);
             break;
@@ -225,7 +230,6 @@ class AudioWorklet {
         // we need a macro-task to ensure message can be received
         await new Promise(resolve => setTimeout(resolve, 0));
       }
-
       resolve();
     });
   }

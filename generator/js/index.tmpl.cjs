@@ -7,6 +7,7 @@ const jsExport = {};
 jsExport.OfflineAudioCompletionEvent = require('./js/Events').OfflineAudioCompletionEvent;
 jsExport.AudioProcessingEvent = require('./js/Events').AudioProcessingEvent;
 jsExport.AudioRenderCapacityEvent = require('./js/Events').AudioRenderCapacityEvent;
+jsExport.ErrorEvent = require('./js/Events').ErrorEvent;
 // --------------------------------------------------------------------------
 // Create Web Audio API facade
 // --------------------------------------------------------------------------

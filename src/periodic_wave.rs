@@ -40,11 +40,11 @@ impl NapiPeriodicWave {
 
         let native_periodic_wave = match context {
             Either::A(context) => {
-                let native_context = context.unwrap();
+                let native_context = context.inner();
                 PeriodicWave::new(native_context, options)
             }
             Either::B(context) => {
-                let native_context = context.unwrap();
+                let native_context = context.inner();
                 PeriodicWave::new(native_context, options)
             }
         };

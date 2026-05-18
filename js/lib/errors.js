@@ -77,6 +77,17 @@ exports.throwSanitizedError = function throwSanitizedError(err) {
     overrideStack(err, error);
 
     throw error;
+
+  // @todo - This handle panics that occur in rust async methods where somehow
+  // the error message is swallowed by napi which return a generic message
+  // cf. https://github.com/napi-rs/napi-rs/pull/2050/changes
+  // This is not satisfying as we loose explanations and should be improved if possible
+  } else if (originalMessage.includes('Panic in async function')) {
+    const msg = 'Error in async function';
+    const error = new DOMException(msg, 'InvalidStateError');
+    // the napi original error have no stack neither, so just throw the new one
+    // it gives some information at least
+    throw error;
   }
 
   console.warn('[lib/errors.js] Unexpected Rust error', err);
