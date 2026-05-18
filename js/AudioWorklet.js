@@ -156,7 +156,7 @@ class AudioWorklet {
             reject(err);
             break;
           }
-          case 'node-web-audio-api:worlet:processor-registered': {
+          case 'node-web-audio-api:worklet:processor-registered': {
             const { name, parameterDescriptors } = event;
             this.#workletParamDescriptorsMap.set(name, parameterDescriptors);
             break;

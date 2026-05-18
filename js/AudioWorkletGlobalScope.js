@@ -203,30 +203,30 @@ globalThis.AudioWorkletProcessor = class AudioWorkletProcessor {
 // Algorithm: https://webaudio.github.io/web-audio-api/#dom-audioworkletglobalscope-registerprocessor
 globalThis.registerProcessor = function registerProcessor(name, processorCtor) {
   const parsedName = conversions['DOMString'](name, {
-    context: `Cannot execute 'registerProcessor' in 'AudoWorkletGlobalScope': name (${name})`,
+    context: `Cannot execute 'registerProcessor' in 'AudioWorkletGlobalScope': name (${name})`,
   });
 
   if (parsedName === '') {
-    throw new DOMException(`Cannot execute 'registerProcessor' in 'AudoWorkletGlobalScope': name is empty`, 'NotSupportedError');
+    throw new DOMException(`Cannot execute 'registerProcessor' in 'AudioWorkletGlobalScope': name is empty`, 'NotSupportedError');
   }
 
   if (nameProcessorCtorMap.has(name)) {
-    throw new DOMException(`Cannot execute 'registerProcessor' in 'AudoWorkletGlobalScope': A processor with name '${name}' has already been registered in this scope`, 'NotSupportedError');
+    throw new DOMException(`Cannot execute 'registerProcessor' in 'AudioWorkletGlobalScope': A processor with name '${name}' has already been registered in this scope`, 'NotSupportedError');
   }
 
   if (!isConstructor(processorCtor)) {
-    throw new TypeError(`Cannot execute 'registerProcessor")' in 'AudoWorkletGlobalScope': argument 2 for name '${name}' is not a constructor`);
+    throw new TypeError(`Cannot execute 'registerProcessor")' in 'AudioWorkletGlobalScope': argument 2 for name '${name}' is not a constructor`);
   }
 
   if (typeof processorCtor.prototype !== 'object') {
-    throw new TypeError(`Cannot execute 'registerProcessor")' in 'AudoWorkletGlobalScope': argument 2 for name '${name}' is not is not a valid AudioWorkletProcessor`);
+    throw new TypeError(`Cannot execute 'registerProcessor")' in 'AudioWorkletGlobalScope': argument 2 for name '${name}' is not is not a valid AudioWorkletProcessor`);
   }
 
   // must support Array, Set or iterators
   let parameterDescriptorsValue = processorCtor.parameterDescriptors;
 
   if (!isIterable(parameterDescriptorsValue)) {
-    throw new TypeError(`Cannot execute 'registerProcessor' in 'AudoWorkletGlobalScope': Invalid 'parameterDescriptors' for processor '${name}: 'parameterDescriptors' is not iterable'`);
+    throw new TypeError(`Cannot execute 'registerProcessor' in 'AudioWorkletGlobalScope': Invalid 'parameterDescriptors' for processor '${name}: 'parameterDescriptors' is not iterable'`);
   }
 
   const paramDescriptors = Array.from(parameterDescriptorsValue);
@@ -239,20 +239,20 @@ globalThis.registerProcessor = function registerProcessor(name, processorCtor) {
     const parsedDescriptor = {};
 
     if (typeof descriptor !== 'object' || descriptor === null) {
-      throw new TypeError(`Cannot execute 'registerProcessor' in 'AudoWorkletGlobalScope': Invalid 'parameterDescriptors' for processor '${name}: Element at index ${i} is not an instance of 'AudioParamDescriptor'`);
+      throw new TypeError(`Cannot execute 'registerProcessor' in 'AudioWorkletGlobalScope': Invalid 'parameterDescriptors' for processor '${name}: Element at index ${i} is not an instance of 'AudioParamDescriptor'`);
     }
 
     if (descriptor.name === undefined) {
-      throw new TypeError(`Cannot execute 'registerProcessor' in 'AudoWorkletGlobalScope': Invalid 'parameterDescriptors' for processor '${name}: Element at index ${i} is not an instance of 'AudioParamDescriptor'`);
+      throw new TypeError(`Cannot execute 'registerProcessor' in 'AudioWorkletGlobalScope': Invalid 'parameterDescriptors' for processor '${name}: Element at index ${i} is not an instance of 'AudioParamDescriptor'`);
     }
 
     parsedDescriptor.name = conversions['DOMString'](descriptor.name, {
-      context: `Cannot execute 'registerProcessor' in 'AudoWorkletGlobalScope': Invalid 'parameterDescriptors' for processor '${name}: Invalid 'name' for 'AudioParamDescriptor' at index ${i}`,
+      context: `Cannot execute 'registerProcessor' in 'AudioWorkletGlobalScope': Invalid 'parameterDescriptors' for processor '${name}: Invalid 'name' for 'AudioParamDescriptor' at index ${i}`,
     });
 
     if (descriptor.defaultValue !== undefined) {
       parsedDescriptor.defaultValue = conversions['float'](descriptor.defaultValue, {
-        context: `Cannot execute 'registerProcessor' in 'AudoWorkletGlobalScope': Invalid 'parameterDescriptors' for processor '${name}: Invalid 'defaultValue' for 'AudioParamDescriptor' at index ${i}`,
+        context: `Cannot execute 'registerProcessor' in 'AudioWorkletGlobalScope': Invalid 'parameterDescriptors' for processor '${name}: Invalid 'defaultValue' for 'AudioParamDescriptor' at index ${i}`,
       });
     } else {
       parsedDescriptor.defaultValue = 0;
@@ -260,7 +260,7 @@ globalThis.registerProcessor = function registerProcessor(name, processorCtor) {
 
     if (descriptor.maxValue !== undefined) {
       parsedDescriptor.maxValue = conversions['float'](descriptor.maxValue, {
-        context: `Cannot execute 'registerProcessor' in 'AudoWorkletGlobalScope': Invalid 'parameterDescriptors' for processor '${name}: Invalid 'maxValue' for 'AudioParamDescriptor' at index ${i}`,
+        context: `Cannot execute 'registerProcessor' in 'AudioWorkletGlobalScope': Invalid 'parameterDescriptors' for processor '${name}: Invalid 'maxValue' for 'AudioParamDescriptor' at index ${i}`,
       });
     } else {
       parsedDescriptor.maxValue = 3.4028235e38;
@@ -268,7 +268,7 @@ globalThis.registerProcessor = function registerProcessor(name, processorCtor) {
 
     if (descriptor.minValue !== undefined) {
       parsedDescriptor.minValue = conversions['float'](descriptor.minValue, {
-        context: `Cannot execute 'registerProcessor' in 'AudoWorkletGlobalScope': Invalid 'parameterDescriptors' for processor '${name}: Invalid 'minValue' for 'AudioParamDescriptor' at index ${i}`,
+        context: `Cannot execute 'registerProcessor' in 'AudioWorkletGlobalScope': Invalid 'parameterDescriptors' for processor '${name}: Invalid 'minValue' for 'AudioParamDescriptor' at index ${i}`,
       });
     } else {
       parsedDescriptor.minValue = -3.4028235e38;
@@ -276,11 +276,11 @@ globalThis.registerProcessor = function registerProcessor(name, processorCtor) {
 
     if (descriptor.automationRate !== undefined) {
       if (!['a-rate', 'k-rate'].includes(descriptor.automationRate)) {
-        throw new TypeError(`Cannot execute 'registerProcessor' in 'AudoWorkletGlobalScope': Invalid 'parameterDescriptors' for processor '${name}: The provided value '${descriptor.automationRate}' is not a valid enum value of type AutomationRate for 'AudioParamDescriptor' at index ${i}`);
+        throw new TypeError(`Cannot execute 'registerProcessor' in 'AudioWorkletGlobalScope': Invalid 'parameterDescriptors' for processor '${name}: The provided value '${descriptor.automationRate}' is not a valid enum value of type AutomationRate for 'AudioParamDescriptor' at index ${i}`);
       }
 
       parsedDescriptor.automationRate = conversions['DOMString'](descriptor.automationRate, {
-        context: `Cannot execute 'registerProcessor' in 'AudoWorkletGlobalScope': Invalid 'parameterDescriptors' for processor '${name}: The provided value '${descriptor.automationRate}'`,
+        context: `Cannot execute 'registerProcessor' in 'AudioWorkletGlobalScope': Invalid 'parameterDescriptors' for processor '${name}: The provided value '${descriptor.automationRate}'`,
       });
     } else {
       parsedDescriptor.automationRate = 'a-rate';
@@ -296,13 +296,13 @@ globalThis.registerProcessor = function registerProcessor(name, processorCtor) {
     const { name, defaultValue, minValue, maxValue } = parsedParamDescriptors[i];
 
     if (paramNames.includes(name)) {
-      throw new DOMException(`Cannot execute 'registerProcessor' in 'AudoWorkletGlobalScope': Invalid 'parameterDescriptors' for processor '${name}': 'AudioParamDescriptor' with name '${name}' already declared`, 'NotSupportedError');
+      throw new DOMException(`Cannot execute 'registerProcessor' in 'AudioWorkletGlobalScope': Invalid 'parameterDescriptors' for processor '${name}': 'AudioParamDescriptor' with name '${name}' already declared`, 'NotSupportedError');
     }
 
     paramNames.push(name);
 
     if (!(minValue <= defaultValue && defaultValue <= maxValue)) {
-      throw new DOMException(`Cannot execute 'registerProcessor' in 'AudoWorkletGlobalScope': Invalid 'parameterDescriptors' for processor '${name}': The constraint minValue <= defaultValue <= maxValue is not met`, 'InvalidStateError');
+      throw new DOMException(`Cannot execute 'registerProcessor' in 'AudioWorkletGlobalScope': Invalid 'parameterDescriptors' for processor '${name}': The constraint minValue <= defaultValue <= maxValue is not met`, 'InvalidStateError');
     }
   }
 
@@ -310,7 +310,7 @@ globalThis.registerProcessor = function registerProcessor(name, processorCtor) {
   nameProcessorCtorMap.set(parsedName, processorCtor);
   // send worklet name and param descriptors back to main thread
   parentPort.postMessage({
-    cmd: 'node-web-audio-api:worlet:processor-registered',
+    cmd: 'node-web-audio-api:worklet:processor-registered',
     name: parsedName,
     parameterDescriptors: parsedParamDescriptors,
   });
