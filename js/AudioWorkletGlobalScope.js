@@ -118,6 +118,10 @@ function runLoop() {
   runLoopImmediateId = setImmediate(runLoop);
 }
 
+process.on('uncaughtException', (err, origin) => {
+	console.log('AudioWorkletGlobalScope uncaughtException:', err);
+});
+
 globalThis.currentTime = 0;
 globalThis.currentFrame = 0;
 globalThis.sampleRate = sampleRate;

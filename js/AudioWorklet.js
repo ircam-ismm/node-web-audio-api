@@ -60,11 +60,15 @@ const resolveModule = async (moduleUrl) => {
       throw new DOMException(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`, 'AbortError');
     }
   } else {
-    const callerSite = caller(2);
+    let callerSite = caller(2);
 
-    if (callerSite.startsWith('http')) { // this branch exists for wpt where caller site is an url
-      const baseUrl = callerSite.substring(0, callerSite.lastIndexOf('/'));
-      const url = baseUrl + '/' + moduleUrl;
+    if (callerSite.startsWith('http')) {
+      // this branch exists for wpt where caller site is an url, moduleUrl can be both relative or absolute
+      const baseUrl = moduleUrl.startsWith('/')
+        ? new URL(callerSite).origin
+        : callerSite.substring(0, callerSite.lastIndexOf('/')) + '/';
+
+      const url = baseUrl + moduleUrl;
 
       try {
         const res = await fetch(url);

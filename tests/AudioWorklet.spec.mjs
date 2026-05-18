@@ -264,7 +264,7 @@ describe('AudioWorkletProcessor', () => {
       assert.isTrue(errored);
     });
 
-    it.only('OfflineAudioContext.startRendering should return when processor constructor is invalid', async () => {
+    it('OfflineAudioContext.startRendering should return when processor constructor is invalid', async () => {
       const audioContext = new OfflineAudioContext(1, 128, 48000);
       await audioContext.audioWorklet.addModule('./worklets/invalid-ctor.worklet.mjs');
 
