@@ -690,7 +690,7 @@ impl NapiAudioWorkletNode {
         // --------------------------------------------------------
         // Create AudioWorkletNodeOptions object
         // --------------------------------------------------------
-        let id = INCREMENTING_ID.fetch_add(1, Ordering::Relaxed);
+        let id: u32 = INCREMENTING_ID.fetch_add(1, Ordering::Relaxed);
 
         let processor_options = NapiAudioWorkletProcessor {
             id,

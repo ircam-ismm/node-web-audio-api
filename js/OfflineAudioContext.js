@@ -128,8 +128,7 @@ module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
 
       const renderedBuffer = new jsExport.AudioBuffer({ [kNapiObj]: napiAudioBuffer });
 
-      // Propagate complete event. It is delayed to next tick so that it is executed
-      // after startRendering fulfills.
+      // Delay "complete" event to next tick to execute after `startRendering` fulfills
       const event = new jsExport.OfflineAudioCompletionEvent('complete', {
         renderedBuffer: renderedBuffer,
       });

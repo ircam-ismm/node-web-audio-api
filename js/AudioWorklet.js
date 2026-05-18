@@ -161,7 +161,8 @@ class AudioWorklet {
             this.#workletParamDescriptorsMap.set(name, parameterDescriptors);
             break;
           }
-          case 'node-web-audio-api:worklet:processor-created': {
+          case 'node-web-audio-api:worklet:processor-created':
+          case 'node-web-audio-api:worklet:ctor-error': {
             const { id } = event;
             this.#pendingCreateProcessors.delete(id);
             break;
@@ -225,7 +226,6 @@ class AudioWorklet {
         // we need a macro-task to ensure message can be received
         await new Promise(resolve => setTimeout(resolve, 0));
       }
-
       resolve();
     });
   }

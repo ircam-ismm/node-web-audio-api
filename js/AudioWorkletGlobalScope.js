@@ -147,26 +147,29 @@ globalThis.AudioWorkletProcessor = class AudioWorkletProcessor {
     // either if "process" does not exists or if it throws an error
     this[kWorkletCallableProcess] = true;
 
-    // Populate with dummy values which will be replaced in first render call
-    this[kWorkletInputs] = new Array(numberOfInputs).fill([]);
-    this[kWorkletOutputs] = new Array(numberOfOutputs).fill([]);
+    // We don't want the factory handle errors that could occur here, e.g. pollution of global objects
+    // cf. the-audioworklet-interface/audioworkletprocessor-param-getter-overridden.https.html
+    // Note that the logic of this WPT test needs to be understood more precisely, it passes but
+    // not for the reason explained
+    try {
+      // Populate with dummy values which will be replaced in first render call
+      this[kWorkletInputs] = new Array(numberOfInputs).fill([]);
+      this[kWorkletOutputs] = new Array(numberOfOutputs).fill([]);
+      // Object to be reused as `process` parameters argument
+      this[kWorkletParams] = {};
+      // Cache of 2 Float32Array (of length 128 and 1) for each param, to be reused on
+      // each process call according to the size the param for the current render quantum
+      this[kWorkletParamsCache] = {};
 
-    // Object to be reused as `process` parameters argument
-    this[kWorkletParams] = {};
-    // Cache of 2 Float32Array (of length 128 and 1) for each param, to be reused on
-    // each process call according to the size the param for the current render quantum
-    this[kWorkletParamsCache] = {};
-
-    parameterDescriptors.forEach(desc => {
-      try {
+      for (let desc of parameterDescriptors) {
         this[kWorkletParamsCache][desc.name] = [
           pool128.get(),
           pool1.get(),
         ];
-      } catch (err) {
-        this[kWorkletMarkNonCallableProcess](['node-web-audio-api:worklet:ctor-error', err]);
       }
-    });
+    } catch (err) {
+      this[kWorkletMarkNonCallableProcess](['node-web-audio-api:worklet:ctor-error', err]);
+    }
   }
 
   get port() {
@@ -371,20 +374,32 @@ parentPort.on('message', async event => {
       };
 
       let instance;
+      let errored = false;
 
       try {
         instance = new ctor(options);
       } catch (err) {
-        errorPort.postMessage({ cmd: 'node-web-audio-api:worklet:ctor-error', err });
-        return;
+        // if the given processor constructor failed, we create a dummy processor
+        // that we mark immediately as non-callable. This prevents situations where
+        // the NapiAudioWorkletProcessor, which already exists at this point, hangs
+        // forever waiting for its JS counterpart
+        // @todo - This design could be improved in the future by flagging somehow
+        // the Rust processor to avoid the cross thread communication
+        errored = true;
+        instance = new AudioWorkletProcessor(options);
+        instance[kWorkletMarkNonCallableProcess](['node-web-audio-api:worklet:ctor-error', err]);
       }
 
       pendingProcessorConstructionData = null;
       // store in global so that Rust can match the JS processor
       // with its corresponding NapiAudioWorkletProcessor
       processors[`${id}`] = instance;
-      // notify main thread that instantiation is finished
-      parentPort.postMessage({ cmd: 'node-web-audio-api:worklet:processor-created', id });
+      // notify main thread that instantiation has finished somehow
+      if (errored) {
+        parentPort.postMessage({ cmd: 'node-web-audio-api:worklet:ctor-error', id });
+      } else {
+        parentPort.postMessage({ cmd: 'node-web-audio-api:worklet:processor-created', id });
+      }
 
       if (!loopStarted) {
         loopStarted = true;
@@ -394,3 +409,4 @@ parentPort.on('message', async event => {
     }
   }
 });
+
