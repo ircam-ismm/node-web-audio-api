@@ -303,7 +303,7 @@ fn process_audio_worklet(
     // Update AudioWorkletGlobalScope
     let mut global = env.get_global()?;
     global.set_named_property("currentTime", current_time)?;
-    global.set_named_property("currentFrame", current_frame)?;
+    global.set_named_property("currentFrame", current_frame as f64)?;
 
     let k_worklet_callable_process =
         env.symbol_for("node-web-audio-api:worklet-callable-process")?;
