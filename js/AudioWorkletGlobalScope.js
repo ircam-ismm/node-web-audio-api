@@ -15,6 +15,7 @@ const {
 const {
   workletId,
   sampleRate,
+  renderQuantumSize,
 } = workerData;
 
 const kWorkletCallableProcess = Symbol.for('node-web-audio-api:worklet-callable-process');
@@ -79,12 +80,11 @@ class BufferPool {
   }
 }
 
-const renderQuantumSize = 128;
-
+// @todo(naming) - generalize over `renderQuantumSize`
 const pool128 = new BufferPool(renderQuantumSize, 256);
 const pool1 = new BufferPool(1, 64);
-// Expose some function to be accessed from rust when io layout changes
-// @todo - possibly transfer while IO layout change to JS to minimize language boundaries crossing
+// Expose some function to be accessed from rust when IO layout changes
+// @todo - possibly transfer whole IO layout change logic to JS to minimize language boundaries crossing
 globalThis[kWorkletGetBuffer] = () => pool128.get();
 globalThis[kWorkletRecycleBuffer] = buffer => pool128.recycle(buffer);
 globalThis[kWorkletRecycleBuffer1] = buffer => pool1.recycle(buffer);

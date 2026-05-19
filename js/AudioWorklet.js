@@ -101,6 +101,7 @@ const resolveModule = async (moduleUrl) => {
 class AudioWorklet {
   #workletId = null;
   #sampleRate = null;
+  #renderQuantumSize = null;
   #worker = null;
   #publicPort = null;
   #idPromiseMap = new Map();
@@ -119,6 +120,7 @@ class AudioWorklet {
 
     this.#workletId = options.workletId;
     this.#sampleRate = options.sampleRate;
+    this.#renderQuantumSize = options.renderQuantumSize;
   }
 
   async #initWorkletGlobalScope() {
@@ -132,6 +134,7 @@ class AudioWorklet {
         workerData: {
           workletId: this.#workletId,
           sampleRate: this.#sampleRate,
+          renderQuantumSize: this.#renderQuantumSize,
         },
       });
 
