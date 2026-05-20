@@ -23,6 +23,7 @@ export const AudioListener = cjsModule.AudioListener;
 export const AudioWorklet = cjsModule.AudioWorklet;
 export const AudioParamMap = cjsModule.AudioParamMap;
 export const AudioRenderCapacity = cjsModule.AudioRenderCapacity;
+export const AudioPlaybackStats = cjsModule.AudioPlaybackStats;
 
 export const PeriodicWave = cjsModule.PeriodicWave;
 export const AudioBuffer = cjsModule.AudioBuffer;

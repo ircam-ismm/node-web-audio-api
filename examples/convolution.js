@@ -12,6 +12,10 @@ audioContext.renderCapacity.addEventListener('update', e => {
 });
 audioContext.renderCapacity.start({ updateInterval: 1.5 });
 
+const statsInterval = setInterval(() => {
+  console.log(audioContext.playbackStats.toJSON());
+}, 1000);
+
 const arrayBuffer = fs.readFileSync(path.join('examples', 'samples', 'vocals-dry.wav')).buffer;
 const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
@@ -47,4 +51,5 @@ src.stop();
 await new Promise(resolve => setTimeout(resolve, 2000));
 
 await audioContext.close();
+clearInterval(statsInterval);
 

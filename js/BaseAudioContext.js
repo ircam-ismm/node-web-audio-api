@@ -56,6 +56,7 @@ module.exports = (jsExport, _nativeBinding) => {
         [kPrivateConstructor]: true,
         workletId: this[kNapiObj].workletId,
         sampleRate: this[kNapiObj].sampleRate,
+        renderQuantumSize: this[kNapiObj].renderQuantumSize,
       });
 
       this.#destination = new jsExport.AudioDestinationNode(this, {

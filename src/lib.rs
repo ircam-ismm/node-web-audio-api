@@ -44,6 +44,8 @@ mod audio_listener;
 use crate::audio_listener::NapiAudioListener;
 mod audio_render_capacity;
 use crate::audio_render_capacity::NapiAudioRenderCapacity;
+mod audio_playback_stats;
+use crate::audio_playback_stats::NapiAudioPlaybackStats;
 
 // Generated audio nodes
 mod analyser_node;

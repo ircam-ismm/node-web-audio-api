@@ -22,6 +22,7 @@ module.exports = function(jsExport, nativeBinding) {
   class AudioContext extends jsExport.BaseAudioContext {
     #sinkId = '';
     #renderCapacity = null;
+    #playbackStats = null;
     #onsinkchange = null;
     #keepAwakeId = null;
     #kAudioContextId = null;
@@ -88,6 +89,10 @@ module.exports = function(jsExport, nativeBinding) {
         [kNapiObj]: this[kNapiObj].renderCapacity,
       });
 
+      this.#playbackStats = new jsExport.AudioPlaybackStats({
+        [kNapiObj]: this[kNapiObj].playbackStats,
+      });
+
       this[kNapiObj].onstatechange((function(napiEvent) {
         const event = new Event(napiEvent.type);
         propagateEvent(this, event);
@@ -145,6 +150,14 @@ module.exports = function(jsExport, nativeBinding) {
       }
 
       return this.#renderCapacity;
+    }
+
+    get playbackStats() {
+      if (!(this instanceof AudioContext)) {
+        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioContext\'');
+      }
+
+      return this.#playbackStats;
     }
 
     get onsinkchange() {

@@ -9,6 +9,7 @@ use web_audio_api::context::{
 
 use crate::NapiAudioDestinationNode;
 use crate::NapiAudioListener;
+use crate::NapiAudioPlaybackStats;
 use crate::NapiAudioRenderCapacity;
 use crate::NapiEvent;
 
@@ -42,6 +43,7 @@ pub struct NapiAudioContext {
     inner: Arc<AudioContext>,
     destination: NapiAudioDestinationNode,
     render_capacity: NapiAudioRenderCapacity,
+    playback_stats: NapiAudioPlaybackStats,
     listener: Option<NapiAudioListener>,
     pub(crate) worklet_id: usize,
 }
@@ -108,12 +110,16 @@ impl NapiAudioContext {
         let native_render_capacity = native_context.render_capacity();
         let napi_render_capacity = NapiAudioRenderCapacity::new(native_render_capacity);
 
+        let native_playback_stats = native_context.playback_stats();
+        let napi_playback_stats = NapiAudioPlaybackStats::new(native_playback_stats);
+
         let worklet_id = crate::audio_worklet_node::allocate_process_call_channel();
 
         Self {
             inner: Arc::new(native_context),
             destination: napi_destination,
             render_capacity: napi_render_capacity,
+            playback_stats: napi_playback_stats,
             listener: None,
             worklet_id,
         }
@@ -132,6 +138,11 @@ impl NapiAudioContext {
     #[napi(getter, js_name = "renderCapacity")]
     pub fn render_capacity(&self) -> NapiAudioRenderCapacity {
         self.render_capacity.clone()
+    }
+
+    #[napi(getter, js_name = "playbackStats")]
+    pub fn playback_stats(&self) -> NapiAudioPlaybackStats {
+        self.playback_stats.clone()
     }
 
     #[napi(getter, js_name = "baseLatency")]
