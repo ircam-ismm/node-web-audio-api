@@ -67,7 +67,7 @@ module.exports = (_jsExport, nativeBinding) => {
         let napiObj;
 
         try {
-          napiObj = new nativeBinding.AudioBuffer(parsedOptions);
+          napiObj = new nativeBinding.NapiAudioBuffer(parsedOptions);
         } catch (err) {
           throwSanitizedError(err);
         }

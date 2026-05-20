@@ -1,7 +1,6 @@
 import { AudioContext } from '../index.mjs';
 
-// Example of multichannel routing, for now the library can only handle up to
-// 32 channels.
+// Example of multichannel routing.
 //
 // The example can be tested with a virtual soundcard such as Blackhole
 // https://github.com/ExistentialAudio/BlackHole
@@ -13,7 +12,12 @@ const audioContext = new AudioContext();
 
 console.log('> Max channel count:', audioContext.destination.maxChannelCount);
 
-const numChannels = audioContext.destination.maxChannelCount;
+const numChannels = 8;
+
+if (audioContext.destination.maxChannelCount < numChannels) {
+  console.log(`This example requires an output device with at least ${numChannels} channels`);
+  process.exit();
+}
 
 audioContext.destination.channelCount = numChannels;
 audioContext.destination.channelInterpretation = 'discrete';

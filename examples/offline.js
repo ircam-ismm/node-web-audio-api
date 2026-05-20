@@ -2,11 +2,16 @@ import { AudioContext, OfflineAudioContext } from '../index.mjs';
 
 const offline = new OfflineAudioContext(1, 48000, 48000);
 
+offline.addEventListener('statechange', () => {
+  console.log('+ statechange event:', offline.state);
+});
+
 offline.addEventListener('complete', (e) => {
   console.log('+ complete event:', e.renderedBuffer.toString());
 });
 
 offline.suspend(128 / 48000).then(async () => {
+  console.log('currentTime (real, logical):', offline.currentTime, 128 / 48000);
   const osc = offline.createOscillator();
   osc.connect(offline.destination);
   osc.frequency.value = 220;

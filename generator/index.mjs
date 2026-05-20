@@ -10,7 +10,7 @@ import compile from 'template-literal';
 import beautify from 'js-beautify/js/index.js';
 import { ESLint } from 'eslint';
 
-// List of supported nodes. Note that this is list is composed of IDL definitions,
+// List of supported nodes. Note that this list is composed of IDL definitions,
 // and extended with the list of generatedNodes
 let supportedNodes = [
   'ScriptProcessorNode',

@@ -1,25 +1,35 @@
-import { AudioContext, OscillatorNode } from '../index.mjs';
+import {
+  AudioContext,
+  // ConstantSourceNode,
+  OscillatorNode,
+} from '../index.mjs';
 
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });
 
-const sine = new OscillatorNode(audioContext);
-sine.frequency.value = 200;
-
+const src = new OscillatorNode(audioContext, { frequency: 200 });
+// const src = new ConstantSourceNode(audioContext, { offset: 0.5 });
 const scriptProcessor = audioContext.createScriptProcessor();
 
 scriptProcessor.addEventListener('audioprocess', e => {
-  const input = e.inputBuffer.getChannelData(0);
-  const output = e.outputBuffer.getChannelData(0);
+  // put noise in left channel
+  const leftOutput = e.outputBuffer.getChannelData(0);
 
-  // should ear noise only on left channel
-  for (let i = 0; i < output.length; i++) {
-    output[i] = input[i] + Math.random() * 2 - 1;
+  for (let i = 0; i < leftOutput.length; i++) {
+    leftOutput[i] = Math.random() * 2 - 1;
+  }
+
+  // propagate input to right channel
+  const rightInput = e.inputBuffer.getChannelData(1);
+  const rightOutput = e.outputBuffer.getChannelData(1);
+
+  for (let i = 0; i < rightOutput.length; i++) {
+    rightOutput[i] = rightInput[i];
   }
 });
 
-sine
+src
   .connect(scriptProcessor)
   .connect(audioContext.destination);
 
-sine.start();
+src.start();

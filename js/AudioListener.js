@@ -22,7 +22,7 @@ class AudioListener {
     if (
       (typeof options !== 'object')
       || !(kNapiObj in options)
-      || options[kNapiObj]['Symbol.toStringTag'] !== 'AudioListener'
+      || options[kNapiObj].constructor.name !== 'NapiAudioListener'
     ) {
       throw new TypeError('Illegal constructor');
     }

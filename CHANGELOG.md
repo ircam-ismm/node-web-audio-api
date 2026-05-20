@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v1.0.9 - 2026-03-23
+
+- Fix: AudioWorklet properly recycle param buffers when dropped
+
 ## v1.0.8 - 2026-02-14
 
 - Fix: AudioRenderCapacity.stop cf. #167

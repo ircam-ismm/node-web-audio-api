@@ -1,26 +1,19 @@
-use crate::*;
-use napi::*;
-use napi_derive::js_function;
+use napi_derive::napi;
 
-use web_audio_api::media_streams::*;
-
-pub(crate) struct NapiMediaStream(MediaStream);
-
-impl NapiMediaStream {
-    pub fn new(stream: MediaStream) -> Self {
-        Self(stream)
-    }
-
-    pub fn create_js_class(env: &Env) -> Result<JsFunction> {
-        env.define_class("MediaStream", constructor, &[])
-    }
-
-    pub fn unwrap(&self) -> &MediaStream {
-        &self.0
-    }
+// @note
+// - Name is not prefixed with `Napi` as we don't have any JS facade for now
+// - `ClassInstance<MediaStream>` does not behaves well when js and rust name don't match
+#[napi]
+pub struct MediaStream {
+    pub(crate) inner: web_audio_api::media_streams::MediaStream,
 }
 
-#[js_function(1)]
-fn constructor(ctx: CallContext) -> Result<JsUndefined> {
-    ctx.env.get_undefined()
+impl MediaStream {
+    pub fn new(stream: web_audio_api::media_streams::MediaStream) -> Self {
+        Self { inner: stream }
+    }
+
+    pub fn inner(&self) -> &web_audio_api::media_streams::MediaStream {
+        &self.inner
+    }
 }

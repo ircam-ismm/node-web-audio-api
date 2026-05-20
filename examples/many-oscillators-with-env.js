@@ -14,7 +14,8 @@ setInterval(() => {
     .linearRampToValueAtTime(0.2, now + 0.02)
     .exponentialRampToValueAtTime(0.0001, now + 1);
 
-  const osc = new OscillatorNode(audioContext, { frequency });
+  const osc = new OscillatorNode(audioContext);
+  osc.frequency.value = frequency;
   osc.connect(env);
   osc.start(now);
   osc.stop(now + 1);

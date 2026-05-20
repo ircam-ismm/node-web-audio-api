@@ -40,7 +40,7 @@ class AudioParam {
     if (
       (typeof options !== 'object') ||
       !(kNapiObj in options) ||
-      options[kNapiObj]['Symbol.toStringTag'] !== 'AudioParam'
+      options[kNapiObj].constructor.name !== 'NapiAudioParam'
     ) {
       throw new TypeError('Illegal constructor');
     }

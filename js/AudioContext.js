@@ -9,8 +9,6 @@ const {
 } = require('./lib/utils.js');
 const {
   kNapiObj,
-  kOnStateChange,
-  kOnSinkChange,
   kWorkletRelease,
 } = require('./lib/symbols.js');
 const {
@@ -25,6 +23,8 @@ module.exports = function(jsExport, nativeBinding) {
     #sinkId = '';
     #renderCapacity = null;
     #onsinkchange = null;
+    #keepAwakeId = null;
+    #kAudioContextId = null;
 
     constructor(options = {}) {
       if (typeof options !== 'object') {
@@ -73,7 +73,7 @@ module.exports = function(jsExport, nativeBinding) {
       let napiObj;
 
       try {
-        napiObj = new nativeBinding.AudioContext(targetOptions);
+        napiObj = new nativeBinding.NapiAudioContext(targetOptions);
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -88,45 +88,28 @@ module.exports = function(jsExport, nativeBinding) {
         [kNapiObj]: this[kNapiObj].renderCapacity,
       });
 
-      // Add function to Napi object to bridge from Rust events to JS EventTarget
-      this[kNapiObj][kOnStateChange] = (function(err, rawEvent) {
-        const event = new Event(rawEvent.type);
+      this[kNapiObj].onstatechange((function(napiEvent) {
+        const event = new Event(napiEvent.type);
         propagateEvent(this, event);
-      }).bind(this);
+      }).bind(this));
 
-      this[kNapiObj][kOnSinkChange] = (function(err, rawEvent) {
-        const event = new Event(rawEvent.type);
+      this[kNapiObj].onsinkchange((function(napiEvent) {
+        const event = new Event(napiEvent.type);
         propagateEvent(this, event);
-      }).bind(this);
+      }).bind(this));
 
-      // Workaround to bind the `sinkchange` and `statechange` events to EventTarget.
-      // This must be called from JS facade ctor as the JS handler are added to the Napi
-      // object after its instantiation, and that we don't have any initial `resume` call.
-      this[kNapiObj].listen_to_events();
-
-      // @todo - This is probably not requested anymore as the event listeners
       // prevent garbage collection and process exit
-      const id = contextId++;
-      // store in process to prevent garbage collection
-      const kAudioContextId = Symbol(`node-web-audio-api:audio-context-${id}`);
-      Object.defineProperty(process, kAudioContextId, {
+      this.#kAudioContextId = Symbol(`node-web-audio-api:audio-context-${contextId++}`);
+      Object.defineProperty(process, this.#kAudioContextId, {
         __proto__: null,
         enumerable: false,
         configurable: true,
         value: this,
       });
-      // keep process awake until context is closed
-      const keepAwakeId = setInterval(() => {}, 10 * 1000);
-      // clear on close
-      this.addEventListener('statechange', () => {
-        if (this.state === 'closed') {
-          // allow to garbage collect the context and to the close the process
-          delete process[kAudioContextId];
-          clearTimeout(keepAwakeId);
-        }
-      });
 
-      // for wpt tests, see ./.scripts/wpt_harness.mjs for informations
+      this.#keepAwakeId = setInterval(() => {}, 10 * 1000);
+
+      // force the context to close in WPT, see ./.scripts/wpt_harness.mjs for information
       if (process.WPT_TEST_RUNNER) {
         process.WPT_TEST_RUNNER.once('cleanup', () => this.close());
       }
@@ -215,6 +198,9 @@ module.exports = function(jsExport, nativeBinding) {
       // The other way around works too because of `recv_timeout` but cleaner this way
       await this.audioWorklet[kWorkletRelease]();
       await this[kNapiObj].close();
+      // allow process to terminate
+      clearInterval(this.#keepAwakeId);
+      delete process[this.#kAudioContextId];
     }
 
     async setSinkId(sinkId) {
@@ -240,10 +226,9 @@ module.exports = function(jsExport, nativeBinding) {
         });
       }
 
-      this.#sinkId = sinkId;
-
       try {
-        this[kNapiObj].setSinkId(targetSinkId);
+        await this[kNapiObj].setSinkId(targetSinkId);
+        this.#sinkId = sinkId;
       } catch (err) {
         throwSanitizedError(err);
       }

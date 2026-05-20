@@ -15,6 +15,7 @@ module.exports = (jsExport, _nativeBinding) => {
     #audioWorklet = null;
     #destination = null;
     #listener = null;
+    #statechange = null;
 
     constructor(options) {
       // Make constructor "private"
@@ -90,14 +91,13 @@ module.exports = (jsExport, _nativeBinding) => {
       return this[kNapiObj].currentTime;
     }
 
-    // @todo - implement in upstream crate + pass to AudioWorkletGlobalScope
-    // get renderQuantumSize() {
-    //   if (!(this instanceof BaseAudioContext)) {
-    //     throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
-    //   }
+    get renderQuantumSize() {
+      if (!(this instanceof BaseAudioContext)) {
+        throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
+      }
 
-    //   return this[kNapiObj].renderQuantumSize;
-    // }
+      return this[kNapiObj].renderQuantumSize;
+    }
 
     get state() {
       if (!(this instanceof BaseAudioContext)) {
@@ -107,26 +107,28 @@ module.exports = (jsExport, _nativeBinding) => {
       return this[kNapiObj].state;
     }
 
+    // @fixme - napi-rs 3
     get onstatechange() {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
       }
 
-      return this._statechange || null;
+      return this.#statechange;
     }
 
+    // @fixme - napi-rs 3
     set onstatechange(value) {
       if (!(this instanceof BaseAudioContext)) {
         throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
       }
 
       if (isFunction(value) || value === null) {
-        this._statechange = value;
+        this.#statechange = value;
       }
     }
 
     // This is not exactly what the spec says, but if we reject the promise
-    // when decodeErrorCallback is present the program will crash in an
+    // when decodeErrorCallback is present the program can crash in an
     // unexpected manner
     // cf. https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-decodeaudiodata
     async decodeAudioData(arrayBuffer, decodeSuccessCallback = undefined, decodeErrorCallback = undefined) {

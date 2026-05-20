@@ -1,2 +1,1 @@
-mod media_stream;
-pub(crate) use media_stream::NapiMediaStream;
+pub mod media_stream;

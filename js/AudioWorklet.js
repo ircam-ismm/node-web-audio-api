@@ -28,8 +28,7 @@ const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fet
 
 /**
  * Retrieve code with different module resolution strategies
- * - file - absolute or relative to cwd path
- *
+ * - file - absolute or relative to cwd pathname
  * - URL - do not support import within module
  * - Blob - do not support import within module
  * - fallback: relative to caller site
@@ -61,11 +60,15 @@ const resolveModule = async (moduleUrl) => {
       throw new DOMException(`Failed to execute 'addModule' on 'AudioWorklet': ${err.message}`, 'AbortError');
     }
   } else {
-    const callerSite = caller(2);
+    let callerSite = caller(2);
 
-    if (callerSite.startsWith('http')) { // this branch exists for wpt where caller site is an url
-      const baseUrl = callerSite.substring(0, callerSite.lastIndexOf('/'));
-      const url = baseUrl + '/' + moduleUrl;
+    if (callerSite.startsWith('http')) {
+      // this branch exists for wpt where caller site is an url, moduleUrl can be both relative or absolute
+      const baseUrl = moduleUrl.startsWith('/')
+        ? new URL(callerSite).origin
+        : callerSite.substring(0, callerSite.lastIndexOf('/')) + '/';
+
+      const url = baseUrl + moduleUrl;
 
       try {
         const res = await fetch(url);
@@ -98,11 +101,13 @@ const resolveModule = async (moduleUrl) => {
 class AudioWorklet {
   #workletId = null;
   #sampleRate = null;
-  #port = null;
+  #worker = null;
+  #publicPort = null;
   #idPromiseMap = new Map();
   #promiseId = 0;
   #workletParamDescriptorsMap = new Map();
   #pendingCreateProcessors = new Set();
+
 
   constructor(options) {
     if (
@@ -116,72 +121,98 @@ class AudioWorklet {
     this.#sampleRate = options.sampleRate;
   }
 
-  #bindEvents() {
+  async #initWorkletGlobalScope() {
     // @todo
     // - better error handling, stack trace, etc.
     // - handle 'node-web-audio-api:worklet:ctor-error' message
-    this.#port.on('message', event => {
-      switch (event.cmd) {
-        case 'node-web-audio-api:worklet:module-added': {
-          const { promiseId } = event;
-          const { resolve } = this.#idPromiseMap.get(promiseId);
-          this.#idPromiseMap.delete(promiseId);
-          resolve();
-          break;
+    await new Promise(resolve => {
+      const workletPathname = path.join(__dirname, 'AudioWorkletGlobalScope.js');
+
+      this.#worker = new Worker(workletPathname, {
+        workerData: {
+          workletId: this.#workletId,
+          sampleRate: this.#sampleRate,
+        },
+      });
+
+      this.#worker.on('online', resolve);
+
+      this.#worker.on('message', event => {
+        switch (event.cmd) {
+          case 'node-web-audio-api:worklet:enter-ack': {
+            const { promiseId } = event;
+            const { resolve } = this.#idPromiseMap.get(promiseId);
+            this.#idPromiseMap.delete(promiseId);
+            resolve();
+            break;
+          }
+          case 'node-web-audio-api:worklet:add-module-success': {
+            const { promiseId } = event;
+            const { resolve } = this.#idPromiseMap.get(promiseId);
+            this.#idPromiseMap.delete(promiseId);
+            resolve();
+            break;
+          }
+          case 'node-web-audio-api:worklet:add-module-failed': {
+            const { promiseId, err } = event;
+            const { reject } = this.#idPromiseMap.get(promiseId);
+            this.#idPromiseMap.delete(promiseId);
+            reject(err);
+            break;
+          }
+          case 'node-web-audio-api:worklet:processor-registered': {
+            const { name, parameterDescriptors } = event;
+            this.#workletParamDescriptorsMap.set(name, parameterDescriptors);
+            break;
+          }
+          case 'node-web-audio-api:worklet:processor-created':
+          case 'node-web-audio-api:worklet:ctor-error': {
+            const { id } = event;
+            this.#pendingCreateProcessors.delete(id);
+            break;
+          }
         }
-        case 'node-web-audio-api:worklet:add-module-failed': {
-          const { promiseId, err } = event;
-          const { reject } = this.#idPromiseMap.get(promiseId);
-          this.#idPromiseMap.delete(promiseId);
-          reject(err);
-          break;
-        }
-        case 'node-web-audio-api:worlet:processor-registered': {
-          const { name, parameterDescriptors } = event;
-          this.#workletParamDescriptorsMap.set(name, parameterDescriptors);
-          break;
-        }
-        case 'node-web-audio-api:worklet:processor-created': {
-          const { id } = event;
-          this.#pendingCreateProcessors.delete(id);
-          break;
-        }
-      }
+      });
     });
+
+    // AudioWorkletGlobalScope is online, create global public message channel
+    const promiseId = this.#promiseId++;
+    const { resolve, reject, promise } = Promise.withResolvers();
+    this.#idPromiseMap.set(promiseId, { resolve, reject });
+    const { port1: publicPort1, port2: publicPort2 } = new MessageChannel();
+
+    this.#publicPort = publicPort1;
+
+    this.#worker.postMessage({
+      cmd: 'node-web-audio-api:worklet:enter',
+      port: publicPort2,
+      promiseId,
+    }, [publicPort2]);
+
+    await promise;
   }
 
   get port() {
-    return this.#port;
+    return this.#publicPort;
   }
 
   async addModule(moduleUrl) {
-    // @important - `resolveModule` must be called first because it uses `caller`
-    // which will return `null` if this is not in the first line...
+    // @note - `resolveModule` must be called first because it uses `caller`
+    // which will return `null` if this is not in the first line
     const resolved = await resolveModule(moduleUrl);
 
-    // launch Worker if not exists
-    if (!this.#port) {
-      await new Promise(resolve => {
-        const workletPathname = path.join(__dirname, 'AudioWorkletGlobalScope.js');
-        this.#port = new Worker(workletPathname, {
-          workerData: {
-            workletId: this.#workletId,
-            sampleRate: this.#sampleRate,
-          },
-        });
-        this.#port.on('online', resolve);
-
-        this.#bindEvents();
-      });
+    // launch WorkletGlobalScope if not exists
+    if (!this.#worker) {
+      await this.#initWorkletGlobalScope();
     }
 
     const promiseId = this.#promiseId++;
-    // This promise is resolved when the Worker returns the name and
+    // The promise is resolved when the Worker returns the name and
     // parameterDescriptors from the added module
     await new Promise((resolve, reject) => {
       this.#idPromiseMap.set(promiseId, { resolve, reject });
 
-      this.#port.postMessage({
+      this.#worker.postMessage({
         cmd: 'node-web-audio-api:worklet:add-module',
         moduleUrl: resolved.absPathname,
         code: resolved.code,
@@ -191,15 +222,14 @@ class AudioWorklet {
   }
 
   // For OfflineAudioContext only, check that all processors have been properly
-  // created before actual `startRendering`
+  // created before rendering
   async [kCheckProcessorsCreated]() {
-    //  eslint-disable-next-line no-async-promise-executor
+    // eslint-disable-next-line no-async-promise-executor
     return new Promise(async resolve => {
       while (this.#pendingCreateProcessors.size !== 0) {
-        // we need a microtask to ensure message can be received
+        // we need a macro-task to ensure message can be received
         await new Promise(resolve => setTimeout(resolve, 0));
       }
-
       resolve();
     });
   }
@@ -215,24 +245,29 @@ class AudioWorklet {
   [kCreateProcessor](name, options, id) {
     this.#pendingCreateProcessors.add(id);
 
-    const { port1, port2 } = new MessageChannel();
-    // @todo - check if some processorOptions must be transfered as well
-    this.#port.postMessage({
+    const { port1: messagePort1, port2: messagePort2 } = new MessageChannel();
+    const { port1: errorPort1, port2: errorPort2 } = new MessageChannel();
+    // @todo - check if we should transfer some processorOptions as well
+    this.#worker.postMessage({
       cmd: 'node-web-audio-api:worklet:create-processor',
       name,
       id,
       options,
-      port: port2,
-    }, [port2]);
+      messagePort: messagePort2,
+      errorPort: errorPort2,
+    }, [messagePort2, errorPort2]);
 
-    return port1;
+    return {
+      messagePort: messagePort1,
+      errorPort: errorPort1,
+    };
   }
 
   async [kWorkletRelease]() {
-    if (this.#port) {
+    if (this.#worker) {
       await new Promise(resolve => {
-        this.#port.on('exit', resolve);
-        this.#port.postMessage({
+        this.#worker.on('exit', resolve);
+        this.#worker.postMessage({
           cmd: 'node-web-audio-api:worklet:exit',
         });
       });

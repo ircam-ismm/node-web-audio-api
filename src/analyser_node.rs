@@ -17,351 +17,223 @@
 // -------------------------------------------------------------------------- //
 // -------------------------------------------------------------------------- //
 
-use crate::*;
-use napi::*;
-use napi_derive::js_function;
+use napi::bindgen_prelude::*;
+use napi_derive::napi;
+
 use web_audio_api::node::*;
 
-pub(crate) struct NapiAnalyserNode(AnalyserNode);
+use crate::*;
 
-// for debug purpose
-// impl Drop for NapiAnalyserNode {
-//     fn drop(&mut self) {
-//         println!("NAPI: NapiAnalyserNode dropped");
-//     }
-// }
-
-impl NapiAnalyserNode {
-    pub fn create_js_class(env: &Env) -> Result<JsFunction> {
-        let interface = audio_node_interface![
-            Property::new("fftSize")?
-                .with_getter(get_fft_size)
-                .with_setter(set_fft_size),
-            Property::new("frequencyBinCount")?.with_getter(get_frequency_bin_count),
-            Property::new("minDecibels")?
-                .with_getter(get_min_decibels)
-                .with_setter(set_min_decibels),
-            Property::new("maxDecibels")?
-                .with_getter(get_max_decibels)
-                .with_setter(set_max_decibels),
-            Property::new("smoothingTimeConstant")?
-                .with_getter(get_smoothing_time_constant)
-                .with_setter(set_smoothing_time_constant),
-            Property::new("getFloatFrequencyData")?.with_method(get_float_frequency_data),
-            Property::new("getByteFrequencyData")?.with_method(get_byte_frequency_data),
-            Property::new("getFloatTimeDomainData")?.with_method(get_float_time_domain_data),
-            Property::new("getByteTimeDomainData")?.with_method(get_byte_time_domain_data)
-        ];
-
-        env.define_class("AnalyserNode", constructor, &interface)
-    }
-
-    // @note: this is used in audio_node.rs for the connect / disconnect macros
-    pub fn unwrap(&mut self) -> &mut AnalyserNode {
-        &mut self.0
-    }
-}
-
-#[js_function(2)]
-fn constructor(ctx: CallContext) -> Result<JsUndefined> {
-    let mut js_this = ctx.this_unchecked::<JsObject>();
-
-    let js_audio_context = ctx.get::<JsObject>(0)?;
-
-    // --------------------------------------------------------
-    // Parse AnalyserOptions
-    // by bindings construction all fields are populated on the JS side
-    // --------------------------------------------------------
-    let js_options = ctx.get::<JsObject>(1)?;
-
-    let fft_size = js_options
-        .get::<&str, JsNumber>("fftSize")?
-        .unwrap()
-        .get_double()? as usize;
-
-    let max_decibels = js_options
-        .get::<&str, JsNumber>("maxDecibels")?
-        .unwrap()
-        .get_double()?;
-
-    let min_decibels = js_options
-        .get::<&str, JsNumber>("minDecibels")?
-        .unwrap()
-        .get_double()?;
-
-    let smoothing_time_constant = js_options
-        .get::<&str, JsNumber>("smoothingTimeConstant")?
-        .unwrap()
-        .get_double()?;
-
-    // --------------------------------------------------------
-    // Parse AudioNodeOptions
-    // --------------------------------------------------------
-    let node_defaults = AnalyserOptions::default();
-    let audio_node_options_default = node_defaults.audio_node_options;
-
-    let some_channel_count_js = js_options.get::<&str, JsObject>("channelCount")?;
-    let channel_count = if let Some(channel_count_js) = some_channel_count_js {
-        channel_count_js.coerce_to_number()?.get_double()? as usize
-    } else {
-        audio_node_options_default.channel_count
-    };
-
-    let some_channel_count_mode_js = js_options.get::<&str, JsObject>("channelCountMode")?;
-    let channel_count_mode = if let Some(channel_count_mode_js) = some_channel_count_mode_js {
-        let channel_count_mode_str = channel_count_mode_js
-            .coerce_to_string()?
-            .into_utf8()?
-            .into_owned()?;
-
-        match channel_count_mode_str.as_str() {
-            "max" => ChannelCountMode::Max,
-            "clamped-max" => ChannelCountMode::ClampedMax,
-            "explicit" => ChannelCountMode::Explicit,
-            _ => panic!("TypeError - Failed to read the 'channelCountMode' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelCountMode", channel_count_mode_str.as_str()),
-        }
-    } else {
-        audio_node_options_default.channel_count_mode
-    };
-
-    let some_channel_interpretation_js =
-        js_options.get::<&str, JsObject>("channelInterpretation")?;
-    let channel_interpretation = if let Some(channel_interpretation_js) =
-        some_channel_interpretation_js
-    {
-        let channel_interpretation_str = channel_interpretation_js
-            .coerce_to_string()?
-            .into_utf8()?
-            .into_owned()?;
-
-        match channel_interpretation_str.as_str() {
-            "speakers" => ChannelInterpretation::Speakers,
-            "discrete" => ChannelInterpretation::Discrete,
-            _ => panic!("TypeError - Failed to read the 'channelInterpretation' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", channel_interpretation_str.as_str()),
-        }
-    } else {
-        audio_node_options_default.channel_interpretation
-    };
-
-    // --------------------------------------------------------
-    // Create AnalyserOptions object
-    // --------------------------------------------------------
-    let options = AnalyserOptions {
-        fft_size,
-        max_decibels,
-        min_decibels,
-        smoothing_time_constant,
-        audio_node_options: AudioNodeOptions {
-            channel_count,
-            channel_count_mode,
-            channel_interpretation,
-        },
-    };
-
-    // --------------------------------------------------------
-    // Create native AnalyserNode
-    // --------------------------------------------------------
-    let audio_context_name =
-        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
-    let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
-    let audio_context_str = &audio_context_utf8_name[..];
-
-    let native_node = match audio_context_str {
-        "AudioContext" => {
-            let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
-            let audio_context = napi_audio_context.unwrap();
-            AnalyserNode::new(audio_context, options)
-        }
-        "OfflineAudioContext" => {
-            let napi_audio_context = ctx
-                .env
-                .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
-            let audio_context = napi_audio_context.unwrap();
-            AnalyserNode::new(audio_context, options)
-        }
-        &_ => unreachable!(),
-    };
-
-    // --------------------------------------------------------
-    // Finalize instance creation
-    // --------------------------------------------------------
-    js_this.define_properties(&[
-        Property::new("context")?
-            .with_value(&js_audio_context)
-            .with_property_attributes(PropertyAttributes::Enumerable),
-        // this must be put on the instance and not in the prototype to be reachable
-        Property::new("Symbol.toStringTag")?
-            .with_value(&ctx.env.create_string("AnalyserNode")?)
-            .with_property_attributes(PropertyAttributes::Static),
-    ])?;
-
-    // finalize instance creation
-    let napi_node = NapiAnalyserNode(native_node);
-    ctx.env.wrap(&mut js_this, napi_node)?;
-
-    ctx.env.get_undefined()
+#[napi(js_name = NapiAnalyserNode)]
+pub struct NapiAnalyserNode {
+    pub(crate) inner: AnalyserNode,
 }
 
 audio_node_impl!(NapiAnalyserNode);
 
-// -------------------------------------------------
-// Getters / Setters
-// -------------------------------------------------
+#[napi]
+impl NapiAnalyserNode {
+    #[napi(constructor, catch_unwind)]
+    pub fn new(
+        context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
+        options: Object,
+    ) -> Self {
+        // --------------------------------------------------------
+        // Parse AnalyserOptions
+        // by bindings construction all fields are populated on the JS side
+        // --------------------------------------------------------
 
-#[js_function(0)]
-fn get_fft_size(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
-    let node = napi_node.unwrap();
+        let node_defaults: Option<AnalyserOptions> = Some(AnalyserOptions::default());
 
-    let value = node.fft_size();
-    ctx.env.create_double(value as f64)
-}
+        let some_fft_size = options.get::<Option<u32>>("fftSize").unwrap();
+        let fft_size = if let Some(fft_size) = some_fft_size.unwrap() {
+            fft_size as usize
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().fft_size
+        } else {
+            panic!("No default value for fft_size in AnalyserOptions")
+        };
 
-#[js_function(1)]
-fn set_fft_size(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
-    let node = napi_node.unwrap();
+        let some_max_decibels = options.get::<Option<f64>>("maxDecibels").unwrap();
+        let max_decibels = if let Some(max_decibels) = some_max_decibels.unwrap() {
+            max_decibels
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().max_decibels
+        } else {
+            panic!("No default value for max_decibels in AnalyserOptions")
+        };
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()? as usize;
-    node.set_fft_size(value);
+        let some_min_decibels = options.get::<Option<f64>>("minDecibels").unwrap();
+        let min_decibels = if let Some(min_decibels) = some_min_decibels.unwrap() {
+            min_decibels
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().min_decibels
+        } else {
+            panic!("No default value for min_decibels in AnalyserOptions")
+        };
 
-    ctx.env.get_undefined()
-}
+        let some_smoothing_time_constant =
+            options.get::<Option<f64>>("smoothingTimeConstant").unwrap();
+        let smoothing_time_constant =
+            if let Some(smoothing_time_constant) = some_smoothing_time_constant.unwrap() {
+                smoothing_time_constant
+            } else if node_defaults.is_some() {
+                node_defaults.clone().unwrap().smoothing_time_constant
+            } else {
+                panic!("No default value for smoothing_time_constant in AnalyserOptions")
+            };
 
-#[js_function(0)]
-fn get_frequency_bin_count(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
-    let node = napi_node.unwrap();
+        // --------------------------------------------------------
+        // Parse AudioNodeOptions
+        // - Note that these are not enforced by JS facade
+        // --------------------------------------------------------
+        let audio_node_options_default = match node_defaults {
+            Some(node_defaults) => node_defaults.audio_node_options,
+            None => AudioNodeOptions::default(),
+        };
 
-    let value = node.frequency_bin_count();
-    ctx.env.create_double(value as f64)
-}
+        let some_channel_count = options.get::<u32>("channelCount").unwrap();
+        let channel_count = if let Some(channel_count) = some_channel_count {
+            channel_count as usize
+        } else {
+            audio_node_options_default.channel_count
+        };
 
-#[js_function(0)]
-fn get_min_decibels(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
-    let node = napi_node.unwrap();
+        let some_channel_count_mode = options.get::<String>("channelCountMode").unwrap();
+        let channel_count_mode = if let Some(channel_count_mode) = some_channel_count_mode {
+            match channel_count_mode.as_str() {
+                "max" => ChannelCountMode::Max,
+                "clamped-max" => ChannelCountMode::ClampedMax,
+                "explicit" => ChannelCountMode::Explicit,
+                _ => panic!("TypeError - Failed to read the 'channelCountMode' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelCountMode", channel_count_mode.as_str()),
+            }
+        } else {
+            audio_node_options_default.channel_count_mode
+        };
 
-    let value = node.min_decibels();
-    ctx.env.create_double(value)
-}
+        let some_channel_interpretation = options.get::<String>("channelInterpretation").unwrap();
+        let channel_interpretation = if let Some(channel_interpretation) =
+            some_channel_interpretation
+        {
+            match channel_interpretation.as_str() {
+                "speakers" => ChannelInterpretation::Speakers,
+                "discrete" => ChannelInterpretation::Discrete,
+                _ => panic!("TypeError - Failed to read the 'channelInterpretation' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", channel_interpretation.as_str()),
+            }
+        } else {
+            audio_node_options_default.channel_interpretation
+        };
 
-#[js_function(1)]
-fn set_min_decibels(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
-    let node = napi_node.unwrap();
+        // --------------------------------------------------------
+        // Create AnalyserOptions object
+        // --------------------------------------------------------
+        let options = AnalyserOptions {
+            fft_size,
+            max_decibels,
+            min_decibels,
+            smoothing_time_constant,
+            audio_node_options: AudioNodeOptions {
+                channel_count,
+                channel_count_mode,
+                channel_interpretation,
+            },
+        };
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()?;
-    node.set_min_decibels(value);
+        // --------------------------------------------------------
+        // Create native instance
+        // --------------------------------------------------------
+        let native_node = match context {
+            Either::A(context) => {
+                let native_context = context.inner();
+                AnalyserNode::new(native_context, options)
+            }
+            Either::B(context) => {
+                let native_context = context.inner();
+                AnalyserNode::new(native_context, options)
+            }
+        };
 
-    ctx.env.get_undefined()
-}
+        // --------------------------------------------------------
+        // Bind NapiAudioParam instances
+        // --------------------------------------------------------
 
-#[js_function(0)]
-fn get_max_decibels(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
-    let node = napi_node.unwrap();
+        Self { inner: native_node }
+    }
 
-    let value = node.max_decibels();
-    ctx.env.create_double(value)
-}
+    // -------------------------------------------------
+    // Getters / Setters
+    // -------------------------------------------------
 
-#[js_function(1)]
-fn set_max_decibels(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
-    let node = napi_node.unwrap();
+    #[napi(getter, js_name = "fftSize")]
+    pub fn get_fft_size(&self) -> u32 {
+        self.inner.fft_size() as u32
+    }
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()?;
-    node.set_max_decibels(value);
+    #[napi(setter, catch_unwind, js_name = "fftSize")]
+    pub fn set_fft_size(&mut self, value: u32) {
+        self.inner.set_fft_size(value as usize);
+    }
 
-    ctx.env.get_undefined()
-}
+    #[napi(getter, js_name = "frequencyBinCount")]
+    pub fn get_frequency_bin_count(&self) -> u32 {
+        self.inner.frequency_bin_count() as u32
+    }
 
-#[js_function(0)]
-fn get_smoothing_time_constant(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
-    let node = napi_node.unwrap();
+    #[napi(getter, js_name = "minDecibels")]
+    pub fn get_min_decibels(&self) -> f64 {
+        self.inner.min_decibels()
+    }
 
-    let value = node.smoothing_time_constant();
-    ctx.env.create_double(value)
-}
+    #[napi(setter, catch_unwind, js_name = "minDecibels")]
+    pub fn set_min_decibels(&mut self, value: f64) {
+        self.inner.set_min_decibels(value);
+    }
 
-#[js_function(1)]
-fn set_smoothing_time_constant(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
-    let node = napi_node.unwrap();
+    #[napi(getter, js_name = "maxDecibels")]
+    pub fn get_max_decibels(&self) -> f64 {
+        self.inner.max_decibels()
+    }
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()?;
-    node.set_smoothing_time_constant(value);
+    #[napi(setter, catch_unwind, js_name = "maxDecibels")]
+    pub fn set_max_decibels(&mut self, value: f64) {
+        self.inner.set_max_decibels(value);
+    }
 
-    ctx.env.get_undefined()
-}
+    #[napi(getter, js_name = "smoothingTimeConstant")]
+    pub fn get_smoothing_time_constant(&self) -> f64 {
+        self.inner.smoothing_time_constant()
+    }
 
-// -------------------------------------------------
-// METHODS
-// -------------------------------------------------
+    #[napi(setter, catch_unwind, js_name = "smoothingTimeConstant")]
+    pub fn set_smoothing_time_constant(&mut self, value: f64) {
+        self.inner.set_smoothing_time_constant(value);
+    }
 
-#[js_function(1)]
-fn get_float_frequency_data(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
-    let node = napi_node.unwrap();
+    // -------------------------------------------------
+    // METHODS
+    // -------------------------------------------------
 
-    let mut array_js = ctx.get::<JsTypedArray>(0)?.into_value()?;
-    let array: &mut [f32] = array_js.as_mut();
+    #[napi(catch_unwind)]
+    pub fn get_float_frequency_data(&mut self, mut array: Float32ArraySlice) {
+        let array = unsafe { array.as_mut() };
+        self.inner.get_float_frequency_data(array);
+    }
 
-    node.get_float_frequency_data(array);
+    #[napi(catch_unwind)]
+    pub fn get_byte_frequency_data(&mut self, mut array: Uint8ArraySlice) {
+        let array = unsafe { array.as_mut() };
+        self.inner.get_byte_frequency_data(array);
+    }
 
-    ctx.env.get_undefined()
-}
+    #[napi(catch_unwind)]
+    pub fn get_float_time_domain_data(&mut self, mut array: Float32ArraySlice) {
+        let array = unsafe { array.as_mut() };
+        self.inner.get_float_time_domain_data(array);
+    }
 
-#[js_function(1)]
-fn get_byte_frequency_data(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let mut array_js = ctx.get::<JsTypedArray>(0)?.into_value()?;
-    let array: &mut [u8] = array_js.as_mut();
-
-    node.get_byte_frequency_data(array);
-
-    ctx.env.get_undefined()
-}
-
-#[js_function(1)]
-fn get_float_time_domain_data(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let mut array_js = ctx.get::<JsTypedArray>(0)?.into_value()?;
-    let array: &mut [f32] = array_js.as_mut();
-
-    node.get_float_time_domain_data(array);
-
-    ctx.env.get_undefined()
-}
-
-#[js_function(1)]
-fn get_byte_time_domain_data(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAnalyserNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let mut array_js = ctx.get::<JsTypedArray>(0)?.into_value()?;
-    let array: &mut [u8] = array_js.as_mut();
-
-    node.get_byte_time_domain_data(array);
-
-    ctx.env.get_undefined()
+    #[napi(catch_unwind)]
+    pub fn get_byte_time_domain_data(&mut self, mut array: Uint8ArraySlice) {
+        let array = unsafe { array.as_mut() };
+        self.inner.get_byte_time_domain_data(array);
+    }
 }

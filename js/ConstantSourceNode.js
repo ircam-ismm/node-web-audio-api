@@ -52,7 +52,6 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError(`Failed to construct 'ConstantSourceNode': argument 1 is not of type BaseAudioContext`);
       }
 
-      // parsed version of the option to be passed to NAPI
       const parsedOptions = {};
 
       if (options && typeof options !== 'object') {
@@ -70,7 +69,7 @@ module.exports = (jsExport, nativeBinding) => {
       let napiObj;
 
       try {
-        napiObj = new nativeBinding.ConstantSourceNode(context[kNapiObj], parsedOptions);
+        napiObj = new nativeBinding.NapiConstantSourceNode(context[kNapiObj], parsedOptions);
       } catch (err) {
         throwSanitizedError(err);
       }

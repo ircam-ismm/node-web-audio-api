@@ -35,6 +35,20 @@ describe('# OfflineAudioContext', () => {
       assert.isTrue(bResult instanceof AudioBuffer);
       assert.deepEqual(aResult, bResult);
     });
+
+    it(`should throw clean error when called twice`, async () => {
+      const offline = new OfflineAudioContext(1, 48000, 48000);
+      await offline.startRendering();
+
+      try {
+        await offline.startRendering();
+      } catch (err) {
+        console.log(err);
+        return;
+      }
+
+      assert.fail();
+    });
   });
 
   describe('## suspend / resume', () => {

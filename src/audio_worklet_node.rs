@@ -1,10 +1,14 @@
-use crate::{NapiAudioContext, NapiAudioParam, NapiOfflineAudioContext};
+use std::cell::Cell;
+use std::collections::HashMap;
+use std::option::Option;
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::{Arc, Mutex, OnceLock, RwLock};
 
-use crossbeam_channel::{self, Receiver, Sender};
+use crossbeam_channel::{Receiver, Sender};
 
-use napi::bindgen_prelude::Array;
-use napi::*;
-use napi_derive::js_function;
+use napi::bindgen_prelude::*;
+use napi::JsSymbol;
+use napi_derive::napi;
 
 use web_audio_api::node::{AudioNode, AudioNodeOptions, ChannelCountMode, ChannelInterpretation};
 use web_audio_api::worklet::{
@@ -13,11 +17,7 @@ use web_audio_api::worklet::{
 };
 use web_audio_api::{AudioParamDescriptor, AutomationRate};
 
-use std::cell::Cell;
-use std::collections::HashMap;
-use std::option::Option;
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
-use std::sync::{Arc, Mutex, OnceLock, RwLock};
+use crate::{NapiAudioContext, NapiAudioParam, NapiOfflineAudioContext};
 
 /// Unique ID generator for AudioWorkletProcessors
 static INCREMENTING_ID: AtomicU32 = AtomicU32::new(0);
@@ -136,135 +136,150 @@ struct WorkletAbruptCompletionResult {
     err: Error,
 }
 
-/// Check that given JS and Rust input / output layout are the same, i.e. check
-/// that each input / output have the same number of channels
+/// Check that given JS and Rust input / output layout are the same,
+/// i.e. that each input / output have the same number of channels
 ///
-/// Note that we don't check the number of inputs / outputs as they is defined
-/// at construction and cannot change
-fn check_same_io_layout(js_io: &JsObject, rs_io: &'static [&'static [&'static [f32]]]) -> bool {
-    for (i, io) in rs_io.iter().enumerate() {
-        if io.len()
-            != js_io
-                .get_element::<JsObject>(i as u32)
-                .unwrap()
-                .get_array_length_unchecked()
-                .unwrap() as usize
-        {
-            return false;
-        }
+/// Note that we don't check the number of inputs / outputs as they are defined
+/// at construction and cannot be changed
+fn check_same_io_layout(js_io: &Array, rs_io: &'static [&'static [&'static [f32]]]) -> bool {
+    for (i, rs_channels) in rs_io.iter().enumerate() {
+        let js_channels = js_io.get::<Array>(i as u32);
+
+        match js_channels {
+            Ok(js_channels) => {
+                match js_channels {
+                    Some(js_channels) => {
+                        if rs_channels.len() != js_channels.len() as usize {
+                            return false;
+                        }
+                    }
+                    None => return false, // found something but not an array
+                }
+            }
+            Err(_) => return false, // could not grab channels at io index
+        };
     }
 
     true
 }
 
-/// Recreate the whole JS inputs and output data structure. It is required to start
-/// from scratch because Array are frozen with prevents us to add, remove or modify items.
-fn rebuild_io_layout(
-    env: &Env,
-    js_io: JsObject,
+/// Recreate the JS inputs or output data structures (input and output are handled separately).
+/// We must rebuild the whole structure from scratch because the resulting Arrays are frozen.
+///
+/// @todo - move this logic to JS to minimize language boundary crossing (needs benchmarking)
+fn rebuild_io_layout<'a>(
+    env: &'a Env,
+    js_io: Array,
     rs_io: &'static [&'static [&'static [f32]]],
-) -> Result<JsObject> {
+) -> Result<Array<'a>> {
     let mut new_js_io = env.create_array(rs_io.len() as u32).unwrap();
 
     let global = env.get_global()?;
-
     let k_worklet_get_buffer = env.symbol_for("node-web-audio-api:worklet-get-buffer")?;
-    let get_buffer = global.get_property::<JsSymbol, JsFunction>(k_worklet_get_buffer)?;
+    let get_buffer =
+        global.get_property::<JsSymbol, Function<(), Float32Array>>(k_worklet_get_buffer)?;
 
     let k_worklet_recycle_buffer = env.symbol_for("node-web-audio-api:worklet-recycle-buffer")?;
-    let recycle_buffer = global.get_property::<JsSymbol, JsFunction>(k_worklet_recycle_buffer)?;
+    let recycle_buffer =
+        global.get_property::<JsSymbol, Function<Float32Array, ()>>(k_worklet_recycle_buffer)?;
 
     let k_worklet_mark_as_untransferable =
         env.symbol_for("node-web-audio-api:worklet-mark-as-untransferable")?;
-    let mark_as_untransferable =
-        global.get_property::<JsSymbol, JsFunction>(k_worklet_mark_as_untransferable)?;
+    let mark_as_untransferable = global
+        .get_property::<JsSymbol, Function<Array, Array>>(k_worklet_mark_as_untransferable)?;
 
     for (i, io) in rs_io.iter().enumerate() {
-        let mut channels = env.create_array(rs_io[i].len() as u32).unwrap();
-        let old_channels = js_io.get_element::<JsObject>(i as u32).unwrap();
         // recycle old channels
+        let old_channels = js_io.get_element::<Array>(i as u32).unwrap();
         for j in 0..old_channels.get_array_length_unchecked()? {
-            let channel = old_channels.get_element::<JsTypedArray>(j).unwrap();
-            let _ = recycle_buffer.call1::<JsTypedArray, JsUndefined>(channel);
+            let channel = old_channels.get_element::<Float32Array>(j).unwrap();
+            let _ = recycle_buffer.call(channel);
         }
-        // populate channels
+        // create and populate new channels
+        let mut channels = env.create_array(rs_io[i].len() as u32).unwrap();
         for j in 0..io.len() {
-            let channel = get_buffer.call0::<JsTypedArray>()?;
+            let channel = get_buffer.call(())?;
             let _ = channels.set(j as u32, channel);
         }
 
-        let channels = mark_as_untransferable.call1::<Array, Array>(channels)?;
-        let mut channels = channels.coerce_to_object().unwrap();
+        // mark channels as untransferable and freeze
+        let mut channels = mark_as_untransferable.call(channels)?;
         let _ = channels.freeze();
 
         new_js_io.set(i as u32, channels).unwrap();
     }
 
-    let new_js_io = mark_as_untransferable.call1::<Array, Array>(new_js_io)?;
-    let mut new_js_io = new_js_io.coerce_to_object().unwrap();
+    // mark input / output as untransferable and freeze
+    let mut new_js_io = mark_as_untransferable.call(new_js_io)?;
     let _ = new_js_io.freeze();
 
     Ok(new_js_io)
 }
 
 /// Recycle all processor buffers on Drop
-fn recycle_processor(env: &Env, processor: JsObject) -> Result<()> {
+fn recycle_processor(env: &Env, processor: Object) -> Result<()> {
     let global = env.get_global()?;
 
     let k_worklet_recycle_buffer = env.symbol_for("node-web-audio-api:worklet-recycle-buffer")?;
-    let recycle_buffer = global.get_property::<JsSymbol, JsFunction>(k_worklet_recycle_buffer)?;
+    let recycle_buffer =
+        global.get_property::<JsSymbol, Function<Float32Array, ()>>(k_worklet_recycle_buffer)?;
 
     let k_worklet_recycle_buffer_1 =
         env.symbol_for("node-web-audio-api:worklet-recycle-buffer-1")?;
     let recycle_buffer_1 =
-        global.get_property::<JsSymbol, JsFunction>(k_worklet_recycle_buffer_1)?;
+        global.get_property::<JsSymbol, Function<Float32Array, ()>>(k_worklet_recycle_buffer_1)?;
 
+    // recycle input channels
     let k_worklet_inputs = env.symbol_for("node-web-audio-api:worklet-inputs")?;
-    let js_inputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_inputs)?;
+    let js_inputs = processor.get_property::<JsSymbol, Array>(k_worklet_inputs)?;
 
-    for i in 0..js_inputs.get_array_length_unchecked()? {
-        let input = js_inputs.get_element::<JsObject>(i)?;
-        for j in 0..input.get_array_length_unchecked()? {
-            let channel = input.get_element::<JsTypedArray>(j)?;
-            let _ = recycle_buffer.call1::<JsTypedArray, JsUndefined>(channel)?;
+    for i in 0..js_inputs.len() {
+        let input = js_inputs.get_element::<Array>(i)?;
+        for j in 0..input.len() {
+            let channel = input.get_element::<Float32Array>(j)?;
+            let _ = recycle_buffer.call(channel);
         }
     }
 
+    // recycle output channels
     let k_worklet_outputs = env.symbol_for("node-web-audio-api:worklet-outputs")?;
-    let js_outputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_outputs)?;
+    let js_outputs = processor.get_property::<JsSymbol, Array>(k_worklet_outputs)?;
 
-    for i in 0..js_outputs.get_array_length_unchecked()? {
-        let output = js_outputs.get_element::<JsObject>(i)?;
-        for j in 0..output.get_array_length_unchecked()? {
-            let channel = output.get_element::<JsTypedArray>(j)?;
-            let _ = recycle_buffer.call1::<JsTypedArray, JsUndefined>(channel)?;
+    for i in 0..js_outputs.len() {
+        let output = js_outputs.get_element::<Array>(i)?;
+        for j in 0..output.len() {
+            let channel = output.get_element::<Float32Array>(j)?;
+            let _ = recycle_buffer.call(channel);
         }
     }
 
+    // recycle parameter buffers
     let k_worklet_params_cache = env.symbol_for("node-web-audio-api:worklet-params-cache")?;
-    let js_params_cache = processor.get_property::<JsSymbol, JsObject>(k_worklet_params_cache)?;
+    let js_params_cache = processor.get_property::<JsSymbol, Object>(k_worklet_params_cache)?;
 
     let js_params_properties = js_params_cache.get_property_names()?;
     let len = js_params_properties.get_array_length()?;
 
     for i in 0..len {
-        let js_property_name: JsString = js_params_properties.get_element(i)?;
-        let utf8_str = js_property_name.into_utf8()?.into_owned()?;
-        let property_name = utf8_str.as_str();
-        let cache: JsObject = js_params_cache.get_named_property(property_name)?;
+        let property_name: String = js_params_properties.get_element(i)?;
+        let cache: Object = js_params_cache.get_named_property(&property_name)?;
 
-        let param_cache_128 = cache.get_element::<JsTypedArray>(0)?;
-        let _ = recycle_buffer.call1::<JsTypedArray, JsUndefined>(param_cache_128)?;
+        let param_cache_128 = cache.get_element::<Float32Array>(0)?;
+        let _ = recycle_buffer.call(param_cache_128);
 
-        let param_cache_1 = cache.get_element::<JsTypedArray>(1)?;
-        let _ = recycle_buffer_1.call1::<JsTypedArray, JsUndefined>(param_cache_1)?;
+        let param_cache_1 = cache.get_element::<Float32Array>(1)?;
+        let _ = recycle_buffer_1.call(param_cache_1);
     }
 
     Ok(())
 }
 
 /// Handle a AudioWorkletProcessor::process call in the Worker
-fn process_audio_worklet(env: &Env, processors: &JsObject, args: ProcessorArguments) -> Result<()> {
+fn process_audio_worklet(
+    env: &Env,
+    processors: &Object,
+    processor_arguments: ProcessorArguments,
+) -> Result<()> {
     let ProcessorArguments {
         id,
         inputs,
@@ -273,125 +288,129 @@ fn process_audio_worklet(env: &Env, processors: &JsObject, args: ProcessorArgume
         current_time,
         current_frame,
         tail_time_sender,
-    } = args;
+    } = processor_arguments;
 
-    let processor = processors.get_named_property::<JsUnknown>(&id.to_string())?;
+    let mut processor = match processors.get_named_property::<Object>(&id.to_string()) {
+        Ok(processor) => processor,
+        Err(_) => {
+            // we may run into race conditions between Rust and JS, where processor
+            // exists in Rust audio thread side but not yet on JS worker thread side
+            let _ = tail_time_sender.send(true); // make sure we will be called back
+            return Ok(());
+        }
+    };
 
-    // Make sure the processor exists, might run into race conditions
-    // between Rust Audio thread and JS Worker thread
-    if processor.get_type()? == ValueType::Undefined {
-        let _ = tail_time_sender.send(true); // make sure we will be called
-        return Ok(());
-    }
-
-    // fill AudioWorkletGlobalScope
+    // Update AudioWorkletGlobalScope
     let mut global = env.get_global()?;
     global.set_named_property("currentTime", current_time)?;
-    global.set_named_property("currentFrame", current_frame)?;
-
-    let mut processor = processor.coerce_to_object()?;
+    global.set_named_property("currentFrame", current_frame as f64)?;
 
     let k_worklet_callable_process =
         env.symbol_for("node-web-audio-api:worklet-callable-process")?;
-    // return early if worklet has been tagged as not callable,
-    // @note - maybe this could be guaranteed on rust side
-    let callable_process = processor
-        .get_property::<JsSymbol, JsBoolean>(k_worklet_callable_process)?
-        .get_value()?;
+    // Return early if worklet has been marked not callable,
+    let callable_process = processor.get_property::<JsSymbol, bool>(k_worklet_callable_process)?;
 
     if !callable_process {
         let _ = tail_time_sender.send(false);
         return Ok(());
     }
 
-    // This value become Some if "process" do not exist or throw an error at execution
-    let mut completion: Option<WorkletAbruptCompletionResult> = None;
+    // The `process` method is not executed directly because napi-rs `apply`
+    // implementation retrieve the arguments as an array in the first argument, Then
+    // we need to unpack them first (cf. `AudioWorkletProcessor[kWorkletUnpackProcess]`)
+    //
+    // Note that we use `get_named_property` rather than `has_named_property` so that
+    // we check that `process` is a function as well.
+    let process_method_result =
+        processor.get_named_property::<Function<Unknown, Unknown>>("process");
 
-    match processor.get_named_property::<JsFunction>("process") {
-        Ok(process_method) => {
+    let abrupt_completion = match process_method_result {
+        Ok(_process_method) => {
+            let render_quantum_size =
+                global.get_named_property::<u32>("renderQuantumSize")? as usize;
+
+            let k_worklet_unpack_process =
+                env.symbol_for("node-web-audio-api:worklet-unpack-process")?;
+
+            // The `kWorkletUnpackProcess` wrapper function coerce value returned from `process`
+            // to bool, therefore if we get anything else, i.e. `Unknown`, an error occurred.
+            let unpack_process_function = processor
+                .get_property::<JsSymbol, Function<(Array, Array, Object), Either<bool, Unknown>>>(
+                    k_worklet_unpack_process,
+                )?;
+
             let k_worklet_inputs = env.symbol_for("node-web-audio-api:worklet-inputs")?;
+            let mut js_inputs = processor.get_property::<JsSymbol, Array>(k_worklet_inputs)?;
+
             let k_worklet_outputs = env.symbol_for("node-web-audio-api:worklet-outputs")?;
+            let mut js_outputs = processor.get_property::<JsSymbol, Array>(k_worklet_outputs)?;
+
+            // <param_name, buffer>
             let k_worklet_params = env.symbol_for("node-web-audio-api:worklet-params")?;
+            let mut js_params = processor.get_property::<JsSymbol, Object>(k_worklet_params)?;
+            // <param_name, [Float32Array(128), Float32Array(1)]>
             let k_worklet_params_cache =
                 env.symbol_for("node-web-audio-api:worklet-params-cache")?;
-            let render_quantum_size = global
-                .get_named_property::<JsNumber>("renderQuantumSize")?
-                .get_double()? as usize;
-            let mut js_inputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_inputs)?;
-            let mut js_outputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_outputs)?;
-            let mut js_params = processor.get_property::<JsSymbol, JsObject>(k_worklet_params)?;
             let js_params_cache =
-                processor.get_property::<JsSymbol, JsObject>(k_worklet_params_cache)?;
+                processor.get_property::<JsSymbol, Object>(k_worklet_params_cache)?;
 
-            // Check JS input and output, and rebuild JS object if layout changed
+            // Check input and output channel layout, and rebuild JS object if something changed
             if !check_same_io_layout(&js_inputs, inputs) {
                 let new_js_inputs = rebuild_io_layout(env, js_inputs, inputs)?;
-                // Store new layout in processor
                 processor.set_property(k_worklet_inputs, new_js_inputs)?;
-                // Override js_inputs with new reference
-                js_inputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_inputs)?;
+                js_inputs = processor.get_property::<JsSymbol, Array>(k_worklet_inputs)?;
             }
 
             if !check_same_io_layout(&js_outputs, outputs) {
                 let new_js_outputs = rebuild_io_layout(env, js_outputs, outputs)?;
-                // Store new layout in processor
                 processor.set_property(k_worklet_outputs, new_js_outputs)?;
-                // Override js_outputs with new reference
-                js_outputs = processor.get_property::<JsSymbol, JsObject>(k_worklet_outputs)?;
+                js_outputs = processor.get_property::<JsSymbol, Array>(k_worklet_outputs)?;
             }
 
             // Copy inputs into JS inputs buffers
             for (input_number, input) in inputs.iter().enumerate() {
-                let js_input = js_inputs.get_element::<JsObject>(input_number as u32)?;
+                let js_input = js_inputs.get::<Array>(input_number as u32)?.unwrap();
 
                 for (channel_number, channel) in input.iter().enumerate() {
-                    let js_channel = js_input.get_element::<JsTypedArray>(channel_number as u32)?;
-                    let mut js_channel_value = js_channel.into_value()?;
-                    let js_channel_buffer: &mut [f32] = js_channel_value.as_mut();
-                    js_channel_buffer.copy_from_slice(channel);
+                    let mut js_channel = js_input
+                        .get::<Float32Array>(channel_number as u32)?
+                        .unwrap();
+                    let js_channel: &mut [f32] = unsafe { js_channel.as_mut() };
+                    js_channel.copy_from_slice(channel);
                 }
             }
 
             // Copy params values into JS params buffers
             //
-            // @perf - We could rely on the fact that ParameterDescriptors
+            // @todo(perf) - We could rely on the fact that ParameterDescriptors
             // are ordered maps to avoid sending param names in `param_values`
             for (name, data) in param_values.iter() {
-                let float32_arr_cache = js_params_cache.get_named_property::<JsObject>(name)?;
+                let float32_arr_cache = js_params_cache.get_named_property::<Array>(name)?;
                 // retrieve right Float32Array according to actual param size, i.e. 128 or 1
                 let cache_index = if data.len() == 1 { 1 } else { 0 };
-                let float32_arr = float32_arr_cache.get_element::<JsTypedArray>(cache_index)?;
+                let mut param_values = float32_arr_cache.get::<Float32Array>(cache_index)?.unwrap();
                 // copy data into underlying ArrayBuffer
-                let mut float32_arr_value = float32_arr.into_value()?;
-                let buffer: &mut [f32] = float32_arr_value.as_mut();
+                let buffer: &mut [f32] = unsafe { param_values.as_mut() };
                 buffer.copy_from_slice(data);
-                // get new owned value, as `float32_arr` as been consumed by `into_value` call
-                let float32_arr = float32_arr_cache.get_element::<JsTypedArray>(cache_index)?;
-                js_params.set_named_property(name, float32_arr)?;
+                // replace current values with new Float32Array
+                js_params.set_named_property(name, param_values)?;
             }
 
-            let res: Result<JsUnknown> =
-                process_method.apply3(processor, js_inputs, js_outputs, js_params);
+            let js_result =
+                unpack_process_function.apply(processor, (js_inputs, js_outputs, js_params))?;
 
-            match res {
-                Ok(js_ret) => {
-                    // Grab back new owned value processor and js_ouputs, has been
-                    // consumed by `apply` call
-                    let processor = processors.get_named_property::<JsObject>(&id.to_string())?;
-                    let js_outputs =
-                        processor.get_property::<JsSymbol, JsObject>(k_worklet_outputs)?;
-
+            match js_result {
+                Either::A(tail_time) => {
                     // copy JS output buffers back into outputs
                     for (output_number, output) in outputs.iter().enumerate() {
-                        let js_output = js_outputs.get_element::<JsObject>(output_number as u32)?;
+                        let js_output = js_outputs.get_element::<Array>(output_number as u32)?;
 
                         for (channel_number, channel) in output.iter().enumerate() {
-                            let js_channel =
-                                js_output.get_element::<JsTypedArray>(channel_number as u32)?;
-                            let js_channel_value = js_channel.into_value()?;
-                            let js_channel_buffer: &[f32] = js_channel_value.as_ref();
+                            let js_channel = js_output
+                                .get::<Float32Array>(channel_number as u32)?
+                                .unwrap();
 
-                            let src = js_channel_buffer.as_ptr();
+                            let src = js_channel.as_ptr();
                             let dst = channel.as_ptr() as *mut f32;
 
                             unsafe {
@@ -400,373 +419,344 @@ fn process_audio_worklet(env: &Env, processors: &JsObject, args: ProcessorArgume
                         }
                     }
 
-                    let ret = js_ret.coerce_to_bool()?.get_value()?;
-                    let _ = tail_time_sender.send(ret); // allowed to fail
+                    let _ = tail_time_sender.send(tail_time); // allowed to fail
+
+                    None
                 }
-                Err(err) => {
-                    completion = Some(WorkletAbruptCompletionResult {
-                        cmd: "node-web-audio-api:worklet:process-error".to_string(),
-                        err,
-                    });
-                }
+                // error thrown in process
+                Either::B(err) => Some(WorkletAbruptCompletionResult {
+                    cmd: "node-web-audio-api:worklet:process-error".to_string(),
+                    err: err.into(),
+                }),
             }
         }
-        Err(err) => {
-            completion = Some(WorkletAbruptCompletionResult {
-                cmd: "node-web-audio-api:worklet:process-invalid".to_string(),
-                err,
-            });
-        }
-    }
+        // no process method found
+        Err(err) => Some(WorkletAbruptCompletionResult {
+            cmd: "node-web-audio-api:worklet:process-invalid".to_string(),
+            err,
+        }),
+    };
 
-    // Handle eventual errors
-    if let Some(value) = completion {
-        let WorkletAbruptCompletionResult { cmd, err } = value;
-        // Grab back our process which may have been consumed by the process apply
-        let mut processor = processors.get_named_property::<JsObject>(&id.to_string())?;
-        let k_worklet_queue_task = env.symbol_for("node-web-audio-api:worklet-queue-task")?;
-        // @todo - would be usefull to propagate to rust side too so that the
-        // processor can be removed from graph (?)
-        let value = env.get_boolean(false)?;
-        processor.set_property(k_worklet_callable_process, value)?;
-        // set active source flag to false, same semantic as tail time
+    // Handle errors
+    // @todo - propagate back to rust side to remove processor from graph
+    if let Some(abrupt_completion) = abrupt_completion {
+        let WorkletAbruptCompletionResult { cmd, err } = abrupt_completion;
+
+        // Mark as non callable and dispatch `processorerror` event on main thread
+        let k_worklet_mark_non_callable =
+            env.symbol_for("node-web-audio-api:worklet-mark-non-callable-process")?;
+
+        let mark_non_callable_function = processor
+            .get_property::<JsSymbol, Function<(String, Object), ()>>(
+                k_worklet_mark_non_callable,
+            )?;
+        let js_error = env.create_error(err)?;
+        let _ = mark_non_callable_function.apply(processor, (cmd, js_error));
+
+        // Mark tail time to false in audio graph
         // https://webaudio.github.io/web-audio-api/#active-source
         let _ = tail_time_sender.send(false);
-        // Dispatch processorerror event on main thread
-        let queue_task = processor.get_property::<JsSymbol, JsFunction>(k_worklet_queue_task)?;
-        let js_cmd = env.create_string(&cmd)?;
-        let js_err = env.create_error(err)?;
-        let _: Result<JsUnknown> = queue_task.apply2(processor, js_cmd, js_err);
     }
 
     Ok(())
 }
 
+// #[allow(dead_code)]
+// #[napi(js_name = "init_audio_worklet_global_scope")]
+// pub fn init_audio_worklet_global_scope(env: Env, worklet_id: u32) {
+//     // set thread priority
+//     // init currentTime and currentFrame
+//     todo!();
+// }
+
 /// The entry point into Rust from the Worker
-#[js_function(2)]
-pub(crate) fn run_audio_worklet_global_scope(ctx: CallContext) -> Result<JsUndefined> {
-    // Set thread priority to highest, if not done already
+#[allow(dead_code)]
+#[napi(js_name = "run_audio_worklet_global_scope")]
+pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors: Object) {
+    // Try set thread priority to highest on first call
     if !HAS_THREAD_PRIO.replace(true) {
         // allowed to fail
         let _ = thread_priority::set_current_thread_priority(thread_priority::ThreadPriority::Max);
     }
 
-    // Obtain the unique worker ID
-    let worklet_id = ctx.get::<JsNumber>(0)?.get_uint32()? as usize;
-    // List of registered processors
-    let processors = ctx.get::<JsObject>(1)?;
-
     // Poll for incoming commands and yield back to the event loop if there are none.
     // recv_timeout is not an option due to realtime safety, see discussion of
     // https://github.com/ircam-ismm/node-web-audio-api/pull/124#pullrequestreview-2053515583
-    while let Ok(msg) = process_call_receiver(worklet_id).try_recv() {
+    while let Ok(msg) = process_call_receiver(worklet_id as usize).try_recv() {
         match msg {
             WorkletCommand::Drop(id) => {
-                let mut processors = ctx.get::<JsObject>(1)?;
-                // recycle all processor buffers
-                let processor = processors.get_named_property::<JsObject>(&id.to_string())?;
-                recycle_processor(ctx.env, processor)?;
-
-                processors.delete_named_property(&id.to_string())?;
+                match processors.get_named_property::<Object>(&id.to_string()) {
+                    Ok(processor) => {
+                        let _ = recycle_processor(&env, processor);
+                        let _ = processors.delete_named_property(id.to_string());
+                    }
+                    Err(_) => {
+                        println!(
+                            "Cannot recycle process with id {:?}: processor not found",
+                            id
+                        );
+                    }
+                }
             }
-            WorkletCommand::Process(args) => {
-                process_audio_worklet(ctx.env, &processors, args)?;
+            WorkletCommand::Process(processor_arguments) => {
+                let _ = process_audio_worklet(&env, &processors, processor_arguments);
             }
         }
     }
-
-    ctx.env.get_undefined()
 }
 
-#[js_function(1)]
-pub(crate) fn exit_audio_worklet_global_scope(ctx: CallContext) -> Result<JsUndefined> {
-    // Obtain the unique worker ID
-    let worklet_id = ctx.get::<JsNumber>(0)?.get_uint32()? as usize;
+#[allow(dead_code)]
+#[napi(js_name = "exit_audio_worklet_global_scope")]
+pub fn exit_audio_worklet_global_scope(worklet_id: u32) {
+    let worklet_id = worklet_id as usize;
     // Flag message channel as exited to prevent any other render call
     process_call_exited(worklet_id).store(true, Ordering::SeqCst);
     // Handle any pending message from audio thread
     if let Ok(WorkletCommand::Process(args)) = process_call_receiver(worklet_id).try_recv() {
         let _ = args.tail_time_sender.send(false);
     }
-
-    ctx.env.get_undefined()
 }
 
-pub(crate) struct NapiAudioWorkletNode(AudioWorkletNode);
+#[napi(js_name = "NapiAudioWorkletNode")]
+pub struct NapiAudioWorkletNode {
+    pub(crate) inner: AudioWorkletNode,
+    id: u32,
+    // parameters: ObjectRef,
+}
 
+audio_node_impl!(NapiAudioWorkletNode);
+
+#[napi]
 impl NapiAudioWorkletNode {
-    pub fn create_js_class(env: &Env) -> Result<JsFunction> {
-        let interface = audio_node_interface![];
+    #[napi(constructor, catch_unwind)]
+    pub fn new(
+        env: Env,
+        mut this: This,
+        context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
+        _name: String,
+        options: Object,
+        parameter_descriptors: Object,
+    ) -> Self {
+        // dictionary AudioWorkletNodeOptions : AudioNodeOptions {
+        //     unsigned long numberOfInputs = 1;
+        //     unsigned long numberOfOutputs = 1;
+        //     sequence<unsigned long> outputChannelCount;
+        //     record<DOMString, double> parameterData;
+        //     object processorOptions;
+        // };
+        // --------------------------------------------------------
+        // Parse options
+        // --------------------------------------------------------
+        let number_of_inputs = options.get::<u32>("numberOfInputs");
+        let number_of_inputs = match number_of_inputs {
+            Ok(number_of_inputs) => match number_of_inputs {
+                Some(number_of_inputs) => number_of_inputs as usize,
+                None => 1,
+            },
+            Err(_) => 1,
+        };
 
-        env.define_class("AudioWorkletNode", constructor, &interface)
-    }
+        let number_of_outputs = options.get::<u32>("numberOfOutputs");
+        let number_of_outputs = match number_of_outputs {
+            Ok(number_of_outputs) => match number_of_outputs {
+                Some(number_of_outputs) => number_of_outputs as usize,
+                None => 1,
+            },
+            Err(_) => 1,
+        };
 
-    pub fn unwrap(&self) -> &AudioWorkletNode {
-        &self.0
-    }
-}
+        // algorithm https://webaudio.github.io/web-audio-api/#configuring-channels-with-audioworkletnodeoptions
+        // is handled on JS side, let's just panic if something is wrong
+        let output_channel_count = options.get::<&[u32]>("outputChannelCount");
+        let output_channel_count = match output_channel_count {
+            Ok(output_channel_count) => match output_channel_count {
+                Some(output_channel_count) => {
+                    output_channel_count.iter().map(|&v| v as usize).collect()
+                }
+                None => {
+                    panic!("No default value for outputChannelCount in AudioWorkletNodeOptions ")
+                }
+            },
+            Err(_) => panic!("No default value for outputChannelCount in AudioWorkletNodeOptions "),
+        };
 
-#[js_function(4)]
-fn constructor(ctx: CallContext) -> Result<JsUndefined> {
-    let mut js_this = ctx.this_unchecked::<JsObject>();
+        // This is a list of user-defined key-value pairs that are used to set
+        // the initial value of an AudioParam with the matched name in the AudioWorkletNode.
+        let mut parameter_data = HashMap::<String, f64>::new();
+        let parameter_data_js = options.get::<Object>("parameterData");
+        let parameter_data_js = parameter_data_js.unwrap_or(Some(Object::new(&env).unwrap()));
+        let parameter_data_js = parameter_data_js.unwrap_or(Object::new(&env).unwrap());
+        let parameter_keys_js = parameter_data_js
+            .get_all_property_names(
+                KeyCollectionMode::OwnOnly,
+                KeyFilter::Enumerable,
+                KeyConversion::NumbersToStrings,
+            )
+            .unwrap();
+        let length = parameter_keys_js.get_array_length().unwrap();
 
-    let js_audio_context = ctx.get::<JsObject>(0)?;
-
-    // @note - not used, handled in the JS code
-    // let js_name = ctx.get::<JsString>(1)?;
-
-    // --------------------------------------------------------
-    // Parse options
-    // --------------------------------------------------------
-    let options_js = ctx.get::<JsObject>(2)?;
-
-    let number_of_inputs = options_js
-        .get_named_property::<JsNumber>("numberOfInputs")?
-        .get_double()? as usize;
-
-    let number_of_outputs = options_js
-        .get_named_property::<JsNumber>("numberOfOutputs")?
-        .get_double()? as usize;
-
-    let output_channel_count_js = options_js
-        .get::<&str, JsTypedArray>("outputChannelCount")?
-        .unwrap();
-    let output_channel_count_value = output_channel_count_js.into_value()?;
-    let output_channel_count_u32: &[u32] = output_channel_count_value.as_ref();
-    let output_channel_count: Vec<usize> = output_channel_count_u32
-        .iter()
-        .map(|&v| v as usize)
-        .collect();
-
-    let mut parameter_data = HashMap::<String, f64>::new();
-    let parameter_data_js = options_js.get_named_property::<JsObject>("parameterData")?;
-    let parameter_keys_js = parameter_data_js.get_all_property_names(
-        KeyCollectionMode::OwnOnly,
-        KeyFilter::Enumerable,
-        KeyConversion::NumbersToStrings,
-    )?;
-    let length = parameter_keys_js.get_array_length()?;
-
-    for i in 0..length {
-        let key_js = parameter_keys_js.get_element::<JsString>(i)?;
-        let utf8_key = key_js.into_utf8()?;
-        let key = utf8_key.into_owned()?;
-
-        let value = parameter_data_js
-            .get_property::<JsString, JsNumber>(key_js)?
-            .get_double()?;
-
-        parameter_data.insert(key, value);
-    }
-
-    // No `processorOptions` here, they are sent to JS processor
-
-    // --------------------------------------------------------
-    // Parse AudioNodeOptions
-    // --------------------------------------------------------
-    let audio_node_options_default = AudioNodeOptions::default();
-
-    let some_channel_count_js = options_js.get::<&str, JsObject>("channelCount")?;
-    let channel_count = if let Some(channel_count_js) = some_channel_count_js {
-        channel_count_js.coerce_to_number()?.get_double()? as usize
-    } else {
-        audio_node_options_default.channel_count
-    };
-
-    let some_channel_count_mode_js = options_js.get::<&str, JsObject>("channelCountMode")?;
-    let channel_count_mode = if let Some(channel_count_mode_js) = some_channel_count_mode_js {
-        let channel_count_mode_str = channel_count_mode_js
-            .coerce_to_string()?
-            .into_utf8()?
-            .into_owned()?;
-
-        match channel_count_mode_str.as_str() {
-            "max" => ChannelCountMode::Max,
-            "clamped-max" => ChannelCountMode::ClampedMax,
-            "explicit" => ChannelCountMode::Explicit,
-            _ => unreachable!(),
+        for i in 0..length {
+            let key = parameter_keys_js.get_element::<String>(i).unwrap();
+            let value = parameter_data_js.get_named_property::<f64>(&key).unwrap();
+            parameter_data.insert(key, value);
         }
-    } else {
-        audio_node_options_default.channel_count_mode
-    };
 
-    let some_channel_interpretation_js =
-        options_js.get::<&str, JsObject>("channelInterpretation")?;
-    let channel_interpretation =
-        if let Some(channel_interpretation_js) = some_channel_interpretation_js {
-            let channel_interpretation_str = channel_interpretation_js
-                .coerce_to_string()?
-                .into_utf8()?
-                .into_owned()?;
+        // `processorOptions` are directly sent to the JS processor
+        // https://webaudio.github.io/web-audio-api/#dom-audioworkletnodeoptions-processoroptions
 
-            match channel_interpretation_str.as_str() {
+        // --------------------------------------------------------
+        // Parse AudioNodeOptions
+        // --------------------------------------------------------
+        let audio_node_options_default = AudioNodeOptions::default();
+
+        let some_channel_count = options.get::<u32>("channelCount").unwrap();
+        let channel_count = if let Some(channel_count) = some_channel_count {
+            channel_count as usize
+        } else {
+            audio_node_options_default.channel_count
+        };
+
+        let some_channel_count_mode = options.get::<String>("channelCountMode").unwrap();
+        let channel_count_mode = if let Some(channel_count_mode) = some_channel_count_mode {
+            match channel_count_mode.as_str() {
+                "max" => ChannelCountMode::Max,
+                "clamped-max" => ChannelCountMode::ClampedMax,
+                "explicit" => ChannelCountMode::Explicit,
+                _ => panic!("TypeError - Failed to read the 'channelCountMode' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelCountMode", channel_count_mode.as_str()),
+            }
+        } else {
+            audio_node_options_default.channel_count_mode
+        };
+
+        let some_channel_interpretation = options.get::<String>("channelInterpretation").unwrap();
+        let channel_interpretation = if let Some(channel_interpretation) =
+            some_channel_interpretation
+        {
+            match channel_interpretation.as_str() {
                 "speakers" => ChannelInterpretation::Speakers,
                 "discrete" => ChannelInterpretation::Discrete,
-                _ => unreachable!(),
+                _ => panic!("TypeError - Failed to read the 'channelInterpretation' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", channel_interpretation.as_str()),
             }
         } else {
             audio_node_options_default.channel_interpretation
         };
 
-    // --------------------------------------------------------
-    // Parse ParameterDescriptors
-    // --------------------------------------------------------
-    let params_js = ctx.get::<JsObject>(3)?;
-    let length = params_js.get_array_length()? as usize;
-    let mut rs_params: Vec<web_audio_api::AudioParamDescriptor> = Vec::with_capacity(length);
+        // --------------------------------------------------------
+        // Parse ParameterDescriptors
+        // --------------------------------------------------------
+        let length = parameter_descriptors.get_array_length().unwrap();
+        let mut parameter_descriptors_rs: Vec<web_audio_api::AudioParamDescriptor> =
+            Vec::with_capacity(length as usize);
 
-    for i in 0..length {
-        let param = params_js.get_element::<JsObject>(i.try_into().unwrap())?;
+        for i in 0..length {
+            let param = parameter_descriptors.get_element::<Object>(i).unwrap();
 
-        let js_name = param.get_named_property::<JsString>("name").unwrap();
-        let utf8_name = js_name.into_utf8().unwrap();
-        let name = utf8_name.into_owned().unwrap();
+            let name = param.get_named_property::<String>("name").unwrap();
+            let min_value = param.get_named_property::<f64>("minValue").unwrap() as f32;
+            let max_value = param.get_named_property::<f64>("maxValue").unwrap() as f32;
+            let default_value = param.get_named_property::<f64>("defaultValue").unwrap() as f32;
 
-        let min_value = param
-            .get_named_property::<JsNumber>("minValue")
-            .unwrap()
-            .get_double()
-            .unwrap() as f32;
+            let automation_rate = param
+                .get_named_property::<String>("automationRate")
+                .unwrap();
+            let automation_rate = match automation_rate.as_str() {
+                "a-rate" => AutomationRate::A,
+                "k-rate" => AutomationRate::K,
+                _ => unreachable!(),
+            };
 
-        let max_value = param
-            .get_named_property::<JsNumber>("maxValue")
-            .unwrap()
-            .get_double()
-            .unwrap() as f32;
+            let param_descriptor = AudioParamDescriptor {
+                name,
+                min_value,
+                max_value,
+                default_value,
+                automation_rate,
+            };
 
-        let default_value = param
-            .get_named_property::<JsNumber>("defaultValue")
-            .unwrap()
-            .get_double()
-            .unwrap() as f32;
+            parameter_descriptors_rs.insert(i as usize, param_descriptor);
+        }
 
-        let js_str = param.get_named_property::<JsString>("automationRate")?;
-        let utf8_str = js_str.coerce_to_string()?.into_utf8()?.into_owned()?;
-        let automation_rate = match utf8_str.as_str() {
-            "a-rate" => AutomationRate::A,
-            "k-rate" => AutomationRate::K,
-            _ => unreachable!(),
+        let parameter_descriptors = parameter_descriptors_rs;
+
+        // --------------------------------------------------------
+        // Retrieve worklet Id
+        // --------------------------------------------------------
+
+        let worklet_id = match context {
+            Either::A(context) => context.worklet_id,
+            Either::B(context) => context.worklet_id,
         };
 
-        let param_descriptor = AudioParamDescriptor {
-            name,
-            min_value,
-            max_value,
-            default_value,
-            automation_rate,
+        // --------------------------------------------------------
+        // Create AudioWorkletNodeOptions object
+        // --------------------------------------------------------
+        let id: u32 = INCREMENTING_ID.fetch_add(1, Ordering::Relaxed);
+
+        let processor_options = NapiAudioWorkletProcessor {
+            id,
+            send: process_call_sender(worklet_id),
+            exited: process_call_exited(worklet_id),
+            tail_time_channel: crossbeam_channel::bounded(1),
+            param_values: Vec::with_capacity(32),
         };
 
-        rs_params.insert(i, param_descriptor);
+        let options = AudioWorkletNodeOptions {
+            number_of_inputs,
+            number_of_outputs,
+            output_channel_count,
+            parameter_data,
+            audio_node_options: AudioNodeOptions {
+                channel_count,
+                channel_count_mode,
+                channel_interpretation,
+            },
+            processor_options,
+        };
+
+        // --------------------------------------------------------
+        // send parameterDescriptors so that NapiAudioWorkletProcessor
+        // can retrieve them at construction
+        // --------------------------------------------------------
+        let guard = audio_param_descriptor_channel().send.lock().unwrap();
+        guard.send(parameter_descriptors).unwrap();
+
+        // --------------------------------------------------------
+        // Create native AudioWorkletNode
+        // --------------------------------------------------------
+        let native_node = match context {
+            Either::A(context) => {
+                AudioWorkletNode::new::<NapiAudioWorkletProcessor>(context.inner(), options)
+            }
+            Either::B(context) => {
+                AudioWorkletNode::new::<NapiAudioWorkletProcessor>(context.inner(), options)
+            }
+        };
+
+        drop(guard);
+
+        let mut parameters = Object::new(&env).unwrap();
+
+        for (name, native_param) in native_node.parameters().iter() {
+            let native_param = native_param.clone();
+            let napi_param = NapiAudioParam::new(native_param);
+
+            let _ = parameters.set_named_property(name, napi_param);
+        }
+
+        let _ = this.set_named_property("parameters", parameters);
+
+        // finalize instance creation
+        Self {
+            inner: native_node,
+            id,
+        }
     }
 
-    let audio_context_name =
-        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
-    let audio_context_str = audio_context_name.into_utf8()?;
-
-    let worklet_id = match audio_context_str.as_str()? {
-        "AudioContext" => {
-            let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
-            napi_audio_context.worklet_id()
-        }
-        "OfflineAudioContext" => {
-            let napi_audio_context = ctx
-                .env
-                .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
-            napi_audio_context.worklet_id()
-        }
-        &_ => panic!("not supported"),
-    };
-
-    // --------------------------------------------------------
-    // Create AudioWorkletNodeOptions object
-    // --------------------------------------------------------
-    let id = INCREMENTING_ID.fetch_add(1, Ordering::Relaxed);
-    let processor_options = NapiAudioWorkletProcessor {
-        id,
-        send: process_call_sender(worklet_id),
-        exited: process_call_exited(worklet_id),
-        tail_time_channel: crossbeam_channel::bounded(1),
-        param_values: Vec::with_capacity(32),
-    };
-
-    let options = AudioWorkletNodeOptions {
-        number_of_inputs,
-        number_of_outputs,
-        output_channel_count,
-        parameter_data,
-        audio_node_options: AudioNodeOptions {
-            channel_count,
-            channel_count_mode,
-            channel_interpretation,
-        },
-        processor_options,
-    };
-
-    // --------------------------------------------------------
-    // send parameterDescriptors so that NapiAudioWorkletProcessor can retrieve them
-    // --------------------------------------------------------
-    let guard = audio_param_descriptor_channel().send.lock().unwrap();
-    guard.send(rs_params).unwrap();
-
-    // --------------------------------------------------------
-    // Create native AudioWorkletNode
-    // --------------------------------------------------------
-    let native_node = match audio_context_str.as_str()? {
-        "AudioContext" => {
-            let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
-            let audio_context = napi_audio_context.unwrap();
-            AudioWorkletNode::new::<NapiAudioWorkletProcessor>(audio_context, options)
-        }
-        "OfflineAudioContext" => {
-            let napi_audio_context = ctx
-                .env
-                .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
-            let audio_context = napi_audio_context.unwrap();
-            AudioWorkletNode::new::<NapiAudioWorkletProcessor>(audio_context, options)
-        }
-        &_ => unreachable!(),
-    };
-
-    drop(guard);
-
-    let mut js_parameters = ctx.env.create_object()?;
-
-    for (name, native_param) in native_node.parameters().iter() {
-        let native_param = native_param.clone();
-        let napi_param = NapiAudioParam::new(native_param);
-        let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
-        ctx.env.wrap(&mut js_obj, napi_param)?;
-
-        js_parameters.set_named_property(name, js_obj)?;
+    #[napi(getter)]
+    pub fn id(&self) -> u32 {
+        self.id
     }
-
-    // --------------------------------------------------------
-    // Finalize instance creation
-    // --------------------------------------------------------
-    js_this.define_properties(&[
-        Property::new("context")?
-            .with_value(&js_audio_context)
-            .with_property_attributes(PropertyAttributes::Enumerable),
-        Property::new("parameters")?
-            .with_value(&js_parameters)
-            .with_property_attributes(PropertyAttributes::Enumerable),
-        Property::new("id")?
-            .with_value(&ctx.env.create_uint32(id)?)
-            .with_property_attributes(PropertyAttributes::Enumerable),
-        // this must be put on the instance and not in the prototype to be reachable
-        Property::new("Symbol.toStringTag")?
-            .with_value(&ctx.env.create_string("AudioWorkletNode")?)
-            .with_property_attributes(PropertyAttributes::Static),
-    ])?;
-
-    // finalize instance creation
-    let napi_node = NapiAudioWorkletNode(native_node);
-    ctx.env.wrap(&mut js_this, napi_node)?;
-
-    ctx.env.get_undefined()
 }
-
-audio_node_impl!(NapiAudioWorkletNode);
 
 // -------------------------------------------------
 // AudioWorkletNode Interface

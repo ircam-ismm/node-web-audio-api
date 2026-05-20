@@ -17,328 +17,225 @@
 // -------------------------------------------------------------------------- //
 // -------------------------------------------------------------------------- //
 
-use crate::*;
-use napi::*;
-use napi_derive::js_function;
+use napi::bindgen_prelude::*;
+use napi_derive::napi;
+
 use web_audio_api::node::*;
 
-pub(crate) struct NapiAudioBufferSourceNode(AudioBufferSourceNode);
+use crate::*;
 
-// for debug purpose
-// impl Drop for NapiAudioBufferSourceNode {
-//     fn drop(&mut self) {
-//         println!("NAPI: NapiAudioBufferSourceNode dropped");
-//     }
-// }
-
-impl NapiAudioBufferSourceNode {
-    pub fn create_js_class(env: &Env) -> Result<JsFunction> {
-        let interface = audio_node_interface![
-            Property::new("buffer")?
-                .with_getter(get_buffer)
-                .with_setter(set_buffer),
-            Property::new("loop")?
-                .with_getter(get_loop)
-                .with_setter(set_loop),
-            Property::new("loopStart")?
-                .with_getter(get_loop_start)
-                .with_setter(set_loop_start),
-            Property::new("loopEnd")?
-                .with_getter(get_loop_end)
-                .with_setter(set_loop_end),
-            Property::new("start")?.with_method(start),
-            Property::new("stop")?.with_method(stop)
-        ];
-
-        env.define_class("AudioBufferSourceNode", constructor, &interface)
-    }
-
-    // @note: this is used in audio_node.rs for the connect / disconnect macros
-    pub fn unwrap(&mut self) -> &mut AudioBufferSourceNode {
-        &mut self.0
-    }
-}
-
-#[js_function(2)]
-fn constructor(ctx: CallContext) -> Result<JsUndefined> {
-    let mut js_this = ctx.this_unchecked::<JsObject>();
-
-    let js_audio_context = ctx.get::<JsObject>(0)?;
-
-    // --------------------------------------------------------
-    // Parse AudioBufferSourceOptions
-    // by bindings construction all fields are populated on the JS side
-    // --------------------------------------------------------
-    let js_options = ctx.get::<JsObject>(1)?;
-
-    let buffer_js = js_options.get::<&str, JsUnknown>("buffer")?.unwrap();
-    let buffer = match buffer_js.get_type()? {
-        ValueType::Object => {
-            let buffer_js = buffer_js.coerce_to_object()?;
-            let buffer_napi = ctx.env.unwrap::<NapiAudioBuffer>(&buffer_js)?;
-            Some(buffer_napi.unwrap().clone())
-        }
-        ValueType::Null => None,
-        _ => unreachable!(),
-    };
-
-    let detune = js_options
-        .get::<&str, JsNumber>("detune")?
-        .unwrap()
-        .get_double()? as f32;
-
-    let loop_ = js_options
-        .get::<&str, JsBoolean>("loop")?
-        .unwrap()
-        .try_into()?;
-
-    let loop_end = js_options
-        .get::<&str, JsNumber>("loopEnd")?
-        .unwrap()
-        .get_double()?;
-
-    let loop_start = js_options
-        .get::<&str, JsNumber>("loopStart")?
-        .unwrap()
-        .get_double()?;
-
-    let playback_rate = js_options
-        .get::<&str, JsNumber>("playbackRate")?
-        .unwrap()
-        .get_double()? as f32;
-
-    // --------------------------------------------------------
-    // Create AudioBufferSourceOptions object
-    // --------------------------------------------------------
-    let options = AudioBufferSourceOptions {
-        buffer,
-        detune,
-        loop_,
-        loop_end,
-        loop_start,
-        playback_rate,
-    };
-
-    // --------------------------------------------------------
-    // Create native AudioBufferSourceNode
-    // --------------------------------------------------------
-    let audio_context_name =
-        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
-    let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
-    let audio_context_str = &audio_context_utf8_name[..];
-
-    let native_node = match audio_context_str {
-        "AudioContext" => {
-            let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
-            let audio_context = napi_audio_context.unwrap();
-            AudioBufferSourceNode::new(audio_context, options)
-        }
-        "OfflineAudioContext" => {
-            let napi_audio_context = ctx
-                .env
-                .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
-            let audio_context = napi_audio_context.unwrap();
-            AudioBufferSourceNode::new(audio_context, options)
-        }
-        &_ => unreachable!(),
-    };
-
-    // --------------------------------------------------------
-    // Bind AudioParam to JS object
-    // --------------------------------------------------------
-
-    let native_param = native_node.playback_rate().clone();
-    let napi_param = NapiAudioParam::new(native_param);
-    let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
-    ctx.env.wrap(&mut js_obj, napi_param)?;
-    js_this.set_named_property("playbackRate", &js_obj)?;
-
-    let native_param = native_node.detune().clone();
-    let napi_param = NapiAudioParam::new(native_param);
-    let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
-    ctx.env.wrap(&mut js_obj, napi_param)?;
-    js_this.set_named_property("detune", &js_obj)?;
-
-    // --------------------------------------------------------
-    // Finalize instance creation
-    // --------------------------------------------------------
-    js_this.define_properties(&[
-        Property::new("context")?
-            .with_value(&js_audio_context)
-            .with_property_attributes(PropertyAttributes::Enumerable),
-        // this must be put on the instance and not in the prototype to be reachable
-        Property::new("Symbol.toStringTag")?
-            .with_value(&ctx.env.create_string("AudioBufferSourceNode")?)
-            .with_property_attributes(PropertyAttributes::Static),
-    ])?;
-
-    // finalize instance creation
-    let napi_node = NapiAudioBufferSourceNode(native_node);
-    ctx.env.wrap(&mut js_this, napi_node)?;
-
-    ctx.env.get_undefined()
+#[napi(js_name = NapiAudioBufferSourceNode)]
+pub struct NapiAudioBufferSourceNode {
+    pub(crate) inner: AudioBufferSourceNode,
+    pub(crate) playback_rate: NapiAudioParam,
+    pub(crate) detune: NapiAudioParam,
 }
 
 audio_node_impl!(NapiAudioBufferSourceNode);
 
-// -------------------------------------------------
-// AudioScheduledSourceNode Interface
-// -------------------------------------------------
-fn listen_to_ended_event(
-    env: &Env,
-    js_this: &JsObject,
-    node: &mut AudioBufferSourceNode,
-) -> Result<()> {
-    use napi::threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunctionCallMode};
-    use web_audio_api::Event;
+#[napi]
+impl NapiAudioBufferSourceNode {
+    #[napi(constructor, catch_unwind)]
+    pub fn new(
+        context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
+        options: Object,
+    ) -> Self {
+        // --------------------------------------------------------
+        // Parse AudioBufferSourceOptions
+        // by bindings construction all fields are populated on the JS side
+        // --------------------------------------------------------
 
-    let k_onended = env.symbol_for("node-web-audio-api:onended")?;
-    let ended_cb = js_this.get_property(k_onended).unwrap();
-    let mut ended_tsfn =
-        env.create_threadsafe_function(&ended_cb, 0, |ctx: ThreadSafeCallContext<Event>| {
-            let mut event = ctx.env.create_object()?;
-            let event_type = ctx.env.create_string(ctx.value.type_)?;
-            event.set_named_property("type", event_type)?;
+        let node_defaults: Option<AudioBufferSourceOptions> =
+            Some(AudioBufferSourceOptions::default());
 
-            Ok(vec![event])
-        })?;
+        let js_buffer = options
+            .get::<Option<ClassInstance<NapiAudioBuffer>>>("buffer")
+            .unwrap();
+        let buffer = js_buffer.unwrap().map(|js_buffer| js_buffer.inner.clone());
 
-    // unref tsfn so they do not prevent the process to exit
-    let _ = ended_tsfn.unref(env);
+        let some_detune = options.get::<Option<f64>>("detune").unwrap();
+        let detune = if let Some(detune) = some_detune.unwrap() {
+            detune as f32
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().detune
+        } else {
+            panic!("No default value for detune in AudioBufferSourceOptions")
+        };
 
-    node.set_onended(move |e| {
-        ended_tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
-    });
+        let some_loop_ = options.get::<Option<bool>>("loop").unwrap();
+        let loop_ = if let Some(loop_) = some_loop_.unwrap() {
+            loop_
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().loop_
+        } else {
+            panic!("No default value for loop_ in AudioBufferSourceOptions")
+        };
 
-    Ok(())
-}
+        let some_loop_end = options.get::<Option<f64>>("loopEnd").unwrap();
+        let loop_end = if let Some(loop_end) = some_loop_end.unwrap() {
+            loop_end
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().loop_end
+        } else {
+            panic!("No default value for loop_end in AudioBufferSourceOptions")
+        };
 
-#[js_function(3)]
-fn start(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
+        let some_loop_start = options.get::<Option<f64>>("loopStart").unwrap();
+        let loop_start = if let Some(loop_start) = some_loop_start.unwrap() {
+            loop_start
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().loop_start
+        } else {
+            panic!("No default value for loop_start in AudioBufferSourceOptions")
+        };
 
-    listen_to_ended_event(ctx.env, &js_this, node)?;
+        let some_playback_rate = options.get::<Option<f64>>("playbackRate").unwrap();
+        let playback_rate = if let Some(playback_rate) = some_playback_rate.unwrap() {
+            playback_rate as f32
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().playback_rate
+        } else {
+            panic!("No default value for playback_rate in AudioBufferSourceOptions")
+        };
 
-    let when = ctx.get::<JsNumber>(0)?.get_double()?;
+        // --------------------------------------------------------
+        // Create AudioBufferSourceOptions object
+        // --------------------------------------------------------
+        let options = AudioBufferSourceOptions {
+            buffer,
+            detune,
+            loop_,
+            loop_end,
+            loop_start,
+            playback_rate,
+        };
 
-    let offset_js = ctx.get::<JsUnknown>(1)?;
-    let offset = match offset_js.get_type()? {
-        ValueType::Number => offset_js.coerce_to_number()?.get_double()?,
-        ValueType::Null => 0.,
-        _ => unreachable!(),
-    };
+        // --------------------------------------------------------
+        // Create native instance
+        // --------------------------------------------------------
+        let native_node = match context {
+            Either::A(context) => {
+                let native_context = context.inner();
+                AudioBufferSourceNode::new(native_context, options)
+            }
+            Either::B(context) => {
+                let native_context = context.inner();
+                AudioBufferSourceNode::new(native_context, options)
+            }
+        };
 
-    let duration_js = ctx.get::<JsUnknown>(2)?;
-    let duration = match duration_js.get_type()? {
-        ValueType::Number => duration_js.coerce_to_number()?.get_double()?,
-        ValueType::Null => f64::MAX,
-        _ => unreachable!(),
-    };
+        // --------------------------------------------------------
+        // Bind NapiAudioParam instances
+        // --------------------------------------------------------
 
-    node.start_at_with_offset_and_duration(when, offset, duration);
+        let native_param = native_node.playback_rate().clone();
+        let playback_rate = NapiAudioParam::new(native_param);
 
-    ctx.env.get_undefined()
-}
+        let native_param = native_node.detune().clone();
+        let detune = NapiAudioParam::new(native_param);
 
-#[js_function(1)]
-fn stop(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
+        Self {
+            inner: native_node,
+            playback_rate,
+            detune,
+        }
+    }
 
-    let when = ctx.get::<JsNumber>(0)?.get_double()?;
-    node.stop_at(when);
+    #[napi(getter, js_name = "playbackRate")]
+    pub fn playback_rate(&self) -> NapiAudioParam {
+        self.playback_rate.clone()
+    }
 
-    ctx.env.get_undefined()
-}
+    #[napi(getter, js_name = "detune")]
+    pub fn detune(&self) -> NapiAudioParam {
+        self.detune.clone()
+    }
 
-// -------------------------------------------------
-// Getters / Setters
-// -------------------------------------------------
+    #[napi(catch_unwind)]
+    pub fn start(&mut self, when: Option<f64>, offset: Option<f64>, duration: Option<f64>) {
+        let when = when.unwrap_or(0.);
+        let offset = offset.unwrap_or(0.);
 
-#[js_function(0)]
-fn get_buffer(_ctx: CallContext) -> Result<JsUnknown> {
-    unreachable!();
-}
+        match duration {
+            Some(duration) => self
+                .inner
+                .start_at_with_offset_and_duration(when, offset, duration),
+            None => self.inner.start_at_with_offset(when, offset),
+        }
+    }
 
-#[js_function(1)]
-fn set_buffer(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
+    #[napi(catch_unwind)]
+    pub fn stop(&mut self, when: Option<f64>) {
+        let when = when.unwrap_or(0.);
+        self.inner.stop_at(when);
+    }
 
-    let js_obj = ctx.get::<JsObject>(0)?;
-    let napi_obj = ctx.env.unwrap::<NapiAudioBuffer>(&js_obj)?;
-    let obj = napi_obj.unwrap();
-    node.set_buffer(obj.clone());
+    #[napi]
+    pub fn onended(&self, callback: Function<NapiEvent, ()>) -> Result<()> {
+        let tsfn = callback
+            .build_threadsafe_function()
+            .weak::<true>() // do not prevent process to exit
+            .build_callback(
+                move |ctx: napi::threadsafe_function::ThreadsafeCallContext<
+                    web_audio_api::Event,
+                >| {
+                    Ok(NapiEvent {
+                        type_: ctx.value.type_.to_string(),
+                    })
+                },
+            )?;
 
-    ctx.env.get_undefined()
-}
+        self.inner.set_onended(move |e| {
+            tsfn.call(
+                e,
+                napi::threadsafe_function::ThreadsafeFunctionCallMode::Blocking,
+            );
+        });
 
-#[js_function(0)]
-fn get_loop(ctx: CallContext) -> Result<JsBoolean> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
+        Ok(())
+    }
 
-    let value = node.loop_();
-    ctx.env.get_boolean(value)
-}
+    // -------------------------------------------------
+    // Getters / Setters
+    // -------------------------------------------------
 
-#[js_function(1)]
-fn set_loop(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
+    #[napi(getter, js_name = "buffer")]
+    pub fn get_buffer(&self) {
+        unreachable!();
+    }
 
-    let value = ctx.get::<JsBoolean>(0)?.try_into()?;
-    node.set_loop(value);
+    #[napi(setter, catch_unwind, js_name = "buffer")]
+    pub fn set_buffer(&mut self, value: &NapiAudioBuffer) {
+        self.inner.set_buffer(value.inner.clone());
+    }
 
-    ctx.env.get_undefined()
-}
+    #[napi(getter, js_name = "loop")]
+    pub fn get_loop(&self) -> bool {
+        self.inner.loop_()
+    }
 
-#[js_function(0)]
-fn get_loop_start(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
+    #[napi(setter, catch_unwind, js_name = "loop")]
+    pub fn set_loop(&mut self, value: bool) {
+        self.inner.set_loop(value);
+    }
 
-    let value = node.loop_start();
-    ctx.env.create_double(value)
-}
+    #[napi(getter, js_name = "loopStart")]
+    pub fn get_loop_start(&self) -> f64 {
+        self.inner.loop_start()
+    }
 
-#[js_function(1)]
-fn set_loop_start(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
+    #[napi(setter, catch_unwind, js_name = "loopStart")]
+    pub fn set_loop_start(&mut self, value: f64) {
+        self.inner.set_loop_start(value);
+    }
 
-    let value = ctx.get::<JsNumber>(0)?.get_double()?;
-    node.set_loop_start(value);
+    #[napi(getter, js_name = "loopEnd")]
+    pub fn get_loop_end(&self) -> f64 {
+        self.inner.loop_end()
+    }
 
-    ctx.env.get_undefined()
-}
-
-#[js_function(0)]
-fn get_loop_end(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = node.loop_end();
-    ctx.env.create_double(value)
-}
-
-#[js_function(1)]
-fn set_loop_end(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiAudioBufferSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
-
-    let value = ctx.get::<JsNumber>(0)?.get_double()?;
-    node.set_loop_end(value);
-
-    ctx.env.get_undefined()
+    #[napi(setter, catch_unwind, js_name = "loopEnd")]
+    pub fn set_loop_end(&mut self, value: f64) {
+        self.inner.set_loop_end(value);
+    }
 }

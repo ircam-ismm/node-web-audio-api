@@ -17,163 +17,126 @@
 // -------------------------------------------------------------------------- //
 // -------------------------------------------------------------------------- //
 
-use crate::*;
-use napi::*;
-use napi_derive::js_function;
+use napi::bindgen_prelude::*;
+use napi_derive::napi;
+
 use web_audio_api::node::*;
 
-pub(crate) struct NapiStereoPannerNode(StereoPannerNode);
+use crate::*;
 
-// for debug purpose
-// impl Drop for NapiStereoPannerNode {
-//     fn drop(&mut self) {
-//         println!("NAPI: NapiStereoPannerNode dropped");
-//     }
-// }
-
-impl NapiStereoPannerNode {
-    pub fn create_js_class(env: &Env) -> Result<JsFunction> {
-        let interface = audio_node_interface![];
-
-        env.define_class("StereoPannerNode", constructor, &interface)
-    }
-
-    // @note: this is used in audio_node.rs for the connect / disconnect macros
-    pub fn unwrap(&mut self) -> &mut StereoPannerNode {
-        &mut self.0
-    }
-}
-
-#[js_function(2)]
-fn constructor(ctx: CallContext) -> Result<JsUndefined> {
-    let mut js_this = ctx.this_unchecked::<JsObject>();
-
-    let js_audio_context = ctx.get::<JsObject>(0)?;
-
-    // --------------------------------------------------------
-    // Parse StereoPannerOptions
-    // by bindings construction all fields are populated on the JS side
-    // --------------------------------------------------------
-    let js_options = ctx.get::<JsObject>(1)?;
-
-    let pan = js_options
-        .get::<&str, JsNumber>("pan")?
-        .unwrap()
-        .get_double()? as f32;
-
-    // --------------------------------------------------------
-    // Parse AudioNodeOptions
-    // --------------------------------------------------------
-    let node_defaults = StereoPannerOptions::default();
-    let audio_node_options_default = node_defaults.audio_node_options;
-
-    let some_channel_count_js = js_options.get::<&str, JsObject>("channelCount")?;
-    let channel_count = if let Some(channel_count_js) = some_channel_count_js {
-        channel_count_js.coerce_to_number()?.get_double()? as usize
-    } else {
-        audio_node_options_default.channel_count
-    };
-
-    let some_channel_count_mode_js = js_options.get::<&str, JsObject>("channelCountMode")?;
-    let channel_count_mode = if let Some(channel_count_mode_js) = some_channel_count_mode_js {
-        let channel_count_mode_str = channel_count_mode_js
-            .coerce_to_string()?
-            .into_utf8()?
-            .into_owned()?;
-
-        match channel_count_mode_str.as_str() {
-            "max" => ChannelCountMode::Max,
-            "clamped-max" => ChannelCountMode::ClampedMax,
-            "explicit" => ChannelCountMode::Explicit,
-            _ => panic!("TypeError - Failed to read the 'channelCountMode' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelCountMode", channel_count_mode_str.as_str()),
-        }
-    } else {
-        audio_node_options_default.channel_count_mode
-    };
-
-    let some_channel_interpretation_js =
-        js_options.get::<&str, JsObject>("channelInterpretation")?;
-    let channel_interpretation = if let Some(channel_interpretation_js) =
-        some_channel_interpretation_js
-    {
-        let channel_interpretation_str = channel_interpretation_js
-            .coerce_to_string()?
-            .into_utf8()?
-            .into_owned()?;
-
-        match channel_interpretation_str.as_str() {
-            "speakers" => ChannelInterpretation::Speakers,
-            "discrete" => ChannelInterpretation::Discrete,
-            _ => panic!("TypeError - Failed to read the 'channelInterpretation' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", channel_interpretation_str.as_str()),
-        }
-    } else {
-        audio_node_options_default.channel_interpretation
-    };
-
-    // --------------------------------------------------------
-    // Create StereoPannerOptions object
-    // --------------------------------------------------------
-    let options = StereoPannerOptions {
-        pan,
-        audio_node_options: AudioNodeOptions {
-            channel_count,
-            channel_count_mode,
-            channel_interpretation,
-        },
-    };
-
-    // --------------------------------------------------------
-    // Create native StereoPannerNode
-    // --------------------------------------------------------
-    let audio_context_name =
-        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
-    let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
-    let audio_context_str = &audio_context_utf8_name[..];
-
-    let native_node = match audio_context_str {
-        "AudioContext" => {
-            let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
-            let audio_context = napi_audio_context.unwrap();
-            StereoPannerNode::new(audio_context, options)
-        }
-        "OfflineAudioContext" => {
-            let napi_audio_context = ctx
-                .env
-                .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
-            let audio_context = napi_audio_context.unwrap();
-            StereoPannerNode::new(audio_context, options)
-        }
-        &_ => unreachable!(),
-    };
-
-    // --------------------------------------------------------
-    // Bind AudioParam to JS object
-    // --------------------------------------------------------
-
-    let native_param = native_node.pan().clone();
-    let napi_param = NapiAudioParam::new(native_param);
-    let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
-    ctx.env.wrap(&mut js_obj, napi_param)?;
-    js_this.set_named_property("pan", &js_obj)?;
-
-    // --------------------------------------------------------
-    // Finalize instance creation
-    // --------------------------------------------------------
-    js_this.define_properties(&[
-        Property::new("context")?
-            .with_value(&js_audio_context)
-            .with_property_attributes(PropertyAttributes::Enumerable),
-        // this must be put on the instance and not in the prototype to be reachable
-        Property::new("Symbol.toStringTag")?
-            .with_value(&ctx.env.create_string("StereoPannerNode")?)
-            .with_property_attributes(PropertyAttributes::Static),
-    ])?;
-
-    // finalize instance creation
-    let napi_node = NapiStereoPannerNode(native_node);
-    ctx.env.wrap(&mut js_this, napi_node)?;
-
-    ctx.env.get_undefined()
+#[napi(js_name = NapiStereoPannerNode)]
+pub struct NapiStereoPannerNode {
+    pub(crate) inner: StereoPannerNode,
+    pub(crate) pan: NapiAudioParam,
 }
 
 audio_node_impl!(NapiStereoPannerNode);
+
+#[napi]
+impl NapiStereoPannerNode {
+    #[napi(constructor, catch_unwind)]
+    pub fn new(
+        context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
+        options: Object,
+    ) -> Self {
+        // --------------------------------------------------------
+        // Parse StereoPannerOptions
+        // by bindings construction all fields are populated on the JS side
+        // --------------------------------------------------------
+
+        let node_defaults: Option<StereoPannerOptions> = Some(StereoPannerOptions::default());
+
+        let some_pan = options.get::<Option<f64>>("pan").unwrap();
+        let pan = if let Some(pan) = some_pan.unwrap() {
+            pan as f32
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().pan
+        } else {
+            panic!("No default value for pan in StereoPannerOptions")
+        };
+
+        // --------------------------------------------------------
+        // Parse AudioNodeOptions
+        // - Note that these are not enforced by JS facade
+        // --------------------------------------------------------
+        let audio_node_options_default = match node_defaults {
+            Some(node_defaults) => node_defaults.audio_node_options,
+            None => AudioNodeOptions::default(),
+        };
+
+        let some_channel_count = options.get::<u32>("channelCount").unwrap();
+        let channel_count = if let Some(channel_count) = some_channel_count {
+            channel_count as usize
+        } else {
+            audio_node_options_default.channel_count
+        };
+
+        let some_channel_count_mode = options.get::<String>("channelCountMode").unwrap();
+        let channel_count_mode = if let Some(channel_count_mode) = some_channel_count_mode {
+            match channel_count_mode.as_str() {
+                "max" => ChannelCountMode::Max,
+                "clamped-max" => ChannelCountMode::ClampedMax,
+                "explicit" => ChannelCountMode::Explicit,
+                _ => panic!("TypeError - Failed to read the 'channelCountMode' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelCountMode", channel_count_mode.as_str()),
+            }
+        } else {
+            audio_node_options_default.channel_count_mode
+        };
+
+        let some_channel_interpretation = options.get::<String>("channelInterpretation").unwrap();
+        let channel_interpretation = if let Some(channel_interpretation) =
+            some_channel_interpretation
+        {
+            match channel_interpretation.as_str() {
+                "speakers" => ChannelInterpretation::Speakers,
+                "discrete" => ChannelInterpretation::Discrete,
+                _ => panic!("TypeError - Failed to read the 'channelInterpretation' property from 'AudioNodeOptions': The provided value '{:?}' is not a valid enum value of type ChannelInterpretation", channel_interpretation.as_str()),
+            }
+        } else {
+            audio_node_options_default.channel_interpretation
+        };
+
+        // --------------------------------------------------------
+        // Create StereoPannerOptions object
+        // --------------------------------------------------------
+        let options = StereoPannerOptions {
+            pan,
+            audio_node_options: AudioNodeOptions {
+                channel_count,
+                channel_count_mode,
+                channel_interpretation,
+            },
+        };
+
+        // --------------------------------------------------------
+        // Create native instance
+        // --------------------------------------------------------
+        let native_node = match context {
+            Either::A(context) => {
+                let native_context = context.inner();
+                StereoPannerNode::new(native_context, options)
+            }
+            Either::B(context) => {
+                let native_context = context.inner();
+                StereoPannerNode::new(native_context, options)
+            }
+        };
+
+        // --------------------------------------------------------
+        // Bind NapiAudioParam instances
+        // --------------------------------------------------------
+
+        let native_param = native_node.pan().clone();
+        let pan = NapiAudioParam::new(native_param);
+
+        Self {
+            inner: native_node,
+            pan,
+        }
+    }
+
+    #[napi(getter, js_name = "pan")]
+    pub fn pan(&self) -> NapiAudioParam {
+        self.pan.clone()
+    }
+}

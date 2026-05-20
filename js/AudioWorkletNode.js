@@ -48,7 +48,6 @@ module.exports = (jsExport, nativeBinding) => {
         throw new DOMException(`Failed to construct 'AudioWorkletNode': processor '${parsedName}' is not registered in 'AudioWorklet'`, 'InvalidStateError');
       }
 
-      // parsed version of the option to be passed to NAPI
       const parsedOptions = {};
 
       if (options && (typeof options !== 'object' || options === null)) {
@@ -150,7 +149,7 @@ module.exports = (jsExport, nativeBinding) => {
           context: `Failed to construct 'AudioWorkletNode': Failed to read the 'channelCount' property from AudioWorkletNodeOptions: The provided value '${options.channelCount}'`,
         });
 
-        // if we delegate this check to Rust, this can poison a Mutex
+        // @note - delegating this check to Rust can poison a Mutex
         // (probably the `audio_param_descriptor_channel` one)
         if (parsedOptions.channelCount <= 0 || parsedOptions.channelCount > IMPLEMENTATION_MAX_NUMBER_OF_CHANNELS) {
           throw new DOMException(`Failed to construct 'AudioWorkletNode': Invalid 'channelCount' property: Number of channels: ${parsedOptions.channelCount} is outside range [1, 32]`, 'NotSupportedError');
@@ -177,12 +176,11 @@ module.exports = (jsExport, nativeBinding) => {
         });
       }
 
-      // Create NapiAudioWorkletNode
       const parameterDescriptors = context.audioWorklet[kGetParameterDescriptors](parsedName);
       let napiObj;
 
       try {
-        napiObj = new nativeBinding.AudioWorkletNode(
+        napiObj = new nativeBinding.NapiAudioWorkletNode(
           context[kNapiObj],
           parsedName,
           parsedOptions,
@@ -212,34 +210,40 @@ module.exports = (jsExport, nativeBinding) => {
       });
 
       // Create JS processor
-      this.#port = context.audioWorklet[kCreateProcessor](
+      const { messagePort, errorPort } = context.audioWorklet[kCreateProcessor](
         parsedName,
         parsedOptions,
         napiObj.id,
       );
 
-      this.#port.on('message', msg => {
-        // Handle 'processorerror' ErrorEvent
-        // cf. https://webaudio.github.io/web-audio-api/#dom-audioworkletnode-onprocessorerror
-        switch (msg.cmd) {
+      this.#port = messagePort;
+
+      // Handle 'processorerror' events
+      // cf. https://webaudio.github.io/web-audio-api/#dom-audioworkletnode-onprocessorerror
+      errorPort.on('message', msg => {
+        const { cmd, err } = msg;
+        // log error message to help debugging event if no `processorerror` listener has been set
+        console.log(err);
+
+        switch (cmd) {
           case 'node-web-audio-api:worklet:ctor-error': {
-            const message = `Failed to construct '${parsedName}' AudioWorkletProcessor: ${msg.err.message}`;
-            const event = new ErrorEvent('processorerror', { message, error: msg.err });
+            const message = `Failed to construct '${parsedName}' AudioWorkletProcessor: ${err.message}`;
+            const event = new ErrorEvent('processorerror', { message, error: err });
             propagateEvent(this, event);
             break;
           }
           case 'node-web-audio-api:worklet:process-invalid': {
-            const message = `Failed to execute 'process' on '${parsedName}' AudioWorkletProcessor: ${msg.err.message}`;
+            const message = `Failed to execute 'process' on '${parsedName}' AudioWorkletProcessor: ${err.message}`;
             const error = new TypeError(message);
-            error.stack = msg.err.stack.replace(msg.err.message, message);
+            error.stack = err.stack.replace(err.message, message);
 
             const event = new ErrorEvent('processorerror', { message, error });
             propagateEvent(this, event);
             break;
           }
           case 'node-web-audio-api:worklet:process-error': {
-            const message = `Failed to execute 'process' on '${parsedName}' AudioWorkletProcessor: ${msg.err.message}`;
-            const event = new ErrorEvent('processorerror', { message, error: msg.err });
+            const message = `Failed to execute 'process' on '${parsedName}' AudioWorkletProcessor: ${err.message}`;
+            const event = new ErrorEvent('processorerror', { message, error: err });
             propagateEvent(this, event);
             break;
           }

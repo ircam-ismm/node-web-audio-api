@@ -53,7 +53,6 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError(`Failed to construct 'AudioBufferSourceNode': argument 1 is not of type BaseAudioContext`);
       }
 
-      // parsed version of the option to be passed to NAPI
       const parsedOptions = {};
 
       if (options && typeof options !== 'object') {
@@ -66,7 +65,6 @@ module.exports = (jsExport, nativeBinding) => {
             throw new TypeError('Failed to construct \'AudioBufferSourceNode\': Failed to read the \'buffer\' property from AudioBufferSourceOptions: The provided value cannot be converted to \'AudioBuffer\'');
           }
 
-          // unwrap napi audio buffer
           parsedOptions.buffer = options.buffer[kNapiObj];
         } else {
           parsedOptions.buffer = null;
@@ -118,7 +116,7 @@ module.exports = (jsExport, nativeBinding) => {
       let napiObj;
 
       try {
-        napiObj = new nativeBinding.AudioBufferSourceNode(context[kNapiObj], parsedOptions);
+        napiObj = new nativeBinding.NapiAudioBufferSourceNode(context[kNapiObj], parsedOptions);
       } catch (err) {
         throwSanitizedError(err);
       }

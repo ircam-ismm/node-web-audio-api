@@ -1,289 +1,207 @@
 #[macro_export]
-macro_rules! audio_node_interface {
-    [$($e:expr),*] => {
-        [
-            Property::new("numberOfInputs")?.with_getter(get_number_of_inputs),
-            Property::new("numberOfOutputs")?.with_getter(get_number_of_outputs),
-            Property::new("channelCount")?
-                .with_getter(get_channel_count)
-                .with_setter(set_channel_count),
-            Property::new("channelCountMode")?
-                .with_getter(get_channel_count_mode)
-                .with_setter(set_channel_count_mode),
-            Property::new("channelInterpretation")?
-                .with_getter(get_channel_interpretation)
-                .with_setter(set_channel_interpretation),
-            Property::new("connect")?.with_method(connect),
-            Property::new("disconnect")?.with_method(disconnect),
-            $($e,)*
-        ]
-    }
-}
-
-#[macro_export]
 macro_rules! audio_node_impl {
     ($napi_struct:ident) => {
-        #[js_function]
-        fn get_number_of_inputs(ctx: CallContext) -> Result<JsNumber> {
-            let js_this = ctx.this_unchecked::<JsObject>();
-            let napi_node = ctx.env.unwrap::<$napi_struct>(&js_this)?;
-            let node = napi_node.unwrap();
-
-            let number_of_inputs = node.number_of_inputs() as f64;
-
-            ctx.env.create_double(number_of_inputs)
-        }
-
-        #[js_function]
-        fn get_number_of_outputs(ctx: CallContext) -> Result<JsNumber> {
-            let js_this = ctx.this_unchecked::<JsObject>();
-            let napi_node = ctx.env.unwrap::<$napi_struct>(&js_this)?;
-            let node = napi_node.unwrap();
-
-            let number_of_outputs = node.number_of_outputs() as f64;
-
-            ctx.env.create_double(number_of_outputs)
-        }
-
-        #[js_function]
-        fn get_channel_count(ctx: CallContext) -> Result<JsNumber> {
-            let js_this = ctx.this_unchecked::<JsObject>();
-            let napi_node = ctx.env.unwrap::<$napi_struct>(&js_this)?;
-            let node = napi_node.unwrap();
-
-            let channel_count = node.channel_count() as f64;
-
-            ctx.env.create_double(channel_count)
-        }
-
-        #[js_function(1)]
-        fn set_channel_count(ctx: CallContext) -> Result<JsUndefined> {
-            let js_this = ctx.this_unchecked::<JsObject>();
-            let napi_node = ctx.env.unwrap::<$napi_struct>(&js_this)?;
-            let node = napi_node.unwrap();
-
-            let channel_count = ctx.get::<JsNumber>(0)?.get_double()? as usize;
-            node.set_channel_count(channel_count);
-
-            ctx.env.get_undefined()
-        }
-
-        #[js_function]
-        fn get_channel_count_mode(ctx: CallContext) -> Result<JsString> {
-            let js_this = ctx.this_unchecked::<JsObject>();
-            let napi_node = ctx.env.unwrap::<$napi_struct>(&js_this)?;
-            let node = napi_node.unwrap();
-
-            let value = node.channel_count_mode();
-            let value_str = match value {
-                ChannelCountMode::Max => "max",
-                ChannelCountMode::ClampedMax => "clamped-max",
-                ChannelCountMode::Explicit => "explicit",
-            };
-
-            ctx.env.create_string(value_str)
-        }
-
-        #[js_function(1)]
-        fn set_channel_count_mode(ctx: CallContext) -> Result<JsUndefined> {
-            let js_this = ctx.this_unchecked::<JsObject>();
-            let napi_node = ctx.env.unwrap::<$napi_struct>(&js_this)?;
-            let node = napi_node.unwrap();
-
-            let js_str = ctx.get::<JsString>(0)?;
-            let uf8_str = js_str.into_utf8()?.into_owned()?;
-            let value = match uf8_str.as_str() {
-                "max" => ChannelCountMode::Max,
-                "clamped-max" => ChannelCountMode::ClampedMax,
-                "explicit" => ChannelCountMode::Explicit,
-                _ => unreachable!(),
-            };
-            node.set_channel_count_mode(value);
-
-            ctx.env.get_undefined()
-        }
-
-        #[js_function]
-        fn get_channel_interpretation(ctx: CallContext) -> Result<JsString> {
-            let js_this = ctx.this_unchecked::<JsObject>();
-            let napi_node = ctx.env.unwrap::<$napi_struct>(&js_this)?;
-            let node = napi_node.unwrap();
-
-            let value = node.channel_interpretation();
-            let value_str = match value {
-                ChannelInterpretation::Speakers => "speakers",
-                ChannelInterpretation::Discrete => "discrete",
-            };
-
-            ctx.env.create_string(value_str)
-        }
-
-        #[js_function(1)]
-        fn set_channel_interpretation(ctx: CallContext) -> Result<JsUndefined> {
-            let js_this = ctx.this_unchecked::<JsObject>();
-            let napi_node = ctx.env.unwrap::<$napi_struct>(&js_this)?;
-            let node = napi_node.unwrap();
-
-            let js_str = ctx.get::<JsString>(0)?;
-            let uf8_str = js_str.into_utf8()?.into_owned()?;
-            let value = match uf8_str.as_str() {
-                "speakers" => ChannelInterpretation::Speakers,
-                "discrete" => ChannelInterpretation::Discrete,
-                _ => unreachable!(),
-            };
-            node.set_channel_interpretation(value);
-
-            ctx.env.get_undefined()
-        }
-
-        #[js_function(3)]
-        fn connect(ctx: napi::CallContext) -> napi::Result<napi::JsUndefined> {
-            let js_this = ctx.this_unchecked::<napi::JsObject>();
-            let napi_src = ctx.env.unwrap::<$napi_struct>(&js_this)?;
-            let native_src = napi_src.unwrap();
-
-            // get destination
-            let js_dest = ctx.get::<napi::JsObject>(0)?;
-            let dest_name = js_dest.get_named_property::<napi::JsString>("Symbol.toStringTag")?;
-            let dest_uf8_name = dest_name.into_utf8()?.into_owned()?;
-            let dest_str = &dest_uf8_name[..];
-
-            let output = ctx.get::<napi::JsNumber>(1)?.get_double()? as usize;
-            let input = ctx.get::<napi::JsNumber>(2)?.get_double()? as usize;
-
-            match dest_str {
-                "AudioParam" => {
-                    let napi_dest = ctx
-                        .env
-                        .unwrap::<$crate::audio_param::NapiAudioParam>(&js_dest)?;
-                    let native_dest = napi_dest.unwrap();
-                    native_src.connect_from_output_to_input(native_dest, output, input);
-                    // proper return value is handled on JS side
-                    ctx.env.get_undefined()
-                }
-                "AudioDestinationNode" => {
-                    let napi_dest = ctx
-                        .env
-                        .unwrap::<$crate::audio_destination_node::NapiAudioDestinationNode>(
-                        &js_dest,
-                    )?;
-                    let native_dest = napi_dest.unwrap();
-                    native_src.connect_from_output_to_input(native_dest, output, input);
-                    // proper return value is handled on JS side
-                    ctx.env.get_undefined()
-                }
-                ${d.nodes.map(n => { return `"${d.name(n)}" => {
-                    let napi_dest = ctx
-                        .env
-                        .unwrap::<$crate::${d.slug(n)}::${d.napiName(n)}>(&js_dest)?;
-                    let native_dest = napi_dest.unwrap();
-                    native_src.connect_from_output_to_input(native_dest, output, input);
-                    // proper return value is handled on JS side
-                    ctx.env.get_undefined()
-                }
-                `}).join('')}
-                _ => {
-                    let msg = "TypeError - Failed to execute 'connect' on 'AudioNode': Overload resolution failed";
-                    return Err(napi::Error::new(napi::Status::InvalidArg, msg));
-                }
-            }
-        }
-
-        #[js_function(3)]
-        fn disconnect(ctx: napi::CallContext) -> napi::Result<napi::JsUndefined> {
-            let js_this = ctx.this_unchecked::<napi::JsObject>();
-            let napi_src = ctx.env.unwrap::<$napi_struct>(&js_this)?;
-            let native_src = napi_src.unwrap();
-
-            if ctx.length == 0 {
-                native_src.disconnect();
-                return ctx.env.get_undefined();
+        #[napi]
+        impl $napi_struct {
+            #[napi(getter, js_name = "numberOfInputs")]
+            pub fn get_number_of_inputs(&self) -> u32 {
+                self.inner.number_of_inputs() as u32
             }
 
-            // disconnect_output
-            if ctx.length == 1 {
-                let arg0 = ctx.get::<napi::JsUnknown>(0)?;
+            #[napi(getter, js_name = "numberOfOutputs")]
+            pub fn get_number_of_outputs(&self) -> u32 {
+                self.inner.number_of_outputs() as u32
+            }
 
-                match arg0.get_type()? {
-                    ValueType::Number => {
-                        let output = arg0.coerce_to_number()?.get_double()? as usize;
-                        native_src.disconnect_output(output);
+            #[napi(getter, js_name = "channelCount")]
+            pub fn get_channel_count(&self) -> u32 {
+                self.inner.channel_count() as u32
+            }
 
-                        return ctx.env.get_undefined();
+            #[napi(setter, catch_unwind, js_name = "channelCount")]
+            pub fn set_channel_count(&self, channel_count: u32) {
+                self.inner.set_channel_count(channel_count as usize);
+            }
+
+            #[napi(getter, js_name = "channelCountMode")]
+            pub fn get_channel_count_mode(&self) -> String {
+                let channel_count_mode = self.inner.channel_count_mode();
+                let channel_count_mode = match channel_count_mode {
+                    ChannelCountMode::Max => "max",
+                    ChannelCountMode::ClampedMax => "clamped-max",
+                    ChannelCountMode::Explicit => "explicit",
+                };
+                channel_count_mode.into()
+            }
+
+            #[napi(setter, catch_unwind, js_name = "channelCountMode")]
+            pub fn set_channel_count_mode(&self, channel_count_mode: String) {
+                let channel_count_mode = match channel_count_mode.as_str() {
+                    "max" => ChannelCountMode::Max,
+                    "clamped-max" => ChannelCountMode::ClampedMax,
+                    "explicit" => ChannelCountMode::Explicit,
+                    _ => unreachable!(),
+                };
+                self.inner.set_channel_count_mode(channel_count_mode);
+            }
+
+            #[napi(getter, js_name = "channelInterpretation")]
+            pub fn get_channel_interpretation(&self) -> String {
+                let channel_interpretation = self.inner.channel_interpretation();
+                let channel_interpretation = match channel_interpretation {
+                    ChannelInterpretation::Speakers => "speakers",
+                    ChannelInterpretation::Discrete => "discrete",
+                };
+                channel_interpretation.into()
+            }
+
+            #[napi(setter, catch_unwind, js_name = "channelInterpretation")]
+            pub fn set_channel_interpretation(&self, channel_interpretation: String) {
+                let channel_interpretation = match channel_interpretation.as_str() {
+                    "speakers" => ChannelInterpretation::Speakers,
+                    "discrete" => ChannelInterpretation::Discrete,
+                    _ => unreachable!(),
+                };
+                self.inner.set_channel_interpretation(channel_interpretation);
+            }
+
+            #[napi(catch_unwind)]
+            pub fn connect(
+                &mut self,
+                dest: Either${d.nodes.length + 2}<
+                    &$crate::audio_param::NapiAudioParam,
+                    &$crate::audio_destination_node::NapiAudioDestinationNode,
+                    ${d.nodes.map(n => {
+                        return `
+                    &$crate::${d.slug(n)}::${d.napiName(n)}`;
+                    }).join(',')}
+                >,
+                output: Option<u32>,
+                input: Option<u32>,
+            ) {
+                let output: usize = output.unwrap_or(0).try_into().unwrap();
+                let input: usize = input.unwrap_or(0).try_into().unwrap();
+
+                match dest {
+                    Either${d.nodes.length + 2}::A(dest) => {
+                        self.inner
+                            .connect_from_output_to_input(&dest.inner, output, input);
                     }
-                    _ => {},
+                    Either${d.nodes.length + 2}::B(dest) => {
+                        self.inner
+                            .connect_from_output_to_input(dest.inner.as_ref(), output, input);
+                    }
+                    ${d.nodes.map((_, index) => {
+                        // A if 65
+                        return `
+                    Either${d.nodes.length + 2}::${String.fromCharCode(index + 65 + 2)}(dest) => {
+                        self.inner
+                            .connect_from_output_to_input(&dest.inner, output, input);
+                    }
+                        `;
+                    })}
                 }
             }
 
-            // at this point, we are sure arg[0] is an AudioNode or an AudioParam
-            let js_dest = ctx.get::<napi::JsObject>(0)?;
-            let dest_name = js_dest.get_named_property::<napi::JsString>("Symbol.toStringTag")?;
-            let dest_uf8_name = dest_name.into_utf8()?.into_owned()?;
-            let dest_str = &dest_uf8_name[..];
-
-            match dest_str {
-                "AudioParam" => {
-                    let napi_dest = ctx
-                        .env
-                        .unwrap::<$crate::audio_param::NapiAudioParam>(&js_dest)?;
-                    let native_dest = napi_dest.unwrap();
-
-                    if ctx.length == 2 {
-                        let output = ctx.get::<JsNumber>(1)?.get_double()? as usize;
-                        native_src.disconnect_dest_from_output(native_dest, output);
-                    } else {
-                        native_src.disconnect_dest(native_dest);
-                    }
+            #[napi(catch_unwind)]
+            pub fn disconnect(
+                &mut self,
+                output_or_dest: Option<Either${d.nodes.length + 3}<
+                    u32,
+                    &$crate::audio_param::NapiAudioParam,
+                    &$crate::audio_destination_node::NapiAudioDestinationNode,
+                    ${d.nodes.map(n => {
+                        return `
+                    &$crate::${d.slug(n)}::${d.napiName(n)}`;
+                    }).join(',')}
+                >>,
+                output: Option<u32>,
+                input: Option<u32>,
+            ) {
+                if output_or_dest.is_none() && (output.is_some() || input.is_some()) {
+                    panic!("Invalid disconnect call");
                 }
-                "AudioDestinationNode" => {
-                    let napi_dest = ctx
-                        .env
-                        .unwrap::<$crate::audio_destination_node::NapiAudioDestinationNode>(
-                        &js_dest,
-                    )?;
-                    let native_dest = napi_dest.unwrap();
 
-                    if ctx.length == 3 {
-                        let output = ctx.get::<JsNumber>(1)?.get_double()? as usize;
-                        let input = ctx.get::<JsNumber>(2)?.get_double()? as usize;
-                        native_src.disconnect_dest_from_output_to_input(
-                            native_dest,
-                            output,
-                            input
-                        );
-                    } else if ctx.length == 2 {
-                        let output = ctx.get::<JsNumber>(1)?.get_double()? as usize;
-                        native_src.disconnect_dest_from_output(native_dest, output);
-                    } else {
-                        native_src.disconnect_dest(native_dest);
-                    }
+                // undefined disconnect ();
+                if let (None, None, None) = (output_or_dest, output, input) {
+                    self.inner.disconnect();
+                    return;
                 }
-                ${d.nodes.map(n => { return `"${d.name(n)}" => {
-                    let napi_dest = ctx
-                        .env
-                        .unwrap::<$crate::${d.slug(n)}::${d.napiName(n)}>(&js_dest)?;
-                    let native_dest = napi_dest.unwrap();
 
-                    if ctx.length == 3 {
-                        let output = ctx.get::<JsNumber>(1)?.get_double()? as usize;
-                        let input = ctx.get::<JsNumber>(2)?.get_double()? as usize;
-                        native_src.disconnect_dest_from_output_to_input(
-                            native_dest,
-                            output,
-                            input
-                        );
-                    } else if ctx.length == 2 {
-                        let output = ctx.get::<JsNumber>(1)?.get_double()? as usize;
-                        native_src.disconnect_dest_from_output(native_dest, output);
-                    } else {
-                        native_src.disconnect_dest(native_dest);
-                    }
+                // undefined disconnect (unsigned long output);
+                if let Some(Either${d.nodes.length + 3}::A(output)) = output_or_dest {
+                    let output: usize = output.try_into().unwrap();
+                    self.inner.disconnect_output(output);
+                    return;
                 }
-                `}).join('')}
-                _ => unreachable!(),
+
+                // from this point, the first argument is either an AudioNode or an AudioParam
+                let dest = output_or_dest.unwrap();
+
+                if output.is_none() && input.is_some() {
+                    panic!("Invalid disconnect call");
+                }
+
+                match dest {
+                    // undefined disconnect (AudioParam destinationParam);
+                    // undefined disconnect (AudioParam destinationParam, unsigned long output);
+                    Either${d.nodes.length + 3}::B(dest) => {
+                        let dest = &dest.inner;
+
+                        match (output, input) {
+                            (None, None) => self.inner.disconnect_dest(dest),
+                            (Some(output), None) => {
+                                let output: usize = output.try_into().unwrap();
+                                self.inner.disconnect_dest_from_output(dest, output);
+                            },
+                            _ => unreachable!(),
+                        }
+                    }
+                    // undefined disconnect (AudioNode destinationNode);
+                    // undefined disconnect (AudioNode destinationNode, unsigned long output);
+                    // undefined disconnect (AudioNode destinationNode, unsigned long output, unsigned long input);
+                    Either${d.nodes.length + 3}::C(dest) => {
+                        let dest = dest.inner.as_ref();
+
+                        match (output, input) {
+                            (None, None) => self.inner.disconnect_dest(dest),
+                            (Some(output), None) => {
+                                let output: usize = output.try_into().unwrap();
+                                self.inner.disconnect_dest_from_output(dest, output);
+                            },
+                            (Some(output), Some(input)) => {
+                                let output: usize = output.try_into().unwrap();
+                                let input: usize = input.try_into().unwrap();
+                                self.inner.disconnect_dest_from_output_to_input(dest, output, input);
+                            }
+                            _ => unreachable!(),
+                        }
+                    }
+                    ${d.nodes.map((_, index) => {
+                        // A if 65
+                        return `
+                    Either${d.nodes.length + 3}::${String.fromCharCode(index + 65 + 3)}(dest) => {
+                        let dest = &dest.inner;
+
+                        match (output, input) {
+                            (None, None) => self.inner.disconnect_dest(dest),
+                            (Some(output), None) => {
+                                let output: usize = output.try_into().unwrap();
+                                self.inner.disconnect_dest_from_output(dest, output);
+                            },
+                            (Some(output), Some(input)) => {
+                                let output: usize = output.try_into().unwrap();
+                                let input: usize = input.try_into().unwrap();
+                                self.inner.disconnect_dest_from_output_to_input(dest, output, input);
+                            }
+                            _ => unreachable!(),
+                        }
+                    }
+                        `;
+                    })}
+                    _ => unreachable!(), // Either::A handled before match
+                }
             }
-
-            ctx.env.get_undefined()
         }
-    };
+    }
 }

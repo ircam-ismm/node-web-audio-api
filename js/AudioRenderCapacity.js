@@ -2,7 +2,6 @@ const conversions = require('webidl-conversions');
 
 const {
   kNapiObj,
-  kOnUpdate,
 } = require('./lib/symbols.js');
 const {
   isFunction,
@@ -23,7 +22,7 @@ class AudioRenderCapacity extends EventTarget {
     if (
       (typeof options !== 'object')
       || !(kNapiObj in options)
-      || options[kNapiObj]['Symbol.toStringTag'] !== 'AudioRenderCapacity'
+      || options[kNapiObj].constructor.name !== 'NapiAudioRenderCapacity'
     ) {
       throw new TypeError('Illegal constructor');
     }
@@ -32,12 +31,10 @@ class AudioRenderCapacity extends EventTarget {
 
     this[kNapiObj] = options[kNapiObj];
 
-    this[kNapiObj][kOnUpdate] = (function(err, rawEvent) {
+    this[kNapiObj].onupdate((function(rawEvent) {
       const event = new AudioRenderCapacityEvent('update', rawEvent);
       propagateEvent(this, event);
-    }).bind(this);
-
-    this[kNapiObj].listen_to_events();
+    }).bind(this));
   }
 
   get onupdate() {

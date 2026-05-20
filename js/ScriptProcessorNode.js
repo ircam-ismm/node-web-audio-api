@@ -12,8 +12,6 @@ const {
 } = require('./lib/errors.js');
 const {
   kNapiObj,
-  kAudioBuffer,
-  kOnAudioProcess,
 } = require('./lib/symbols.js');
 const {
   propagateEvent,
@@ -37,7 +35,6 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError(`Failed to construct 'ScriptProcessorNode': argument 1 is not of type BaseAudioContext`);
       }
 
-      // parsed version of the option to be passed to NAPI
       const parsedOptions = {};
 
       if (options && typeof options !== 'object') {
@@ -98,7 +95,7 @@ module.exports = (jsExport, nativeBinding) => {
       let napiObj;
 
       try {
-        napiObj = new nativeBinding.ScriptProcessorNode(context[kNapiObj], parsedOptions);
+        napiObj = new nativeBinding.NapiScriptProcessorNode(context[kNapiObj], parsedOptions);
       } catch (err) {
         throwSanitizedError(err);
       }
@@ -107,18 +104,52 @@ module.exports = (jsExport, nativeBinding) => {
         [kNapiObj]: napiObj,
       });
 
-      this[kNapiObj][kOnAudioProcess] = (function(err, rawEvent) {
+      const numberOfInputChannels = parsedOptions.numberOfInputChannels;
+      const numberOfOutputChannels = parsedOptions.numberOfOutputChannels;
+      const bufferSize = parsedOptions.bufferSize;
+
+      const inputBuffer = new jsExport.AudioBuffer({
+        numberOfChannels: numberOfInputChannels,
+        length: bufferSize,
+        sampleRate: context.sampleRate,
+      });
+      const outputBuffer = new jsExport.AudioBuffer({
+        numberOfChannels: numberOfOutputChannels,
+        length: bufferSize,
+        sampleRate: context.sampleRate,
+      });
+
+      this[kNapiObj].onaudioprocess((function(e) {
+        // retrieve the ArrayBuffer from Buffer;
+        const inputArrayBuffer = e.buffer;
+        // first 8 bits are playbackTime
+        const playbackTime = new Float64Array(inputArrayBuffer, 0, 8)[0];
+        // unpack channels data
+        for (let channelNumber = 0; channelNumber < numberOfInputChannels; channelNumber++) {
+          const offset = (channelNumber * bufferSize * 4) + 8;
+          const channelData = new Float32Array(inputArrayBuffer, offset, bufferSize);
+          inputBuffer.copyToChannel(channelData, channelNumber);
+        }
+
         const audioProcessingEventInit = {
-          playbackTime: rawEvent.playbackTime,
-          inputBuffer: new jsExport.AudioBuffer({ [kNapiObj]: rawEvent.inputBuffer }),
-          outputBuffer: new jsExport.AudioBuffer({ [kNapiObj]: rawEvent.outputBuffer }),
+          playbackTime,
+          inputBuffer,
+          outputBuffer,
         };
 
         const event = new jsExport.AudioProcessingEvent('audioprocess', audioProcessingEventInit);
         propagateEvent(this, event);
-      }).bind(this);
 
-      this[kNapiObj].listen_to_events();
+        let channels = new Array(numberOfOutputChannels);
+        for (let channelNumber = 0; channelNumber < numberOfOutputChannels; channelNumber++) {
+          const channelBuffer = outputBuffer.getChannelData(channelNumber).buffer;
+          const bufferView = new Uint8Array(channelBuffer);
+          channels[channelNumber] = bufferView;
+        }
+        // pack output buffer data into raw Buffer
+        const outputArrayBuffer = Buffer.concat(channels);
+        return outputArrayBuffer;
+      }).bind(this));
     }
 
     get bufferSize() {

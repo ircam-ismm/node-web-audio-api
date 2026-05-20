@@ -37,14 +37,14 @@ module.exports = (jsExport, nativeBinding) => {
       // disableNormalization = false
       if (options && 'disableNormalization' in options) {
         parsedOptions.disableNormalization = conversions['boolean'](options.disableNormalization, {
-          context: `Failed to construct 'PeriodicWave': Failed to read the 'imag' property from PeriodicWaveOptions: The provided value`,
+          context: `Failed to construct 'PeriodicWave': Failed to read the 'disableNormalization' property from PeriodicWaveOptions: The provided value`,
         });
       } else {
         parsedOptions.disableNormalization;
       }
 
       try {
-        const napiObj = new nativeBinding.PeriodicWave(context[kNapiObj], parsedOptions);
+        const napiObj = new nativeBinding.NapiPeriodicWave(context[kNapiObj], parsedOptions);
         Object.defineProperty(this, kNapiObj, {
           value: napiObj,
           ...kHiddenProperty,

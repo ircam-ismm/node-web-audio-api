@@ -3,7 +3,13 @@ import path from 'node:path';
 import fs from 'node:fs';
 
 import { assert } from 'chai';
-import { AudioContext, OscillatorNode, GainNode, AudioWorkletNode } from '../index.mjs';
+import {
+  AudioContext,
+  AudioWorkletNode,
+  GainNode,
+  OfflineAudioContext,
+  OscillatorNode,
+} from '../index.mjs';
 import { delay } from '@ircam/sc-utils';
 
 const scriptTexts = `
@@ -256,6 +262,17 @@ describe('AudioWorkletProcessor', () => {
       await delay(100);
       await audioContext.close();
       assert.isTrue(errored);
+    });
+
+    it('OfflineAudioContext.startRendering should return when processor constructor is invalid', async () => {
+      const audioContext = new OfflineAudioContext(1, 128, 48000);
+      await audioContext.audioWorklet.addModule('./worklets/invalid-ctor.worklet.mjs');
+
+      const invalid = new AudioWorkletNode(audioContext, 'invalid-ctor');
+      invalid.addEventListener('processorerror', e => prettyPrintErr(e.error));
+
+      const buffer = await audioContext.startRendering();
+      assert.deepEqual(buffer.getChannelData(0), new Float32Array(128).fill(0));
     });
   });
 })

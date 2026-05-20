@@ -125,7 +125,6 @@ ${d.attributes(d.node).filter(attr => d.name(attr) !== 'context').map(attr => {
     let output;
     let input;
 
-    // note that audio listener params are not wrapped
     if (args[0] instanceof AudioNode) {
       destination = args[0][kNapiObj];
 
@@ -162,7 +161,6 @@ ${d.attributes(d.node).filter(attr => d.name(attr) !== 'context').map(attr => {
         output = 0;
       }
 
-      // Rust does not make difference between AudioNode and AudioParam
       input = 0;
     } else {
       throw new TypeError("Failed to execute 'connect' on 'AudioNode': Overload resolution failed");
@@ -174,8 +172,11 @@ ${d.attributes(d.node).filter(attr => d.name(attr) !== 'context').map(attr => {
       throwSanitizedError(err);
     }
 
-    // return given destination
-    return args[0];
+    // AudioNode connect (AudioNode destinationNode,
+    //    optional unsigned long output = 0,
+    //    optional unsigned long input = 0);
+    // undefined connect (AudioParam destinationParam, optional unsigned long output = 0);
+    return (args[0] instanceof AudioNode) ? args[0] : undefined;
   }
 
   disconnect(...args) {
@@ -245,7 +246,7 @@ ${d.attributes(d.node).filter(attr => d.name(attr) !== 'context').map(attr => {
       // which seems to be aligned with browsers behavior
     }
 
-    // Just call disconnect for remaning cases
+    // Just call disconnect for remaining cases
     // - i.e. including node.disconnect(NaN), node.disconnect(null), etc.
     try {
       this[kNapiObj].disconnect();

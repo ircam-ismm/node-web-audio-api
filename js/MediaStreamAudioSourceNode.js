@@ -50,7 +50,6 @@ module.exports = (jsExport, nativeBinding) => {
         throw new TypeError(`Failed to construct 'MediaStreamAudioSourceNode': argument 1 is not of type AudioContext`);
       }
 
-      // parsed version of the option to be passed to NAPI
       const parsedOptions = {};
 
       if (options && typeof options !== 'object') {
@@ -67,7 +66,7 @@ module.exports = (jsExport, nativeBinding) => {
       let napiObj;
 
       try {
-        napiObj = new nativeBinding.MediaStreamAudioSourceNode(context[kNapiObj], parsedOptions);
+        napiObj = new nativeBinding.NapiMediaStreamAudioSourceNode(context[kNapiObj], parsedOptions);
       } catch (err) {
         throwSanitizedError(err);
       }

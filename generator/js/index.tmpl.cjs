@@ -7,6 +7,7 @@ const jsExport = {};
 jsExport.OfflineAudioCompletionEvent = require('./js/Events').OfflineAudioCompletionEvent;
 jsExport.AudioProcessingEvent = require('./js/Events').AudioProcessingEvent;
 jsExport.AudioRenderCapacityEvent = require('./js/Events').AudioRenderCapacityEvent;
+jsExport.ErrorEvent = require('./js/Events').ErrorEvent;
 // --------------------------------------------------------------------------
 // Create Web Audio API facade
 // --------------------------------------------------------------------------
@@ -36,19 +37,17 @@ jsExport.AudioBuffer = require('./js/AudioBuffer.js')(jsExport, nativeBinding);
 // --------------------------------------------------------------------------
 jsExport.mediaDevices = {};
 
-const enumerateDevicesSync = nativeBinding.mediaDevices.enumerateDevices;
 jsExport.mediaDevices.enumerateDevices = async function enumerateDevices() {
-  const list = enumerateDevicesSync();
+  const list = nativeBinding.napiEnumerateDevices();
   return Promise.resolve(list);
 };
 
-const getUserMediaSync = nativeBinding.mediaDevices.getUserMedia;
 jsExport.mediaDevices.getUserMedia = async function getUserMedia(options) {
   if (options === undefined) {
     throw new TypeError('Failed to execute "getUserMedia" on "MediaDevices": audio must be requested');
   }
 
-  const stream = getUserMediaSync(options);
+  const stream = nativeBinding.napiGetUserMedia(options);
   return Promise.resolve(stream);
 };
 

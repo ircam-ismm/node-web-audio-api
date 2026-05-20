@@ -24,10 +24,7 @@
     "node-api"
   ],
   "engines": {
-    "node": ">= 14"
-  },
-  "napi": {
-    "name": "node-web-audio-api"
+    "node": ">= 22"
   },
   "types": "./index.d.ts",
   "publishConfig": {
@@ -39,6 +36,7 @@
     "build:jack": "npm run generate && cargo build --features jack --release && node ./.scripts/move-artifact.mjs --release",
     "build:debug": "npm run generate && cargo build && node ./.scripts/move-artifact.mjs",
     "build:only": "cargo build --release && node ./.scripts/move-artifact.mjs --release",
+    "clippy": "cargo clippy --all-targets -- -D warnings",
     "check": "cargo fmt && cargo clippy",
     "generate": "node generator/index.mjs && cargo fmt",
     "lint": "npx eslint index.cjs index.mjs && npx eslint js/*.js && npx eslint examples/*.js",
@@ -68,7 +66,7 @@
     "octokit": "^4.1.0",
     "template-literal": "^1.0.4",
     "webidl2": "^24.2.0",
-    "wpt-runner": "^5.0.0"
+    "wpt-runner": "^7.0.0"
   },
   "dependencies": {
     "caller": "^1.1.0",

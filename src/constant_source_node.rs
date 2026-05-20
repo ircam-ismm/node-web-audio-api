@@ -17,168 +17,115 @@
 // -------------------------------------------------------------------------- //
 // -------------------------------------------------------------------------- //
 
-use crate::*;
-use napi::*;
-use napi_derive::js_function;
+use napi::bindgen_prelude::*;
+use napi_derive::napi;
+
 use web_audio_api::node::*;
 
-pub(crate) struct NapiConstantSourceNode(ConstantSourceNode);
+use crate::*;
 
-// for debug purpose
-// impl Drop for NapiConstantSourceNode {
-//     fn drop(&mut self) {
-//         println!("NAPI: NapiConstantSourceNode dropped");
-//     }
-// }
-
-impl NapiConstantSourceNode {
-    pub fn create_js_class(env: &Env) -> Result<JsFunction> {
-        let interface = audio_node_interface![
-            Property::new("start")?.with_method(start),
-            Property::new("stop")?.with_method(stop)
-        ];
-
-        env.define_class("ConstantSourceNode", constructor, &interface)
-    }
-
-    // @note: this is used in audio_node.rs for the connect / disconnect macros
-    pub fn unwrap(&mut self) -> &mut ConstantSourceNode {
-        &mut self.0
-    }
-}
-
-#[js_function(2)]
-fn constructor(ctx: CallContext) -> Result<JsUndefined> {
-    let mut js_this = ctx.this_unchecked::<JsObject>();
-
-    let js_audio_context = ctx.get::<JsObject>(0)?;
-
-    // --------------------------------------------------------
-    // Parse ConstantSourceOptions
-    // by bindings construction all fields are populated on the JS side
-    // --------------------------------------------------------
-    let js_options = ctx.get::<JsObject>(1)?;
-
-    let offset = js_options
-        .get::<&str, JsNumber>("offset")?
-        .unwrap()
-        .get_double()? as f32;
-
-    // --------------------------------------------------------
-    // Create ConstantSourceOptions object
-    // --------------------------------------------------------
-    let options = ConstantSourceOptions { offset };
-
-    // --------------------------------------------------------
-    // Create native ConstantSourceNode
-    // --------------------------------------------------------
-    let audio_context_name =
-        js_audio_context.get_named_property::<JsString>("Symbol.toStringTag")?;
-    let audio_context_utf8_name = audio_context_name.into_utf8()?.into_owned()?;
-    let audio_context_str = &audio_context_utf8_name[..];
-
-    let native_node = match audio_context_str {
-        "AudioContext" => {
-            let napi_audio_context = ctx.env.unwrap::<NapiAudioContext>(&js_audio_context)?;
-            let audio_context = napi_audio_context.unwrap();
-            ConstantSourceNode::new(audio_context, options)
-        }
-        "OfflineAudioContext" => {
-            let napi_audio_context = ctx
-                .env
-                .unwrap::<NapiOfflineAudioContext>(&js_audio_context)?;
-            let audio_context = napi_audio_context.unwrap();
-            ConstantSourceNode::new(audio_context, options)
-        }
-        &_ => unreachable!(),
-    };
-
-    // --------------------------------------------------------
-    // Bind AudioParam to JS object
-    // --------------------------------------------------------
-
-    let native_param = native_node.offset().clone();
-    let napi_param = NapiAudioParam::new(native_param);
-    let mut js_obj = NapiAudioParam::create_js_object(ctx.env)?;
-    ctx.env.wrap(&mut js_obj, napi_param)?;
-    js_this.set_named_property("offset", &js_obj)?;
-
-    // --------------------------------------------------------
-    // Finalize instance creation
-    // --------------------------------------------------------
-    js_this.define_properties(&[
-        Property::new("context")?
-            .with_value(&js_audio_context)
-            .with_property_attributes(PropertyAttributes::Enumerable),
-        // this must be put on the instance and not in the prototype to be reachable
-        Property::new("Symbol.toStringTag")?
-            .with_value(&ctx.env.create_string("ConstantSourceNode")?)
-            .with_property_attributes(PropertyAttributes::Static),
-    ])?;
-
-    // finalize instance creation
-    let napi_node = NapiConstantSourceNode(native_node);
-    ctx.env.wrap(&mut js_this, napi_node)?;
-
-    ctx.env.get_undefined()
+#[napi(js_name = NapiConstantSourceNode)]
+pub struct NapiConstantSourceNode {
+    pub(crate) inner: ConstantSourceNode,
+    pub(crate) offset: NapiAudioParam,
 }
 
 audio_node_impl!(NapiConstantSourceNode);
 
-// -------------------------------------------------
-// AudioScheduledSourceNode Interface
-// -------------------------------------------------
-fn listen_to_ended_event(
-    env: &Env,
-    js_this: &JsObject,
-    node: &mut ConstantSourceNode,
-) -> Result<()> {
-    use napi::threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunctionCallMode};
-    use web_audio_api::Event;
+#[napi]
+impl NapiConstantSourceNode {
+    #[napi(constructor, catch_unwind)]
+    pub fn new(
+        context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
+        options: Object,
+    ) -> Self {
+        // --------------------------------------------------------
+        // Parse ConstantSourceOptions
+        // by bindings construction all fields are populated on the JS side
+        // --------------------------------------------------------
 
-    let k_onended = env.symbol_for("node-web-audio-api:onended")?;
-    let ended_cb = js_this.get_property(k_onended).unwrap();
-    let mut ended_tsfn =
-        env.create_threadsafe_function(&ended_cb, 0, |ctx: ThreadSafeCallContext<Event>| {
-            let mut event = ctx.env.create_object()?;
-            let event_type = ctx.env.create_string(ctx.value.type_)?;
-            event.set_named_property("type", event_type)?;
+        let node_defaults: Option<ConstantSourceOptions> = Some(ConstantSourceOptions::default());
 
-            Ok(vec![event])
-        })?;
+        let some_offset = options.get::<Option<f64>>("offset").unwrap();
+        let offset = if let Some(offset) = some_offset.unwrap() {
+            offset as f32
+        } else if node_defaults.is_some() {
+            node_defaults.clone().unwrap().offset
+        } else {
+            panic!("No default value for offset in ConstantSourceOptions")
+        };
 
-    // unref tsfn so they do not prevent the process to exit
-    let _ = ended_tsfn.unref(env);
+        // --------------------------------------------------------
+        // Create ConstantSourceOptions object
+        // --------------------------------------------------------
+        let options = ConstantSourceOptions { offset };
 
-    node.set_onended(move |e| {
-        ended_tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
-    });
+        // --------------------------------------------------------
+        // Create native instance
+        // --------------------------------------------------------
+        let native_node = match context {
+            Either::A(context) => {
+                let native_context = context.inner();
+                ConstantSourceNode::new(native_context, options)
+            }
+            Either::B(context) => {
+                let native_context = context.inner();
+                ConstantSourceNode::new(native_context, options)
+            }
+        };
 
-    Ok(())
-}
+        // --------------------------------------------------------
+        // Bind NapiAudioParam instances
+        // --------------------------------------------------------
 
-#[js_function(1)]
-fn start(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiConstantSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
+        let native_param = native_node.offset().clone();
+        let offset = NapiAudioParam::new(native_param);
 
-    listen_to_ended_event(ctx.env, &js_this, node)?;
+        Self {
+            inner: native_node,
+            offset,
+        }
+    }
 
-    let when = ctx.get::<JsNumber>(0)?.get_double()?;
-    node.start_at(when);
+    #[napi(getter, js_name = "offset")]
+    pub fn offset(&self) -> NapiAudioParam {
+        self.offset.clone()
+    }
 
-    ctx.env.get_undefined()
-}
+    #[napi(catch_unwind)]
+    pub fn start(&mut self, when: Option<f64>) {
+        let when = when.unwrap_or(0.);
+        self.inner.start_at(when);
+    }
 
-#[js_function(1)]
-fn stop(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_node = ctx.env.unwrap::<NapiConstantSourceNode>(&js_this)?;
-    let node = napi_node.unwrap();
+    #[napi(catch_unwind)]
+    pub fn stop(&mut self, when: Option<f64>) {
+        let when = when.unwrap_or(0.);
+        self.inner.stop_at(when);
+    }
 
-    let when = ctx.get::<JsNumber>(0)?.get_double()?;
-    node.stop_at(when);
+    #[napi]
+    pub fn onended(&self, callback: Function<NapiEvent, ()>) -> Result<()> {
+        let tsfn = callback
+            .build_threadsafe_function()
+            .weak::<true>() // do not prevent process to exit
+            .build_callback(
+                move |ctx: napi::threadsafe_function::ThreadsafeCallContext<
+                    web_audio_api::Event,
+                >| {
+                    Ok(NapiEvent {
+                        type_: ctx.value.type_.to_string(),
+                    })
+                },
+            )?;
 
-    ctx.env.get_undefined()
+        self.inner.set_onended(move |e| {
+            tsfn.call(
+                e,
+                napi::threadsafe_function::ThreadsafeFunctionCallMode::Blocking,
+            );
+        });
+
+        Ok(())
+    }
 }

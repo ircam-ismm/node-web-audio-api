@@ -1,288 +1,206 @@
-use std::io::Cursor;
 use std::sync::Arc;
 
-use napi::threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunctionCallMode};
-use napi::*;
-use napi_derive::js_function;
-use web_audio_api::context::*;
-use web_audio_api::Event;
+use napi::bindgen_prelude::*;
+use napi_derive::napi;
 
-use crate::*;
+use web_audio_api::context::{
+    AudioContext, AudioContextLatencyCategory, AudioContextOptions, BaseAudioContext,
+};
 
-/// Napi object wrapping the native AudioContext and the AudioWorklet ID
-#[derive(Clone)]
-pub(crate) struct NapiAudioContext(Arc<AudioContext>, usize);
+use crate::NapiAudioDestinationNode;
+use crate::NapiAudioListener;
+use crate::NapiAudioRenderCapacity;
+use crate::NapiEvent;
 
-// for debug purpose
-// impl Drop for NapiAudioContext {
-//     fn drop(&mut self) {
-//         println!("NAPI: NapiAudioContext dropped");
-//     }
-// }
+pub struct SetSinkIdTask {
+    context: Arc<AudioContext>,
+    sink_id: String,
+}
 
-impl NapiAudioContext {
-    pub fn create_js_class(env: &Env) -> Result<JsFunction> {
-        let interface = base_audio_context_interface![
-            Property::new("baseLatency")?.with_getter(get_base_latency),
-            Property::new("outputLatency")?.with_getter(get_output_latency),
-            Property::new("sinkId")?.with_getter(get_sink_id),
-            Property::new("setSinkId")?.with_method(set_sink_id),
-            Property::new("resume")?.with_method(resume),
-            Property::new("suspend")?.with_method(suspend),
-            Property::new("close")?.with_method(close),
-            // Workaround to bind the `sinkchange` and `statechange` events to EventTarget.
-            // This must be called from JS facade ctor as the JS handler are added to the Napi
-            // object after its instantiation, and that we don't have any initial `resume` call.
-            Property::new("listen_to_events")?.with_method(listen_to_events)
-        ];
+#[napi]
+impl Task for SetSinkIdTask {
+    type Output = ();
+    type JsValue = ();
 
-        env.define_class("AudioContext", constructor, &interface)
+    fn compute(&mut self) -> Result<Self::Output> {
+        let result = self.context.set_sink_id_sync(self.sink_id.clone());
+
+        match result {
+            Ok(audio_buffer) => Ok(audio_buffer),
+            Err(e) => Err(Error::from_reason(e.to_string())),
+        }
     }
 
-    pub fn unwrap(&self) -> &AudioContext {
-        &self.0
-    }
-
-    pub fn worklet_id(&self) -> usize {
-        self.1
+    fn resolve(&mut self, _: Env, _: Self::Output) -> Result<Self::JsValue> {
+        Ok(())
     }
 }
 
-#[js_function(1)]
-fn constructor(ctx: CallContext) -> Result<JsUndefined> {
-    let mut js_this = ctx.this_unchecked::<JsObject>();
+#[derive(Clone)]
+#[napi]
+pub struct NapiAudioContext {
+    inner: Arc<AudioContext>,
+    destination: NapiAudioDestinationNode,
+    render_capacity: NapiAudioRenderCapacity,
+    listener: Option<NapiAudioListener>,
+    pub(crate) worklet_id: usize,
+}
 
-    // -------------------------------------------------
-    // Parse options and create AudioContext
-    // -------------------------------------------------
-    let js_options = ctx.get::<JsObject>(0)?;
+impl NapiAudioContext {
+    pub(crate) fn inner(&self) -> &AudioContext {
+        &self.inner
+    }
+}
 
-    let latency_hint_js = js_options
-        .get::<&str, Either<JsString, JsNumber>>("latencyHint")?
-        .unwrap();
-    let latency_hint = match latency_hint_js {
-        Either::A(js_string) => {
-            let uf8_category = js_string.into_utf8()?.into_owned()?;
-            let category = &uf8_category[..];
+base_audio_context_impl!(NapiAudioContext, AudioContext);
 
-            match category {
+#[napi]
+impl NapiAudioContext {
+    #[napi(constructor, catch_unwind)]
+    pub fn new(options: Object) -> Self {
+        let default_latency_hint = Either::A("interactive".into());
+        let default_sample_rate = None;
+        let default_sink_id = "".to_string();
+
+        let latency_hint = options.get::<Either<String, f64>>("latencyHint");
+        let latency_hint = latency_hint
+            .or::<Result<Option<Either<String, f64>>>>(Ok(Some(default_latency_hint.clone())));
+        let latency_hint = latency_hint.unwrap().unwrap_or(default_latency_hint);
+        let latency_hint = match latency_hint {
+            Either::A(latency_hint) => match latency_hint.as_str() {
                 "interactive" => AudioContextLatencyCategory::Interactive,
                 "balanced" => AudioContextLatencyCategory::Balanced,
                 "playback" => AudioContextLatencyCategory::Playback,
                 _ => unreachable!(),
-            }
+            },
+            Either::B(latency_hint) => AudioContextLatencyCategory::Custom(latency_hint),
+        };
+
+        let sample_rate = options.get::<Either<f64, Null>>("sampleRate");
+        let sample_rate = sample_rate.or::<Result<Option<Either<f64, Null>>>>(Ok(None));
+        let sample_rate = match sample_rate.unwrap() {
+            Some(sample_rate) => match sample_rate {
+                Either::A(sample_rate) => Some(sample_rate as f32),
+                Either::B(_) => default_sample_rate,
+            },
+            None => default_sample_rate,
+        };
+
+        let sink_id = options.get::<String>("sinkId");
+        let sink_id = sink_id.or::<Result<Option<String>>>(Ok(Some(default_sink_id.clone())));
+        let sink_id = match sink_id.unwrap() {
+            Some(sink_id) => sink_id,
+            None => default_sink_id,
+        };
+
+        let options = AudioContextOptions {
+            latency_hint,
+            sample_rate,
+            sink_id,
+            ..Default::default()
+        };
+
+        let native_context = AudioContext::new(options);
+
+        let native_destination = native_context.destination();
+        let napi_destination = NapiAudioDestinationNode::new(native_destination);
+
+        let native_render_capacity = native_context.render_capacity();
+        let napi_render_capacity = NapiAudioRenderCapacity::new(native_render_capacity);
+
+        let worklet_id = crate::audio_worklet_node::allocate_process_call_channel();
+
+        Self {
+            inner: Arc::new(native_context),
+            destination: napi_destination,
+            render_capacity: napi_render_capacity,
+            listener: None,
+            worklet_id,
         }
-        Either::B(js_number) => {
-            let latency = js_number.get_double()?;
-            AudioContextLatencyCategory::Custom(latency)
-        }
-    };
-
-    let sample_rate_js = js_options.get::<&str, JsUnknown>("sampleRate")?.unwrap();
-    let sample_rate = match sample_rate_js.get_type()? {
-        ValueType::Number => {
-            let sample_rate = sample_rate_js.coerce_to_number()?.get_double()? as f32;
-            Some(sample_rate)
-        }
-        ValueType::Null => None,
-        _ => unreachable!(),
-    };
-
-    let sink_id_js = js_options.get::<&str, JsString>("sinkId")?.unwrap();
-    let sink_id_utf8 = sink_id_js.into_utf8()?.into_owned()?;
-    let sink_id = sink_id_utf8.as_str().to_string();
-
-    let audio_context_options = AudioContextOptions {
-        latency_hint,
-        sample_rate,
-        sink_id,
-        ..Default::default()
-    };
-
-    let audio_context = AudioContext::new(audio_context_options);
-    let worklet_id = crate::audio_worklet_node::allocate_process_call_channel();
-
-    // -------------------------------------------------
-    // Wrap context
-    // -------------------------------------------------
-    let napi_audio_context = NapiAudioContext(Arc::new(audio_context), worklet_id);
-    ctx.env.wrap(&mut js_this, napi_audio_context)?;
-
-    js_this.define_properties(&[Property::new("Symbol.toStringTag")?
-        .with_value(&ctx.env.create_string("AudioContext")?)
-        .with_property_attributes(PropertyAttributes::Static)])?;
-
-    // -------------------------------------------------
-    // Bind AudioDestination and AudioRenderCapacity
-    // -------------------------------------------------
-    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
-    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
-
-    let ctor: JsFunction = store.get_named_property("AudioDestinationNode")?;
-    let js_obj = ctor.new_instance(&[&js_this])?;
-    js_this.set_named_property("destination", &js_obj)?;
-
-    let ctor: JsFunction = store.get_named_property("AudioRenderCapacity")?;
-    let js_obj = ctor.new_instance(&[&js_this])?;
-    js_this.set_named_property("renderCapacity", &js_obj)?;
-
-    // internal id to retrieve worklet message channel
-    js_this.set_named_property("workletId", ctx.env.create_uint32(worklet_id as u32)?)?;
-
-    ctx.env.get_undefined()
-}
-
-base_audio_context_impl!(NapiAudioContext);
-
-#[js_function]
-fn get_base_latency(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
-    let obj = napi_obj.unwrap();
-
-    let base_latency = obj.base_latency();
-    ctx.env.create_double(base_latency)
-}
-
-#[js_function]
-fn get_output_latency(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
-    let obj = napi_obj.unwrap();
-
-    let output_latency = obj.output_latency();
-    ctx.env.create_double(output_latency)
-}
-
-#[js_function]
-fn get_sink_id(ctx: CallContext) -> Result<JsString> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
-    let obj = napi_obj.unwrap();
-
-    let sink_id = obj.sink_id();
-    ctx.env.create_string(&sink_id)
-}
-
-#[js_function(1)]
-fn set_sink_id(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
-    let obj = napi_obj.unwrap();
-
-    let sink_id_js = ctx.get::<JsString>(0)?;
-    let sink_id = sink_id_js.into_utf8()?.into_owned()?;
-
-    let res = obj.set_sink_id_sync(sink_id);
-
-    if let Err(msg) = res {
-        return Err(napi::Error::from_reason(msg.to_string()));
     }
 
-    ctx.env.get_undefined()
-}
+    #[napi(getter, js_name = "workletId")]
+    pub fn worklet_id(&self) -> u32 {
+        self.worklet_id as u32
+    }
 
-#[js_function]
-fn resume(ctx: CallContext) -> Result<JsObject> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_context = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
-    let context_clone = Arc::clone(&napi_context.0);
+    #[napi(getter, js_name = "destination")]
+    pub fn destination(&self) -> NapiAudioDestinationNode {
+        self.destination.clone()
+    }
 
-    ctx.env.execute_tokio_future(
-        async move {
-            context_clone.resume().await;
-            Ok(())
-        },
-        |&mut env, _val| env.get_undefined(),
-    )
-}
+    #[napi(getter, js_name = "renderCapacity")]
+    pub fn render_capacity(&self) -> NapiAudioRenderCapacity {
+        self.render_capacity.clone()
+    }
 
-#[js_function]
-fn suspend(ctx: CallContext) -> Result<JsObject> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_context = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
-    let context_clone = Arc::clone(&napi_context.0);
+    #[napi(getter, js_name = "baseLatency")]
+    pub fn base_latency(&self) -> f64 {
+        self.inner.base_latency()
+    }
 
-    ctx.env.execute_tokio_future(
-        async move {
-            context_clone.suspend().await;
-            Ok(())
-        },
-        |&mut env, _val| env.get_undefined(),
-    )
-}
+    #[napi(getter, js_name = "outputLatency")]
+    pub fn output_latency(&self) -> f64 {
+        self.inner.output_latency()
+    }
 
-#[js_function]
-fn close(ctx: CallContext) -> Result<JsObject> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_context = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
-    let context_clone = Arc::clone(&napi_context.0);
+    #[napi(getter, js_name = "sinkId")]
+    pub fn sink_id(&self) -> String {
+        self.inner.sink_id()
+    }
 
-    ctx.env.execute_tokio_future(
-        async move {
-            context_clone.close().await;
-            Ok(())
-        },
-        |&mut env, _val| env.get_undefined(),
-    )
-}
+    // Use task and lib_uv to make rust synchronous method, asynchronous
+    #[napi(catch_unwind)]
+    pub fn set_sink_id(&self, sink_id: String) -> AsyncTask<SetSinkIdTask> {
+        let context = self.inner.clone();
+        let task = SetSinkIdTask { context, sink_id };
+        AsyncTask::new(task)
+    }
 
-// Workaround to bind the `sinkchange` and `statechange` events to EventTarget.
-// This must be called from JS facade ctor as the JS handler are added to the Napi
-// object after its instantiation, that we don't have any initial `resume` call,
-// and in any case the statechange event should be called when audio device is ready.
-#[js_function]
-fn listen_to_events(ctx: CallContext) -> Result<JsUndefined> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_context = ctx.env.unwrap::<NapiAudioContext>(&js_this)?;
-    let context = napi_context.unwrap();
+    #[napi(catch_unwind)]
+    pub async fn resume(&self) -> Result<()> {
+        self.inner.resume().await;
+        Ok(())
+    }
 
-    let k_onsinkchange = ctx.env.symbol_for("node-web-audio-api:onsinkchange")?;
-    let sinkchange_cb = js_this.get_property(k_onsinkchange).unwrap();
-    let mut sinkchange_tsfn = ctx.env.create_threadsafe_function(
-        &sinkchange_cb,
-        0,
-        |ctx: ThreadSafeCallContext<Event>| {
-            let mut event = ctx.env.create_object()?;
-            let event_type = ctx.env.create_string(ctx.value.type_)?;
-            event.set_named_property("type", event_type)?;
-            Ok(vec![event])
-        },
-    )?;
+    #[napi(catch_unwind)]
+    pub async fn suspend(&self) -> Result<()> {
+        self.inner.suspend().await;
+        Ok(())
+    }
 
-    let k_onstatechange = ctx.env.symbol_for("node-web-audio-api:onstatechange")?;
-    let statechange_cb = js_this.get_property(k_onstatechange).unwrap();
-    let context_clone = Arc::clone(&napi_context.0);
+    #[napi(catch_unwind)]
+    pub async fn close(&self) -> Result<()> {
+        self.inner.close().await;
+        Ok(())
+    }
 
-    let mut statechange_tsfn = ctx.env.create_threadsafe_function(
-        &statechange_cb,
-        0,
-        move |ctx: ThreadSafeCallContext<Event>| {
-            if context_clone.state() == AudioContextState::Closed {
-                // clear all context listeners, so that it can be garbage collected
-                context_clone.clear_onsinkchange();
-                context_clone.clear_onstatechange();
-            }
+    #[napi(catch_unwind)]
+    pub fn onsinkchange(&self, callback: Function<NapiEvent, ()>) -> Result<()> {
+        let tsfn = callback
+            .build_threadsafe_function()
+            .weak::<true>() // do not prevent process to exit
+            .build_callback(
+                move |ctx: napi::threadsafe_function::ThreadsafeCallContext<
+                    web_audio_api::Event,
+                >| {
+                    Ok(NapiEvent {
+                        type_: ctx.value.type_.to_string(),
+                    })
+                },
+            )?;
 
-            let mut event = ctx.env.create_object()?;
-            let event_type = ctx.env.create_string(ctx.value.type_)?;
-            event.set_named_property("type", event_type)?;
+        self.inner.set_onsinkchange(move |e| {
+            tsfn.call(
+                e,
+                napi::threadsafe_function::ThreadsafeFunctionCallMode::Blocking,
+            );
+        });
 
-            Ok(vec![event])
-        },
-    )?;
+        Ok(())
+    }
 
-    // unref tsfn so they do not prevent the process to exit
-    let _ = sinkchange_tsfn.unref(ctx.env);
-    let _ = statechange_tsfn.unref(ctx.env);
-
-    context.set_onsinkchange(move |e| {
-        sinkchange_tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
-    });
-
-    context.set_onstatechange(move |e| {
-        statechange_tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
-    });
-
-    ctx.env.get_undefined()
+    // attribute EventHandler onerror;
+    // [SameObject] readonly attribute AudioPlaybackStats playbackStats;
+    // AudioTimestamp getOutputTimestamp ();
 }

@@ -1,214 +1,86 @@
-use std::io::Cursor;
 use std::sync::Arc;
 
-use napi::threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunctionCallMode};
-use napi::*;
-use napi_derive::js_function;
-use web_audio_api::context::*;
-use web_audio_api::{Event, OfflineAudioCompletionEvent};
+use napi::bindgen_prelude::*;
+use napi_derive::napi;
 
-use crate::*;
+use web_audio_api::context::{BaseAudioContext, OfflineAudioContext};
 
-/// Napi object wrapping the native OfflineAudioContext and the AudioWorklet ID
+use crate::NapiAudioBuffer;
+use crate::NapiAudioDestinationNode;
+use crate::NapiAudioListener;
+
 #[derive(Clone)]
-pub(crate) struct NapiOfflineAudioContext(Arc<OfflineAudioContext>, usize);
-
-// // for debug purpose
-// impl Drop for NapiOfflineAudioContext {
-//     fn drop(&mut self) {
-//         println!("NAPI: NapiOfflineAudioContext dropped");
-//     }
-// }
+#[napi]
+pub struct NapiOfflineAudioContext {
+    inner: Arc<OfflineAudioContext>,
+    destination: NapiAudioDestinationNode,
+    listener: Option<NapiAudioListener>,
+    pub(crate) worklet_id: usize,
+}
 
 impl NapiOfflineAudioContext {
-    pub fn create_js_class(env: &Env) -> Result<JsFunction> {
-        let interface = base_audio_context_interface![
-            Property::new("length")?.with_getter(get_length),
-            Property::new("startRendering")?.with_method(start_rendering),
-            Property::new("resume")?.with_method(resume),
-            Property::new("suspend")?.with_method(suspend)
-        ];
-
-        env.define_class("OfflineAudioContext", constructor, &interface)
-    }
-
-    pub fn unwrap(&self) -> &OfflineAudioContext {
-        &self.0
-    }
-
-    pub fn worklet_id(&self) -> usize {
-        self.1
+    pub(crate) fn inner(&self) -> &OfflineAudioContext {
+        &self.inner
     }
 }
 
-#[js_function(3)]
-fn constructor(ctx: CallContext) -> Result<JsUndefined> {
-    let mut js_this = ctx.this_unchecked::<JsObject>();
+base_audio_context_impl!(NapiOfflineAudioContext, OfflineAudioContext);
 
-    // -------------------------------------------------
-    // Parse options and create OfflineAudioContext
-    // -------------------------------------------------
-    let number_of_channels = ctx.get::<JsNumber>(0)?.get_double()? as usize;
-    let length = ctx.get::<JsNumber>(1)?.get_double()? as usize;
-    let sample_rate = ctx.get::<JsNumber>(2)?.get_double()? as f32;
+#[napi]
+impl NapiOfflineAudioContext {
+    #[napi(constructor, catch_unwind)]
+    pub fn new(number_of_channels: u32, length: u32, sample_rate: f64) -> Self {
+        let number_of_channels = number_of_channels as usize;
+        let length = length as usize;
+        let sample_rate = sample_rate as f32;
 
-    let audio_context = OfflineAudioContext::new(number_of_channels, length, sample_rate);
-    let worklet_id = crate::audio_worklet_node::allocate_process_call_channel();
+        let native_context = OfflineAudioContext::new(number_of_channels, length, sample_rate);
 
-    // -------------------------------------------------
-    // Wrap context
-    // -------------------------------------------------
-    let napi_audio_context = NapiOfflineAudioContext(Arc::new(audio_context), worklet_id);
-    ctx.env.wrap(&mut js_this, napi_audio_context)?;
+        let native_destination = native_context.destination();
+        let napi_destination = NapiAudioDestinationNode::new(native_destination);
 
-    js_this.define_properties(&[
-        // this must be put on the instance and not in the prototype to be reachable
-        Property::new("Symbol.toStringTag")?
-            .with_value(&ctx.env.create_string("OfflineAudioContext")?)
-            .with_property_attributes(PropertyAttributes::Static),
-    ])?;
+        let worklet_id = crate::audio_worklet_node::allocate_process_call_channel();
 
-    // -------------------------------------------------
-    // Bind AudioDestination - requires Symbol.toStringTag
-    // -------------------------------------------------
-    let store_ref: &mut napi::Ref<()> = ctx.env.get_instance_data()?.unwrap();
-    let store: JsObject = ctx.env.get_reference_value(store_ref)?;
-    let ctor: JsFunction = store.get_named_property("AudioDestinationNode")?;
-    let js_obj = ctor.new_instance(&[&js_this])?;
-    js_this.set_named_property("destination", &js_obj)?;
+        Self {
+            inner: Arc::new(native_context),
+            destination: napi_destination,
+            listener: None,
+            worklet_id,
+        }
+    }
 
-    // internal id to retrieve worklet message channel
-    js_this.set_named_property("workletId", ctx.env.create_uint32(worklet_id as u32)?)?;
+    #[napi(getter, js_name = "workletId")]
+    pub fn worklet_id(&self) -> u32 {
+        self.worklet_id as u32
+    }
 
-    ctx.env.get_undefined()
-}
+    #[napi(getter)]
+    pub fn destination(&self) -> NapiAudioDestinationNode {
+        self.destination.clone()
+    }
 
-base_audio_context_impl!(NapiOfflineAudioContext);
+    #[napi(getter)]
+    pub fn length(&self) -> u32 {
+        self.inner.length() as u32
+    }
 
-#[js_function]
-fn get_length(ctx: CallContext) -> Result<JsNumber> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_obj = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let obj = napi_obj.unwrap();
+    #[napi(catch_unwind)]
+    pub async fn start_rendering(&self) -> Result<NapiAudioBuffer> {
+        let audio_buffer = self.inner.start_rendering().await;
+        Ok(NapiAudioBuffer::from(audio_buffer))
+    }
 
-    let length = obj.length() as f64;
-    ctx.env.create_double(length)
-}
+    #[napi(catch_unwind)]
+    pub async fn suspend(&self, suspend_time: f64) -> Result<()> {
+        self.inner.suspend(suspend_time).await;
+        Ok(())
+    }
 
-#[js_function]
-fn start_rendering(ctx: CallContext) -> Result<JsObject> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_context = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let context = napi_context.unwrap();
+    #[napi(catch_unwind)]
+    pub async fn resume(&self) -> Result<()> {
+        self.inner.resume().await;
+        Ok(())
+    }
 
-    let k_onstatechange = ctx.env.symbol_for("node-web-audio-api:onstatechange")?;
-    let statechange_cb = js_this.get_property(k_onstatechange).unwrap();
-    let mut statechange_tsfn = ctx.env.create_threadsafe_function(
-        &statechange_cb,
-        0,
-        |ctx: ThreadSafeCallContext<Event>| {
-            let mut event = ctx.env.create_object()?;
-            let event_type = ctx.env.create_string(ctx.value.type_)?;
-            event.set_named_property("type", event_type)?;
-
-            Ok(vec![event])
-        },
-    )?;
-
-    // unref tsfn so they do not prevent the process to exit
-    let _ = statechange_tsfn.unref(ctx.env);
-
-    context.set_onstatechange(move |e| {
-        statechange_tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
-    });
-
-    let k_oncomplete = ctx.env.symbol_for("node-web-audio-api:oncomplete")?;
-    let complete_cb = js_this.get_property(k_oncomplete).unwrap();
-    let context_clone = Arc::clone(&napi_context.0);
-
-    let mut complete_tsfn = ctx.env.create_threadsafe_function(
-        &complete_cb,
-        0,
-        move |ctx: ThreadSafeCallContext<OfflineAudioCompletionEvent>| {
-            // This is the last event that can be trigerred by this context, we can
-            // clear the listeners so that the context can be properly garbage collected
-            context_clone.clear_onstatechange();
-            context_clone.clear_oncomplete();
-
-            let raw_event = ctx.value;
-            let mut event = ctx.env.create_object()?;
-
-            let event_type = ctx.env.create_string("complete")?;
-            event.set_named_property("type", event_type)?;
-
-            // This event is propagated before `startRendering` fulfills
-            // which is wrong, order is fixed on JS side.
-            let ctor = crate::utils::get_class_ctor(&ctx.env, "AudioBuffer")?;
-            let js_audio_buffer = ctor.new_instance(&[ctx.env.get_null()?])?;
-            let napi_audio_buffer = ctx.env.unwrap::<NapiAudioBuffer>(&js_audio_buffer)?;
-            napi_audio_buffer.insert(raw_event.rendered_buffer);
-
-            event.set_named_property("renderedBuffer", js_audio_buffer)?;
-
-            Ok(vec![event])
-        },
-    )?;
-
-    // unref tsfn so they do not prevent the process to exit
-    let _ = complete_tsfn.unref(ctx.env);
-
-    context.set_oncomplete(move |e| {
-        complete_tsfn.call(Ok(e), ThreadsafeFunctionCallMode::Blocking);
-    });
-
-    // everything is setup, do "real" rendering job
-    let context_clone = Arc::clone(&napi_context.0);
-
-    ctx.env.execute_tokio_future(
-        async move {
-            let audio_buffer = context_clone.start_rendering().await;
-            Ok(audio_buffer)
-        },
-        |&mut env, audio_buffer| {
-            // create Napi audio buffer from native audio buffer
-            let ctor = crate::utils::get_class_ctor(&env, "AudioBuffer")?;
-            let js_audio_buffer = ctor.new_instance(&[env.get_null()?])?;
-            let napi_audio_buffer = env.unwrap::<NapiAudioBuffer>(&js_audio_buffer)?;
-            napi_audio_buffer.insert(audio_buffer);
-
-            Ok(js_audio_buffer)
-        },
-    )
-}
-
-#[js_function]
-fn resume(ctx: CallContext) -> Result<JsObject> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_context = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let context_clone = Arc::clone(&napi_context.0);
-
-    ctx.env.execute_tokio_future(
-        async move {
-            context_clone.resume().await;
-            Ok(())
-        },
-        |&mut env, _val| env.get_undefined(),
-    )
-}
-
-#[js_function(1)]
-fn suspend(ctx: CallContext) -> Result<JsObject> {
-    let js_this = ctx.this_unchecked::<JsObject>();
-    let napi_context = ctx.env.unwrap::<NapiOfflineAudioContext>(&js_this)?;
-    let context_clone = Arc::clone(&napi_context.0);
-
-    let when = ctx.get::<JsNumber>(0)?.get_double()?;
-
-    ctx.env.execute_tokio_future(
-        async move {
-            context_clone.suspend(when).await;
-            Ok(())
-        },
-        |&mut env, _val| env.get_undefined(),
-    )
+    // oncomplete event is handled on JS side only
 }
