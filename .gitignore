@@ -11,7 +11,6 @@ TODOS.md
 NOTES.md
 run-wpt.*
 all-checks.sh
-tests/junk.mjs
 tests/junk-*
 yarn.lock
 issues

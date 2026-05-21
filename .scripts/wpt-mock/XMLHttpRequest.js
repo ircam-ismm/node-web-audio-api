@@ -1,5 +1,5 @@
-const fs = require('node:fs');
-const path = require('node:path');
+import fs from 'node:fs';
+import path from 'node:path';
 
 // @note - once all of them are listed, make a pull request to wpt to harmonize all file loading calls
 const relativePathPatches = {
@@ -8,7 +8,7 @@ const relativePathPatches = {
 
 // to be passed to wtp-runner step
 // window.XMLHttpRequest = XMLHttpRequest;
-module.exports = function createXMLHttpRequest(basepath) {
+export default function createXMLHttpRequest(basepath) {
   return class XMLHttpRequest {
     constructor() {
       this._pathname;

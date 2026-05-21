@@ -4,12 +4,11 @@
 .env
 .gitmodules
 
-eslint.config.mjs
+eslint.config.js
 build.rs
 Cargo.*
 Cross.toml
 NOTES.md
-dummy.mjs
 all-checks.sh
 run-wpt.sh
 

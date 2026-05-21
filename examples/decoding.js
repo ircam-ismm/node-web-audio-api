@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { AudioContext } from '../index.mjs';
+import { AudioContext } from '#node-web-audio-api';
 
 const files = [
   path.join('examples', 'samples', 'sample-faulty.wav'),

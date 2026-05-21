@@ -18,129 +18,144 @@
 // -------------------------------------------------------------------------- //
 
 /* eslint-disable no-unused-vars */
-const conversions = require('webidl-conversions');
-const {
+import conversions from 'webidl-conversions';
+
+import nativeBinding from '../load-native.js';
+import {
   toSanitizedSequence,
-} = require('./lib/cast.js');
-const {
+} from './lib/cast.js';
+import {
   isFunction,
   kEnumerableProperty,
-} = require('./lib/utils.js');
-const {
+} from './lib/utils.js';
+import {
   throwSanitizedError,
-} = require('./lib/errors.js');
-const {
+} from './lib/errors.js';
+import {
   kNapiObj,
   kAudioBuffer,
-} = require('./lib/symbols.js');
+} from './lib/symbols.js';
+
+import {
+  AudioParam,
+} from './AudioParam.js';
+import {
+  AudioBuffer,
+} from './AudioBuffer.js';
+import {
+  PeriodicWave,
+} from './PeriodicWave.js';
+
+import {
+  BaseAudioContext,
+} from './BaseAudioContext.js';
+
 /* eslint-enable no-unused-vars */
 
-const AudioNode = require('./AudioNode.js');
+import {
+  AudioNode,
+} from './AudioNode.js';
 
-module.exports = (jsExport, nativeBinding) => {
-  class DelayNode extends AudioNode {
+export class DelayNode extends AudioNode {
 
-    #delayTime = null;
+  #delayTime = null;
 
-    constructor(context, options) {
+  constructor(context, options) {
 
-      if (arguments.length < 1) {
-        throw new TypeError(`Failed to construct 'DelayNode': 1 argument required, but only ${arguments.length} present`);
-      }
+    if (arguments.length < 1) {
+      throw new TypeError(`Failed to construct 'DelayNode': 1 argument required, but only ${arguments.length} present`);
+    }
 
-      if (!(context instanceof jsExport.BaseAudioContext)) {
-        throw new TypeError(`Failed to construct 'DelayNode': argument 1 is not of type BaseAudioContext`);
-      }
+    if (!(context instanceof BaseAudioContext)) {
+      throw new TypeError(`Failed to construct 'DelayNode': argument 1 is not of type BaseAudioContext`);
+    }
 
-      const parsedOptions = {};
+    const parsedOptions = {};
 
-      if (options && typeof options !== 'object') {
-        throw new TypeError('Failed to construct \'DelayNode\': argument 2 is not of type \'DelayOptions\'');
-      }
+    if (options && typeof options !== 'object') {
+      throw new TypeError('Failed to construct \'DelayNode\': argument 2 is not of type \'DelayOptions\'');
+    }
 
-      if (options && options.maxDelayTime !== undefined) {
-        parsedOptions.maxDelayTime = conversions['double'](options.maxDelayTime, {
-          context: `Failed to construct 'DelayNode': Failed to read the 'maxDelayTime' property from DelayOptions: The provided value (${options.maxDelayTime}})`,
-        });
-      } else {
-        parsedOptions.maxDelayTime = 1;
-      }
-
-      if (options && options.delayTime !== undefined) {
-        parsedOptions.delayTime = conversions['double'](options.delayTime, {
-          context: `Failed to construct 'DelayNode': Failed to read the 'delayTime' property from DelayOptions: The provided value (${options.delayTime}})`,
-        });
-      } else {
-        parsedOptions.delayTime = 0;
-      }
-
-      if (options && options.channelCount !== undefined) {
-        parsedOptions.channelCount = conversions['unsigned long'](options.channelCount, {
-          enforceRange: true,
-          context: `Failed to construct 'DelayNode': Failed to read the 'channelCount' property from DelayOptions: The provided value '${options.channelCount}'`,
-        });
-      }
-
-      if (options && options.channelCountMode !== undefined) {
-        parsedOptions.channelCountMode = conversions['DOMString'](options.channelCountMode, {
-          context: `Failed to construct 'DelayNode': Failed to read the 'channelCount' property from DelayOptions: The provided value '${options.channelCountMode}'`,
-        });
-      }
-
-      if (options && options.channelInterpretation !== undefined) {
-        parsedOptions.channelInterpretation = conversions['DOMString'](options.channelInterpretation, {
-          context: `Failed to construct 'DelayNode': Failed to read the 'channelInterpretation' property from DelayOptions: The provided value '${options.channelInterpretation}'`,
-        });
-      }
-
-      let napiObj;
-
-      try {
-        napiObj = new nativeBinding.NapiDelayNode(context[kNapiObj], parsedOptions);
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-
-      super(context, {
-        [kNapiObj]: napiObj,
+    if (options && options.maxDelayTime !== undefined) {
+      parsedOptions.maxDelayTime = conversions['double'](options.maxDelayTime, {
+        context: `Failed to construct 'DelayNode': Failed to read the 'maxDelayTime' property from DelayOptions: The provided value (${options.maxDelayTime}})`,
       });
+    } else {
+      parsedOptions.maxDelayTime = 1;
+    }
 
-      this.#delayTime = new jsExport.AudioParam({
-        [kNapiObj]: this[kNapiObj].delayTime,
+    if (options && options.delayTime !== undefined) {
+      parsedOptions.delayTime = conversions['double'](options.delayTime, {
+        context: `Failed to construct 'DelayNode': Failed to read the 'delayTime' property from DelayOptions: The provided value (${options.delayTime}})`,
+      });
+    } else {
+      parsedOptions.delayTime = 0;
+    }
+
+    if (options && options.channelCount !== undefined) {
+      parsedOptions.channelCount = conversions['unsigned long'](options.channelCount, {
+        enforceRange: true,
+        context: `Failed to construct 'DelayNode': Failed to read the 'channelCount' property from DelayOptions: The provided value '${options.channelCount}'`,
       });
     }
 
-    get delayTime() {
-      if (!(this instanceof DelayNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'DelayNode\'');
-      }
-
-      return this.#delayTime;
+    if (options && options.channelCountMode !== undefined) {
+      parsedOptions.channelCountMode = conversions['DOMString'](options.channelCountMode, {
+        context: `Failed to construct 'DelayNode': Failed to read the 'channelCount' property from DelayOptions: The provided value '${options.channelCountMode}'`,
+      });
     }
 
+    if (options && options.channelInterpretation !== undefined) {
+      parsedOptions.channelInterpretation = conversions['DOMString'](options.channelInterpretation, {
+        context: `Failed to construct 'DelayNode': Failed to read the 'channelInterpretation' property from DelayOptions: The provided value '${options.channelInterpretation}'`,
+      });
+    }
+
+    let napiObj;
+
+    try {
+      napiObj = new nativeBinding.NapiDelayNode(context[kNapiObj], parsedOptions);
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+
+    super(context, {
+      [kNapiObj]: napiObj,
+    });
+
+    this.#delayTime = new AudioParam({
+      [kNapiObj]: this[kNapiObj].delayTime,
+    });
   }
 
-  Object.defineProperties(DelayNode, {
-    length: {
-      __proto__: null,
-      writable: false,
-      enumerable: false,
-      configurable: true,
-      value: 1,
-    },
-  });
+  get delayTime() {
+    if (!(this instanceof DelayNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'DelayNode\'');
+    }
 
-  Object.defineProperties(DelayNode.prototype, {
-    [Symbol.toStringTag]: {
-      __proto__: null,
-      writable: false,
-      enumerable: false,
-      configurable: true,
-      value: 'DelayNode',
-    },
-    delayTime: kEnumerableProperty,
+    return this.#delayTime;
+  }
 
-  });
+}
 
-  return DelayNode;
-};
+Object.defineProperties(DelayNode, {
+  length: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 1,
+  },
+});
+
+Object.defineProperties(DelayNode.prototype, {
+  [Symbol.toStringTag]: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 'DelayNode',
+  },
+  delayTime: kEnumerableProperty,
+
+});

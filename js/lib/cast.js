@@ -1,4 +1,4 @@
-exports.toSanitizedSequence = function toSanitizedSequence(data, targetCtor) {
+export function toSanitizedSequence(data, targetCtor) {
   if (
     (data.buffer && data.buffer instanceof ArrayBuffer)
     || Array.isArray(data)

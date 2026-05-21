@@ -3,7 +3,7 @@
 // Usage: node examples/faust-create-faustnode.js
 
 import { fileURLToPath } from 'node:url';
-import { AudioContext, AudioWorkletNode, ScriptProcessorNode } from '../index.mjs';
+import { AudioContext, AudioWorkletNode, ScriptProcessorNode } from '#node-web-audio-api';
 
 // faustwasm captures AudioWorkletNode at module init, so patch the global first.
 if (typeof globalThis.AudioWorkletNode === 'undefined') {

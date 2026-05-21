@@ -21,7 +21,7 @@ const animFrame = () => {
   setTimeout(animFrame, time - t);
 };
 
-module.exports.requestAnimationFrame = requestAnimationFrame = func => {
+export const requestAnimationFrame = func => {
   // lazily start timer
   if (!launched) {
     launched = true;
@@ -32,6 +32,6 @@ module.exports.requestAnimationFrame = requestAnimationFrame = func => {
   return funcs.length - 1;
 };
 
-module.exports.cancelAnimationFrame = cancelAnimationFrame = id => {
+export const cancelAnimationFrame = id => {
   funcs[id] = skip;
 };

@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { AudioContext, AudioBufferSourceNode, OscillatorNode, ConstantSourceNode } from '../index.mjs';
+import { AudioContext, AudioBufferSourceNode, OscillatorNode, ConstantSourceNode } from '#node-web-audio-api';
 
 
 // test that if the context is closed before ended event is trigerred,

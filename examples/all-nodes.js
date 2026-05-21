@@ -19,7 +19,7 @@ import {
   OfflineAudioContext,
   AudioBuffer,
   mediaDevices,
-} from '../index.mjs';
+} from '#node-web-audio-api';
 
 const contexts = [new AudioContext(), new OfflineAudioContext(1, 1, 48000)];
 

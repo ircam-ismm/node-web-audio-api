@@ -6,7 +6,7 @@ import {
   ChannelMergerNode,
   ChannelSplitterNode,
   AudioBufferSourceNode,
-} from '../index.mjs';
+} from '#node-web-audio-api';
 import { sleep } from '@ircam/sc-utils';
 
 // This example shows how to route a 6 channel audio file, into a stereo output

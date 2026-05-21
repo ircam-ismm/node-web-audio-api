@@ -5,7 +5,7 @@
 // Usage: node faust.js
 
 import { fileURLToPath } from 'node:url';
-import { AudioContext, AudioWorkletNode } from '../index.mjs';
+import { AudioContext, AudioWorkletNode } from '#node-web-audio-api';
 
 // Expose AudioWorkletNode globally so faustwasm can patch it into worklet factories.
 if (typeof globalThis.AudioWorkletNode === 'undefined') {

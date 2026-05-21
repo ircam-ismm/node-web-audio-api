@@ -3,7 +3,7 @@ import {
   AudioContext,
   // eslint-disable-next-line no-unused-vars
   MediaStreamAudioSourceNode,
-} from '../index.mjs';
+} from '#node-web-audio-api';
 
 console.log('MediaDevices::getUserMedia - mic feedback, be careful with volume...)');
 

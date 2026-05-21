@@ -3,7 +3,7 @@ import { Octokit } from 'octokit';
 import fs from 'node:fs';
 import { execSync } from 'node:child_process';
 
-import { deleteDevArtifacts } from './utils/dev-artifacts-helpers.mjs';
+import { deleteDevArtifacts } from './utils/dev-artifacts-helpers.js';
 
 // --------------------------------------------------------------
 console.log('');

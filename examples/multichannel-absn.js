@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import {
   sleep,
 } from '@ircam/sc-utils';
-import { AudioContext } from '../index.mjs';
+import { AudioContext } from '#node-web-audio-api';
 
 // Example of multichannel routing, for now the library can only handle up to
 // 32 channels.

@@ -1,20 +1,20 @@
-const conversions = require('webidl-conversions');
+import conversions from 'webidl-conversions';
 
-const {
+import {
   kNapiObj,
-} = require('./lib/symbols.js');
-const {
+} from './lib/symbols.js';
+import {
   isFunction,
   kEnumerableProperty,
-} = require('./lib/utils.js');
-const {
+} from './lib/utils.js';
+import {
   propagateEvent,
-} = require('./lib/events.js');
-const {
+} from './lib/events.js';
+import {
   AudioRenderCapacityEvent,
-} = require('./Events.js');
+} from './Events.js';
 
-class AudioRenderCapacity extends EventTarget {
+export class AudioRenderCapacity extends EventTarget {
   #onupdate = null;
 
   constructor(options) {
@@ -109,7 +109,3 @@ Object.defineProperties(AudioRenderCapacity.prototype, {
   start: kEnumerableProperty,
   stop: kEnumerableProperty,
 });
-
-module.exports = AudioRenderCapacity;
-
-

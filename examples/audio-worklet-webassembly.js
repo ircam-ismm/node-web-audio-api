@@ -4,11 +4,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import { AudioContext, OscillatorNode, AudioWorkletNode } from '../index.mjs';
+import { AudioContext, OscillatorNode, AudioWorkletNode } from '#node-web-audio-api';
 
 const audioContext = new AudioContext();
 
-await audioContext.audioWorklet.addModule('./worklets/wasm-worklet-processor.mjs');
+await audioContext.audioWorklet.addModule('./worklets/wasm-worklet-processor.js');
 const oscillator = new OscillatorNode(audioContext);
 const bypasser = new AudioWorkletNode(audioContext, 'wasm-worklet-processor');
 oscillator.connect(bypasser).connect(audioContext.destination);

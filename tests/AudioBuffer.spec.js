@@ -7,7 +7,7 @@ import {
   AudioContext,
   ConvolverNode,
   OfflineAudioContext,
-} from '../index.mjs';
+} from '../index.js';
 
 describe('AudioBuffer', () => {
 

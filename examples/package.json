@@ -1,3 +1,10 @@
 {
-  "type": "module"
+  "name": "node-web-audio-api-examples",
+  "type": "module",
+  "imports": {
+    "#node-web-audio-api": "./loader/index.js"
+  },
+  "dependencies": {
+    "node-web-audio-api": "latest"
+  }
 }

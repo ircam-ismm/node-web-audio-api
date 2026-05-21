@@ -1,294 +1,303 @@
-const conversions = require('webidl-conversions');
-const {
+import conversions from 'webidl-conversions';
+
+import nativeBinding from '../load-native.js';
+import {
   toSanitizedSequence,
-} = require('./lib/cast.js');
-const {
+} from './lib/cast.js';
+import {
   throwSanitizedError,
-} = require('./lib/errors.js');
-const {
+} from './lib/errors.js';
+import {
   kNapiObj,
   kProcessorRegistered,
   kGetParameterDescriptors,
   kPrivateConstructor,
   kCreateProcessor,
-} = require('./lib/symbols.js');
-const {
+} from './lib/symbols.js';
+import {
   kEnumerableProperty,
-} = require('./lib/utils.js');
-const {
+} from './lib/utils.js';
+import {
   propagateEvent,
-} = require('./lib/events.js');
-const {
+} from './lib/events.js';
+import {
   ErrorEvent,
-} = require('./Events.js');
+} from './Events.js';
 
-const AudioNode = require('./AudioNode.js');
-const AudioParamMap = require('./AudioParamMap.js');
+import {
+  AudioNode,
+} from './AudioNode.js';
+import {
+  AudioParam,
+} from './AudioParam.js';
+import {
+  AudioParamMap,
+} from './AudioParamMap.js';
+import {
+  BaseAudioContext,
+} from './BaseAudioContext.js';
+
 const IMPLEMENTATION_MAX_NUMBER_OF_CHANNELS = 32;
 
-module.exports = (jsExport, nativeBinding) => {
-  class AudioWorkletNode extends AudioNode {
-    #port = null;
-    #parameters = {};
+export class AudioWorkletNode extends AudioNode {
+  #port = null;
+  #parameters = {};
 
-    constructor(context, name, options) {
-      if (arguments.length < 2) {
-        throw new TypeError(`Failed to construct 'AudioWorkletNode': 2 arguments required, but only ${arguments.length} present`);
-      }
+  constructor(context, name, options) {
+    if (arguments.length < 2) {
+      throw new TypeError(`Failed to construct 'AudioWorkletNode': 2 arguments required, but only ${arguments.length} present`);
+    }
 
-      if (!(context instanceof jsExport.BaseAudioContext)) {
-        throw new TypeError(`Failed to construct 'AudioWorkletNode': argument 1 is not of type BaseAudioContext`);
-      }
+    if (!(context instanceof BaseAudioContext)) {
+      throw new TypeError(`Failed to construct 'AudioWorkletNode': argument 1 is not of type BaseAudioContext`);
+    }
 
-      const parsedName = conversions['DOMString'](name, {
-        context: `Failed to construct 'AudioWorkletNode': The given 'AudioWorkletProcessor' name`,
+    const parsedName = conversions['DOMString'](name, {
+      context: `Failed to construct 'AudioWorkletNode': The given 'AudioWorkletProcessor' name`,
+    });
+
+    if (!context.audioWorklet[kProcessorRegistered](parsedName)) {
+      throw new DOMException(`Failed to construct 'AudioWorkletNode': processor '${parsedName}' is not registered in 'AudioWorklet'`, 'InvalidStateError');
+    }
+
+    const parsedOptions = {};
+
+    if (options && (typeof options !== 'object' || options === null)) {
+      throw new TypeError('Failed to construct \'AudioWorkletNode\': argument 3 is not of type \'AudioWorkletNodeOptions\'');
+    }
+
+    if (options && options.numberOfInputs !== undefined) {
+      parsedOptions.numberOfInputs = conversions['unsigned long'](options.numberOfInputs, {
+        enforceRange: true,
+        context: `Failed to construct 'AudioWorkletNode': Failed to read the 'numberOfInputs' property from AudioWorkletNodeOptions: The provided value (${options.numberOfInputs}})`,
       });
+    } else {
+      parsedOptions.numberOfInputs = 1;
+    }
 
-      if (!context.audioWorklet[kProcessorRegistered](parsedName)) {
-        throw new DOMException(`Failed to construct 'AudioWorkletNode': processor '${parsedName}' is not registered in 'AudioWorklet'`, 'InvalidStateError');
-      }
+    if (options && options.numberOfOutputs !== undefined) {
+      parsedOptions.numberOfOutputs = conversions['unsigned long'](options.numberOfOutputs, {
+        enforceRange: true,
+        context: `Failed to construct 'AudioWorkletNode': Failed to read the 'numberOfOutputs' property from AudioWorkletNodeOptions: The provided value (${options.numberOfOutputs}})`,
+      });
+    } else {
+      parsedOptions.numberOfOutputs = 1;
+    }
 
-      const parsedOptions = {};
-
-      if (options && (typeof options !== 'object' || options === null)) {
-        throw new TypeError('Failed to construct \'AudioWorkletNode\': argument 3 is not of type \'AudioWorkletNodeOptions\'');
-      }
-
-      if (options && options.numberOfInputs !== undefined) {
-        parsedOptions.numberOfInputs = conversions['unsigned long'](options.numberOfInputs, {
-          enforceRange: true,
-          context: `Failed to construct 'AudioWorkletNode': Failed to read the 'numberOfInputs' property from AudioWorkletNodeOptions: The provided value (${options.numberOfInputs}})`,
-        });
-      } else {
-        parsedOptions.numberOfInputs = 1;
-      }
-
-      if (options && options.numberOfOutputs !== undefined) {
-        parsedOptions.numberOfOutputs = conversions['unsigned long'](options.numberOfOutputs, {
-          enforceRange: true,
-          context: `Failed to construct 'AudioWorkletNode': Failed to read the 'numberOfOutputs' property from AudioWorkletNodeOptions: The provided value (${options.numberOfOutputs}})`,
-        });
-      } else {
-        parsedOptions.numberOfOutputs = 1;
-      }
-
-      // If outputChannelCount exists,
-      // - If any value in outputChannelCount is zero or greater than the implementation’s maximum number of channels, throw a NotSupportedError and abort the remaining steps.
-      // - If the length of outputChannelCount does not equal numberOfOutputs, throw an IndexSizeError and abort the remaining steps.
-      // - If both numberOfInputs and numberOfOutputs are 1, set the channel count of the node output to the one value in outputChannelCount.
-      // - Otherwise set the channel count of the kth output of the node to the kth element of outputChannelCount sequence and return.
-      if (options && options.outputChannelCount !== undefined) {
-        try {
-          parsedOptions.outputChannelCount = toSanitizedSequence(options.outputChannelCount, Uint32Array);
-        } catch (err) {
-          throw new TypeError(`Failed to construct 'AudioWorkletNode': Failed to read the 'outputChannelCount' property from AudioWorkletNodeOptions: The provided value ${err.message}`);
-        }
-
-        parsedOptions.outputChannelCount.forEach((value, index) => {
-          if (value <= 0 || value > IMPLEMENTATION_MAX_NUMBER_OF_CHANNELS) {
-            throw new DOMException(`Failed to construct 'AudioWorkletNode': Invalid 'outputChannelCount' property from AudioWorkletNodeOptions: Value at index ${index} in outside supported range [1, 32]`, 'NotSupportedError');
-          }
-        });
-
-        if (parsedOptions.numberOfOutputs !== parsedOptions.outputChannelCount.length) {
-          throw new DOMException(`Failed to construct 'AudioWorkletNode': Invalid 'outputChannelCount' property from AudioWorkletNodeOptions: 'outputChannelCount' length (${parsedOptions.outputChannelCount.length}) does not equal 'numberOfOutputs' (${parsedOptions.numberOfOutputs})`, 'IndexSizeError');
-        }
-      } else {
-        // - If both numberOfInputs and numberOfOutputs are 1, set the initial channel count of the node output to 1 and return.
-        //   NOTE: For this case, the output chanel count will change to computedNumberOfChannels dynamically based on the input and the channelCountMode at runtime.
-        if (parsedOptions.numberOfInputs === 1 && parsedOptions.numberOfOutputs === 1) {
-          // rust waits for an empty Vec as the special case value
-          parsedOptions.outputChannelCount = new Uint32Array(0);
-        } else {
-          // - Otherwise set the channel count of each output of the node to 1 and return.
-          parsedOptions.outputChannelCount = new Uint32Array(parsedOptions.numberOfOutputs);
-          parsedOptions.outputChannelCount.fill(1);
-        }
-      }
-
-      // @todo
-      // - This should be a "record", let's treat it as a raw object of now
-      // - Check if this needs to checked against the declared `parameterDescriptors`
-      if (options && options.parameterData !== undefined) {
-        if (typeof options.parameterData === 'object' && options.parameterData !== null) {
-          parsedOptions.parameterData = {};
-
-          for (let [key, value] of Object.entries(options.parameterData)) {
-            const parsedKey = conversions['DOMString'](key, {
-              context: `Failed to construct 'AudioWorkletNode': Invalid 'parameterData' property from AudioWorkletNodeOptions: Invalid key (${key})`,
-            });
-
-            const parsedValue = conversions['double'](value, {
-              context: `Failed to construct 'AudioWorkletNode': Invalid 'parameterData' property from AudioWorkletNodeOptions: Invalid value for key ${parsedKey}`,
-            });
-
-            parsedOptions.parameterData[parsedKey] = parsedValue;
-          }
-        } else {
-          throw new TypeError(`Failed to construct 'AudioWorkletNode': Invalid 'parameterData' property from AudioWorkletNodeOptions: 'outputChannelCount' length (${parsedOptions.outputChannelCount.length}) does not equal 'numberOfOutputs' (${parsedOptions.numberOfOutputs})`);
-        }
-      } else {
-        parsedOptions.parameterData = {};
-      }
-
-      // These ones are for the JS processor
-      if (options && options.processorOptions !== undefined) {
-        if (typeof options.processorOptions === 'object' && options.processorOptions !== null) {
-          parsedOptions.processorOptions = Object.assign({}, options.processorOptions);
-        } else {
-          throw new TypeError(`Failed to construct 'AudioWorkletNode': Invalid 'processorOptions' property from AudioWorkletNodeOptions: 'processorOptions' is not an object`);
-        }
-      } else {
-        parsedOptions.processorOptions = {};
-      }
-
-      // AudioNodeOptions
-      if (options && options.channelCount !== undefined) {
-        parsedOptions.channelCount = conversions['unsigned long'](options.channelCount, {
-          enforceRange: true,
-          context: `Failed to construct 'AudioWorkletNode': Failed to read the 'channelCount' property from AudioWorkletNodeOptions: The provided value '${options.channelCount}'`,
-        });
-
-        // @note - delegating this check to Rust can poison a Mutex
-        // (probably the `audio_param_descriptor_channel` one)
-        if (parsedOptions.channelCount <= 0 || parsedOptions.channelCount > IMPLEMENTATION_MAX_NUMBER_OF_CHANNELS) {
-          throw new DOMException(`Failed to construct 'AudioWorkletNode': Invalid 'channelCount' property: Number of channels: ${parsedOptions.channelCount} is outside range [1, 32]`, 'NotSupportedError');
-        }
-      }
-
-      if (options && options.channelCountMode !== undefined) {
-        if (!['max', 'clamped-max', 'explicit'].includes(options.channelCountMode)) {
-          throw new TypeError(`Failed to construct 'AudioWorkletNode': Failed to read the 'channelCountMode' property from 'AudioNodeOptions': The provided value '${options.channelCountMode}' is not a valid enum value of type ChannelCountMode`);
-        }
-
-        parsedOptions.channelCountMode = conversions['DOMString'](options.channelCountMode, {
-          context: `Failed to construct 'AudioWorkletNode': Failed to read the 'channelCount' property from AudioWorkletNodeOptions: The provided value '${options.channelCountMode}'`,
-        });
-      }
-
-      if (options && options.channelInterpretation !== undefined) {
-        if (!['speakers', 'discrete'].includes(options.channelInterpretation)) {
-          throw new TypeError(`Failed to construct 'AudioWorkletNode': Failed to read the 'channelInterpretation' property from 'AudioNodeOptions': The provided value '${options.channelInterpretation}' is not a valid enum value of type ChannelCountMode`);
-        }
-
-        parsedOptions.channelInterpretation = conversions['DOMString'](options.channelInterpretation, {
-          context: `Failed to construct 'AudioWorkletNode': Failed to read the 'channelInterpretation' property from AudioWorkletNodeOptions: The provided value '${options.channelInterpretation}'`,
-        });
-      }
-
-      const parameterDescriptors = context.audioWorklet[kGetParameterDescriptors](parsedName);
-      let napiObj;
-
+    // If outputChannelCount exists,
+    // - If any value in outputChannelCount is zero or greater than the implementation’s maximum number of channels, throw a NotSupportedError and abort the remaining steps.
+    // - If the length of outputChannelCount does not equal numberOfOutputs, throw an IndexSizeError and abort the remaining steps.
+    // - If both numberOfInputs and numberOfOutputs are 1, set the channel count of the node output to the one value in outputChannelCount.
+    // - Otherwise set the channel count of the kth output of the node to the kth element of outputChannelCount sequence and return.
+    if (options && options.outputChannelCount !== undefined) {
       try {
-        napiObj = new nativeBinding.NapiAudioWorkletNode(
-          context[kNapiObj],
-          parsedName,
-          parsedOptions,
-          parameterDescriptors,
-        );
+        parsedOptions.outputChannelCount = toSanitizedSequence(options.outputChannelCount, Uint32Array);
       } catch (err) {
-        throwSanitizedError(err);
+        throw new TypeError(`Failed to construct 'AudioWorkletNode': Failed to read the 'outputChannelCount' property from AudioWorkletNodeOptions: The provided value ${err.message}`);
       }
 
-      super(context, {
-        [kNapiObj]: napiObj,
+      parsedOptions.outputChannelCount.forEach((value, index) => {
+        if (value <= 0 || value > IMPLEMENTATION_MAX_NUMBER_OF_CHANNELS) {
+          throw new DOMException(`Failed to construct 'AudioWorkletNode': Invalid 'outputChannelCount' property from AudioWorkletNodeOptions: Value at index ${index} in outside supported range [1, 32]`, 'NotSupportedError');
+        }
       });
 
-      let parameters = new Map();
+      if (parsedOptions.numberOfOutputs !== parsedOptions.outputChannelCount.length) {
+        throw new DOMException(`Failed to construct 'AudioWorkletNode': Invalid 'outputChannelCount' property from AudioWorkletNodeOptions: 'outputChannelCount' length (${parsedOptions.outputChannelCount.length}) does not equal 'numberOfOutputs' (${parsedOptions.numberOfOutputs})`, 'IndexSizeError');
+      }
+    } else {
+      // - If both numberOfInputs and numberOfOutputs are 1, set the initial channel count of the node output to 1 and return.
+      //   NOTE: For this case, the output chanel count will change to computedNumberOfChannels dynamically based on the input and the channelCountMode at runtime.
+      if (parsedOptions.numberOfInputs === 1 && parsedOptions.numberOfOutputs === 1) {
+        // rust waits for an empty Vec as the special case value
+        parsedOptions.outputChannelCount = new Uint32Array(0);
+      } else {
+        // - Otherwise set the channel count of each output of the node to 1 and return.
+        parsedOptions.outputChannelCount = new Uint32Array(parsedOptions.numberOfOutputs);
+        parsedOptions.outputChannelCount.fill(1);
+      }
+    }
 
-      for (let name in this[kNapiObj].parameters) {
-        const audioParam = new jsExport.AudioParam({
-          [kNapiObj]: this[kNapiObj].parameters[name],
-        });
+    // @todo
+    // - This should be a "record", let's treat it as a raw object of now
+    // - Check if this needs to checked against the declared `parameterDescriptors`
+    if (options && options.parameterData !== undefined) {
+      if (typeof options.parameterData === 'object' && options.parameterData !== null) {
+        parsedOptions.parameterData = {};
 
-        parameters.set(name, audioParam);
+        for (let [key, value] of Object.entries(options.parameterData)) {
+          const parsedKey = conversions['DOMString'](key, {
+            context: `Failed to construct 'AudioWorkletNode': Invalid 'parameterData' property from AudioWorkletNodeOptions: Invalid key (${key})`,
+          });
+
+          const parsedValue = conversions['double'](value, {
+            context: `Failed to construct 'AudioWorkletNode': Invalid 'parameterData' property from AudioWorkletNodeOptions: Invalid value for key ${parsedKey}`,
+          });
+
+          parsedOptions.parameterData[parsedKey] = parsedValue;
+        }
+      } else {
+        throw new TypeError(`Failed to construct 'AudioWorkletNode': Invalid 'parameterData' property from AudioWorkletNodeOptions: 'outputChannelCount' length (${parsedOptions.outputChannelCount.length}) does not equal 'numberOfOutputs' (${parsedOptions.numberOfOutputs})`);
+      }
+    } else {
+      parsedOptions.parameterData = {};
+    }
+
+    // These ones are for the JS processor
+    if (options && options.processorOptions !== undefined) {
+      if (typeof options.processorOptions === 'object' && options.processorOptions !== null) {
+        parsedOptions.processorOptions = Object.assign({}, options.processorOptions);
+      } else {
+        throw new TypeError(`Failed to construct 'AudioWorkletNode': Invalid 'processorOptions' property from AudioWorkletNodeOptions: 'processorOptions' is not an object`);
+      }
+    } else {
+      parsedOptions.processorOptions = {};
+    }
+
+    // AudioNodeOptions
+    if (options && options.channelCount !== undefined) {
+      parsedOptions.channelCount = conversions['unsigned long'](options.channelCount, {
+        enforceRange: true,
+        context: `Failed to construct 'AudioWorkletNode': Failed to read the 'channelCount' property from AudioWorkletNodeOptions: The provided value '${options.channelCount}'`,
+      });
+
+      // @note - delegating this check to Rust can poison a Mutex
+      // (probably the `audio_param_descriptor_channel` one)
+      if (parsedOptions.channelCount <= 0 || parsedOptions.channelCount > IMPLEMENTATION_MAX_NUMBER_OF_CHANNELS) {
+        throw new DOMException(`Failed to construct 'AudioWorkletNode': Invalid 'channelCount' property: Number of channels: ${parsedOptions.channelCount} is outside range [1, 32]`, 'NotSupportedError');
+      }
+    }
+
+    if (options && options.channelCountMode !== undefined) {
+      if (!['max', 'clamped-max', 'explicit'].includes(options.channelCountMode)) {
+        throw new TypeError(`Failed to construct 'AudioWorkletNode': Failed to read the 'channelCountMode' property from 'AudioNodeOptions': The provided value '${options.channelCountMode}' is not a valid enum value of type ChannelCountMode`);
       }
 
-      this.#parameters = new AudioParamMap({
-        [kPrivateConstructor]: true,
-        parameters,
+      parsedOptions.channelCountMode = conversions['DOMString'](options.channelCountMode, {
+        context: `Failed to construct 'AudioWorkletNode': Failed to read the 'channelCount' property from AudioWorkletNodeOptions: The provided value '${options.channelCountMode}'`,
       });
+    }
 
-      // Create JS processor
-      const { messagePort, errorPort } = context.audioWorklet[kCreateProcessor](
+    if (options && options.channelInterpretation !== undefined) {
+      if (!['speakers', 'discrete'].includes(options.channelInterpretation)) {
+        throw new TypeError(`Failed to construct 'AudioWorkletNode': Failed to read the 'channelInterpretation' property from 'AudioNodeOptions': The provided value '${options.channelInterpretation}' is not a valid enum value of type ChannelCountMode`);
+      }
+
+      parsedOptions.channelInterpretation = conversions['DOMString'](options.channelInterpretation, {
+        context: `Failed to construct 'AudioWorkletNode': Failed to read the 'channelInterpretation' property from AudioWorkletNodeOptions: The provided value '${options.channelInterpretation}'`,
+      });
+    }
+
+    const parameterDescriptors = context.audioWorklet[kGetParameterDescriptors](parsedName);
+    let napiObj;
+
+    try {
+      napiObj = new nativeBinding.NapiAudioWorkletNode(
+        context[kNapiObj],
         parsedName,
         parsedOptions,
-        napiObj.id,
+        parameterDescriptors,
       );
+    } catch (err) {
+      throwSanitizedError(err);
+    }
 
-      this.#port = messagePort;
+    super(context, {
+      [kNapiObj]: napiObj,
+    });
 
-      // Handle 'processorerror' events
-      // cf. https://webaudio.github.io/web-audio-api/#dom-audioworkletnode-onprocessorerror
-      errorPort.on('message', msg => {
-        const { cmd, err } = msg;
-        // log error message to help debugging event if no `processorerror` listener has been set
-        console.log(err);
+    let parameters = new Map();
 
-        switch (cmd) {
-          case 'node-web-audio-api:worklet:ctor-error': {
-            const message = `Failed to construct '${parsedName}' AudioWorkletProcessor: ${err.message}`;
-            const event = new ErrorEvent('processorerror', { message, error: err });
-            propagateEvent(this, event);
-            break;
-          }
-          case 'node-web-audio-api:worklet:process-invalid': {
-            const message = `Failed to execute 'process' on '${parsedName}' AudioWorkletProcessor: ${err.message}`;
-            const error = new TypeError(message);
-            error.stack = err.stack.replace(err.message, message);
-
-            const event = new ErrorEvent('processorerror', { message, error });
-            propagateEvent(this, event);
-            break;
-          }
-          case 'node-web-audio-api:worklet:process-error': {
-            const message = `Failed to execute 'process' on '${parsedName}' AudioWorkletProcessor: ${err.message}`;
-            const event = new ErrorEvent('processorerror', { message, error: err });
-            propagateEvent(this, event);
-            break;
-          }
-        }
+    for (let name in this[kNapiObj].parameters) {
+      const audioParam = new AudioParam({
+        [kNapiObj]: this[kNapiObj].parameters[name],
       });
+
+      parameters.set(name, audioParam);
     }
 
-    get parameters() {
-      if (!(this instanceof AudioWorkletNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioWorkletNode\'');
+    this.#parameters = new AudioParamMap({
+      [kPrivateConstructor]: true,
+      parameters,
+    });
+
+    // Create JS processor
+    const { messagePort, errorPort } = context.audioWorklet[kCreateProcessor](
+      parsedName,
+      parsedOptions,
+      napiObj.id,
+    );
+
+    this.#port = messagePort;
+
+    // Handle 'processorerror' events
+    // cf. https://webaudio.github.io/web-audio-api/#dom-audioworkletnode-onprocessorerror
+    errorPort.on('message', msg => {
+      const { cmd, err } = msg;
+      // log error message to help debugging event if no `processorerror` listener has been set
+      console.log(err);
+
+      switch (cmd) {
+        case 'node-web-audio-api:worklet:ctor-error': {
+          const message = `Failed to construct '${parsedName}' AudioWorkletProcessor: ${err.message}`;
+          const event = new ErrorEvent('processorerror', { message, error: err });
+          propagateEvent(this, event);
+          break;
+        }
+        case 'node-web-audio-api:worklet:process-invalid': {
+          const message = `Failed to execute 'process' on '${parsedName}' AudioWorkletProcessor: ${err.message}`;
+          const error = new TypeError(message);
+          error.stack = err.stack.replace(err.message, message);
+
+          const event = new ErrorEvent('processorerror', { message, error });
+          propagateEvent(this, event);
+          break;
+        }
+        case 'node-web-audio-api:worklet:process-error': {
+          const message = `Failed to execute 'process' on '${parsedName}' AudioWorkletProcessor: ${err.message}`;
+          const event = new ErrorEvent('processorerror', { message, error: err });
+          propagateEvent(this, event);
+          break;
+        }
       }
-
-      return this.#parameters;
-    }
-
-    get port() {
-      if (!(this instanceof AudioWorkletNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioWorkletNode\'');
-      }
-
-      return this.#port;
-    }
+    });
   }
 
-  Object.defineProperties(AudioWorkletNode, {
-    length: {
-      __proto__: null,
-      writable: false,
-      enumerable: false,
-      configurable: true,
-      value: 2,
-    },
-  });
+  get parameters() {
+    if (!(this instanceof AudioWorkletNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioWorkletNode\'');
+    }
 
-  Object.defineProperties(AudioWorkletNode.prototype, {
-    [Symbol.toStringTag]: {
-      __proto__: null,
-      writable: false,
-      enumerable: false,
-      configurable: true,
-      value: 'AudioWorkletNode',
-    },
-    parameters: kEnumerableProperty,
-    port: kEnumerableProperty,
-  });
+    return this.#parameters;
+  }
 
-  return AudioWorkletNode;
-};
+  get port() {
+    if (!(this instanceof AudioWorkletNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioWorkletNode\'');
+    }
+
+    return this.#port;
+  }
+}
+
+Object.defineProperties(AudioWorkletNode, {
+  length: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 2,
+  },
+});
+
+Object.defineProperties(AudioWorkletNode.prototype, {
+  [Symbol.toStringTag]: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 'AudioWorkletNode',
+  },
+  parameters: kEnumerableProperty,
+  port: kEnumerableProperty,
+});

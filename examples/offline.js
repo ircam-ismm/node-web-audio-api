@@ -1,4 +1,4 @@
-import { AudioContext, OfflineAudioContext } from '../index.mjs';
+import { AudioContext, OfflineAudioContext } from '#node-web-audio-api';
 
 const offline = new OfflineAudioContext(1, 48000, 48000);
 

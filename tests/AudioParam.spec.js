@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import { AudioContext } from '../index.mjs';
+import { AudioContext } from '../index.js';
 
 describe('AudioParam', () => {
   describe('# attributes', () => {

@@ -1,4 +1,4 @@
-import { AudioContext, OscillatorNode, GainNode } from '#node-web-audio-api';
+const { AudioContext, OscillatorNode, GainNode } = require('../index.js');
 
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });

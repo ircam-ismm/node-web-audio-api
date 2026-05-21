@@ -9,7 +9,7 @@ import {
   GainNode,
   OfflineAudioContext,
   OscillatorNode,
-} from '../index.mjs';
+} from '../index.js';
 import { delay } from '@ircam/sc-utils';
 
 const scriptTexts = `
@@ -78,7 +78,7 @@ describe('AudioWorklet', () => {
 
     it(`should support loading from cwd relative path`, async () => {
       const audioContext = new AudioContext();
-      await audioContext.audioWorklet.addModule('./tests/worklets/noise-generator.worklet.mjs');
+      await audioContext.audioWorklet.addModule('./tests/worklets/noise-generator.worklet.js');
 
       const noiseGeneratorNode = new AudioWorkletNode(audioContext, 'noise-generator');
       noiseGeneratorNode.connect(audioContext.destination);
@@ -91,7 +91,7 @@ describe('AudioWorklet', () => {
 
     it(`should support loading from caller relative path`, async () => {
       const audioContext = new AudioContext();
-      await audioContext.audioWorklet.addModule('./worklets/noise-generator.worklet.mjs');
+      await audioContext.audioWorklet.addModule('./worklets/noise-generator.worklet.js');
 
       const noiseGeneratorNode = new AudioWorkletNode(audioContext, 'noise-generator');
       noiseGeneratorNode.connect(audioContext.destination);
@@ -103,7 +103,7 @@ describe('AudioWorklet', () => {
     });
 
     it(`should support loading from absolute path`, async () => {
-      const pathname = path.join(process.cwd(), 'tests/worklets/noise-generator.worklet.mjs');
+      const pathname = path.join(process.cwd(), 'tests/worklets/noise-generator.worklet.js');
       const audioContext = new AudioContext();
       await audioContext.audioWorklet.addModule(pathname);
 
@@ -125,7 +125,7 @@ describe('AudioWorklet', () => {
         main: 'noise-generator.js',
       }, null, 2));
       fs.copyFileSync(
-        'tests/worklets/noise-generator.worklet.mjs',
+        'tests/worklets/noise-generator.worklet.js',
         'node_modules/audio-worklet-test/noise-generator.js',
       );
 
@@ -151,7 +151,7 @@ describe('AudioWorklet', () => {
         type: 'module',
       }, null, 2));
       fs.copyFileSync(
-        'tests/worklets/noise-generator.worklet.mjs',
+        'tests/worklets/noise-generator.worklet.js',
         'node_modules/audio-worklet-test/noise-generator.js',
       );
 
@@ -218,7 +218,7 @@ describe('AudioWorklet', () => {
       let errored = false;
 
       try {
-        await audioContext.audioWorklet.addModule('./worklets/invalid.worklet.mjs');
+        await audioContext.audioWorklet.addModule('./worklets/invalid.worklet.js');
       } catch (err) {
         prettyPrintErr(err);
         errored = true;
@@ -233,7 +233,7 @@ describe('AudioWorklet', () => {
       let errored = false;
 
       try {
-        await audioContext.audioWorklet.addModule('./worklets/do-not-exists.worklet.mjs');
+        await audioContext.audioWorklet.addModule('./worklets/do-not-exists.worklet.js');
       } catch (err) {
         prettyPrintErr(err);
         errored = true;
@@ -251,7 +251,7 @@ describe('AudioWorkletProcessor', () => {
       let errored = false;
 
       const audioContext = new AudioContext();
-      await audioContext.audioWorklet.addModule('./worklets/invalid-ctor.worklet.mjs');
+      await audioContext.audioWorklet.addModule('./worklets/invalid-ctor.worklet.js');
 
       const invalid = new AudioWorkletNode(audioContext, 'invalid-ctor');
       invalid.addEventListener('processorerror', (e) => {
@@ -266,7 +266,7 @@ describe('AudioWorkletProcessor', () => {
 
     it('OfflineAudioContext.startRendering should return when processor constructor is invalid', async () => {
       const audioContext = new OfflineAudioContext(1, 128, 48000);
-      await audioContext.audioWorklet.addModule('./worklets/invalid-ctor.worklet.mjs');
+      await audioContext.audioWorklet.addModule('./worklets/invalid-ctor.worklet.js');
 
       const invalid = new AudioWorkletNode(audioContext, 'invalid-ctor');
       invalid.addEventListener('processorerror', e => prettyPrintErr(e.error));

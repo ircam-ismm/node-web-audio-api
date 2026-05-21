@@ -18,176 +18,191 @@
 // -------------------------------------------------------------------------- //
 
 /* eslint-disable no-unused-vars */
-const conversions = require('webidl-conversions');
-const {
+import conversions from 'webidl-conversions';
+
+import nativeBinding from '../load-native.js';
+import {
   toSanitizedSequence,
-} = require('./lib/cast.js');
-const {
+} from './lib/cast.js';
+import {
   isFunction,
   kEnumerableProperty,
-} = require('./lib/utils.js');
-const {
+} from './lib/utils.js';
+import {
   throwSanitizedError,
-} = require('./lib/errors.js');
-const {
+} from './lib/errors.js';
+import {
   kNapiObj,
   kAudioBuffer,
-} = require('./lib/symbols.js');
+} from './lib/symbols.js';
+
+import {
+  AudioParam,
+} from './AudioParam.js';
+import {
+  AudioBuffer,
+} from './AudioBuffer.js';
+import {
+  PeriodicWave,
+} from './PeriodicWave.js';
+
+import {
+  BaseAudioContext,
+} from './BaseAudioContext.js';
+
 /* eslint-enable no-unused-vars */
 
-const AudioNode = require('./AudioNode.js');
+import {
+  AudioNode,
+} from './AudioNode.js';
 
-module.exports = (jsExport, nativeBinding) => {
-  class WaveShaperNode extends AudioNode {
+export class WaveShaperNode extends AudioNode {
 
-    constructor(context, options) {
+  constructor(context, options) {
 
-      if (arguments.length < 1) {
-        throw new TypeError(`Failed to construct 'WaveShaperNode': 1 argument required, but only ${arguments.length} present`);
-      }
+    if (arguments.length < 1) {
+      throw new TypeError(`Failed to construct 'WaveShaperNode': 1 argument required, but only ${arguments.length} present`);
+    }
 
-      if (!(context instanceof jsExport.BaseAudioContext)) {
-        throw new TypeError(`Failed to construct 'WaveShaperNode': argument 1 is not of type BaseAudioContext`);
-      }
+    if (!(context instanceof BaseAudioContext)) {
+      throw new TypeError(`Failed to construct 'WaveShaperNode': argument 1 is not of type BaseAudioContext`);
+    }
 
-      const parsedOptions = {};
+    const parsedOptions = {};
 
-      if (options && typeof options !== 'object') {
-        throw new TypeError('Failed to construct \'WaveShaperNode\': argument 2 is not of type \'WaveShaperOptions\'');
-      }
+    if (options && typeof options !== 'object') {
+      throw new TypeError('Failed to construct \'WaveShaperNode\': argument 2 is not of type \'WaveShaperOptions\'');
+    }
 
-      if (options && options.curve !== undefined) {
-        try {
-          parsedOptions.curve = toSanitizedSequence(options.curve, Float32Array);
-        } catch (err) {
-          throw new TypeError(`Failed to construct 'WaveShaperNode': Failed to read the 'curve' property from WaveShaperOptions: The provided value ${err.message}`);
-        }
-      } else {
-        parsedOptions.curve = null;
-      }
-
-      if (options && options.oversample !== undefined) {
-        if (!['none', '2x', '4x'].includes(options.oversample)) {
-          throw new TypeError(`Failed to construct 'WaveShaperNode': Failed to read the 'oversample' property from WaveShaperOptions: The provided value '${options.oversample}' is not a valid enum value of type OverSampleType`);
-        }
-
-        parsedOptions.oversample = conversions['DOMString'](options.oversample, {
-          context: `Failed to construct 'WaveShaperNode': Failed to read the 'oversample' property from WaveShaperOptions: The provided value '${options.oversample}'`,
-        });
-      } else {
-        parsedOptions.oversample = 'none';
-      }
-
-      if (options && options.channelCount !== undefined) {
-        parsedOptions.channelCount = conversions['unsigned long'](options.channelCount, {
-          enforceRange: true,
-          context: `Failed to construct 'WaveShaperNode': Failed to read the 'channelCount' property from WaveShaperOptions: The provided value '${options.channelCount}'`,
-        });
-      }
-
-      if (options && options.channelCountMode !== undefined) {
-        parsedOptions.channelCountMode = conversions['DOMString'](options.channelCountMode, {
-          context: `Failed to construct 'WaveShaperNode': Failed to read the 'channelCount' property from WaveShaperOptions: The provided value '${options.channelCountMode}'`,
-        });
-      }
-
-      if (options && options.channelInterpretation !== undefined) {
-        parsedOptions.channelInterpretation = conversions['DOMString'](options.channelInterpretation, {
-          context: `Failed to construct 'WaveShaperNode': Failed to read the 'channelInterpretation' property from WaveShaperOptions: The provided value '${options.channelInterpretation}'`,
-        });
-      }
-
-      let napiObj;
-
+    if (options && options.curve !== undefined) {
       try {
-        napiObj = new nativeBinding.NapiWaveShaperNode(context[kNapiObj], parsedOptions);
+        parsedOptions.curve = toSanitizedSequence(options.curve, Float32Array);
       } catch (err) {
-        throwSanitizedError(err);
+        throw new TypeError(`Failed to construct 'WaveShaperNode': Failed to read the 'curve' property from WaveShaperOptions: The provided value ${err.message}`);
+      }
+    } else {
+      parsedOptions.curve = null;
+    }
+
+    if (options && options.oversample !== undefined) {
+      if (!['none', '2x', '4x'].includes(options.oversample)) {
+        throw new TypeError(`Failed to construct 'WaveShaperNode': Failed to read the 'oversample' property from WaveShaperOptions: The provided value '${options.oversample}' is not a valid enum value of type OverSampleType`);
       }
 
-      super(context, {
-        [kNapiObj]: napiObj,
+      parsedOptions.oversample = conversions['DOMString'](options.oversample, {
+        context: `Failed to construct 'WaveShaperNode': Failed to read the 'oversample' property from WaveShaperOptions: The provided value '${options.oversample}'`,
       });
-
+    } else {
+      parsedOptions.oversample = 'none';
     }
 
-    get curve() {
-      if (!(this instanceof WaveShaperNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'WaveShaperNode\'');
-      }
-
-      return this[kNapiObj].curve;
+    if (options && options.channelCount !== undefined) {
+      parsedOptions.channelCount = conversions['unsigned long'](options.channelCount, {
+        enforceRange: true,
+        context: `Failed to construct 'WaveShaperNode': Failed to read the 'channelCount' property from WaveShaperOptions: The provided value '${options.channelCount}'`,
+      });
     }
 
-    set curve(value) {
-      if (!(this instanceof WaveShaperNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'WaveShaperNode\'');
-      }
-
-      if (value === null) {
-        console.warn('Setting the \'curve\' property on \'WaveShaperNode\' to \'null\' is not supported yet');
-        return;
-      } else if (!(value instanceof Float32Array)) {
-        throw new TypeError('Failed to set the \'curve\' property on \'WaveShaperNode\': Value is not a valid \'Float32Array\' value');
-      }
-
-      try {
-        this[kNapiObj].curve = value;
-      } catch (err) {
-        throwSanitizedError(err);
-      }
+    if (options && options.channelCountMode !== undefined) {
+      parsedOptions.channelCountMode = conversions['DOMString'](options.channelCountMode, {
+        context: `Failed to construct 'WaveShaperNode': Failed to read the 'channelCount' property from WaveShaperOptions: The provided value '${options.channelCountMode}'`,
+      });
     }
 
-    get oversample() {
-      if (!(this instanceof WaveShaperNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'WaveShaperNode\'');
-      }
-
-      return this[kNapiObj].oversample;
+    if (options && options.channelInterpretation !== undefined) {
+      parsedOptions.channelInterpretation = conversions['DOMString'](options.channelInterpretation, {
+        context: `Failed to construct 'WaveShaperNode': Failed to read the 'channelInterpretation' property from WaveShaperOptions: The provided value '${options.channelInterpretation}'`,
+      });
     }
 
-    set oversample(value) {
-      if (!(this instanceof WaveShaperNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'WaveShaperNode\'');
-      }
+    let napiObj;
 
-      if (!['none', '2x', '4x'].includes(value)) {
-        console.warn(`Failed to set the 'oversample' property on 'WaveShaperNode': Value '${value}' is not a valid 'OverSampleType' enum value`);
-        return;
-      }
-
-      try {
-        this[kNapiObj].oversample = value;
-      } catch (err) {
-        throwSanitizedError(err);
-      }
+    try {
+      napiObj = new nativeBinding.NapiWaveShaperNode(context[kNapiObj], parsedOptions);
+    } catch (err) {
+      throwSanitizedError(err);
     }
+
+    super(context, {
+      [kNapiObj]: napiObj,
+    });
 
   }
 
-  Object.defineProperties(WaveShaperNode, {
-    length: {
-      __proto__: null,
-      writable: false,
-      enumerable: false,
-      configurable: true,
-      value: 1,
-    },
-  });
+  get curve() {
+    if (!(this instanceof WaveShaperNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'WaveShaperNode\'');
+    }
 
-  Object.defineProperties(WaveShaperNode.prototype, {
-    [Symbol.toStringTag]: {
-      __proto__: null,
-      writable: false,
-      enumerable: false,
-      configurable: true,
-      value: 'WaveShaperNode',
-    },
+    return this[kNapiObj].curve;
+  }
 
-    curve: kEnumerableProperty,
-    oversample: kEnumerableProperty,
+  set curve(value) {
+    if (!(this instanceof WaveShaperNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'WaveShaperNode\'');
+    }
 
-  });
+    if (value === null) {
+      console.warn('Setting the \'curve\' property on \'WaveShaperNode\' to \'null\' is not supported yet');
+      return;
+    } else if (!(value instanceof Float32Array)) {
+      throw new TypeError('Failed to set the \'curve\' property on \'WaveShaperNode\': Value is not a valid \'Float32Array\' value');
+    }
 
-  return WaveShaperNode;
-};
+    try {
+      this[kNapiObj].curve = value;
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+  }
+
+  get oversample() {
+    if (!(this instanceof WaveShaperNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'WaveShaperNode\'');
+    }
+
+    return this[kNapiObj].oversample;
+  }
+
+  set oversample(value) {
+    if (!(this instanceof WaveShaperNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'WaveShaperNode\'');
+    }
+
+    if (!['none', '2x', '4x'].includes(value)) {
+      console.warn(`Failed to set the 'oversample' property on 'WaveShaperNode': Value '${value}' is not a valid 'OverSampleType' enum value`);
+      return;
+    }
+
+    try {
+      this[kNapiObj].oversample = value;
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+  }
+
+}
+
+Object.defineProperties(WaveShaperNode, {
+  length: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 1,
+  },
+});
+
+Object.defineProperties(WaveShaperNode.prototype, {
+  [Symbol.toStringTag]: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 'WaveShaperNode',
+  },
+
+  curve: kEnumerableProperty,
+  oversample: kEnumerableProperty,
+
+});

@@ -1,11 +1,11 @@
-const {
+import {
   kPrivateConstructor,
-} = require('./lib/symbols.js');
-const {
+} from './lib/symbols.js';
+import {
   kEnumerableProperty,
-} = require('./lib/utils.js');
+} from './lib/utils.js';
 
-class AudioParamMap {
+export class AudioParamMap {
   #parameters = null;
 
   constructor(options) {
@@ -84,5 +84,3 @@ Object.defineProperties(AudioParamMap.prototype, {
   get: kEnumerableProperty,
   has: kEnumerableProperty,
 });
-
-module.exports = AudioParamMap;

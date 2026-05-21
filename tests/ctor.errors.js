@@ -1,4 +1,4 @@
-import { AudioContext, GainNode, AudioParam } from '../index.mjs';
+import { AudioContext, GainNode, AudioParam } from '../index.js';
 
 const audioContext = new AudioContext({});
 

@@ -1,8 +1,8 @@
 // required in node_modules/wpt_runner/testharness/idlharness.js, cf `fetch_spec`
-const fs = require('node:fs');
-const path = require('node:path');
+import fs from 'node:fs';
+import path from 'node:path';
 
-module.exports = function createFetch(basePath) {
+export default function createFetch(basePath) {
   return function fetch(pathname) {
     pathname = path.join(basePath, pathname);
 

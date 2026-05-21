@@ -1,5 +1,5 @@
 import { sleep } from '@ircam/sc-utils';
-import { AudioContext, AudioNode } from '../index.mjs';
+import { AudioContext, AudioNode } from '#node-web-audio-api';
 
 // Monkeypatching AudioNode.connect to allow for composite nodes.
 // https://github.com/GoogleChromeLabs/web-audio-samples/wiki/CompositeAudioNode

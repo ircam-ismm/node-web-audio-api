@@ -3,7 +3,7 @@ import {
   AudioBuffer,
   ConstantSourceNode,
   OfflineAudioContext,
-} from '../index.mjs';
+} from '../index.js';
 
 describe('# OfflineAudioContext', () => {
   describe('## await startRendering()', () => {
@@ -52,8 +52,10 @@ describe('# OfflineAudioContext', () => {
   });
 
   describe('## suspend / resume', () => {
+    let lastSuspendTime = null;
+
     it.skip('should suspend at right time', async () => {
-      for (let i = 0; i < 100000; i++) {
+      for (let i = 0; i < 50000; i++) {
         console.log('---------------------------------');
         console.log('### iteration', i);
         const audioContext = new OfflineAudioContext(1, 256, 48000);;
@@ -69,8 +71,19 @@ describe('# OfflineAudioContext', () => {
         });
 
         const buffer = await audioContext.startRendering();
+
+        // this seems to be actually consistent which is nice
+        if (lastSuspendTime !== null && lastSuspendTime !== suspendTime) {
+          console.log('lastSuspendTime:', lastSuspendTime, '- suspendTime:', suspendTime);
+          assert.fail();
+          return;
+        }
+
+        lastSuspendTime = suspendTime;
+
+        // probably comes from the conversion between js and rust...
         if (suspendTime !== timeInSuspend) {
-          console.log(suspendTime, timeInSuspend);
+          console.log('suspendTime:', suspendTime, '- timeInSuspend:', timeInSuspend);
           assert.fail();
           return;
         }
