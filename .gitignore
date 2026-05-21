@@ -145,3 +145,4 @@ Cargo.lock
 
 *.env
 
+log

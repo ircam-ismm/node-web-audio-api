@@ -48,8 +48,8 @@
     "test": "mocha tests/*.spec.mjs",
     "test:ci": "mocha tests/*.spec.mjs -- --ci",
     "test:only": "mocha",
-    "wpt": "npm run build && node ./.scripts/wpt-harness.mjs",
-    "wpt:only": "node ./.scripts/wpt-harness.mjs"
+    "wpt": "npm run build && node ./.scripts/wpt-harness.js",
+    "wpt:only": "node ./.scripts/wpt-harness.js"
   },
   "devDependencies": {
     "@grame/faustwasm": "^0.16.1",
