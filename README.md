@@ -97,8 +97,7 @@ We provide prebuilt binaries for the following platforms:
 
 - All provided Linux binaries are built with the `jack` flag, which should work either with properly configured [Jack](https://jackaudio.org/) or [pipewire-jack](https://pipewire.org/) backends. If this is a limitation for you, please fill an [issue](https://github.com/ircam-ismm/node-web-audio-api/issues) and we will see what we can do.
 
-
-### Manual Build
+### Manually install and build the library
 
 If prebuilt binaries are not shippped for your platform, you will need to:
 
@@ -123,7 +122,7 @@ Be aware that the package won't be listed on your `package.json` file, and that 
 
 ## Notes for Linux users
 
-### Build
+### Dependencies
 
 To build the library, you will need to manually install the `libasound2-dev` package:
 
@@ -137,7 +136,7 @@ Optionally, if you use the Jack Audio Backend, the `libjack-jackd2-dev` package:
 sudo apt install libjack-jackd2-dev
 ```
 
-In such case, you can use the `npm run build:jack` script to enable the Jack feature.
+In that case, you can use the `npm run build:jack` script to enable the Jack feature.
 
 ### Audio backend and latency
 
