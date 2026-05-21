@@ -21,8 +21,7 @@ npm install [--save] node-web-audio-api
 
 ```js
 import { AudioContext, OscillatorNode, GainNode } from 'node-web-audio-api';
-// or using old fashioned commonjs syntax:
-// const { AudioContext, OscillatorNode, GainNode } = require('node-web-audio-api');
+// audioContext is resumed by default
 const audioContext = new AudioContext();
 
 setInterval(() => {
