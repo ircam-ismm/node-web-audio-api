@@ -131,24 +131,9 @@ import {
   WaveShaperNode as _WaveShaperNode,
 } from './js/WaveShaperNode.js';
 
-// promisify MediaDevices API
-// @todo - to be handled on Rust side with Task
-import nativeBinding from './load-native.js';
-const _mediaDevices = {};
-
-_mediaDevices.enumerateDevices = async function enumerateDevices() {
-  const list = nativeBinding.napiEnumerateDevices();
-  return Promise.resolve(list);
-};
-
-_mediaDevices.getUserMedia = async function getUserMedia(options) {
-  if (options === undefined) {
-    throw new TypeError('Failed to execute "getUserMedia" on "MediaDevices": audio must be requested');
-  }
-
-  const stream = nativeBinding.napiGetUserMedia(options);
-  return Promise.resolve(stream);
-};
+import {
+  mediaDevices as _mediaDevices,
+} from './js/media-devices.js';
 
 export const OfflineAudioCompletionEvent = _OfflineAudioCompletionEvent;
 export const AudioProcessingEvent = _AudioProcessingEvent;
