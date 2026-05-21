@@ -2,7 +2,7 @@ import {
   AudioContext,
   // ConstantSourceNode,
   OscillatorNode,
-} from '../index.mjs';
+} from '#node-web-audio-api';
 
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });

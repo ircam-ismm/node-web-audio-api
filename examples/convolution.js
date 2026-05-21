@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { AudioContext, ConvolverNode } from '../index.mjs';
+import { AudioContext, ConvolverNode } from '#node-web-audio-api';
 
 // create an `AudioContext` and load a sound file
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';

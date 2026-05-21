@@ -1,4 +1,4 @@
-import { AudioContext } from '../index.mjs';
+import { AudioContext } from '#node-web-audio-api';
 
 // Example of multichannel routing.
 //

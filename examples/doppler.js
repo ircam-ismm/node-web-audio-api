@@ -1,6 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import { AudioContext, PannerNode } from '../index.mjs';
+import { AudioContext, PannerNode } from '#node-web-audio-api';
 
 /*
  * This example feature a 'true physics' Doppler effect.

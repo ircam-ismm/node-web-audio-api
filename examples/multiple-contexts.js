@@ -1,4 +1,4 @@
-import { AudioContext } from '../index.mjs';
+import { AudioContext } from '#node-web-audio-api';
 
 {
   console.log('> Creating AudioContext #1 - playing sine at 200Hz');

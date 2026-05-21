@@ -1,4 +1,4 @@
-import { AudioContext, OscillatorNode, GainNode, AudioWorkletNode } from '../index.mjs';
+import { AudioContext, OscillatorNode, GainNode, AudioWorkletNode } from '#node-web-audio-api';
 
 // load audio worklet from online source
 

@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { AudioContext } from '../index.mjs';
+import { AudioContext } from '#node-web-audio-api';
 import { sleep } from '@ircam/sc-utils';
 
 // use part of cosine, between [π, 2π] as shaping cureve

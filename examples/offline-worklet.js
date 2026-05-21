@@ -3,7 +3,7 @@ import {
   AudioBufferSourceNode,
   AudioWorkletNode,
   OfflineAudioContext,
-} from '../index.mjs';
+} from '#node-web-audio-api';
 
 import { sleep } from '@ircam/sc-utils';
 

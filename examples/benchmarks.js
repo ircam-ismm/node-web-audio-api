@@ -2,7 +2,7 @@ import readline from 'node:readline';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { OfflineAudioContext, AudioContext } from '../index.mjs';
+import { OfflineAudioContext, AudioContext } from '#node-web-audio-api';
 import { getTime } from '@ircam/sc-utils';
 import Table from 'cli-table';
 
