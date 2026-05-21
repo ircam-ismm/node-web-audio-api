@@ -8,7 +8,7 @@ import {
   kHiddenProperty,
 } from './lib/utils.js';
 import {
-  kNapiObj
+  kNapiObj,
 } from './lib/symbols.js';
 import  {
   AudioParam,

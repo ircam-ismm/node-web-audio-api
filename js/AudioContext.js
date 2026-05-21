@@ -19,6 +19,7 @@ import {
 import { BaseAudioContext } from './BaseAudioContext.js';
 import { AudioRenderCapacity } from './AudioRenderCapacity.js';
 import { AudioPlaybackStats } from './AudioPlaybackStats.js';
+import { MediaStreamAudioSourceNode } from './MediaStreamAudioSourceNode.js';
 
 let contextId = 0;
 

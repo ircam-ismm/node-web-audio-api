@@ -14,7 +14,7 @@ import {
   kNapiObj,
 } from './lib/symbols.js';
 import {
-  AudioNode
+  AudioNode,
 } from './AudioNode.js';
 
 export class AudioScheduledSourceNode extends AudioNode {

@@ -25,16 +25,16 @@ import {
 } from './Events.js';
 
 import {
-  AudioNode
+  AudioNode,
 } from './AudioNode.js';
 import {
-  AudioParam
+  AudioParam,
 } from './AudioParam.js';
 import {
-  AudioParamMap
+  AudioParamMap,
 } from './AudioParamMap.js';
 import {
-  BaseAudioContext
+  BaseAudioContext,
 } from './BaseAudioContext.js';
 
 const IMPLEMENTATION_MAX_NUMBER_OF_CHANNELS = 32;

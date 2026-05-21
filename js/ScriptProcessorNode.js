@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import conversions from 'webidl-conversions';
 
 import nativeBinding from '../load-native.js';
@@ -15,12 +14,11 @@ import {
 import {
   propagateEvent,
 } from './lib/events.js';
-/* eslint-enable no-unused-vars */
 
 import { AudioNode } from './AudioNode.js';
 import { BaseAudioContext } from './BaseAudioContext.js';
-import { AudioBuffer } from './AudioBuffer.js'
-import { AudioProcessingEvent } from './Events.js'
+import { AudioBuffer } from './AudioBuffer.js';
+import { AudioProcessingEvent } from './Events.js';
 
 export class ScriptProcessorNode extends AudioNode {
 
