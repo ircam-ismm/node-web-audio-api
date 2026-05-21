@@ -1,6 +1,6 @@
 
 import conversions from 'webidl-conversions';
-import nativeBinding from '../load-native.cjs';
+import nativeBinding from '../load-native.js';
 import {
   propagateEvent,
 } from './lib/events.js';

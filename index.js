@@ -133,7 +133,7 @@ import {
 
 // promisify MediaDevices API
 // @todo - to be handled on Rust side with Task
-import nativeBinding from './load-native.cjs';
+import nativeBinding from './load-native.js';
 const _mediaDevices = {};
 
 _mediaDevices.enumerateDevices = async function enumerateDevices() {

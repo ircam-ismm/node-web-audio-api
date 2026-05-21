@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import conversions from 'webidl-conversions';
 
-import nativeBinding from '../load-native.cjs';
+import nativeBinding from '../load-native.js';
 import {
   isFunction,
   kEnumerableProperty,

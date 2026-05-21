@@ -1,5 +1,8 @@
-const fs = require('node:fs');
-const path = require('node:path');
+import fs from 'node:fs';
+import path from 'node:path';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+
 const { platform, arch } = process;
 
 let nativeBinding = null;
@@ -82,11 +85,11 @@ switch (platform) {
 }
 
 // use local build if exists
-if (fs.existsSync(path.join(__dirname, 'node-web-audio-api.build-release.node'))) {
+if (fs.existsSync(path.join(import.meta.dirname, 'node-web-audio-api.build-release.node'))) {
   nativeBinding = require('./node-web-audio-api.build-release.node');
 }
 
-if (fs.existsSync(path.join(__dirname, 'node-web-audio-api.build-debug.node'))) {
+if (fs.existsSync(path.join(import.meta.dirname, 'node-web-audio-api.build-debug.node'))) {
   nativeBinding = require('./node-web-audio-api.build-debug.node');
 }
 
@@ -98,5 +101,5 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding for OS: ${platform}, architecture: ${arch}`);
 }
 
-module.exports = nativeBinding;
+export default nativeBinding;
 

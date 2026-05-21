@@ -7,7 +7,7 @@ import {
 import conversions from 'webidl-conversions';
 
 // these function are defined on the rust side
-import nativeBinding from '../load-native.cjs';
+import nativeBinding from '../load-native.js';
 const {
   exit_audio_worklet_global_scope,
   run_audio_worklet_global_scope,
