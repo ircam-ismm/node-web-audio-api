@@ -10,6 +10,8 @@ import compile from 'template-literal';
 import beautify from 'js-beautify/js/index.js';
 import { ESLint } from 'eslint';
 
+import { injectExport } from './js/inject-export.js';
+
 // List of supported nodes. Note that this list is composed of IDL definitions,
 // and extended with the list of generatedNodes
 let supportedNodes = [
@@ -277,16 +279,16 @@ async function beautifyAndLint(pathname, code) {
 }
 
 // Generate files that require the list of generated AudioNode
-['indexCjs', 'indexMjs', 'BaseAudioContext'].forEach(src => {
+['indexJs', 'examplesLoader', 'BaseAudioContext'].forEach(src => {
   let input;
   let output;
   // index.tmpl.js generates the ES module re-export
-  if (src === 'indexCjs') {
-    input = path.join(jsTemplates, `index.tmpl.cjs`);
-    output = path.join(process.cwd(), `index.cjs`);
-  } else if (src === 'indexMjs') {
-    input = path.join(jsTemplates, `index.tmpl.mjs`);
-    output = path.join(process.cwd(), `index.mjs`);
+  if (src === 'indexJs') {
+    input = path.join(jsTemplates, `index.tmpl.js`);
+    output = path.join(process.cwd(), `index.js`);
+  } else if (src === 'examplesLoader') {
+    input = path.join(jsTemplates, `examples-loader.tmpl.js`);
+    output = path.join(process.cwd(), 'examples', 'loader', 'index.js');
   } else {
     input = path.join(jsTemplates, `${src}.tmpl.js`);
     output = path.join(jsOutput, `${src}.js`);
@@ -296,7 +298,7 @@ async function beautifyAndLint(pathname, code) {
 
   const codeTmpl = fs.readFileSync(input, 'utf8');
   const tmpl = compile(codeTmpl);
-  const code = tmpl({ nodes: supportedNodes, ...utils });
+  const code = tmpl({ nodes: supportedNodes, ...utils, injectExport });
 
   beautifyAndLint(output, generatedPrefix(code));
 });

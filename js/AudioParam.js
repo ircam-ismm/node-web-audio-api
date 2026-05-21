@@ -17,24 +17,23 @@
 // -------------------------------------------------------------------------- //
 // -------------------------------------------------------------------------- //
 
-const conversions = require('webidl-conversions');
+import conversions from 'webidl-conversions';
 
-const {
+import {
   toSanitizedSequence,
-} = require('./lib/cast.js');
-const {
+} from './lib/cast.js';
+import {
   throwSanitizedError,
-} = require('./lib/errors.js');
-
-const {
+} from './lib/errors.js';
+import {
   kEnumerableProperty,
   kHiddenProperty,
-} = require('./lib/utils.js');
-const {
+} from './lib/utils.js';
+import {
   kNapiObj,
-} = require('./lib/symbols.js');
+} from './lib/symbols.js';
 
-class AudioParam {
+export class AudioParam {
   constructor(options) {
     // Make constructor "private"
     if (
@@ -341,5 +340,3 @@ Object.defineProperties(AudioParam.prototype, {
   cancelScheduledValues: kEnumerableProperty,
   cancelAndHoldAtTime: kEnumerableProperty,
 });
-
-module.exports = AudioParam;

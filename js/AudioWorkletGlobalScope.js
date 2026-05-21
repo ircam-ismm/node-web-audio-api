@@ -1,16 +1,17 @@
-const {
+import {
   parentPort,
   workerData,
   markAsUntransferable,
-} = require('node:worker_threads');
+} from 'node:worker_threads';
 
-const conversions = require('webidl-conversions');
+import conversions from 'webidl-conversions';
 
 // these function are defined on the rust side
+import nativeBinding from '../load-native.cjs';
 const {
   exit_audio_worklet_global_scope,
   run_audio_worklet_global_scope,
-} = require('../load-native.cjs');
+} = nativeBinding;
 
 const {
   workletId,
@@ -414,4 +415,3 @@ parentPort.on('message', async event => {
     }
   }
 });
-

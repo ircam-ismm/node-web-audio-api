@@ -1,6 +1,6 @@
-const { kEnumerableProperty } = require('./lib/utils.js');
+import { kEnumerableProperty } from './lib/utils.js';
 
-class OfflineAudioCompletionEvent extends Event {
+export class OfflineAudioCompletionEvent extends Event {
   #renderedBuffer = null;
 
   constructor(type, eventInitDict) {
@@ -33,7 +33,7 @@ Object.defineProperties(OfflineAudioCompletionEvent.prototype, {
   renderedBuffer: kEnumerableProperty,
 });
 
-class AudioProcessingEvent extends Event {
+export class AudioProcessingEvent extends Event {
   #playbackTime = null;
   #inputBuffer = null;
   #outputBuffer = null;
@@ -82,7 +82,7 @@ Object.defineProperties(AudioProcessingEvent.prototype, {
   outputBuffer: kEnumerableProperty,
 });
 
-class AudioRenderCapacityEvent extends Event {
+export class AudioRenderCapacityEvent extends Event {
   #timestamp = 0;
   #averageLoad = 0;
   #peakLoad = 0;
@@ -157,7 +157,7 @@ Object.defineProperties(AudioRenderCapacityEvent.prototype, {
 //   unsigned long colno = 0;
 //   any error;
 // };
-class ErrorEvent extends Event {
+export class ErrorEvent extends Event {
   #message = '';
   #filename = '';
   #lineno = 0;
@@ -223,8 +223,3 @@ Object.defineProperties(ErrorEvent.prototype, {
   colno: kEnumerableProperty,
   error: kEnumerableProperty,
 });
-
-module.exports.OfflineAudioCompletionEvent = OfflineAudioCompletionEvent;
-module.exports.AudioProcessingEvent = AudioProcessingEvent;
-module.exports.AudioRenderCapacityEvent = AudioRenderCapacityEvent;
-module.exports.ErrorEvent = ErrorEvent;

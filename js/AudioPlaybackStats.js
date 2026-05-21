@@ -1,11 +1,11 @@
-const {
+import {
   kNapiObj,
-} = require('./lib/symbols.js');
-const {
+} from './lib/symbols.js';
+import {
   kEnumerableProperty,
-} = require('./lib/utils.js');
+} from './lib/utils.js';
 
-class AudioPlaybackStats {
+export class AudioPlaybackStats {
   constructor(options) {
     if (
       (typeof options !== 'object')
@@ -79,5 +79,3 @@ Object.defineProperties(AudioPlaybackStats.prototype, {
   resetLatency: kEnumerableProperty,
   toJSON: kEnumerableProperty,
 });
-
-module.exports = AudioPlaybackStats;

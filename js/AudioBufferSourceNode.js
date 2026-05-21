@@ -18,308 +18,323 @@
 // -------------------------------------------------------------------------- //
 
 /* eslint-disable no-unused-vars */
-const conversions = require('webidl-conversions');
-const {
+import conversions from 'webidl-conversions';
+
+import nativeBinding from '../load-native.cjs';
+import {
   toSanitizedSequence,
-} = require('./lib/cast.js');
-const {
+} from './lib/cast.js';
+import {
   isFunction,
   kEnumerableProperty,
-} = require('./lib/utils.js');
-const {
+} from './lib/utils.js';
+import {
   throwSanitizedError,
-} = require('./lib/errors.js');
-const {
+} from './lib/errors.js';
+import {
   kNapiObj,
   kAudioBuffer,
-} = require('./lib/symbols.js');
+} from './lib/symbols.js';
+
+import {
+  AudioParam,
+} from './AudioParam.js';
+import {
+  AudioBuffer,
+} from './AudioBuffer.js';
+import {
+  PeriodicWave,
+} from './PeriodicWave.js';
+
+import {
+  BaseAudioContext,
+} from './BaseAudioContext.js';
+
 /* eslint-enable no-unused-vars */
 
-const AudioScheduledSourceNode = require('./AudioScheduledSourceNode.js');
+import {
+  AudioScheduledSourceNode,
+} from './AudioScheduledSourceNode.js';
 
-module.exports = (jsExport, nativeBinding) => {
-  class AudioBufferSourceNode extends AudioScheduledSourceNode {
+export class AudioBufferSourceNode extends AudioScheduledSourceNode {
 
-    #playbackRate = null;
-    #detune = null;
+  #playbackRate = null;
+  #detune = null;
 
-    constructor(context, options) {
+  constructor(context, options) {
 
-      if (arguments.length < 1) {
-        throw new TypeError(`Failed to construct 'AudioBufferSourceNode': 1 argument required, but only ${arguments.length} present`);
-      }
+    if (arguments.length < 1) {
+      throw new TypeError(`Failed to construct 'AudioBufferSourceNode': 1 argument required, but only ${arguments.length} present`);
+    }
 
-      if (!(context instanceof jsExport.BaseAudioContext)) {
-        throw new TypeError(`Failed to construct 'AudioBufferSourceNode': argument 1 is not of type BaseAudioContext`);
-      }
+    if (!(context instanceof BaseAudioContext)) {
+      throw new TypeError(`Failed to construct 'AudioBufferSourceNode': argument 1 is not of type BaseAudioContext`);
+    }
 
-      const parsedOptions = {};
+    const parsedOptions = {};
 
-      if (options && typeof options !== 'object') {
-        throw new TypeError('Failed to construct \'AudioBufferSourceNode\': argument 2 is not of type \'AudioBufferSourceOptions\'');
-      }
+    if (options && typeof options !== 'object') {
+      throw new TypeError('Failed to construct \'AudioBufferSourceNode\': argument 2 is not of type \'AudioBufferSourceOptions\'');
+    }
 
-      if (options && options.buffer !== undefined) {
-        if (options.buffer !== null) {
-          if (!(options.buffer instanceof jsExport.AudioBuffer)) {
-            throw new TypeError('Failed to construct \'AudioBufferSourceNode\': Failed to read the \'buffer\' property from AudioBufferSourceOptions: The provided value cannot be converted to \'AudioBuffer\'');
-          }
-
-          parsedOptions.buffer = options.buffer[kNapiObj];
-        } else {
-          parsedOptions.buffer = null;
+    if (options && options.buffer !== undefined) {
+      if (options.buffer !== null) {
+        if (!(options.buffer instanceof AudioBuffer)) {
+          throw new TypeError('Failed to construct \'AudioBufferSourceNode\': Failed to read the \'buffer\' property from AudioBufferSourceOptions: The provided value cannot be converted to \'AudioBuffer\'');
         }
+
+        parsedOptions.buffer = options.buffer[kNapiObj];
       } else {
         parsedOptions.buffer = null;
       }
+    } else {
+      parsedOptions.buffer = null;
+    }
 
-      if (options && options.detune !== undefined) {
-        parsedOptions.detune = conversions['float'](options.detune, {
-          context: `Failed to construct 'AudioBufferSourceNode': Failed to read the 'detune' property from AudioBufferSourceOptions: The provided value (${options.detune}})`,
-        });
-      } else {
-        parsedOptions.detune = 0;
-      }
-
-      if (options && options.loop !== undefined) {
-        parsedOptions.loop = conversions['boolean'](options.loop, {
-          context: `Failed to construct 'AudioBufferSourceNode': Failed to read the 'loop' property from AudioBufferSourceOptions: The provided value (${options.loop}})`,
-        });
-      } else {
-        parsedOptions.loop = false;
-      }
-
-      if (options && options.loopEnd !== undefined) {
-        parsedOptions.loopEnd = conversions['double'](options.loopEnd, {
-          context: `Failed to construct 'AudioBufferSourceNode': Failed to read the 'loopEnd' property from AudioBufferSourceOptions: The provided value (${options.loopEnd}})`,
-        });
-      } else {
-        parsedOptions.loopEnd = 0;
-      }
-
-      if (options && options.loopStart !== undefined) {
-        parsedOptions.loopStart = conversions['double'](options.loopStart, {
-          context: `Failed to construct 'AudioBufferSourceNode': Failed to read the 'loopStart' property from AudioBufferSourceOptions: The provided value (${options.loopStart}})`,
-        });
-      } else {
-        parsedOptions.loopStart = 0;
-      }
-
-      if (options && options.playbackRate !== undefined) {
-        parsedOptions.playbackRate = conversions['float'](options.playbackRate, {
-          context: `Failed to construct 'AudioBufferSourceNode': Failed to read the 'playbackRate' property from AudioBufferSourceOptions: The provided value (${options.playbackRate}})`,
-        });
-      } else {
-        parsedOptions.playbackRate = 1;
-      }
-
-      let napiObj;
-
-      try {
-        napiObj = new nativeBinding.NapiAudioBufferSourceNode(context[kNapiObj], parsedOptions);
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-
-      super(context, {
-        [kNapiObj]: napiObj,
+    if (options && options.detune !== undefined) {
+      parsedOptions.detune = conversions['float'](options.detune, {
+        context: `Failed to construct 'AudioBufferSourceNode': Failed to read the 'detune' property from AudioBufferSourceOptions: The provided value (${options.detune}})`,
       });
+    } else {
+      parsedOptions.detune = 0;
+    }
 
-      // keep the wrapped AudioBuffer around
-      Object.defineProperty(this, kAudioBuffer, {
-        __proto__: null,
-        enumerable: false,
-        writable: true,
-        value: null,
+    if (options && options.loop !== undefined) {
+      parsedOptions.loop = conversions['boolean'](options.loop, {
+        context: `Failed to construct 'AudioBufferSourceNode': Failed to read the 'loop' property from AudioBufferSourceOptions: The provided value (${options.loop}})`,
       });
+    } else {
+      parsedOptions.loop = false;
+    }
 
-      if (options && options.buffer !== undefined) {
-        this[kAudioBuffer] = options.buffer;
-      }
-
-      this.#playbackRate = new jsExport.AudioParam({
-        [kNapiObj]: this[kNapiObj].playbackRate,
+    if (options && options.loopEnd !== undefined) {
+      parsedOptions.loopEnd = conversions['double'](options.loopEnd, {
+        context: `Failed to construct 'AudioBufferSourceNode': Failed to read the 'loopEnd' property from AudioBufferSourceOptions: The provided value (${options.loopEnd}})`,
       });
-      this.#detune = new jsExport.AudioParam({
-        [kNapiObj]: this[kNapiObj].detune,
+    } else {
+      parsedOptions.loopEnd = 0;
+    }
+
+    if (options && options.loopStart !== undefined) {
+      parsedOptions.loopStart = conversions['double'](options.loopStart, {
+        context: `Failed to construct 'AudioBufferSourceNode': Failed to read the 'loopStart' property from AudioBufferSourceOptions: The provided value (${options.loopStart}})`,
       });
+    } else {
+      parsedOptions.loopStart = 0;
     }
 
-    get playbackRate() {
-      if (!(this instanceof AudioBufferSourceNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
-      }
-
-      return this.#playbackRate;
-    }
-
-    get detune() {
-      if (!(this instanceof AudioBufferSourceNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
-      }
-
-      return this.#detune;
-    }
-
-    get buffer() {
-      if (!(this instanceof AudioBufferSourceNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
-      }
-
-      return this[kAudioBuffer];
-    }
-
-    set buffer(value) {
-      if (!(this instanceof AudioBufferSourceNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
-      }
-
-      if (value === null) {
-        console.warn('Setting the \'buffer\' property on \'AudioBufferSourceNode\' to \'null\' is not supported yet');
-        return;
-      } else if (!(value instanceof jsExport.AudioBuffer)) {
-        throw new TypeError('Failed to set the \'buffer\' property on \'AudioBufferSourceNode\': Failed to convert value to \'AudioBuffer\'');
-      }
-
-      try {
-        this[kNapiObj].buffer = value[kNapiObj];
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-
-      this[kAudioBuffer] = value;
-    }
-
-    get loop() {
-      if (!(this instanceof AudioBufferSourceNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
-      }
-
-      return this[kNapiObj].loop;
-    }
-
-    set loop(value) {
-      if (!(this instanceof AudioBufferSourceNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
-      }
-
-      value = conversions['boolean'](value, {
-        context: `Failed to set the 'loop' property on 'AudioBufferSourceNode': Value`,
+    if (options && options.playbackRate !== undefined) {
+      parsedOptions.playbackRate = conversions['float'](options.playbackRate, {
+        context: `Failed to construct 'AudioBufferSourceNode': Failed to read the 'playbackRate' property from AudioBufferSourceOptions: The provided value (${options.playbackRate}})`,
       });
-
-      try {
-        this[kNapiObj].loop = value;
-      } catch (err) {
-        throwSanitizedError(err);
-      }
+    } else {
+      parsedOptions.playbackRate = 1;
     }
 
-    get loopStart() {
-      if (!(this instanceof AudioBufferSourceNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
-      }
+    let napiObj;
 
-      return this[kNapiObj].loopStart;
+    try {
+      napiObj = new nativeBinding.NapiAudioBufferSourceNode(context[kNapiObj], parsedOptions);
+    } catch (err) {
+      throwSanitizedError(err);
     }
 
-    set loopStart(value) {
-      if (!(this instanceof AudioBufferSourceNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
-      }
+    super(context, {
+      [kNapiObj]: napiObj,
+    });
 
-      value = conversions['double'](value, {
-        context: `Failed to set the 'loopStart' property on 'AudioBufferSourceNode': Value`,
-      });
+    // keep the wrapped AudioBuffer around
+    Object.defineProperty(this, kAudioBuffer, {
+      __proto__: null,
+      enumerable: false,
+      writable: true,
+      value: null,
+    });
 
-      try {
-        this[kNapiObj].loopStart = value;
-      } catch (err) {
-        throwSanitizedError(err);
-      }
+    if (options && options.buffer !== undefined) {
+      this[kAudioBuffer] = options.buffer;
     }
 
-    get loopEnd() {
-      if (!(this instanceof AudioBufferSourceNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
-      }
-
-      return this[kNapiObj].loopEnd;
-    }
-
-    set loopEnd(value) {
-      if (!(this instanceof AudioBufferSourceNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
-      }
-
-      value = conversions['double'](value, {
-        context: `Failed to set the 'loopEnd' property on 'AudioBufferSourceNode': Value`,
-      });
-
-      try {
-        this[kNapiObj].loopEnd = value;
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
-    start(when = 0, offset = null, duration = null) {
-      if (!(this instanceof AudioBufferSourceNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
-      }
-
-      if (when !== 0) {
-        when = conversions['double'](when, {
-          context: `Failed to execute 'start' on 'AudioBufferSourceNode': Parameter 1`,
-        });
-      }
-
-      if (offset !== null) {
-        offset = conversions['double'](offset, {
-          context: `Failed to execute 'start' on 'AudioBufferSourceNode': Parameter 2`,
-        });
-      }
-
-      if (duration !== null) {
-        duration = conversions['double'](duration, {
-          context: `Failed to execute 'start' on 'AudioBufferSourceNode': Parameter 3`,
-        });
-      }
-
-      try {
-        return this[kNapiObj].start(when, offset, duration);
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-    }
-
+    this.#playbackRate = new AudioParam({
+      [kNapiObj]: this[kNapiObj].playbackRate,
+    });
+    this.#detune = new AudioParam({
+      [kNapiObj]: this[kNapiObj].detune,
+    });
   }
 
-  Object.defineProperties(AudioBufferSourceNode, {
-    length: {
-      __proto__: null,
-      writable: false,
-      enumerable: false,
-      configurable: true,
-      value: 1,
-    },
-  });
+  get playbackRate() {
+    if (!(this instanceof AudioBufferSourceNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
+    }
 
-  Object.defineProperties(AudioBufferSourceNode.prototype, {
-    [Symbol.toStringTag]: {
-      __proto__: null,
-      writable: false,
-      enumerable: false,
-      configurable: true,
-      value: 'AudioBufferSourceNode',
-    },
-    playbackRate: kEnumerableProperty,
-    detune: kEnumerableProperty,
-    buffer: kEnumerableProperty,
-    loop: kEnumerableProperty,
-    loopStart: kEnumerableProperty,
-    loopEnd: kEnumerableProperty,
-    start: kEnumerableProperty,
-  });
+    return this.#playbackRate;
+  }
 
-  return AudioBufferSourceNode;
-};
+  get detune() {
+    if (!(this instanceof AudioBufferSourceNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
+    }
+
+    return this.#detune;
+  }
+
+  get buffer() {
+    if (!(this instanceof AudioBufferSourceNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
+    }
+
+    return this[kAudioBuffer];
+  }
+
+  set buffer(value) {
+    if (!(this instanceof AudioBufferSourceNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
+    }
+
+    if (value === null) {
+      console.warn('Setting the \'buffer\' property on \'AudioBufferSourceNode\' to \'null\' is not supported yet');
+      return;
+    } else if (!(value instanceof AudioBuffer)) {
+      throw new TypeError('Failed to set the \'buffer\' property on \'AudioBufferSourceNode\': Failed to convert value to \'AudioBuffer\'');
+    }
+
+    try {
+      this[kNapiObj].buffer = value[kNapiObj];
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+
+    this[kAudioBuffer] = value;
+  }
+
+  get loop() {
+    if (!(this instanceof AudioBufferSourceNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
+    }
+
+    return this[kNapiObj].loop;
+  }
+
+  set loop(value) {
+    if (!(this instanceof AudioBufferSourceNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
+    }
+
+    value = conversions['boolean'](value, {
+      context: `Failed to set the 'loop' property on 'AudioBufferSourceNode': Value`,
+    });
+
+    try {
+      this[kNapiObj].loop = value;
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+  }
+
+  get loopStart() {
+    if (!(this instanceof AudioBufferSourceNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
+    }
+
+    return this[kNapiObj].loopStart;
+  }
+
+  set loopStart(value) {
+    if (!(this instanceof AudioBufferSourceNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
+    }
+
+    value = conversions['double'](value, {
+      context: `Failed to set the 'loopStart' property on 'AudioBufferSourceNode': Value`,
+    });
+
+    try {
+      this[kNapiObj].loopStart = value;
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+  }
+
+  get loopEnd() {
+    if (!(this instanceof AudioBufferSourceNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
+    }
+
+    return this[kNapiObj].loopEnd;
+  }
+
+  set loopEnd(value) {
+    if (!(this instanceof AudioBufferSourceNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
+    }
+
+    value = conversions['double'](value, {
+      context: `Failed to set the 'loopEnd' property on 'AudioBufferSourceNode': Value`,
+    });
+
+    try {
+      this[kNapiObj].loopEnd = value;
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+  }
+
+  start(when = 0, offset = null, duration = null) {
+    if (!(this instanceof AudioBufferSourceNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioBufferSourceNode\'');
+    }
+
+    if (when !== 0) {
+      when = conversions['double'](when, {
+        context: `Failed to execute 'start' on 'AudioBufferSourceNode': Parameter 1`,
+      });
+    }
+
+    if (offset !== null) {
+      offset = conversions['double'](offset, {
+        context: `Failed to execute 'start' on 'AudioBufferSourceNode': Parameter 2`,
+      });
+    }
+
+    if (duration !== null) {
+      duration = conversions['double'](duration, {
+        context: `Failed to execute 'start' on 'AudioBufferSourceNode': Parameter 3`,
+      });
+    }
+
+    try {
+      return this[kNapiObj].start(when, offset, duration);
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+  }
+
+}
+
+Object.defineProperties(AudioBufferSourceNode, {
+  length: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 1,
+  },
+});
+
+Object.defineProperties(AudioBufferSourceNode.prototype, {
+  [Symbol.toStringTag]: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 'AudioBufferSourceNode',
+  },
+  playbackRate: kEnumerableProperty,
+  detune: kEnumerableProperty,
+  buffer: kEnumerableProperty,
+  loop: kEnumerableProperty,
+  loopStart: kEnumerableProperty,
+  loopEnd: kEnumerableProperty,
+  start: kEnumerableProperty,
+});

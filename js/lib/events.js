@@ -1,6 +1,6 @@
-const { isFunction } = require('./utils.js');
+import { isFunction } from './utils.js';
 
-module.exports.propagateEvent = function propagateEvent(eventTarget, event) {
+export function propagateEvent(eventTarget, event) {
   // call attribute first if exists
   if (isFunction(eventTarget[`on${event.type}`])) {
     eventTarget[`on${event.type}`](event);

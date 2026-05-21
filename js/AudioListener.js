@@ -1,12 +1,20 @@
-const conversions = require('webidl-conversions');
+import conversions from 'webidl-conversions';
 
-const { throwSanitizedError } = require('./lib/errors.js');
-const { kEnumerableProperty, kHiddenProperty } = require('./lib/utils.js');
-const { kNapiObj } = require('./lib/symbols.js');
+import {
+  throwSanitizedError,
+} from './lib/errors.js';
+import {
+  kEnumerableProperty,
+  kHiddenProperty,
+} from './lib/utils.js';
+import {
+  kNapiObj
+} from './lib/symbols.js';
+import  {
+  AudioParam,
+} from './AudioParam.js';
 
-const AudioParam = require('./AudioParam.js');
-
-class AudioListener {
+export class AudioListener {
   #positionX = null;
   #positionY = null;
   #positionZ = null;
@@ -215,5 +223,3 @@ Object.defineProperties(AudioListener.prototype, {
   setPosition: kEnumerableProperty,
   setOrientation: kEnumerableProperty,
 });
-
-module.exports = AudioListener;

@@ -1,22 +1,23 @@
-const conversions = require('webidl-conversions');
+import conversions from 'webidl-conversions';
 
-const {
+import {
   throwSanitizedError,
-} = require('./lib/errors.js');
-const {
+} from './lib/errors.js';
+import {
   propagateEvent,
-} = require('./lib/events.js');
-const {
+} from './lib/events.js';
+import {
   isFunction,
   kEnumerableProperty,
-} = require('./lib/utils.js');
-const {
+} from './lib/utils.js';
+import {
   kNapiObj,
-} = require('./lib/symbols.js');
+} from './lib/symbols.js';
+import {
+  AudioNode
+} from './AudioNode.js';
 
-const AudioNode = require('./AudioNode.js');
-
-class AudioScheduledSourceNode extends AudioNode {
+export class AudioScheduledSourceNode extends AudioNode {
   #onended = null;
 
   constructor(context, options) {
@@ -113,5 +114,3 @@ Object.defineProperties(AudioScheduledSourceNode.prototype, {
   start: kEnumerableProperty,
   stop: kEnumerableProperty,
 });
-
-module.exports = AudioScheduledSourceNode;

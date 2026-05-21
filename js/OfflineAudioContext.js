@@ -1,200 +1,201 @@
-const conversions = require('webidl-conversions');
 
-const {
+import conversions from 'webidl-conversions';
+import nativeBinding from '../load-native.cjs';
+import {
   propagateEvent,
-} = require('./lib/events.js');
-const {
+} from './lib/events.js';
+import {
   throwSanitizedError,
-} = require('./lib/errors.js');
-const {
+} from './lib/errors.js';
+import {
   isFunction,
   kEnumerableProperty,
-} = require('./lib/utils.js');
-const {
+} from './lib/utils.js';
+import {
   kNapiObj,
   kWorkletRelease,
   kCheckProcessorsCreated,
-} = require('./lib/symbols.js');
+} from './lib/symbols.js';
 
-module.exports = function patchOfflineAudioContext(jsExport, nativeBinding) {
-  class OfflineAudioContext extends jsExport.BaseAudioContext {
-    constructor(...args) {
-      if (arguments.length < 1) {
-        throw new TypeError(`Failed to construct 'OfflineAudioContext': 1 argument required, but only ${arguments.length} present`);
-      }
+import { BaseAudioContext } from './BaseAudioContext.js';
+import { AudioBuffer } from './AudioBuffer.js';
+import { OfflineAudioCompletionEvent } from './Events.js';
 
-      // https://webaudio.github.io/web-audio-api/#dom-offlineaudiocontext-constructor-contextoptions-contextoptions
-      if (arguments.length === 1) {
-        const options = args[0];
-
-        if (typeof options !== 'object') {
-          throw new TypeError(`Failed to construct 'OfflineAudioContext': argument 1 is not of type 'OfflineAudioContextOptions'`);
-        }
-
-        if (options.length === undefined) {
-          throw new TypeError(`Failed to construct 'OfflineAudioContext': Failed to read the 'length' property from 'OfflineAudioContextOptions': Required member is undefined.`);
-        }
-
-        if (options.sampleRate === undefined) {
-          throw new TypeError(`Failed to construct 'OfflineAudioContext': Failed to read the 'sampleRate' property from 'OfflineAudioContextOptions': Required member is undefined.`);
-        }
-
-        if (options.numberOfChannels === undefined) {
-          options.numberOfChannels = 1;
-        }
-
-        args = [
-          options.numberOfChannels,
-          options.length,
-          options.sampleRate,
-        ];
-      }
-
-      let [numberOfChannels, length, sampleRate] = args;
-
-      numberOfChannels = conversions['unsigned long'](numberOfChannels, {
-        enforceRange: true,
-        context: `Failed to construct 'OfflineAudioContext': Failed to read the 'numberOfChannels' property from OfflineContextOptions; The provided value (${numberOfChannels})`,
-      });
-
-      length = conversions['unsigned long'](length, {
-        enforceRange: true,
-        context: `Failed to construct 'OfflineAudioContext': Failed to read the 'length' property from OfflineContextOptions; The provided value (${length})`,
-      });
-
-      sampleRate = conversions['float'](sampleRate, {
-        context: `Failed to construct 'OfflineAudioContext': Failed to read the 'sampleRate' property from OfflineContextOptions; The provided value (${sampleRate})`,
-      });
-
-      let napiObj;
-
-      try {
-        napiObj = new nativeBinding.NapiOfflineAudioContext(numberOfChannels, length, sampleRate);
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-
-      super({ [kNapiObj]: napiObj });
-
-      this[kNapiObj].onstatechange((function(napiEvent) {
-        const event = new Event(napiEvent.type);
-        propagateEvent(this, event);
-      }).bind(this));
+export class OfflineAudioContext extends BaseAudioContext {
+  constructor(...args) {
+    if (arguments.length < 1) {
+      throw new TypeError(`Failed to construct 'OfflineAudioContext': 1 argument required, but only ${arguments.length} present`);
     }
 
-    get length() {
-      if (!(this instanceof OfflineAudioContext)) {
-        throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'`);
+    // https://webaudio.github.io/web-audio-api/#dom-offlineaudiocontext-constructor-contextoptions-contextoptions
+    if (arguments.length === 1) {
+      const options = args[0];
+
+      if (typeof options !== 'object') {
+        throw new TypeError(`Failed to construct 'OfflineAudioContext': argument 1 is not of type 'OfflineAudioContextOptions'`);
       }
 
-      return this[kNapiObj].length;
+      if (options.length === undefined) {
+        throw new TypeError(`Failed to construct 'OfflineAudioContext': Failed to read the 'length' property from 'OfflineAudioContextOptions': Required member is undefined.`);
+      }
+
+      if (options.sampleRate === undefined) {
+        throw new TypeError(`Failed to construct 'OfflineAudioContext': Failed to read the 'sampleRate' property from 'OfflineAudioContextOptions': Required member is undefined.`);
+      }
+
+      if (options.numberOfChannels === undefined) {
+        options.numberOfChannels = 1;
+      }
+
+      args = [
+        options.numberOfChannels,
+        options.length,
+        options.sampleRate,
+      ];
     }
 
-    get oncomplete() {
-      if (!(this instanceof OfflineAudioContext)) {
-        throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'`);
-      }
+    let [numberOfChannels, length, sampleRate] = args;
 
-      return this._complete || null;
+    numberOfChannels = conversions['unsigned long'](numberOfChannels, {
+      enforceRange: true,
+      context: `Failed to construct 'OfflineAudioContext': Failed to read the 'numberOfChannels' property from OfflineContextOptions; The provided value (${numberOfChannels})`,
+    });
+
+    length = conversions['unsigned long'](length, {
+      enforceRange: true,
+      context: `Failed to construct 'OfflineAudioContext': Failed to read the 'length' property from OfflineContextOptions; The provided value (${length})`,
+    });
+
+    sampleRate = conversions['float'](sampleRate, {
+      context: `Failed to construct 'OfflineAudioContext': Failed to read the 'sampleRate' property from OfflineContextOptions; The provided value (${sampleRate})`,
+    });
+
+    let napiObj;
+
+    try {
+      napiObj = new nativeBinding.NapiOfflineAudioContext(numberOfChannels, length, sampleRate);
+    } catch (err) {
+      throwSanitizedError(err);
     }
 
-    set oncomplete(value) {
-      if (!(this instanceof OfflineAudioContext)) {
-        throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'`);
-      }
+    super({ [kNapiObj]: napiObj });
 
-      if (isFunction(value) || value === null) {
-        this._complete = value;
-      }
+    this[kNapiObj].onstatechange((function(napiEvent) {
+      const event = new Event(napiEvent.type);
+      propagateEvent(this, event);
+    }).bind(this));
+  }
+
+  get length() {
+    if (!(this instanceof OfflineAudioContext)) {
+      throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'`);
     }
 
-    async startRendering() {
-      if (!(this instanceof OfflineAudioContext)) {
-        throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'`);
-      }
+    return this[kNapiObj].length;
+  }
 
-      // Make sure all AudioWorkletProcessor are instantiated before rendering
-      await this.audioWorklet[kCheckProcessorsCreated]();
-
-      let napiAudioBuffer;
-
-      try {
-        napiAudioBuffer = await this[kNapiObj].startRendering();
-      } catch (err) {
-        throwSanitizedError(err);
-      }
-      // Exit AudioWorkletGlobalScope
-      await this.audioWorklet[kWorkletRelease]();
-
-      const renderedBuffer = new jsExport.AudioBuffer({ [kNapiObj]: napiAudioBuffer });
-
-      // Delay "complete" event to next tick to execute after `startRendering` fulfills
-      const event = new jsExport.OfflineAudioCompletionEvent('complete', {
-        renderedBuffer: renderedBuffer,
-      });
-      setImmediate(() => propagateEvent(this, event), 0);
-
-      return renderedBuffer;
+  get oncomplete() {
+    if (!(this instanceof OfflineAudioContext)) {
+      throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'`);
     }
 
-    async resume() {
-      if (!(this instanceof OfflineAudioContext)) {
-        throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'`);
-      }
+    return this._complete || null;
+  }
 
-      try {
-        await this[kNapiObj].resume();
-      } catch (err) {
-        throwSanitizedError(err);
-      }
+  set oncomplete(value) {
+    if (!(this instanceof OfflineAudioContext)) {
+      throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'`);
     }
 
-    async suspend(suspendTime) {
-      if (!(this instanceof OfflineAudioContext)) {
-        throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'`);
-      }
-
-      if (arguments.length < 1) {
-        throw new TypeError(`Failed to execute 'suspend' on 'OfflineAudioContext': 1 argument required, but only ${arguments.length} present`);
-      }
-
-      suspendTime = conversions['double'](suspendTime, {
-        context: `Failed to execute 'suspend' on 'OfflineAudioContext': argument 1`,
-      });
-
-      try {
-        await this[kNapiObj].suspend(suspendTime);
-      } catch (err) {
-        throwSanitizedError(err);
-      }
+    if (isFunction(value) || value === null) {
+      this._complete = value;
     }
   }
 
-  Object.defineProperties(OfflineAudioContext, {
-    length: {
-      __proto__: null,
-      writable: false,
-      enumerable: false,
-      configurable: true,
-      value: 1,
-    },
-  });
+  async startRendering() {
+    if (!(this instanceof OfflineAudioContext)) {
+      throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'`);
+    }
 
-  Object.defineProperties(OfflineAudioContext.prototype, {
-    [Symbol.toStringTag]: {
-      __proto__: null,
-      writable: false,
-      enumerable: false,
-      configurable: true,
-      value: 'OfflineAudioContext',
-    },
+    // Make sure all AudioWorkletProcessor are instantiated before rendering
+    await this.audioWorklet[kCheckProcessorsCreated]();
 
-    length: kEnumerableProperty,
-    oncomplete: kEnumerableProperty,
-    startRendering: kEnumerableProperty,
-    resume: kEnumerableProperty,
-    suspend: kEnumerableProperty,
-  });
+    let napiAudioBuffer;
 
-  return OfflineAudioContext;
-};
+    try {
+      napiAudioBuffer = await this[kNapiObj].startRendering();
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+    // Exit AudioWorkletGlobalScope
+    await this.audioWorklet[kWorkletRelease]();
+
+    const renderedBuffer = new AudioBuffer({ [kNapiObj]: napiAudioBuffer });
+
+    // Delay "complete" event to next tick to execute after `startRendering` fulfills
+    const event = new OfflineAudioCompletionEvent('complete', {
+      renderedBuffer: renderedBuffer,
+    });
+    setImmediate(() => propagateEvent(this, event), 0);
+
+    return renderedBuffer;
+  }
+
+  async resume() {
+    if (!(this instanceof OfflineAudioContext)) {
+      throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'`);
+    }
+
+    try {
+      await this[kNapiObj].resume();
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+  }
+
+  async suspend(suspendTime) {
+    if (!(this instanceof OfflineAudioContext)) {
+      throw new TypeError(`Invalid Invocation: Value of 'this' must be of type 'OfflineAudioContext'`);
+    }
+
+    if (arguments.length < 1) {
+      throw new TypeError(`Failed to execute 'suspend' on 'OfflineAudioContext': 1 argument required, but only ${arguments.length} present`);
+    }
+
+    suspendTime = conversions['double'](suspendTime, {
+      context: `Failed to execute 'suspend' on 'OfflineAudioContext': argument 1`,
+    });
+
+    try {
+      await this[kNapiObj].suspend(suspendTime);
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+  }
+}
+
+Object.defineProperties(OfflineAudioContext, {
+  length: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 1,
+  },
+});
+
+Object.defineProperties(OfflineAudioContext.prototype, {
+  [Symbol.toStringTag]: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 'OfflineAudioContext',
+  },
+
+  length: kEnumerableProperty,
+  oncomplete: kEnumerableProperty,
+  startRendering: kEnumerableProperty,
+  resume: kEnumerableProperty,
+  suspend: kEnumerableProperty,
+});

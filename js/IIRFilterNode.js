@@ -18,158 +18,173 @@
 // -------------------------------------------------------------------------- //
 
 /* eslint-disable no-unused-vars */
-const conversions = require('webidl-conversions');
-const {
+import conversions from 'webidl-conversions';
+
+import nativeBinding from '../load-native.cjs';
+import {
   toSanitizedSequence,
-} = require('./lib/cast.js');
-const {
+} from './lib/cast.js';
+import {
   isFunction,
   kEnumerableProperty,
-} = require('./lib/utils.js');
-const {
+} from './lib/utils.js';
+import {
   throwSanitizedError,
-} = require('./lib/errors.js');
-const {
+} from './lib/errors.js';
+import {
   kNapiObj,
   kAudioBuffer,
-} = require('./lib/symbols.js');
+} from './lib/symbols.js';
+
+import {
+  AudioParam,
+} from './AudioParam.js';
+import {
+  AudioBuffer,
+} from './AudioBuffer.js';
+import {
+  PeriodicWave,
+} from './PeriodicWave.js';
+
+import {
+  BaseAudioContext,
+} from './BaseAudioContext.js';
+
 /* eslint-enable no-unused-vars */
 
-const AudioNode = require('./AudioNode.js');
+import {
+  AudioNode,
+} from './AudioNode.js';
 
-module.exports = (jsExport, nativeBinding) => {
-  class IIRFilterNode extends AudioNode {
+export class IIRFilterNode extends AudioNode {
 
-    constructor(context, options) {
+  constructor(context, options) {
 
-      if (arguments.length < 2) {
-        throw new TypeError(`Failed to construct 'IIRFilterNode': 2 argument required, but only ${arguments.length} present`);
-      }
+    if (arguments.length < 2) {
+      throw new TypeError(`Failed to construct 'IIRFilterNode': 2 argument required, but only ${arguments.length} present`);
+    }
 
-      if (!(context instanceof jsExport.BaseAudioContext)) {
-        throw new TypeError(`Failed to construct 'IIRFilterNode': argument 1 is not of type BaseAudioContext`);
-      }
+    if (!(context instanceof BaseAudioContext)) {
+      throw new TypeError(`Failed to construct 'IIRFilterNode': argument 1 is not of type BaseAudioContext`);
+    }
 
-      const parsedOptions = {};
+    const parsedOptions = {};
 
-      if (options && typeof options !== 'object') {
-        throw new TypeError('Failed to construct \'IIRFilterNode\': argument 2 is not of type \'IIRFilterOptions\'');
-      }
+    if (options && typeof options !== 'object') {
+      throw new TypeError('Failed to construct \'IIRFilterNode\': argument 2 is not of type \'IIRFilterOptions\'');
+    }
 
-      // required options
-      if (typeof options !== 'object' || (options && options.feedforward === undefined)) {
-        throw new TypeError('Failed to construct \'IIRFilterNode\': Failed to read the \'feedforward\' property from IIRFilterOptions: Required member is undefined');
-      }
+    // required options
+    if (typeof options !== 'object' || (options && options.feedforward === undefined)) {
+      throw new TypeError('Failed to construct \'IIRFilterNode\': Failed to read the \'feedforward\' property from IIRFilterOptions: Required member is undefined');
+    }
 
-      if (options && options.feedforward !== undefined) {
-        try {
-          parsedOptions.feedforward = toSanitizedSequence(options.feedforward, Float64Array);
-        } catch (err) {
-          throw new TypeError(`Failed to construct 'IIRFilterNode': Failed to read the 'feedforward' property from IIRFilterOptions: The provided value ${err.message}`);
-        }
-      } else {
-        parsedOptions.feedforward = null;
-      }
-
-      // required options
-      if (typeof options !== 'object' || (options && options.feedback === undefined)) {
-        throw new TypeError('Failed to construct \'IIRFilterNode\': Failed to read the \'feedback\' property from IIRFilterOptions: Required member is undefined');
-      }
-
-      if (options && options.feedback !== undefined) {
-        try {
-          parsedOptions.feedback = toSanitizedSequence(options.feedback, Float64Array);
-        } catch (err) {
-          throw new TypeError(`Failed to construct 'IIRFilterNode': Failed to read the 'feedback' property from IIRFilterOptions: The provided value ${err.message}`);
-        }
-      } else {
-        parsedOptions.feedback = null;
-      }
-
-      if (options && options.channelCount !== undefined) {
-        parsedOptions.channelCount = conversions['unsigned long'](options.channelCount, {
-          enforceRange: true,
-          context: `Failed to construct 'IIRFilterNode': Failed to read the 'channelCount' property from IIRFilterOptions: The provided value '${options.channelCount}'`,
-        });
-      }
-
-      if (options && options.channelCountMode !== undefined) {
-        parsedOptions.channelCountMode = conversions['DOMString'](options.channelCountMode, {
-          context: `Failed to construct 'IIRFilterNode': Failed to read the 'channelCount' property from IIRFilterOptions: The provided value '${options.channelCountMode}'`,
-        });
-      }
-
-      if (options && options.channelInterpretation !== undefined) {
-        parsedOptions.channelInterpretation = conversions['DOMString'](options.channelInterpretation, {
-          context: `Failed to construct 'IIRFilterNode': Failed to read the 'channelInterpretation' property from IIRFilterOptions: The provided value '${options.channelInterpretation}'`,
-        });
-      }
-
-      let napiObj;
-
+    if (options && options.feedforward !== undefined) {
       try {
-        napiObj = new nativeBinding.NapiIIRFilterNode(context[kNapiObj], parsedOptions);
+        parsedOptions.feedforward = toSanitizedSequence(options.feedforward, Float64Array);
       } catch (err) {
-        throwSanitizedError(err);
+        throw new TypeError(`Failed to construct 'IIRFilterNode': Failed to read the 'feedforward' property from IIRFilterOptions: The provided value ${err.message}`);
       }
+    } else {
+      parsedOptions.feedforward = null;
+    }
 
-      super(context, {
-        [kNapiObj]: napiObj,
+    // required options
+    if (typeof options !== 'object' || (options && options.feedback === undefined)) {
+      throw new TypeError('Failed to construct \'IIRFilterNode\': Failed to read the \'feedback\' property from IIRFilterOptions: Required member is undefined');
+    }
+
+    if (options && options.feedback !== undefined) {
+      try {
+        parsedOptions.feedback = toSanitizedSequence(options.feedback, Float64Array);
+      } catch (err) {
+        throw new TypeError(`Failed to construct 'IIRFilterNode': Failed to read the 'feedback' property from IIRFilterOptions: The provided value ${err.message}`);
+      }
+    } else {
+      parsedOptions.feedback = null;
+    }
+
+    if (options && options.channelCount !== undefined) {
+      parsedOptions.channelCount = conversions['unsigned long'](options.channelCount, {
+        enforceRange: true,
+        context: `Failed to construct 'IIRFilterNode': Failed to read the 'channelCount' property from IIRFilterOptions: The provided value '${options.channelCount}'`,
       });
-
     }
 
-    getFrequencyResponse(frequencyHz, magResponse, phaseResponse) {
-      if (!(this instanceof IIRFilterNode)) {
-        throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'IIRFilterNode\'');
-      }
-
-      if (arguments.length < 3) {
-        throw new TypeError(`Failed to execute 'getFrequencyResponse' on 'IIRFilterNode': 3 argument required, but only ${arguments.length} present`);
-      }
-
-      if (!(frequencyHz instanceof Float32Array)) {
-        throw new TypeError(`Failed to execute 'getFrequencyResponse' on 'IIRFilterNode': Parameter 1 is not of type 'Float32Array'`);
-      }
-
-      if (!(magResponse instanceof Float32Array)) {
-        throw new TypeError(`Failed to execute 'getFrequencyResponse' on 'IIRFilterNode': Parameter 2 is not of type 'Float32Array'`);
-      }
-
-      if (!(phaseResponse instanceof Float32Array)) {
-        throw new TypeError(`Failed to execute 'getFrequencyResponse' on 'IIRFilterNode': Parameter 3 is not of type 'Float32Array'`);
-      }
-
-      try {
-        return this[kNapiObj].getFrequencyResponse(frequencyHz, magResponse, phaseResponse);
-      } catch (err) {
-        throwSanitizedError(err);
-      }
+    if (options && options.channelCountMode !== undefined) {
+      parsedOptions.channelCountMode = conversions['DOMString'](options.channelCountMode, {
+        context: `Failed to construct 'IIRFilterNode': Failed to read the 'channelCount' property from IIRFilterOptions: The provided value '${options.channelCountMode}'`,
+      });
     }
+
+    if (options && options.channelInterpretation !== undefined) {
+      parsedOptions.channelInterpretation = conversions['DOMString'](options.channelInterpretation, {
+        context: `Failed to construct 'IIRFilterNode': Failed to read the 'channelInterpretation' property from IIRFilterOptions: The provided value '${options.channelInterpretation}'`,
+      });
+    }
+
+    let napiObj;
+
+    try {
+      napiObj = new nativeBinding.NapiIIRFilterNode(context[kNapiObj], parsedOptions);
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+
+    super(context, {
+      [kNapiObj]: napiObj,
+    });
 
   }
 
-  Object.defineProperties(IIRFilterNode, {
-    length: {
-      __proto__: null,
-      writable: false,
-      enumerable: false,
-      configurable: true,
-      value: 2,
-    },
-  });
+  getFrequencyResponse(frequencyHz, magResponse, phaseResponse) {
+    if (!(this instanceof IIRFilterNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'IIRFilterNode\'');
+    }
 
-  Object.defineProperties(IIRFilterNode.prototype, {
-    [Symbol.toStringTag]: {
-      __proto__: null,
-      writable: false,
-      enumerable: false,
-      configurable: true,
-      value: 'IIRFilterNode',
-    },
+    if (arguments.length < 3) {
+      throw new TypeError(`Failed to execute 'getFrequencyResponse' on 'IIRFilterNode': 3 argument required, but only ${arguments.length} present`);
+    }
 
-    getFrequencyResponse: kEnumerableProperty,
-  });
+    if (!(frequencyHz instanceof Float32Array)) {
+      throw new TypeError(`Failed to execute 'getFrequencyResponse' on 'IIRFilterNode': Parameter 1 is not of type 'Float32Array'`);
+    }
 
-  return IIRFilterNode;
-};
+    if (!(magResponse instanceof Float32Array)) {
+      throw new TypeError(`Failed to execute 'getFrequencyResponse' on 'IIRFilterNode': Parameter 2 is not of type 'Float32Array'`);
+    }
+
+    if (!(phaseResponse instanceof Float32Array)) {
+      throw new TypeError(`Failed to execute 'getFrequencyResponse' on 'IIRFilterNode': Parameter 3 is not of type 'Float32Array'`);
+    }
+
+    try {
+      return this[kNapiObj].getFrequencyResponse(frequencyHz, magResponse, phaseResponse);
+    } catch (err) {
+      throwSanitizedError(err);
+    }
+  }
+
+}
+
+Object.defineProperties(IIRFilterNode, {
+  length: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 2,
+  },
+});
+
+Object.defineProperties(IIRFilterNode.prototype, {
+  [Symbol.toStringTag]: {
+    __proto__: null,
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: 'IIRFilterNode',
+  },
+
+  getFrequencyResponse: kEnumerableProperty,
+});

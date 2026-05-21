@@ -17,22 +17,23 @@
 // -------------------------------------------------------------------------- //
 // -------------------------------------------------------------------------- //
 
-const conversions = require('webidl-conversions');
+import conversions from 'webidl-conversions';
 
-const {
+import {
   throwSanitizedError,
-} = require('./lib/errors.js');
-const {
+} from './lib/errors.js';
+import {
   kEnumerableProperty,
   kHiddenProperty,
-} = require('./lib/utils.js');
-const {
+} from './lib/utils.js';
+import {
   kNapiObj,
-} = require('./lib/symbols.js');
+} from './lib/symbols.js';
+import {
+  AudioParam,
+} from './AudioParam.js';
 
-const AudioParam = require('./AudioParam.js');
-
-class AudioNode extends EventTarget {
+export class AudioNode extends EventTarget {
   #context = null;
 
   constructor(context, options) {
@@ -320,5 +321,3 @@ Object.defineProperties(AudioNode.prototype, {
   connect: kEnumerableProperty,
   disconnect: kEnumerableProperty,
 });
-
-module.exports = AudioNode;

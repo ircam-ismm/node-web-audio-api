@@ -1,8 +1,8 @@
-const { kNapiObj } = require('./lib/symbols.js');
-const { kEnumerableProperty } = require('./lib/utils.js');
-const AudioNode = require('./AudioNode.js');
+import { kNapiObj } from './lib/symbols.js';
+import { kEnumerableProperty } from './lib/utils.js';
+import { AudioNode } from './AudioNode.js';
 
-class AudioDestinationNode extends AudioNode {
+export class AudioDestinationNode extends AudioNode {
   constructor(context, options) {
     // Make constructor "private"
     if (
@@ -48,6 +48,3 @@ Object.defineProperties(AudioDestinationNode.prototype, {
 
   maxChannelCount: kEnumerableProperty,
 });
-
-module.exports = AudioDestinationNode;
-

@@ -1,5 +1,5 @@
-const { EOL } = require('os');
-const path = require('path');
+import { EOL } from 'os';
+import path from 'path';
 
 const internalPath = path.join('node-web-audio-api', 'js');
 const internalRe = new RegExp(internalPath);
@@ -21,7 +21,7 @@ function overrideStack(originalError, newError) {
   newError.stack = lines.join(EOL);
 }
 
-exports.throwSanitizedError = function throwSanitizedError(err) {
+export function throwSanitizedError(err) {
   // We also need to handle output of `assert_ne!` as well, e.g.
   // assertion `left != right` failed: NotSupportedError - StereoPannerNode channel count mode cannot be set to max
   //   left: Max

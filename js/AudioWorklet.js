@@ -1,30 +1,29 @@
-const {
+import {
   resolveObjectURL,
-} = require('node:buffer');
-const {
+} from 'node:buffer';
+import {
   existsSync,
-} = require('node:fs');
-const path = require('node:path');
-const {
+} from 'node:fs';
+import path from 'node:path';
+import {
   Worker,
   MessageChannel,
-} = require('node:worker_threads');
+} from 'node:worker_threads';
 
-const {
+import caller from 'caller';
+import fetch from 'node-fetch';
+
+import {
   kProcessorRegistered,
   kGetParameterDescriptors,
   kCreateProcessor,
   kPrivateConstructor,
   kWorkletRelease,
   kCheckProcessorsCreated,
-} = require('./lib/symbols.js');
-const {
+} from './lib/symbols.js';
+import {
   kEnumerableProperty,
-} = require('./lib/utils.js');
-
-const caller = require('caller');
-// cf. https://www.npmjs.com/package/node-fetch#commonjs
-const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+} from './lib/utils.js';
 
 /**
  * Retrieve code with different module resolution strategies
@@ -98,7 +97,7 @@ const resolveModule = async (moduleUrl) => {
   return { absPathname, code };
 };
 
-class AudioWorklet {
+export class AudioWorklet {
   #workletId = null;
   #sampleRate = null;
   #renderQuantumSize = null;
@@ -128,7 +127,7 @@ class AudioWorklet {
     // - better error handling, stack trace, etc.
     // - handle 'node-web-audio-api:worklet:ctor-error' message
     await new Promise(resolve => {
-      const workletPathname = path.join(__dirname, 'AudioWorkletGlobalScope.js');
+      const workletPathname = path.join(import.meta.dirname, 'AudioWorkletGlobalScope.js');
 
       this.#worker = new Worker(workletPathname, {
         workerData: {
@@ -299,6 +298,3 @@ Object.defineProperties(AudioWorklet.prototype, {
   addModule: kEnumerableProperty,
   port: kEnumerableProperty,
 });
-
-module.exports = AudioWorklet;
-
