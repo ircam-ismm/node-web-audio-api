@@ -46,11 +46,6 @@ setInterval(() => {
 
 To run all examples locally on your machine you will need to:
 
-1. Install Rust toolchain
-```sh
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
-
 1. Clone the repo and build the binary on your machine
 ```sh
 git clone https://github.com/ircam-ismm/node-web-audio-api.git
@@ -59,21 +54,20 @@ git clone https://github.com/ircam-ismm/node-web-audio-api.git
 2. Install dependencies in the examples directory
 ```sh
 npm run examples:install
+# Basically a shortcut for `cd examples && npm install`
 ```
-
-Basically a shortcut for `cd examples && npm install`
 
 3. Run the examples from the project's root directory
 ```sh
 node examples/granular-scrub.js
 ```
 
-In the examples, the library is loaded through a proxy which loads either from the
+_Note that in the examples, the library is loaded through a proxy which loads either from the
 `examples/node_modules` directory, or from the root of the project if you want to test
 against a local build (see [Build](#build)).
 
 In this last case, make sure to run `npm run examples:clean` to delete any previously
-installed `examples/node_modules`.
+installed `examples/node_modules`._
 
 ## Caveats
 
