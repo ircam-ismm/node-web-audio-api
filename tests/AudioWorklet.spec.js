@@ -140,7 +140,7 @@ describe('AudioWorklet', () => {
       await delay(50);
       await audioContext.close();
 
-      // fs.rmSync('node_modules/audio-worklet-test', { force: true, recursive: true });
+      fs.rmSync('node_modules/audio-worklet-test', { force: true, recursive: true });
     });
 
     it(`should support loading from node_modules 2: use filename`, async () => {

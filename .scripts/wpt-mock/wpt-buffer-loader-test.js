@@ -1,7 +1,7 @@
 import path from 'node:path';
 
 import createXMLHttpRequest from './XMLHttpRequest.js';
-import { OfflineAudioContext } from '../../index.cjs';
+import { OfflineAudioContext } from '../../index.js';
 
 // create a XMLHttpRequest to be passed to the runner
 // can be configured to handle the difference between process.cwd() and given path

@@ -118,7 +118,7 @@ export class AudioContext extends BaseAudioContext {
 
     this.#keepAwakeId = setInterval(() => {}, 10 * 1000);
 
-    // force the context to close in WPT, see ./.scripts/wpt_harness.mjs for information
+    // force the context to close in WPT, see ./.scripts/wpt_harness.js for information
     if (process.WPT_TEST_RUNNER) {
       process.WPT_TEST_RUNNER.once('cleanup', () => this.close());
     }

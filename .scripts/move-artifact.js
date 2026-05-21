@@ -5,7 +5,7 @@ import {
   destReleaseFile,
   destDebugFile,
   deleteDevArtifacts,
-} from './utils/dev-artifacts-helpers.mjs';
+} from './utils/dev-artifacts-helpers.js';
 
 const { platform } = process;
 const profile = process.argv.includes('--release') ? 'release' : 'debug';

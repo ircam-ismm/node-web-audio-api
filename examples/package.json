@@ -5,6 +5,6 @@
     "#node-web-audio-api": "./loader/index.js"
   },
   "dependencies": {
-    "node-web-audio-api": "^1.0.9"
+    "node-web-audio-api": "latest"
   }
 }
