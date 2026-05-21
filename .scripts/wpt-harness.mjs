@@ -6,7 +6,7 @@ import wptRunner from 'wpt-runner';
 import chalk from 'chalk';
 import { program } from 'commander';
 
-import * as nodeWebAudioAPI from '../index.mjs';
+import * as nodeWebAudioAPI from '../index.js';
 
 // mocks
 import createXMLHttpRequest from './wpt-mock/XMLHttpRequest.js';

@@ -1,7 +1,7 @@
-const path = require('node:path');
+import path from 'node:path';
 
-const createXMLHttpRequest = require('./XMLHttpRequest.js');
-const { OfflineAudioContext } = require('../../index.cjs');
+import createXMLHttpRequest from './XMLHttpRequest.js';
+import { OfflineAudioContext } from '../../index.cjs';
 
 // create a XMLHttpRequest to be passed to the runner
 // can be configured to handle the difference between process.cwd() and given path
