@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import { OfflineAudioContext, PeriodicWave } from '../index.mjs';
+import { OfflineAudioContext, PeriodicWave } from '../index.js';
 
 describe('# PeriodicWave', () => {
   describe('constructor', () => {

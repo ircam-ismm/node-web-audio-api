@@ -8,7 +8,7 @@ import { AudioContext, OscillatorNode, AudioWorkletNode } from '#node-web-audio-
 
 const audioContext = new AudioContext();
 
-await audioContext.audioWorklet.addModule('./worklets/wasm-worklet-processor.mjs');
+await audioContext.audioWorklet.addModule('./worklets/wasm-worklet-processor.js');
 const oscillator = new OscillatorNode(audioContext);
 const bypasser = new AudioWorkletNode(audioContext, 'wasm-worklet-processor');
 oscillator.connect(bypasser).connect(audioContext.destination);

@@ -1,7 +1,7 @@
 import { assert } from 'chai';
 import { sleep } from '@ircam/sc-utils';
 
-import { mediaDevices, AudioContext, MediaStreamAudioSourceNode } from '../index.mjs';
+import { mediaDevices, AudioContext, MediaStreamAudioSourceNode } from '../index.js';
 
 const CI = process.argv.includes('--ci');
 

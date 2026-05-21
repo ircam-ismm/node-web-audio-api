@@ -4,8 +4,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import Module from './simple-kernel.wasmmodule.mjs';
-import { RENDER_QUANTUM_FRAMES, MAX_CHANNEL_COUNT, FreeQueue } from './free-queue.mjs';
+import Module from './simple-kernel.wasmmodule.js';
+import { RENDER_QUANTUM_FRAMES, MAX_CHANNEL_COUNT, FreeQueue } from './free-queue.js';
 
 /**
  * A simple demonstration of WASM-powered AudioWorkletProcessor.

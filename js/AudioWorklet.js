@@ -9,6 +9,9 @@ import {
   Worker,
   MessageChannel,
 } from 'node:worker_threads';
+// import {
+//   createRequire
+// } from 'node:module';
 
 import caller from 'caller';
 import fetch from 'node-fetch';
@@ -24,6 +27,9 @@ import {
 import {
   kEnumerableProperty,
 } from './lib/utils.js';
+
+
+// const require = createRequire(import.meta.url);
 
 /**
  * Retrieve code with different module resolution strategies
@@ -85,8 +91,8 @@ const resolveModule = async (moduleUrl) => {
         absPathname = pathname;
       } else {
         try {
-          // try resolve according to process.cwd()
-          absPathname = require.resolve(moduleUrl, { paths: [process.cwd()] });
+          // try resolve according to process.cwd() including node_modules
+          absPathname = import.meta.resolve(moduleUrl, { paths: [process.cwd()] });
         } catch {
           throw new DOMException(`Failed to execute 'addModule' on 'AudioWorklet': Cannot resolve module ${moduleUrl}`, 'AbortError');
         }

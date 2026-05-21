@@ -3,7 +3,7 @@ import {
   AudioBuffer,
   ConstantSourceNode,
   OfflineAudioContext,
-} from '../index.mjs';
+} from '../index.js';
 
 describe('# OfflineAudioContext', () => {
   describe('## await startRendering()', () => {

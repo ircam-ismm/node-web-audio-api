@@ -4,8 +4,7 @@
   "author": "Benjamin Matuszewski",
   "description": "Web Audio API implementation for Node.js",
   "exports": {
-    "import": "./index.mjs",
-    "require": "./index.cjs",
+    "default": "./index.js",
     "types": "./index.d.ts"
   },
   "repository": {
@@ -33,10 +32,10 @@
   },
   "type": "module",
   "scripts": {
-    "build": "npm run generate && cargo build --release && node ./.scripts/move-artifact.mjs --release",
-    "build:jack": "npm run generate && cargo build --features jack --release && node ./.scripts/move-artifact.mjs --release",
-    "build:debug": "npm run generate && cargo build && node ./.scripts/move-artifact.mjs",
-    "build:only": "cargo build --release && node ./.scripts/move-artifact.mjs --release",
+    "build": "npm run generate && cargo build --release && node ./.scripts/move-artifact.js --release",
+    "build:jack": "npm run generate && cargo build --features jack --release && node ./.scripts/move-artifact.js --release",
+    "build:debug": "npm run generate && cargo build && node ./.scripts/move-artifact.js",
+    "build:only": "cargo build --release && node ./.scripts/move-artifact.js --release",
     "examples:install": "cd examples && npm install",
     "examples:clean": "cd examples && rm -rf node_modules",
     "examples:run-all": "node ./.scripts/run-all-examples.js",
@@ -45,9 +44,9 @@
     "generate": "node generator/index.js && cargo fmt",
     "lint": "npx eslint index.js && npx eslint js/*.js && npx eslint examples/*.js",
     "preversion": "npm install && npm run generate && npm run lint",
-    "postversion": "cargo bump $npm_package_version && git commit -am \"v$npm_package_version\" && node .scripts/check-changelog.mjs",
-    "test": "mocha tests/*.spec.mjs",
-    "test:ci": "mocha tests/*.spec.mjs -- --ci",
+    "postversion": "cargo bump $npm_package_version && git commit -am \"v$npm_package_version\" && node .scripts/check-changelog.js",
+    "test": "mocha tests/*.spec.js",
+    "test:ci": "mocha tests/*.spec.js -- --ci",
     "test:only": "mocha",
     "wpt": "npm run build && node ./.scripts/wpt-harness.js",
     "wpt:only": "node ./.scripts/wpt-harness.js"

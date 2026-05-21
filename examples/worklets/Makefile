@@ -9,7 +9,7 @@ build: $(DEPS)
 		-s EXPORT_ES6=1 \
         -s EXPORTED_FUNCTIONS="['_malloc']" \
 		SimpleKernel.cc \
-		-o simple-kernel.wasmmodule.mjs
+		-o simple-kernel.wasmmodule.js
 
 clean:
 	@rm -f simple-kernel.wasmmodule.js
