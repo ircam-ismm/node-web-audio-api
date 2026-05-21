@@ -1,7 +1,9 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { Scheduler } from '@ircam/sc-scheduling';
-import { AudioBufferSourceNode, AudioContext, GainNode } from '../index.mjs';
+import { AudioBufferSourceNode, AudioContext, GainNode } from '#node-web-audio-api';
+// import * as _ from '#node-web-audio-api';
+// console.log(_);
 
 const latencyHint = process.env.WEB_AUDIO_LATENCY === 'playback' ? 'playback' : 'interactive';
 const audioContext = new AudioContext({ latencyHint });
