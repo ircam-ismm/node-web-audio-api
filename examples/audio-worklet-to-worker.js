@@ -6,7 +6,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { Worker } from 'node:worker_threads';
 
-import {AudioContext, OscillatorNode, GainNode, StereoPannerNode, AudioWorkletNode } from '#node-web-audio-api';
+import { AudioContext, OscillatorNode, GainNode, StereoPannerNode, AudioWorkletNode } from '#node-web-audio-api';
 import { RingBuffer } from 'ringbuf.js';
 import { sleep } from '@ircam/sc-utils';
 
@@ -34,7 +34,7 @@ const fm = new OscillatorNode(audioContext, { frequency: 1.0 });
 const gain = new GainNode(audioContext, { gain: 110 });
 const panner = new StereoPannerNode(audioContext);
 const panModulation = new OscillatorNode(audioContext, { frequency: 2.0 });
-const recorderWorklet = new AudioWorkletNode(audioContext, "recorder-worklet", {
+const recorderWorklet = new AudioWorkletNode(audioContext, 'recorder-worklet', {
   processorOptions: { sharedArrayBuffer },
 });
 
@@ -51,7 +51,8 @@ panModulation.start(0);
 // Starve the main thread
 const mainThreadLoadIntervalId = setInterval(function() {
   var start = Date.now();
-  while (Date.now() - start < 90) { }
+  // eslint-disable-next-line no-empty
+  while (Date.now() - start < 90) {}
 }, 100);
 
 await sleep(2);
