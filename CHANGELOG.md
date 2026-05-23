@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## v2.0.0 - 2026-05-23
+
+- Refactor: refactor JS facade from CommonJS to ESM
+- Refactor: upgrade [napi.rs](https://napi.rs/) from v2 to v3
+- Chore: set Node minimum required version to v22
+- Feat: expose `polyfill.js` entry point
+- Integrate changes from upstream crate [v1.5.0](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-150-2026-05-23)
+- Integrate changes from upstream crate [v1.4.0](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-140-2026-05-18)
+- Integrate changes from upstream crate [v1.3.0](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-130-2026-04-22)
+- Docs: new examples: [Tone.js](https://tonejs.github.io/), [ringbuf.js](https://github.com/padenot/ringbuf.js)
+
 ## v1.0.9 - 2026-03-23
 
 - Fix: AudioWorklet properly recycle param buffers when dropped
@@ -8,7 +19,7 @@
 
 - Fix: AudioRenderCapacity.stop cf. #167
 - Fix: More robust debug build loading
-- Docs: Faust WASM examples
+- Docs: new examples: [Faust](https://faust.grame.fr/) WASM examples
 
 ## v1.0.7 - 2025-11-18
 ## v1.0.6 - 2025-11-18
