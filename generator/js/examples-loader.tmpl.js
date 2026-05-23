@@ -8,10 +8,10 @@ const nodeModulesExists = fs.existsSync(examplesNodeModules);
 let mod;
 
 if (nodeModulesExists) {
-  console.log('> loading installed dependency');
+  console.log('## loading installed dependency');
   mod = await import('node-web-audio-api');;
 } else {
-  console.log('> loading local build');
+  console.log('## loading local build');
   mod = await import('../../index.js');
 }
 
