@@ -67,6 +67,7 @@
     "js-beautify": "^1.15.1",
     "mocha": "^11.0.1",
     "octokit": "^5.0.5",
+    "ringbuf.js": "^0.4.0",
     "template-literal": "^1.0.4",
     "webidl2": "^24.2.0",
     "wpt-runner": "^7.0.0"

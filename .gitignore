@@ -144,3 +144,4 @@ Cargo.lock
 
 *.env
 
+examples/audio-worklet-to-worker.wav
