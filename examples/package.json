@@ -2,7 +2,8 @@
   "name": "node-web-audio-api-examples",
   "type": "module",
   "imports": {
-    "#node-web-audio-api": "./loader/index.js"
+    "#node-web-audio-api": "./loader/index.js",
+    "#node-web-audio-api-polyfill": "./loader/polyfill.js"
   },
   "dependencies": {
     "node-web-audio-api": "latest"
