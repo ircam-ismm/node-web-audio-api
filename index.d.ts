@@ -39,7 +39,11 @@ declare module "node-web-audio-api" {
   export import StereoPannerNode = globalThis.StereoPannerNode;
   export import WaveShaperNode = globalThis.WaveShaperNode;
 
-  // Replaced by `AudioPlaybackStats`
+  // not yet exposed by typescript
+  // export import AudioPlaybackStats = globalThis.AudioPlaybackStats;
+  // @deprecated
   // export import AudioRenderCapacityEvent = globalThis.AudioRenderCapacityEvent;
   // export import AudioRenderCapacity = globalThis.AudioRenderCapacity;
+
+  export const mediaDevices: Navigator['mediaDevices'];
 }
