@@ -42,6 +42,19 @@ setInterval(() => {
 }, 80);
 ```
 
+For existing browser oriented codebases or libraries that rely on globally available entities
+or explicit calls to window (e.g. `window.AudioParam`, cf. `examples/tone.js`) we provide
+a polyfill entry point that extends `globalThis` and create a `windows` namespace:
+
+```js
+import 'node-web-audio-api/polyfill.js';
+
+console.log(AudioContext);
+// [class AudioContext extends BaseAudioContext]
+console.log(window.AudioContext);
+// [class AudioContext extends BaseAudioContext]
+```
+
 ## Running the Examples
 
 To run all examples locally on your machine you will need to:
@@ -91,7 +104,7 @@ We provide prebuilt binaries for the following platforms:
 
 
 
-### Important notes
+### Important Notes
 
 - If you need support for another platform, please fill an [issue](https://github.com/ircam-ismm/node-web-audio-api/issues) and we will see what we can do.
 
@@ -138,7 +151,7 @@ sudo apt install libjack-jackd2-dev
 
 In that case, you can use the `npm run build:jack` script to enable the Jack feature.
 
-### Audio backend and latency
+### Audio Backend and Latency
 
 Using the library on Linux with the ALSA backend might lead to unexpected cranky sound with the default render size (i.e. 128 frames). In such cases, a simple workaround is to pass the `playback` latency hint when creating the audio context, which will increase the render size to 1024 frames:
 
@@ -154,7 +167,7 @@ If you don't have JACK installed, you can still pass the `WEB_AUDIO_LATENCY=play
 WEB_AUDIO_LATENCY=playback node examples/amplitude-modulation.js
 ```
 
-## Development notes
+## Development Notes
 
 ### Build
 
@@ -173,7 +186,7 @@ npm install
 npm run build
 ```
 
-### Synchronize versioning
+### Synchronize Versioning
 
 The npm `postversion` script rely on [`cargo-bump`](https://crates.io/crates/cargo-bump) to maintain versions synced between the `package.json` and the `Cargo.toml` files. Therefore, you will need to install `cargo-bump` on your machine
 
@@ -181,7 +194,7 @@ The npm `postversion` script rely on [`cargo-bump`](https://crates.io/crates/car
 cargo install cargo-bump
 ```
 
-### Running the web-platform-test suite
+### Running the [WPT](https://github.com/web-platform-tests/wpt/) suite
 
 Follow the steps for [Build](#build) first. Then checkout the web-platform-tests submodule with:
 

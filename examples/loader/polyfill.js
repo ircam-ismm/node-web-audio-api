@@ -9,9 +9,9 @@ const examplesNodeModules = path.join(examplesDirname, 'node_modules');
 const nodeModulesExists = fs.existsSync(examplesNodeModules);
 
 if (nodeModulesExists) {
-  console.log('> loading installed polyfills');
+  console.log('## loading installed polyfills');
   require('node-web-audio-api/polyfill.js');;
 } else {
-  console.log('> loading local polyfills');
+  console.log('## loading local polyfills');
   require('../../polyfill.js');
 }
