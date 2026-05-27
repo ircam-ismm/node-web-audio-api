@@ -267,11 +267,15 @@ parentPort.on('message', async event => {
         }
       }
 
-      // if instance is a mock, we know it as no `process` method and it has
-      // already been marked as non callable, no need to report it again
-      if (!isMock && typeof pendingProcessor.instance.process !== 'function') {
-        const err = new TypeError(`Invalid AudioWorkletNode "${pendingProcessor.instance.constructor.name}": no process method found`);
-        pendingProcessor.instance[kWorkletMarkNonCallableProcess](['node-web-audio-api:worklet:process-invalid', err]);
+      // check that process method exists either on instance or on prototype
+      // cf. wpt/webaudio/the-audio-api/the-audioworklet-interface/process-getter.https.html
+      // If execution of process fail for any reason, it will be catched in
+      // AudioWorkletProcessor::[kWorkletUnpackProcess]
+      if (!isMock) {
+        if (!ctor.prototype.hasOwnProperty('process') && !pendingProcessor.instance.hasOwnProperty('process')) {
+          const err = new TypeError(`Invalid AudioWorkletNode "${pendingProcessor.instance.constructor.name}": Invalid "process" method`);
+          pendingProcessor.instance[kWorkletMarkNonCallableProcess](['node-web-audio-api:worklet:process-invalid', err]);
+        }
       }
 
       // store in global so that Rust can match the JS processor
