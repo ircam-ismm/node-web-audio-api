@@ -245,7 +245,6 @@ parentPort.on('message', async event => {
         errored: null,
       };
 
-      // let instance;
       let errored = false;
 
       try {
