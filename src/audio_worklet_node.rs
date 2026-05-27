@@ -314,125 +314,104 @@ fn process_audio_worklet(
         return Ok(());
     }
 
-    // The `process` method is not executed directly because napi-rs `apply`
+    let render_quantum_size = global.get_named_property::<u32>("renderQuantumSize")? as usize;
+    // The `process` method is executed indirectly because napi-rs `apply`
     // implementation retrieve the arguments as an array in the first argument, Then
     // we need to unpack them first (cf. `AudioWorkletProcessor[kWorkletUnpackProcess]`)
+    let k_worklet_unpack_process = env.symbol_for("node-web-audio-api:worklet-unpack-process")?;
+
+    // The `kWorkletUnpackProcess` wrapper function coerce value returned from `process`
+    // to bool, therefore if we get anything else, i.e. `Unknown`, an error occurred.
+    let unpack_process_function = processor
+        .get_property::<JsSymbol, Function<(Array, Array, Object), Either<bool, Unknown>>>(
+            k_worklet_unpack_process,
+        )?;
+
+    let k_worklet_inputs = env.symbol_for("node-web-audio-api:worklet-inputs")?;
+    let mut js_inputs = processor.get_property::<JsSymbol, Array>(k_worklet_inputs)?;
+
+    let k_worklet_outputs = env.symbol_for("node-web-audio-api:worklet-outputs")?;
+    let mut js_outputs = processor.get_property::<JsSymbol, Array>(k_worklet_outputs)?;
+
+    // <param_name, buffer>
+    let k_worklet_params = env.symbol_for("node-web-audio-api:worklet-params")?;
+    let mut js_params = processor.get_property::<JsSymbol, Object>(k_worklet_params)?;
+    // <param_name, [Float32Array(128), Float32Array(1)]>
+    let k_worklet_params_cache = env.symbol_for("node-web-audio-api:worklet-params-cache")?;
+    let js_params_cache = processor.get_property::<JsSymbol, Object>(k_worklet_params_cache)?;
+
+    // Check input and output channel layout, and rebuild JS object if something changed
+    if !is_same_io_layout(&js_inputs, inputs) {
+        let new_js_inputs = rebuild_io_layout(env, js_inputs, inputs)?;
+        processor.set_property(k_worklet_inputs, new_js_inputs)?;
+        js_inputs = processor.get_property::<JsSymbol, Array>(k_worklet_inputs)?;
+    }
+
+    if !is_same_io_layout(&js_outputs, outputs) {
+        let new_js_outputs = rebuild_io_layout(env, js_outputs, outputs)?;
+        processor.set_property(k_worklet_outputs, new_js_outputs)?;
+        js_outputs = processor.get_property::<JsSymbol, Array>(k_worklet_outputs)?;
+    }
+
+    // Copy inputs into JS inputs buffers
+    for (input_number, input) in inputs.iter().enumerate() {
+        let js_input = js_inputs.get::<Array>(input_number as u32)?.unwrap();
+
+        for (channel_number, channel) in input.iter().enumerate() {
+            let mut js_channel = js_input
+                .get::<Float32Array>(channel_number as u32)?
+                .unwrap();
+            let js_channel: &mut [f32] = unsafe { js_channel.as_mut() };
+            js_channel.copy_from_slice(channel);
+        }
+    }
+
+    // Copy params values into JS params buffers
     //
-    // Note that we use `get_named_property` rather than `has_named_property` so that
-    // we check that `process` is a function as well.
-    let process_method_result =
-        processor.get_named_property::<Function<Unknown, Unknown>>("process");
+    // @todo(perf) - We could rely on the fact that ParameterDescriptors
+    // are ordered maps to avoid sending param names in `param_values`
+    for (name, data) in param_values.iter() {
+        let float32_arr_cache = js_params_cache.get_named_property::<Array>(name)?;
+        // retrieve right Float32Array according to actual param size, i.e. 128 or 1
+        let cache_index = if data.len() == 1 { 1 } else { 0 };
+        let mut param_values = float32_arr_cache.get::<Float32Array>(cache_index)?.unwrap();
+        // copy data into underlying ArrayBuffer
+        let buffer: &mut [f32] = unsafe { param_values.as_mut() };
+        buffer.copy_from_slice(data);
+        // replace current values with new Float32Array
+        js_params.set_named_property(name, param_values)?;
+    }
 
-    let abrupt_completion = match process_method_result {
-        Ok(_process_method) => {
-            let render_quantum_size =
-                global.get_named_property::<u32>("renderQuantumSize")? as usize;
+    let js_result = unpack_process_function.apply(processor, (js_inputs, js_outputs, js_params))?;
 
-            let k_worklet_unpack_process =
-                env.symbol_for("node-web-audio-api:worklet-unpack-process")?;
+    let abrupt_completion = match js_result {
+        Either::A(tail_time) => {
+            // copy JS output buffers back into outputs
+            for (output_number, output) in outputs.iter().enumerate() {
+                let js_output = js_outputs.get_element::<Array>(output_number as u32)?;
 
-            // The `kWorkletUnpackProcess` wrapper function coerce value returned from `process`
-            // to bool, therefore if we get anything else, i.e. `Unknown`, an error occurred.
-            let unpack_process_function = processor
-                .get_property::<JsSymbol, Function<(Array, Array, Object), Either<bool, Unknown>>>(
-                    k_worklet_unpack_process,
-                )?;
-
-            let k_worklet_inputs = env.symbol_for("node-web-audio-api:worklet-inputs")?;
-            let mut js_inputs = processor.get_property::<JsSymbol, Array>(k_worklet_inputs)?;
-
-            let k_worklet_outputs = env.symbol_for("node-web-audio-api:worklet-outputs")?;
-            let mut js_outputs = processor.get_property::<JsSymbol, Array>(k_worklet_outputs)?;
-
-            // <param_name, buffer>
-            let k_worklet_params = env.symbol_for("node-web-audio-api:worklet-params")?;
-            let mut js_params = processor.get_property::<JsSymbol, Object>(k_worklet_params)?;
-            // <param_name, [Float32Array(128), Float32Array(1)]>
-            let k_worklet_params_cache =
-                env.symbol_for("node-web-audio-api:worklet-params-cache")?;
-            let js_params_cache =
-                processor.get_property::<JsSymbol, Object>(k_worklet_params_cache)?;
-
-            // Check input and output channel layout, and rebuild JS object if something changed
-            if !is_same_io_layout(&js_inputs, inputs) {
-                let new_js_inputs = rebuild_io_layout(env, js_inputs, inputs)?;
-                processor.set_property(k_worklet_inputs, new_js_inputs)?;
-                js_inputs = processor.get_property::<JsSymbol, Array>(k_worklet_inputs)?;
-            }
-
-            if !is_same_io_layout(&js_outputs, outputs) {
-                let new_js_outputs = rebuild_io_layout(env, js_outputs, outputs)?;
-                processor.set_property(k_worklet_outputs, new_js_outputs)?;
-                js_outputs = processor.get_property::<JsSymbol, Array>(k_worklet_outputs)?;
-            }
-
-            // Copy inputs into JS inputs buffers
-            for (input_number, input) in inputs.iter().enumerate() {
-                let js_input = js_inputs.get::<Array>(input_number as u32)?.unwrap();
-
-                for (channel_number, channel) in input.iter().enumerate() {
-                    let mut js_channel = js_input
+                for (channel_number, channel) in output.iter().enumerate() {
+                    let js_channel = js_output
                         .get::<Float32Array>(channel_number as u32)?
                         .unwrap();
-                    let js_channel: &mut [f32] = unsafe { js_channel.as_mut() };
-                    js_channel.copy_from_slice(channel);
-                }
-            }
 
-            // Copy params values into JS params buffers
-            //
-            // @todo(perf) - We could rely on the fact that ParameterDescriptors
-            // are ordered maps to avoid sending param names in `param_values`
-            for (name, data) in param_values.iter() {
-                let float32_arr_cache = js_params_cache.get_named_property::<Array>(name)?;
-                // retrieve right Float32Array according to actual param size, i.e. 128 or 1
-                let cache_index = if data.len() == 1 { 1 } else { 0 };
-                let mut param_values = float32_arr_cache.get::<Float32Array>(cache_index)?.unwrap();
-                // copy data into underlying ArrayBuffer
-                let buffer: &mut [f32] = unsafe { param_values.as_mut() };
-                buffer.copy_from_slice(data);
-                // replace current values with new Float32Array
-                js_params.set_named_property(name, param_values)?;
-            }
+                    let src = js_channel.as_ptr();
+                    let dst = channel.as_ptr() as *mut f32;
 
-            let js_result =
-                unpack_process_function.apply(processor, (js_inputs, js_outputs, js_params))?;
-
-            match js_result {
-                Either::A(tail_time) => {
-                    // copy JS output buffers back into outputs
-                    for (output_number, output) in outputs.iter().enumerate() {
-                        let js_output = js_outputs.get_element::<Array>(output_number as u32)?;
-
-                        for (channel_number, channel) in output.iter().enumerate() {
-                            let js_channel = js_output
-                                .get::<Float32Array>(channel_number as u32)?
-                                .unwrap();
-
-                            let src = js_channel.as_ptr();
-                            let dst = channel.as_ptr() as *mut f32;
-
-                            unsafe {
-                                std::ptr::copy_nonoverlapping(src, dst, render_quantum_size);
-                            }
-                        }
+                    unsafe {
+                        std::ptr::copy_nonoverlapping(src, dst, render_quantum_size);
                     }
-
-                    let _ = tail_time_sender.send(tail_time); // allowed to fail
-
-                    None
                 }
-                // error thrown in process
-                Either::B(err) => Some(WorkletAbruptCompletionResult {
-                    cmd: "node-web-audio-api:worklet:process-error".to_string(),
-                    err: err.into(),
-                }),
             }
+
+            let _ = tail_time_sender.send(tail_time); // allowed to fail
+
+            None
         }
-        // no process method found
-        Err(err) => Some(WorkletAbruptCompletionResult {
-            cmd: "node-web-audio-api:worklet:process-invalid".to_string(),
-            err,
+        // error thrown in process
+        Either::B(err) => Some(WorkletAbruptCompletionResult {
+            cmd: "node-web-audio-api:worklet:process-error".to_string(),
+            err: err.into(),
         }),
     };
 

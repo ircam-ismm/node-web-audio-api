@@ -246,6 +246,7 @@ parentPort.on('message', async event => {
       };
 
       let errored = false;
+      let isMock = false;
 
       try {
         pendingProcessor.instance = new ctor(options);
@@ -259,12 +260,16 @@ parentPort.on('message', async event => {
         errored = true;
 
         if (!pendingProcessor.instance) {
+          isMock = true;
+
           pendingProcessor.instance = new AudioWorkletProcessor(options);
           pendingProcessor.instance[kWorkletMarkNonCallableProcess](['node-web-audio-api:worklet:ctor-error', err]);
         }
       }
 
-      if (!(typeof pendingProcessor.instance.process === 'function')) {
+      // if instance is a mock, we know it as no `process` method and it has
+      // already been marked as non callable, no need to report it again
+      if (!isMock && typeof pendingProcessor.instance.process !== 'function') {
         const err = new TypeError(`Invalid AudioWorkletNode "${pendingProcessor.instance.constructor.name}": no process method found`);
         pendingProcessor.instance[kWorkletMarkNonCallableProcess](['node-web-audio-api:worklet:process-invalid', err]);
       }
