@@ -22,7 +22,9 @@ export class AudioWorkletProcessor {
   #errorPort = null;
 
   constructor() {
-    if (pendingProcessor.instance !== null) {
+    // check that this constructor has never been called for this processor instantiation
+    // cf. wpt/webaudio/the-audio-api/the-audioworklet-interface/processor-construction-port.https.html
+    if (pendingProcessor.super !== null) {
       this[kWorkletCallableProcess] = false;
       throw new TypeError('Cannot construct "AudioWorkletProcessor": Invalid pending construction data');;
     }
@@ -38,7 +40,7 @@ export class AudioWorkletProcessor {
     this.#messagePort = messagePort;
     this.#errorPort = errorPort;
 
-    pendingProcessor.instance = this;
+    pendingProcessor.super = this;
 
     // Mark [[callable process]] as true, set to false in render quantum
     // either if "process" does not exists or if it throws an error

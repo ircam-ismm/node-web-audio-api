@@ -251,17 +251,18 @@ parentPort.on('message', async event => {
       try {
         pendingProcessor.instance = new ctor(options);
       } catch (err) {
-        // if the given processor constructor failed, we create a dummy processor
+        errored = true;
+
+        // If the given processor constructor failed, we create a dummy processor
         // that we mark immediately as non-callable. This prevents situations where
         // the NapiAudioWorkletProcessor, which already exists at this point, hangs
         // forever waiting for its JS counterpart
         // @todo - This design could be improved in the future by flagging somehow
         // the Rust processor to avoid the cross thread communication
-        errored = true;
-
         if (!pendingProcessor.instance) {
           isMock = true;
-
+          // super may have been called but instance did throw, we can reset super
+          pendingProcessor.super = null;
           pendingProcessor.instance = new AudioWorkletProcessor(options);
           pendingProcessor.instance[kWorkletMarkNonCallableProcess](['node-web-audio-api:worklet:ctor-error', err]);
         }
@@ -284,6 +285,7 @@ parentPort.on('message', async event => {
 
       pendingProcessor.constructionData = null;
       pendingProcessor.instance = null;
+      pendingProcessor.super = null;
       // notify main thread that instantiation has finished somehow
       if (errored) {
         parentPort.postMessage({ cmd: 'node-web-audio-api:worklet:ctor-error', id });
