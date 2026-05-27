@@ -7,14 +7,11 @@ import {
   kWorkletParamsCache,
   kWorkletGetBuffer,
   kWorkletGetBuffer1,
-  kWorkletRecycleBuffer,
-  kWorkletRecycleBuffer1,
-  kWorkletMarkAsUntransferable,
   kWorkletUnpackProcess,
 } from './lib/audio-worklet/symbols.js';
 import {
   pendingProcessorConstructionData,
-} from './lib/audio-worklet/pending-processor-construction-data.js'
+} from './lib/audio-worklet/pending-processor-construction-data.js';
 
 export class AudioWorkletProcessor {
   static get parameterDescriptors() {

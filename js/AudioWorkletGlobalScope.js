@@ -10,24 +10,18 @@ import { AudioWorkletProcessor } from './AudioWorkletProcessor.js';
 import { isIterable } from './lib/is-iterable.js';
 import { isConstructor } from './lib/is-constructor.js';
 import {
-  kWorkletCallableProcess,
   kWorkletMarkNonCallableProcess,
-  kWorkletInputs,
-  kWorkletOutputs,
-  kWorkletParams,
-  kWorkletParamsCache,
   kWorkletGetBuffer,
   kWorkletGetBuffer1,
   kWorkletRecycleBuffer,
   kWorkletRecycleBuffer1,
   kWorkletMarkAsUntransferable,
-  kWorkletUnpackProcess,
 } from './lib/audio-worklet/symbols.js';
 import {
   pendingProcessorConstructionData,
-} from './lib/audio-worklet/pending-processor-construction-data.js'
+} from './lib/audio-worklet/pending-processor-construction-data.js';
 import {
-  BufferPool
+  BufferPool,
 } from './lib/audio-worklet/BufferPool.js';
 
 import nativeBinding from '../load-native.js';

@@ -354,15 +354,22 @@ fn process_audio_worklet(
             let js_params_cache =
                 processor.get_property::<JsSymbol, Object>(k_worklet_params_cache)?;
 
+            use std::time::Instant;
             // Check input and output channel layout, and rebuild JS object if something changed
             if !check_same_io_layout(&js_inputs, inputs) {
+                let start = Instant::now();
                 let new_js_inputs = rebuild_io_layout(env, js_inputs, inputs)?;
+                let duration = start.elapsed();
+                println!("rebuild input layout duration {:?}", duration);
                 processor.set_property(k_worklet_inputs, new_js_inputs)?;
                 js_inputs = processor.get_property::<JsSymbol, Array>(k_worklet_inputs)?;
             }
 
             if !check_same_io_layout(&js_outputs, outputs) {
+                let start = Instant::now();
                 let new_js_outputs = rebuild_io_layout(env, js_outputs, outputs)?;
+                let duration = start.elapsed();
+                println!("rebuild output layout duration {:?}", duration);
                 processor.set_property(k_worklet_outputs, new_js_outputs)?;
                 js_outputs = processor.get_property::<JsSymbol, Array>(k_worklet_outputs)?;
             }

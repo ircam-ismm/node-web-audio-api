@@ -514,8 +514,8 @@ Object.defineProperties(BaseAudioContext.prototype, {
   currentTime: kEnumerableProperty,
   renderQuantumSize: kEnumerableProperty,
   state: kEnumerableProperty,
-  onstatechange: kEnumerableProperty,
   decodeAudioData: kEnumerableProperty,
   createBuffer: kEnumerableProperty,
   createPeriodicWave: kEnumerableProperty,
+  onstatechange: kEnumerableProperty,
 });
