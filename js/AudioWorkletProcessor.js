@@ -10,8 +10,8 @@ import {
   kWorkletUnpackProcess,
 } from './lib/audio-worklet/symbols.js';
 import {
-  pendingProcessorConstructionData,
-} from './lib/audio-worklet/pending-processor-construction-data.js';
+  pendingProcessor,
+} from './lib/audio-worklet/pending-processor.js';
 
 export class AudioWorkletProcessor {
   static get parameterDescriptors() {
@@ -22,16 +22,23 @@ export class AudioWorkletProcessor {
   #errorPort = null;
 
   constructor() {
+    if (pendingProcessor.instance !== null) {
+      this[kWorkletCallableProcess] = false;
+      throw new TypeError('Cannot construct "AudioWorkletProcessor": Invalid pending construction data');;
+    }
+
     const {
       messagePort,
       errorPort,
       numberOfInputs,
       numberOfOutputs,
       parameterDescriptors,
-    } = pendingProcessorConstructionData.inner;
+    } = pendingProcessor.constructionData;
 
     this.#messagePort = messagePort;
     this.#errorPort = errorPort;
+
+    pendingProcessor.instance = this;
 
     // Mark [[callable process]] as true, set to false in render quantum
     // either if "process" does not exists or if it throws an error
@@ -84,6 +91,11 @@ export class AudioWorkletProcessor {
     try {
       return !!this.process(inputs, outputs, parameters);
     } catch (err) {
+      // make sure Rust receives a "real" error instance, i.e. support `throw "my message";`
+      if (!Error.isError(err)) {
+        err = new Error(err);
+      }
+
       return err;
     }
   }

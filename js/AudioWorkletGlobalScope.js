@@ -18,8 +18,8 @@ import {
   kWorkletMarkAsUntransferable,
 } from './lib/audio-worklet/symbols.js';
 import {
-  pendingProcessorConstructionData,
-} from './lib/audio-worklet/pending-processor-construction-data.js';
+  pendingProcessor,
+} from './lib/audio-worklet/pending-processor.js';
 import {
   BufferPool,
 } from './lib/audio-worklet/BufferPool.js';
@@ -236,19 +236,20 @@ parentPort.on('message', async event => {
       const ctor = nameProcessorCtorMap.get(name);
 
       // entities of interest for the AudioWorkletProcess base class
-      pendingProcessorConstructionData.inner = {
+      pendingProcessor.constructionData = {
         messagePort,
         errorPort,
         numberOfInputs: options.numberOfInputs,
         numberOfOutputs: options.numberOfOutputs,
         parameterDescriptors: ctor.parameterDescriptors,
+        errored: null,
       };
 
-      let instance;
+      // let instance;
       let errored = false;
 
       try {
-        instance = new ctor(options);
+        pendingProcessor.instance = new ctor(options);
       } catch (err) {
         // if the given processor constructor failed, we create a dummy processor
         // that we mark immediately as non-callable. This prevents situations where
@@ -257,14 +258,24 @@ parentPort.on('message', async event => {
         // @todo - This design could be improved in the future by flagging somehow
         // the Rust processor to avoid the cross thread communication
         errored = true;
-        instance = new AudioWorkletProcessor(options);
-        instance[kWorkletMarkNonCallableProcess](['node-web-audio-api:worklet:ctor-error', err]);
+
+        if (!pendingProcessor.instance) {
+          pendingProcessor.instance = new AudioWorkletProcessor(options);
+          pendingProcessor.instance[kWorkletMarkNonCallableProcess](['node-web-audio-api:worklet:ctor-error', err]);
+        }
       }
 
-      pendingProcessorConstructionData.inner = null;
+      if (!(typeof pendingProcessor.instance.process === 'function')) {
+        const err = new TypeError(`Invalid AudioWorkletNode "${pendingProcessor.instance.constructor.name}": no process method found`);
+        pendingProcessor.instance[kWorkletMarkNonCallableProcess](['node-web-audio-api:worklet:process-invalid', err]);
+      }
+
       // store in global so that Rust can match the JS processor
       // with its corresponding NapiAudioWorkletProcessor
-      processors[`${id}`] = instance;
+      processors[`${id}`] = pendingProcessor.instance;
+
+      pendingProcessor.constructionData = null;
+      pendingProcessor.instance = null;
       // notify main thread that instantiation has finished somehow
       if (errored) {
         parentPort.postMessage({ cmd: 'node-web-audio-api:worklet:ctor-error', id });
