@@ -141,7 +141,7 @@ struct WorkletAbruptCompletionResult {
 ///
 /// Note that we don't check the number of inputs / outputs as they are defined
 /// at construction and cannot be changed
-fn check_same_io_layout(js_io: &Array, rs_io: &'static [&'static [&'static [f32]]]) -> bool {
+fn is_same_io_layout(js_io: &Array, rs_io: &'static [&'static [&'static [f32]]]) -> bool {
     for (i, rs_channels) in rs_io.iter().enumerate() {
         let js_channels = js_io.get::<Array>(i as u32);
 
@@ -165,8 +165,7 @@ fn check_same_io_layout(js_io: &Array, rs_io: &'static [&'static [&'static [f32]
 
 /// Recreate the JS inputs or output data structures (input and output are handled separately).
 /// We must rebuild the whole structure from scratch because the resulting Arrays are frozen.
-///
-/// @todo - move this logic to JS to minimize language boundary crossing (needs benchmarking)
+// @note: mini benchmarks have been made w/ an alternative JS implementation, was way slower
 fn rebuild_io_layout<'a>(
     env: &'a Env,
     js_io: Array,
@@ -354,22 +353,15 @@ fn process_audio_worklet(
             let js_params_cache =
                 processor.get_property::<JsSymbol, Object>(k_worklet_params_cache)?;
 
-            use std::time::Instant;
             // Check input and output channel layout, and rebuild JS object if something changed
-            if !check_same_io_layout(&js_inputs, inputs) {
-                let start = Instant::now();
+            if !is_same_io_layout(&js_inputs, inputs) {
                 let new_js_inputs = rebuild_io_layout(env, js_inputs, inputs)?;
-                let duration = start.elapsed();
-                println!("rebuild input layout duration {:?}", duration);
                 processor.set_property(k_worklet_inputs, new_js_inputs)?;
                 js_inputs = processor.get_property::<JsSymbol, Array>(k_worklet_inputs)?;
             }
 
-            if !check_same_io_layout(&js_outputs, outputs) {
-                let start = Instant::now();
+            if !is_same_io_layout(&js_outputs, outputs) {
                 let new_js_outputs = rebuild_io_layout(env, js_outputs, outputs)?;
-                let duration = start.elapsed();
-                println!("rebuild output layout duration {:?}", duration);
                 processor.set_property(k_worklet_outputs, new_js_outputs)?;
                 js_outputs = processor.get_property::<JsSymbol, Array>(k_worklet_outputs)?;
             }

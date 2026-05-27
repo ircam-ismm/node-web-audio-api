@@ -43,8 +43,8 @@ export class AudioWorkletProcessor {
     // not for the reason explained
     try {
       // Populate with dummy values which will be replaced in first render call
-      this[kWorkletInputs] = new Array(numberOfInputs).fill([]);
-      this[kWorkletOutputs] = new Array(numberOfOutputs).fill([]);
+      this[kWorkletInputs] = Object.freeze(new Array(numberOfInputs).fill(Object.freeze([])));
+      this[kWorkletOutputs] = Object.freeze( new Array(numberOfOutputs).fill(Object.freeze([])));
       // Object to be reused as `process` parameters argument
       this[kWorkletParams] = {};
       // Cache of 2 Float32Array (of length 128 and 1) for each param, to be reused on
@@ -77,11 +77,9 @@ export class AudioWorkletProcessor {
   //
   // This method is called only if a "real" process method has been found
   [kWorkletUnpackProcess]([inputs, outputs, parameters]) {
-    // output must be filled with zero
+    // output must be cleaned up and filled with zeros
     // cf. the-audioworklet-interface/audioworkletprocessor-unconnected-outputs.https.window.html
-    outputs.forEach(output => {
-      output.forEach(channel => channel.fill(0));
-    });
+    outputs.forEach(output => output.forEach(channel => channel.fill(0)));
 
     try {
       return !!this.process(inputs, outputs, parameters);
