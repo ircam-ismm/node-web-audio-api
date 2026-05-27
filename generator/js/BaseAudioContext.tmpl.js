@@ -279,13 +279,15 @@ Object.defineProperties(BaseAudioContext.prototype, {
     }
     return `${factoryName}: kEnumerableProperty,`;
   }).join('')}
+  audioWorklet: kEnumerableProperty,
   listener: kEnumerableProperty,
   destination: kEnumerableProperty,
   sampleRate: kEnumerableProperty,
   currentTime: kEnumerableProperty,
+  renderQuantumSize: kEnumerableProperty,
   state: kEnumerableProperty,
-  onstatechange: kEnumerableProperty,
   decodeAudioData: kEnumerableProperty,
   createBuffer: kEnumerableProperty,
   createPeriodicWave: kEnumerableProperty,
+  onstatechange: kEnumerableProperty,
 });
