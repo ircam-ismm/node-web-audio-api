@@ -19,6 +19,7 @@ export default function createFetch(basePath) {
           ok: true,
           text: () => buffer.toString(),
           json: () => JSON.parse(buffer.toString()),
+          arrayBuffer: () => buffer.buffer,
         });
       }
     });
