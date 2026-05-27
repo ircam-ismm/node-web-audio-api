@@ -1,0 +1,12 @@
+export const kWorkletCallableProcess = Symbol.for('node-web-audio-api:worklet-callable-process');
+export const kWorkletMarkNonCallableProcess = Symbol.for('node-web-audio-api:worklet-mark-non-callable-process');
+export const kWorkletInputs = Symbol.for('node-web-audio-api:worklet-inputs');
+export const kWorkletOutputs = Symbol.for('node-web-audio-api:worklet-outputs');
+export const kWorkletParams = Symbol.for('node-web-audio-api:worklet-params');
+export const kWorkletParamsCache = Symbol.for('node-web-audio-api:worklet-params-cache');
+export const kWorkletGetBuffer = Symbol.for('node-web-audio-api:worklet-get-buffer');
+export const kWorkletGetBuffer1 = Symbol.for('node-web-audio-api:worklet-get-buffer-1');
+export const kWorkletRecycleBuffer = Symbol.for('node-web-audio-api:worklet-recycle-buffer');
+export const kWorkletRecycleBuffer1 = Symbol.for('node-web-audio-api:worklet-recycle-buffer-1');
+export const kWorkletMarkAsUntransferable = Symbol.for('node-web-audio-api:worklet-mark-as-untransferable');
+export const kWorkletUnpackProcess = Symbol.for('node-web-audio-api:worklet-unpack-process');

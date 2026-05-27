@@ -6,7 +6,30 @@ import {
 
 import conversions from 'webidl-conversions';
 
-// these function are defined on the rust side
+import { AudioWorkletProcessor } from './AudioWorkletProcessor.js';
+import { isIterable } from './lib/is-iterable.js';
+import { isConstructor } from './lib/is-constructor.js';
+import {
+  kWorkletCallableProcess,
+  kWorkletMarkNonCallableProcess,
+  kWorkletInputs,
+  kWorkletOutputs,
+  kWorkletParams,
+  kWorkletParamsCache,
+  kWorkletGetBuffer,
+  kWorkletGetBuffer1,
+  kWorkletRecycleBuffer,
+  kWorkletRecycleBuffer1,
+  kWorkletMarkAsUntransferable,
+  kWorkletUnpackProcess,
+} from './lib/audio-worklet/symbols.js';
+import {
+  pendingProcessorConstructionData,
+} from './lib/audio-worklet/pending-processor-construction-data.js'
+import {
+  BufferPool
+} from './lib/audio-worklet/BufferPool.js';
+
 import nativeBinding from '../load-native.js';
 const {
   exit_audio_worklet_global_scope,
@@ -19,98 +42,27 @@ const {
   renderQuantumSize,
 } = workerData;
 
-const kWorkletCallableProcess = Symbol.for('node-web-audio-api:worklet-callable-process');
-const kWorkletMarkNonCallableProcess = Symbol.for('node-web-audio-api:worklet-mark-non-callable-process');
-const kWorkletInputs = Symbol.for('node-web-audio-api:worklet-inputs');
-const kWorkletOutputs = Symbol.for('node-web-audio-api:worklet-outputs');
-const kWorkletParams = Symbol.for('node-web-audio-api:worklet-params');
-const kWorkletParamsCache = Symbol.for('node-web-audio-api:worklet-params-cache');
-const kWorkletGetBuffer = Symbol.for('node-web-audio-api:worklet-get-buffer');
-const kWorkletRecycleBuffer = Symbol.for('node-web-audio-api:worklet-recycle-buffer');
-const kWorkletRecycleBuffer1 = Symbol.for('node-web-audio-api:worklet-recycle-buffer-1');
-const kWorkletMarkAsUntransferable = Symbol.for('node-web-audio-api:worklet-mark-as-untransferable');
-const kWorkletUnpackProcess = Symbol.for('node-web-audio-api:worklet-unpack-process');
+// catch possible errors thrown in `onmessage` handlers that should not break the worker
+process.on('uncaughtException', err => {
+  console.log('AudioWorkletGlobalScope uncaughtException:', err);
+});
 
 const nameProcessorCtorMap = new Map();
 const processors = {};
-let pendingProcessorConstructionData = null;
-let loopStarted = false;
-let runLoopImmediateId = null;
-
-class BufferPool {
-  #bufferSize;
-  #pool;
-
-  constructor(bufferSize, initialPoolSize) {
-    this.#bufferSize = bufferSize;
-    this.#pool = new Array(initialPoolSize);
-
-    for (let i = 0; i < this.#pool.length; i++) {
-      this.#pool[i] = this.#allocate();
-    }
-  }
-
-  #allocate() {
-    const float32 = new Float32Array(this.#bufferSize);
-    markAsUntransferable(float32);
-    // Mark underlying buffer as untransferable too, this will fail one of
-    // the task in `audioworkletprocessor-process-frozen-array.https.html`
-    // but prevent segmentation fault
-    markAsUntransferable(float32.buffer);
-
-    return float32;
-  }
-
-  get size() {
-    return this.#pool.length;
-  }
-
-  get() {
-    if (this.#pool.length === 0) {
-      return this.#allocate();
-    }
-
-    return this.#pool.pop();
-  }
-
-  recycle(buffer) {
-    // make sure we can't pollute the pool
-    if (buffer.length === this.#bufferSize) {
-      this.#pool.push(buffer);
-    }
-  }
-}
-
-// @todo(naming) - generalize over `renderQuantumSize`
-const pool128 = new BufferPool(renderQuantumSize, 256);
-const pool1 = new BufferPool(1, 64);
+const bufferPoolRenderSize = new BufferPool(renderQuantumSize, 256);
+const bufferPoolOne = new BufferPool(1, 64);
 // Expose some function to be accessed from rust when IO layout changes
-// @todo - possibly transfer whole IO layout change logic to JS to minimize language boundaries crossing
-globalThis[kWorkletGetBuffer] = () => pool128.get();
-globalThis[kWorkletRecycleBuffer] = buffer => pool128.recycle(buffer);
-globalThis[kWorkletRecycleBuffer1] = buffer => pool1.recycle(buffer);
+globalThis[kWorkletGetBuffer] = () => bufferPoolRenderSize.get();
+globalThis[kWorkletGetBuffer1] = () => bufferPoolOne.get();
+globalThis[kWorkletRecycleBuffer] = buffer => bufferPoolRenderSize.recycle(buffer);
+globalThis[kWorkletRecycleBuffer1] = buffer => bufferPoolOne.recycle(buffer);
 globalThis[kWorkletMarkAsUntransferable] = obj => {
   markAsUntransferable(obj);
   return obj;
 };
 
-function isIterable(obj) {
-  if (obj === null || obj === undefined) {
-    return false;
-  }
-
-  return typeof obj[Symbol.iterator] === 'function';
-}
-
-// cf. https://stackoverflow.com/a/46759625
-function isConstructor(f) {
-  try {
-    Reflect.construct(String, [], f);
-  } catch {
-    return false;
-  }
-  return true;
-}
+let loopStarted = false;
+let runLoopImmediateId = null;
 
 function runLoop() {
   // block until we need to render a quantum
@@ -119,93 +71,12 @@ function runLoop() {
   runLoopImmediateId = setImmediate(runLoop);
 }
 
-// catch possible errors thrown in `onmessage` handlers that should not break the worker
-process.on('uncaughtException', err => {
-  console.log('AudioWorkletGlobalScope uncaughtException:', err);
-});
-
+// AudioWorkletGlobalScope globals
 globalThis.currentTime = 0;
 globalThis.currentFrame = 0;
 globalThis.sampleRate = sampleRate;
 globalThis.renderQuantumSize = renderQuantumSize;
-
-globalThis.AudioWorkletProcessor = class AudioWorkletProcessor {
-  static get parameterDescriptors() {
-    return [];
-  }
-
-  #messagePort = null;
-  #errorPort = null;
-
-  constructor() {
-    const {
-      messagePort,
-      errorPort,
-      numberOfInputs,
-      numberOfOutputs,
-      parameterDescriptors,
-    } = pendingProcessorConstructionData;
-
-    this.#messagePort = messagePort;
-    this.#errorPort = errorPort;
-
-    // Mark [[callable process]] as true, set to false in render quantum
-    // either if "process" does not exists or if it throws an error
-    this[kWorkletCallableProcess] = true;
-
-    // We don't want the factory handle errors that could occur here, e.g. pollution of global objects
-    // cf. the-audioworklet-interface/audioworkletprocessor-param-getter-overridden.https.html
-    // Note that the logic of this WPT test needs to be understood more precisely, it passes but
-    // not for the reason explained
-    try {
-      // Populate with dummy values which will be replaced in first render call
-      this[kWorkletInputs] = new Array(numberOfInputs).fill([]);
-      this[kWorkletOutputs] = new Array(numberOfOutputs).fill([]);
-      // Object to be reused as `process` parameters argument
-      this[kWorkletParams] = {};
-      // Cache of 2 Float32Array (of length 128 and 1) for each param, to be reused on
-      // each process call according to the size the param for the current render quantum
-      this[kWorkletParamsCache] = {};
-
-      for (let desc of parameterDescriptors) {
-        this[kWorkletParamsCache][desc.name] = [
-          pool128.get(),
-          pool1.get(),
-        ];
-      }
-    } catch (err) {
-      this[kWorkletMarkNonCallableProcess](['node-web-audio-api:worklet:ctor-error', err]);
-    }
-  }
-
-  get port() {
-    if (!(this instanceof AudioWorkletProcessor)) {
-      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioWorkletProcessor\'');
-    }
-
-    return this.#messagePort;
-  }
-
-  // Wrapper around the "real" process method that allows to
-  // - unpack arguments from napi-rs `apply`
-  // - cast return value to boolean
-  // - catch and cleanly return error so that rust can properly handle it
-  //
-  // This method is called only if a "real" process method has been found
-  [kWorkletUnpackProcess]([inputs, outputs, parameters]) {
-    try {
-      return !!this.process(inputs, outputs, parameters);
-    } catch (err) {
-      return err;
-    }
-  }
-
-  [kWorkletMarkNonCallableProcess]([cmd, err]) {
-    this[kWorkletCallableProcess] = false;
-    this.#errorPort.postMessage({ cmd, err });
-  }
-};
-
+globalThis.AudioWorkletProcessor = AudioWorkletProcessor;
 // Algorithm: https://webaudio.github.io/web-audio-api/#dom-audioworkletglobalscope-registerprocessor
 globalThis.registerProcessor = function registerProcessor(name, processorCtor) {
   const parsedName = conversions['DOMString'](name, {
@@ -371,7 +242,7 @@ parentPort.on('message', async event => {
       const ctor = nameProcessorCtorMap.get(name);
 
       // entities of interest for the AudioWorkletProcess base class
-      pendingProcessorConstructionData = {
+      pendingProcessorConstructionData.inner = {
         messagePort,
         errorPort,
         numberOfInputs: options.numberOfInputs,
@@ -396,7 +267,7 @@ parentPort.on('message', async event => {
         instance[kWorkletMarkNonCallableProcess](['node-web-audio-api:worklet:ctor-error', err]);
       }
 
-      pendingProcessorConstructionData = null;
+      pendingProcessorConstructionData.inner = null;
       // store in global so that Rust can match the JS processor
       // with its corresponding NapiAudioWorkletProcessor
       processors[`${id}`] = instance;
