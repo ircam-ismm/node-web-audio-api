@@ -91,12 +91,15 @@ export class AudioWorkletProcessor {
     try {
       return !!this.process(inputs, outputs, parameters);
     } catch (err) {
+      let returnedError;
       // make sure Rust receives a "real" error instance, i.e. support `throw "my message";`
       if (!Error.isError(err)) {
-        err = new Error(err);
+        returnedError = new Error(err);
+      } else {
+        returnedError = err;
       }
 
-      return err;
+      return returnedError;
     }
   }
 
