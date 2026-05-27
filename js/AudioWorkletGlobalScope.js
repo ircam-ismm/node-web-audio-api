@@ -268,19 +268,19 @@ parentPort.on('message', async event => {
         }
       }
 
-      // check that process method exists either on instance or on prototype
-      // cf. wpt/webaudio/the-audio-api/the-audioworklet-interface/process-getter.https.html
+      // Check that process method exists either on instance or on prototype.
       // If execution of process fail for any reason, it will be catched in
       // AudioWorkletProcessor::[kWorkletUnpackProcess]
+      // cf. wpt/webaudio/the-audio-api/the-audioworklet-interface/process-getter.https.html
       if (!isMock) {
-        if (!ctor.prototype.hasOwnProperty('process') && !pendingProcessor.instance.hasOwnProperty('process')) {
+        if (!Object.prototype.hasOwnProperty.call(ctor.prototype, 'process')
+          && !Object.prototype.hasOwnProperty.call(pendingProcessor.instance, 'process')) {
           const err = new TypeError(`Invalid AudioWorkletNode "${pendingProcessor.instance.constructor.name}": Invalid "process" method`);
           pendingProcessor.instance[kWorkletMarkNonCallableProcess](['node-web-audio-api:worklet:process-invalid', err]);
         }
       }
 
-      // store in global so that Rust can match the JS processor
-      // with its corresponding NapiAudioWorkletProcessor
+      // Store in global to match the JS processor with its corresponding NapiAudioWorkletProcessor
       processors[`${id}`] = pendingProcessor.instance;
 
       pendingProcessor.constructionData = null;

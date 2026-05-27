@@ -194,7 +194,7 @@ describe('AudioWorklet', () => {
       await audioContext.close();
     });
 
-    it(`should throw clean error if worklet is invalid`, async () => {
+    it(`should throw clean error if worklet is invalid (1)`, async () => {
       // blob worklets do not support import
       const blob = new Blob(['import stuff from "./abc"'], { type: 'application/javascript' });
       const objectUrl = URL.createObjectURL(blob);
@@ -213,7 +213,7 @@ describe('AudioWorklet', () => {
       assert.isTrue(errored);
     });
 
-    it(`should throw clean error if worklet is invalid`, async () => {
+    it(`should throw clean error if worklet is invalid (2)`, async () => {
       const audioContext = new AudioContext();
       let errored = false;
 

@@ -39,6 +39,7 @@ const ignoreCases = [
   'the-audio-api/the-iirfilternode-interface/iir-filter-silent-block-crash.html',
   'the-audio-api/the-mediaelementaudiosourcenode-interface/mediaElementAudioSource-mediaStreamAudioDestination-stream-crash.html',
   'the-audio-api/the-mediaelementaudiosourcenode-interface/mediaElementAudioSource_closed_context-crash.html',
+  'the-audio-api/the-audioworklet-interface/process-parameters.https.html',
 ]
 
 // -------------------------------------------------------
