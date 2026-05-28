@@ -26,7 +26,7 @@ export class AudioWorkletProcessor {
     // cf. wpt/webaudio/the-audio-api/the-audioworklet-interface/processor-construction-port.https.html
     if (pendingProcessor.super !== null) {
       this[kWorkletCallableProcess] = false;
-      throw new TypeError('Cannot construct "AudioWorkletProcessor": Invalid pending construction data');;
+      throw new TypeError(`Cannot construct "${this.constructor.name}": Invalid pending construction data`);
     }
 
     const {
