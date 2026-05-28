@@ -36,7 +36,7 @@ describe('# OfflineAudioContext', () => {
       assert.deepEqual(aResult, bResult);
     });
 
-    it(`should throw clean error when called twice`, async () => {
+    it(`[TO BE IMPROVED] should throw clean error when called twice`, async () => {
       const offline = new OfflineAudioContext(1, 48000, 48000);
       await offline.startRendering();
 
