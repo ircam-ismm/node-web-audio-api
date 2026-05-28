@@ -272,9 +272,10 @@ parentPort.on('message', async event => {
       // If execution of process fail for any reason, it will be catched in
       // AudioWorkletProcessor::[kWorkletUnpackProcess]
       // cf. wpt/webaudio/the-audio-api/the-audioworklet-interface/process-getter.https.html
+      // Do not use `hasOwnProperty` because we cannot assume that we know
+      // the prototype chain.
       if (!isMock) {
-        if (!Object.prototype.hasOwnProperty.call(ctor.prototype, 'process')
-          && !Object.prototype.hasOwnProperty.call(pendingProcessor.instance, 'process')) {
+        if (!('process' in pendingProcessor.instance)) {
           const err = new TypeError(`Invalid AudioWorkletNode "${pendingProcessor.instance.constructor.name}": Invalid "process" method`);
           pendingProcessor.instance[kWorkletMarkNonCallableProcess](['node-web-audio-api:worklet:process-invalid', err]);
         }
