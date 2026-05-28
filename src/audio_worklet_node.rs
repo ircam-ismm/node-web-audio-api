@@ -366,6 +366,20 @@ fn process_audio_worklet(
         }
     }
 
+    // Clear output buffers
+    // cf. wpt/webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-process-zero-outputs.https.html
+    for (output_number, output) in outputs.iter().enumerate() {
+        let js_output = js_outputs.get::<Array>(output_number as u32)?.unwrap();
+
+        for (channel_number, channel) in output.iter().enumerate() {
+            let mut js_channel = js_output
+                .get::<Float32Array>(channel_number as u32)?
+                .unwrap();
+            let js_channel: &mut [f32] = unsafe { js_channel.as_mut() };
+            js_channel.fill(0.);
+        }
+    }
+
     // Copy params values into JS params buffers
     //
     // @todo(perf) - We could rely on the fact that ParameterDescriptors

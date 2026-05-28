@@ -83,16 +83,14 @@ export class AudioWorkletProcessor {
   // - unpack arguments from napi-rs `apply`
   // - cast return value to boolean
   // - catch and cleanly return error so that rust can properly handle it
-  //
-  // This method is called only if a "real" process method has been found
+  // This method is called only if a "real" process attribute has been found at construction
+  // However if this is the first call we don't know yet if process is callable
   [kWorkletUnpackProcess]([inputs, outputs, parameters]) {
-    // output must be cleaned up and filled with zeros
-    // cf. the-audioworklet-interface/audioworkletprocessor-unconnected-outputs.https.window.html
-    outputs.forEach(output => output.forEach(channel => channel.fill(0)));
-
     try {
       return !!this.process(inputs, outputs, parameters);
     } catch (err) {
+      // no need to return the error to rust and have another roundtrip
+      // we can just mark the process as non callable here and return false
       let returnedError;
       // make sure Rust receives a "real" error instance, i.e. support `throw "my message";`
       if (!Error.isError(err)) {
