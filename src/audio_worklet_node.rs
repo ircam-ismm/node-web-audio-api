@@ -131,7 +131,6 @@ thread_local! {
     static HAS_THREAD_PRIO: Cell<bool> = const { Cell::new(false) };
 }
 
-
 /// Check that given JS and Rust input / output layout are the same,
 /// i.e. that each input / output have the same number of channels
 ///
