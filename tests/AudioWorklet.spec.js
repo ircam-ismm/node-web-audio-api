@@ -298,6 +298,23 @@ describe('AudioWorkletProcessor', () => {
       assert.isTrue(errored);
     });
 
+    it('should throw a clean error when process throws raw message', async () => {
+      let errored = false;
+
+      const audioContext = new AudioContext();
+      await audioContext.audioWorklet.addModule('./worklets/invalid-process.worklet.js');
+
+      const invalid = new AudioWorkletNode(audioContext, 'process-throws-raw');
+      invalid.addEventListener('processorerror', (e) => {
+        prettyPrintErr(e.error);
+        errored = true;
+      });
+
+      await delay(100);
+      await audioContext.close();
+      assert.isTrue(errored);
+    });
+
     it('OfflineAudioContext.startRendering should return when processor constructor is invalid', async () => {
       const audioContext = new OfflineAudioContext(1, 128, 48000);
       await audioContext.audioWorklet.addModule('./worklets/invalid-ctor.worklet.js');

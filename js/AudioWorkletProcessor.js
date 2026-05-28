@@ -89,11 +89,12 @@ export class AudioWorkletProcessor {
     try {
       return !!this.process(inputs, outputs, parameters);
     } catch (err) {
-      // no need to return the error to rust and have another roundtrip
       // we can just mark the process as non callable here and return false
+      // (no need to return the error to rust and have another rust / js roundtrip)
       let error;
-      // make sure Rust receives a "real" error instance, i.e. support `throw "my message";`
-      if (!Error.isError(err)) {
+      // make sure we propagate an error instance, i.e. support `throw "my message";`
+      // @note that `Error.isError` is not available in Node v22
+      if (!(err instanceof Error)) {
         error = new Error(err);
       } else {
         error = err;

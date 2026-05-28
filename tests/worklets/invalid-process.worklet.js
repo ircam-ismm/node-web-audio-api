@@ -13,3 +13,13 @@ class ProcessThrows extends AudioWorkletProcessor {
 }
 
 registerProcessor('process-throws', ProcessThrows);
+
+
+class ProcessThrowsRaw extends AudioWorkletProcessor {
+  // attribute exists but is not callbable
+  process = (inputs, outputs, params) => {
+    throw 'row string thrown';
+  }
+}
+
+registerProcessor('process-throws-raw', ProcessThrowsRaw);
