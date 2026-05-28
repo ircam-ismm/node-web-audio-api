@@ -371,7 +371,7 @@ fn process_audio_worklet(
     for (output_number, output) in outputs.iter().enumerate() {
         let js_output = js_outputs.get::<Array>(output_number as u32)?.unwrap();
 
-        for (channel_number, channel) in output.iter().enumerate() {
+        for (channel_number, _) in output.iter().enumerate() {
             let mut js_channel = js_output
                 .get::<Float32Array>(channel_number as u32)?
                 .unwrap();
