@@ -39,9 +39,11 @@ export class BufferPool {
   }
 
   recycle(buffer) {
-    // make sure we can't pollute the pool
-    if (buffer.length === this.#bufferSize) {
-      this.#pool.push(buffer);
+    // make sure we don't pollute the pool
+    if (buffer.length !== this.#bufferSize) {
+      throw new Error(`Attempt to recycle a buffer of length ${buffer.length} in a pool of buffers of length ${this.#bufferSize}`);
     }
+
+    this.#pool.push(buffer);
   }
 }

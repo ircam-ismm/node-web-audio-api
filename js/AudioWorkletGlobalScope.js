@@ -10,24 +10,18 @@ import { AudioWorkletProcessor } from './AudioWorkletProcessor.js';
 import { isIterable } from './lib/is-iterable.js';
 import { isConstructor } from './lib/is-constructor.js';
 import {
-  kWorkletCallableProcess,
   kWorkletMarkNonCallableProcess,
-  kWorkletInputs,
-  kWorkletOutputs,
-  kWorkletParams,
-  kWorkletParamsCache,
   kWorkletGetBuffer,
   kWorkletGetBuffer1,
   kWorkletRecycleBuffer,
   kWorkletRecycleBuffer1,
   kWorkletMarkAsUntransferable,
-  kWorkletUnpackProcess,
 } from './lib/audio-worklet/symbols.js';
 import {
-  pendingProcessorConstructionData,
-} from './lib/audio-worklet/pending-processor-construction-data.js'
+  pendingProcessor,
+} from './lib/audio-worklet/pending-processor.js';
 import {
-  BufferPool
+  BufferPool,
 } from './lib/audio-worklet/BufferPool.js';
 
 import nativeBinding from '../load-native.js';
@@ -242,35 +236,57 @@ parentPort.on('message', async event => {
       const ctor = nameProcessorCtorMap.get(name);
 
       // entities of interest for the AudioWorkletProcess base class
-      pendingProcessorConstructionData.inner = {
+      pendingProcessor.constructionData = {
         messagePort,
         errorPort,
         numberOfInputs: options.numberOfInputs,
         numberOfOutputs: options.numberOfOutputs,
         parameterDescriptors: ctor.parameterDescriptors,
+        errored: null,
       };
 
-      let instance;
       let errored = false;
+      let isMock = false;
 
       try {
-        instance = new ctor(options);
+        pendingProcessor.instance = new ctor(options);
       } catch (err) {
-        // if the given processor constructor failed, we create a dummy processor
+        errored = true;
+
+        // If the given processor constructor failed, we create a dummy processor
         // that we mark immediately as non-callable. This prevents situations where
         // the NapiAudioWorkletProcessor, which already exists at this point, hangs
         // forever waiting for its JS counterpart
         // @todo - This design could be improved in the future by flagging somehow
         // the Rust processor to avoid the cross thread communication
-        errored = true;
-        instance = new AudioWorkletProcessor(options);
-        instance[kWorkletMarkNonCallableProcess](['node-web-audio-api:worklet:ctor-error', err]);
+        if (!pendingProcessor.instance) {
+          isMock = true;
+          // super may have been called but instance did throw, we can reset super
+          pendingProcessor.super = null;
+          pendingProcessor.instance = new AudioWorkletProcessor(options);
+          pendingProcessor.instance[kWorkletMarkNonCallableProcess]('node-web-audio-api:worklet:ctor-error', err);
+        }
       }
 
-      pendingProcessorConstructionData.inner = null;
-      // store in global so that Rust can match the JS processor
-      // with its corresponding NapiAudioWorkletProcessor
-      processors[`${id}`] = instance;
+      // Check that process method exists either on instance or on prototype.
+      // If execution of process fail for any reason, it will be catched in
+      // AudioWorkletProcessor::[kWorkletUnpackProcess]
+      // cf. wpt/webaudio/the-audio-api/the-audioworklet-interface/process-getter.https.html
+      // Do not use `hasOwnProperty` because we cannot assume that we know
+      // the prototype chain.
+      if (!isMock) {
+        if (!('process' in pendingProcessor.instance)) {
+          const err = new TypeError(`Invalid AudioWorkletNode "${pendingProcessor.instance.constructor.name}": Invalid "process" method`);
+          pendingProcessor.instance[kWorkletMarkNonCallableProcess]('node-web-audio-api:worklet:process-invalid', err);
+        }
+      }
+
+      // Store in global to match the JS processor with its corresponding NapiAudioWorkletProcessor
+      processors[`${id}`] = pendingProcessor.instance;
+
+      pendingProcessor.constructionData = null;
+      pendingProcessor.instance = null;
+      pendingProcessor.super = null;
       // notify main thread that instantiation has finished somehow
       if (errored) {
         parentPort.postMessage({ cmd: 'node-web-audio-api:worklet:ctor-error', id });

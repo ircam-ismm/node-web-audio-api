@@ -194,7 +194,7 @@ describe('AudioWorklet', () => {
       await audioContext.close();
     });
 
-    it(`should throw clean error if worklet is invalid`, async () => {
+    it(`should throw clean error if worklet is invalid (1)`, async () => {
       // blob worklets do not support import
       const blob = new Blob(['import stuff from "./abc"'], { type: 'application/javascript' });
       const objectUrl = URL.createObjectURL(blob);
@@ -213,7 +213,7 @@ describe('AudioWorklet', () => {
       assert.isTrue(errored);
     });
 
-    it(`should throw clean error if worklet is invalid`, async () => {
+    it(`should throw clean error if worklet is invalid (2)`, async () => {
       const audioContext = new AudioContext();
       let errored = false;
 
@@ -254,6 +254,57 @@ describe('AudioWorkletProcessor', () => {
       await audioContext.audioWorklet.addModule('./worklets/invalid-ctor.worklet.js');
 
       const invalid = new AudioWorkletNode(audioContext, 'invalid-ctor');
+      invalid.addEventListener('processorerror', (e) => {
+        prettyPrintErr(e.error);
+        errored = true;
+      });
+
+      await delay(100);
+      await audioContext.close();
+      assert.isTrue(errored);
+    });
+
+    it('should throw a clean error when process is not callable', async () => {
+      let errored = false;
+
+      const audioContext = new AudioContext();
+      await audioContext.audioWorklet.addModule('./worklets/invalid-process.worklet.js');
+
+      const invalid = new AudioWorkletNode(audioContext, 'invalid-process');
+      invalid.addEventListener('processorerror', (e) => {
+        prettyPrintErr(e.error);
+        errored = true;
+      });
+
+      await delay(100);
+      await audioContext.close();
+      assert.isTrue(errored);
+    });
+
+    it('should throw a clean error when process throws', async () => {
+      let errored = false;
+
+      const audioContext = new AudioContext();
+      await audioContext.audioWorklet.addModule('./worklets/invalid-process.worklet.js');
+
+      const invalid = new AudioWorkletNode(audioContext, 'process-throws');
+      invalid.addEventListener('processorerror', (e) => {
+        prettyPrintErr(e.error);
+        errored = true;
+      });
+
+      await delay(100);
+      await audioContext.close();
+      assert.isTrue(errored);
+    });
+
+    it('should throw a clean error when process throws raw message', async () => {
+      let errored = false;
+
+      const audioContext = new AudioContext();
+      await audioContext.audioWorklet.addModule('./worklets/invalid-process.worklet.js');
+
+      const invalid = new AudioWorkletNode(audioContext, 'process-throws-raw');
       invalid.addEventListener('processorerror', (e) => {
         prettyPrintErr(e.error);
         errored = true;
