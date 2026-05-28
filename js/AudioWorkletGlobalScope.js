@@ -264,7 +264,7 @@ parentPort.on('message', async event => {
           // super may have been called but instance did throw, we can reset super
           pendingProcessor.super = null;
           pendingProcessor.instance = new AudioWorkletProcessor(options);
-          pendingProcessor.instance[kWorkletMarkNonCallableProcess](['node-web-audio-api:worklet:ctor-error', err]);
+          pendingProcessor.instance[kWorkletMarkNonCallableProcess]('node-web-audio-api:worklet:ctor-error', err);
         }
       }
 
@@ -277,7 +277,7 @@ parentPort.on('message', async event => {
       if (!isMock) {
         if (!('process' in pendingProcessor.instance)) {
           const err = new TypeError(`Invalid AudioWorkletNode "${pendingProcessor.instance.constructor.name}": Invalid "process" method`);
-          pendingProcessor.instance[kWorkletMarkNonCallableProcess](['node-web-audio-api:worklet:process-invalid', err]);
+          pendingProcessor.instance[kWorkletMarkNonCallableProcess]('node-web-audio-api:worklet:process-invalid', err);
         }
       }
 

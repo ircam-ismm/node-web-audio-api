@@ -131,10 +131,6 @@ thread_local! {
     static HAS_THREAD_PRIO: Cell<bool> = const { Cell::new(false) };
 }
 
-struct WorkletAbruptCompletionResult {
-    cmd: String,
-    err: Error,
-}
 
 /// Check that given JS and Rust input / output layout are the same,
 /// i.e. that each input / output have the same number of channels
@@ -315,17 +311,6 @@ fn process_audio_worklet(
     }
 
     let render_quantum_size = global.get_named_property::<u32>("renderQuantumSize")? as usize;
-    // The `process` method is executed indirectly because napi-rs `apply`
-    // implementation retrieve the arguments as an array in the first argument, Then
-    // we need to unpack them first (cf. `AudioWorkletProcessor[kWorkletUnpackProcess]`)
-    let k_worklet_unpack_process = env.symbol_for("node-web-audio-api:worklet-unpack-process")?;
-
-    // The `kWorkletUnpackProcess` wrapper function coerce value returned from `process`
-    // to bool, therefore if we get anything else, i.e. `Unknown`, an error occurred.
-    let unpack_process_function = processor
-        .get_property::<JsSymbol, Function<(Array, Array, Object), Either<bool, Unknown>>>(
-            k_worklet_unpack_process,
-        )?;
 
     let k_worklet_inputs = env.symbol_for("node-web-audio-api:worklet-inputs")?;
     let mut js_inputs = processor.get_property::<JsSymbol, Array>(k_worklet_inputs)?;
@@ -381,7 +366,6 @@ fn process_audio_worklet(
     }
 
     // Copy params values into JS params buffers
-    //
     // @todo(perf) - We could rely on the fact that ParameterDescriptors
     // are ordered maps to avoid sending param names in `param_values`
     for (name, data) in param_values.iter() {
@@ -396,59 +380,40 @@ fn process_audio_worklet(
         js_params.set_named_property(name, param_values)?;
     }
 
-    let js_result = unpack_process_function.apply(processor, (js_inputs, js_outputs, js_params))?;
+    // The `process` method is executed indirectly because napi-rs `apply` implementation
+    // retrieve the arguments as an array in the first argument, Then we need to unpack
+    // them first (cf. `AudioWorkletProcessor[kWorkletUnpackProcess]`)
+    let k_worklet_unpack_process = env.symbol_for("node-web-audio-api:worklet-unpack-process")?;
 
-    let abrupt_completion = match js_result {
-        Either::A(tail_time) => {
-            // copy JS output buffers back into outputs
-            for (output_number, output) in outputs.iter().enumerate() {
-                let js_output = js_outputs.get_element::<Array>(output_number as u32)?;
+    // The `kWorkletUnpackProcess` wrapper function coerce value returned from `process`
+    // to bool, if any error occurred in process, it has been catched in `kWorkletUnpackProcess``
+    // which marked the processor has non-callable and returned false
+    let unpack_process_function = processor
+        .get_property::<JsSymbol, Function<(Array, Array, Object), bool>>(
+            k_worklet_unpack_process,
+        )?;
 
-                for (channel_number, channel) in output.iter().enumerate() {
-                    let js_channel = js_output
-                        .get::<Float32Array>(channel_number as u32)?
-                        .unwrap();
+    let tail_time = unpack_process_function.apply(processor, (js_inputs, js_outputs, js_params))?;
 
-                    let src = js_channel.as_ptr();
-                    let dst = channel.as_ptr() as *mut f32;
+    // copy JS output buffers back into outputs
+    for (output_number, output) in outputs.iter().enumerate() {
+        let js_output = js_outputs.get_element::<Array>(output_number as u32)?;
 
-                    unsafe {
-                        std::ptr::copy_nonoverlapping(src, dst, render_quantum_size);
-                    }
-                }
+        for (channel_number, channel) in output.iter().enumerate() {
+            let js_channel = js_output
+                .get::<Float32Array>(channel_number as u32)?
+                .unwrap();
+
+            let src = js_channel.as_ptr();
+            let dst = channel.as_ptr() as *mut f32;
+
+            unsafe {
+                std::ptr::copy_nonoverlapping(src, dst, render_quantum_size);
             }
-
-            let _ = tail_time_sender.send(tail_time); // allowed to fail
-
-            None
         }
-        // error thrown in process
-        Either::B(err) => Some(WorkletAbruptCompletionResult {
-            cmd: "node-web-audio-api:worklet:process-error".to_string(),
-            err: err.into(),
-        }),
-    };
-
-    // Handle errors
-    // @todo - propagate back to rust side to remove processor from graph
-    if let Some(abrupt_completion) = abrupt_completion {
-        let WorkletAbruptCompletionResult { cmd, err } = abrupt_completion;
-
-        // Mark as non callable and dispatch `processorerror` event on main thread
-        let k_worklet_mark_non_callable =
-            env.symbol_for("node-web-audio-api:worklet-mark-non-callable-process")?;
-
-        let mark_non_callable_function = processor
-            .get_property::<JsSymbol, Function<(String, Object), ()>>(
-                k_worklet_mark_non_callable,
-            )?;
-        let js_error = env.create_error(err)?;
-        let _ = mark_non_callable_function.apply(processor, (cmd, js_error));
-
-        // Mark tail time to false in audio graph
-        // https://webaudio.github.io/web-audio-api/#active-source
-        let _ = tail_time_sender.send(false);
     }
+
+    let _ = tail_time_sender.send(tail_time); // allowed to fail
 
     Ok(())
 }

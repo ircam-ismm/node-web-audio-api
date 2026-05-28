@@ -67,7 +67,7 @@ export class AudioWorkletProcessor {
         ];
       }
     } catch (err) {
-      this[kWorkletMarkNonCallableProcess](['node-web-audio-api:worklet:ctor-error', err]);
+      this[kWorkletMarkNonCallableProcess]('node-web-audio-api:worklet:ctor-error', err);
     }
   }
 
@@ -82,7 +82,7 @@ export class AudioWorkletProcessor {
   // Wrapper around the "real" process method that allows to
   // - unpack arguments from napi-rs `apply`
   // - cast return value to boolean
-  // - catch and cleanly return error so that rust can properly handle it
+  // - catch and propagate error while keeping the rust side clean
   // This method is called only if a "real" process attribute has been found at construction
   // However if this is the first call we don't know yet if process is callable
   [kWorkletUnpackProcess]([inputs, outputs, parameters]) {
@@ -91,19 +91,21 @@ export class AudioWorkletProcessor {
     } catch (err) {
       // no need to return the error to rust and have another roundtrip
       // we can just mark the process as non callable here and return false
-      let returnedError;
+      let error;
       // make sure Rust receives a "real" error instance, i.e. support `throw "my message";`
       if (!Error.isError(err)) {
-        returnedError = new Error(err);
+        error = new Error(err);
       } else {
-        returnedError = err;
+        error = err;
       }
 
-      return returnedError;
+      this[kWorkletMarkNonCallableProcess]('node-web-audio-api:worklet:process-error', error);
+
+      return false;
     }
   }
 
-  [kWorkletMarkNonCallableProcess]([cmd, err]) {
+  [kWorkletMarkNonCallableProcess](cmd, err) {
     this[kWorkletCallableProcess] = false;
     this.#errorPort.postMessage({ cmd, err });
   }
