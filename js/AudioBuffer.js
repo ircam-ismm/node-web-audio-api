@@ -123,6 +123,10 @@ export class AudioBuffer {
       throw new TypeError(`Failed to execute 'copyFromChannel' on 'AudioBuffer': parameter 1 is not of type 'Float32Array'`);
     }
 
+    if (destination.buffer instanceof SharedArrayBuffer) {
+      throw new TypeError(`Failed to execute 'copyFromChannel' on 'AudioBuffer': The provided Float32Array value must not be shared.`);
+    }
+
     // Rust implementation uses a usize which will clamp -1 to 0, and spec requires
     // an IndexSizeError rather than a TypeError, so this check must be done here.
     // cf. note on AnalyzerNode::fftSize
@@ -156,6 +160,10 @@ export class AudioBuffer {
 
     if (!(source instanceof Float32Array)) {
       throw new TypeError(`Failed to execute 'copyToChannel' on 'AudioBuffer': source is not of type 'Float32Array'`);
+    }
+
+    if (source.buffer instanceof SharedArrayBuffer) {
+      throw new TypeError(`Failed to execute 'copyToChannel' on 'AudioBuffer': The provided Float32Array value must not be shared.`);
     }
 
     // Rust implementation uses a usize which will clamp -1 to 0, and spec requires

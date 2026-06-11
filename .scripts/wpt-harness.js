@@ -119,7 +119,9 @@ const setup = window => {
   window.URL = URL;
   window.Blob = Blob;
   window.SharedArrayBuffer = SharedArrayBuffer;
-  // @note - adding Function this crashes some tests:
+  window.WebAssembly = WebAssembly;
+
+  // @note - adding Function crashes some tests, to be explored:
   // the-pannernode-interface/pannernode-setposition-throws.html
   // the-periodicwave-interface/createPeriodicWaveInfiniteValuesThrows.html
   // window.Function = Function;
