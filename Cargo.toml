@@ -29,3 +29,4 @@ strip = true
 
 [features]
 jack = ["web-audio-api/cpal-jack"]
+linux = ["web-audio-api/cpal-pipewire", "web-audio-api/cpal-jack"]

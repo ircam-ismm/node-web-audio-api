@@ -40,6 +40,7 @@
   "scripts": {
     "build": "npm run generate && cargo build --release && node ./.scripts/move-artifact.js --release",
     "build:jack": "npm run generate && cargo build --features jack --release && node ./.scripts/move-artifact.js --release",
+    "build:linux": "npm run generate && cargo build --features linux --release && node ./.scripts/move-artifact.js --release",
     "build:debug": "npm run generate && cargo build && node ./.scripts/move-artifact.js",
     "build:only": "cargo build --release && node ./.scripts/move-artifact.js --release",
     "examples:install": "cd examples && npm install",
