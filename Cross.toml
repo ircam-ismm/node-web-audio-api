@@ -7,8 +7,8 @@ pre-build = [
 [target.armv7-unknown-linux-gnueabihf]
 pre-build = [
   "dpkg --add-architecture $CROSS_DEB_ARCH",
-  "apt update"
-  "apt install --assume-yes clang"
+  "apt update",
+  "apt install --assume-yes clang",
   "apt-get --assume-yes install libasound2-dev:$CROSS_DEB_ARCH libjack-jackd2-dev:$CROSS_DEB_ARCH libpipewire-0.3-dev:$CROSS_DEB_ARCH"
 ]
 
