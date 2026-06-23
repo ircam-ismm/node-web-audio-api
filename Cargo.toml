@@ -14,7 +14,7 @@ crossbeam-channel = "0.5"
 napi = { version = "3.8", features=["napi9", "tokio_rt"] }
 napi-derive = "3.5"
 thread-priority = "3.0"
-web-audio-api = "1.5"
+web-audio-api = "1.6"
 # web-audio-api = { path = "../web-audio-api-rs" }
 
 [build-dependencies]
@@ -30,3 +30,4 @@ strip = true
 [features]
 jack = ["web-audio-api/cpal-jack"]
 linux = ["web-audio-api/cpal-pipewire", "web-audio-api/cpal-jack"]
+wpt = ["web-audio-api/spec-compliant-worklet-inputs"]

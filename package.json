@@ -42,6 +42,7 @@
     "build:jack": "npm run generate && cargo build --features jack --release && node ./.scripts/move-artifact.js --release",
     "build:linux": "npm run generate && cargo build --features linux --release && node ./.scripts/move-artifact.js --release",
     "build:debug": "npm run generate && cargo build && node ./.scripts/move-artifact.js",
+    "build:wpt": "npm run generate && cargo build --features wpt --release && node ./.scripts/move-artifact.js --release",
     "build:only": "cargo build --release && node ./.scripts/move-artifact.js --release",
     "examples:install": "cd examples && npm install",
     "examples:clean": "cd examples && rm -rf node_modules",
@@ -55,7 +56,7 @@
     "test": "mocha tests/*.spec.js",
     "test:ci": "mocha tests/*.spec.js -- --ci",
     "test:only": "mocha",
-    "wpt": "npm run build && node ./.scripts/wpt-harness.js",
+    "wpt": "npm run build:wpt && node ./.scripts/wpt-harness.js",
     "wpt:only": "node ./.scripts/wpt-harness.js"
   },
   "devDependencies": {
