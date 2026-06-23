@@ -51,7 +51,6 @@ panModulation.start(0);
 // Starve the main thread
 const mainThreadLoadIntervalId = setInterval(function() {
   var start = Date.now();
-  // eslint-disable-next-line no-empty
   while (Date.now() - start < 90) {}
 }, 100);
 

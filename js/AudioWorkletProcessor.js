@@ -53,7 +53,7 @@ export class AudioWorkletProcessor {
     try {
       // Populate with dummy values which will be replaced in first render call
       this[kWorkletInputs] = Object.freeze(new Array(numberOfInputs).fill(Object.freeze([])));
-      this[kWorkletOutputs] = Object.freeze( new Array(numberOfOutputs).fill(Object.freeze([])));
+      this[kWorkletOutputs] = Object.freeze(new Array(numberOfOutputs).fill(Object.freeze([])));
       // Object to be reused as `process` parameters argument
       this[kWorkletParams] = {};
       // Cache of 2 Float32Array (of length 128 and 1) for each param, to be reused on

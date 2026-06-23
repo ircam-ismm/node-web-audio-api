@@ -206,8 +206,7 @@ console.log('');
   const name = 'Simple mixing (100x same buffer) - be careful w/ volume here!';
 
   const adjusted_duration = DURATION / 4;
-  const context =
-      new OfflineAudioContext(2, adjusted_duration * sampleRate, sampleRate);
+  const context = new OfflineAudioContext(2, adjusted_duration * sampleRate, sampleRate);
 
   for (let i = 0; i < 100; i++) {
     const source = context.createBufferSource();
@@ -638,7 +637,7 @@ stdin.setRawMode(true);
 // unless an error or process.exit() happens)
 stdin.resume();
 // i don't want binary, do you?
-stdin.setEncoding( 'utf8' );
+stdin.setEncoding('utf8');
 // on any data into stdin
 let id = ``;
 let src = null;

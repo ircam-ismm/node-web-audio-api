@@ -232,7 +232,6 @@ export class AudioWorklet {
   // For OfflineAudioContext only, check that all processors have been properly
   // created before rendering
   async [kCheckProcessorsCreated]() {
-    // eslint-disable-next-line no-async-promise-executor
     return new Promise(async resolve => {
       while (this.#pendingCreateProcessors.size !== 0) {
         // we need a macro-task to ensure message can be received
