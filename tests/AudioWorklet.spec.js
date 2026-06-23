@@ -275,12 +275,12 @@ describe('AudioWorkletProcessor', () => {
       errored = true;
     });
 
-    await delay(100);
+    await delay(1000);
     await audioContext.close();
     assert.isTrue(errored);
   });
 
-  it.skip('should throw a clean error when process throws', async () => {
+  it('should throw a clean error when process throws', async () => {
     let errored = false;
 
     const audioContext = new AudioContext();
@@ -292,7 +292,7 @@ describe('AudioWorkletProcessor', () => {
       errored = true;
     };
 
-    await delay(100);
+    await delay(1000);
     await audioContext.close();
     assert.isTrue(errored);
   });
@@ -309,7 +309,7 @@ describe('AudioWorkletProcessor', () => {
       errored = true;
     });
 
-    await delay(100);
+    await delay(1000);
     await audioContext.close();
     assert.isTrue(errored);
   });
