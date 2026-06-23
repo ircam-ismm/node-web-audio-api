@@ -42,6 +42,7 @@ const IMPLEMENTATION_MAX_NUMBER_OF_CHANNELS = 32;
 export class AudioWorkletNode extends AudioNode {
   #port = null;
   #parameters = {};
+  #onprocessorerror = null;
 
   constructor(context, name, options) {
     if (arguments.length < 2) {
@@ -278,6 +279,22 @@ export class AudioWorkletNode extends AudioNode {
 
     return this.#port;
   }
+
+  get onprocessorerror() {
+    if (!(this instanceof AudioWorkletNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioWorkletNode\'');
+    }
+
+    return this.#onprocessorerror;
+  }
+
+  set onprocessorerror(callback) {
+    if (!(this instanceof AudioWorkletNode)) {
+      throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'AudioWorkletNode\'');
+    }
+
+    this.#onprocessorerror = callback;
+  }
 }
 
 Object.defineProperties(AudioWorkletNode, {
@@ -300,4 +317,5 @@ Object.defineProperties(AudioWorkletNode.prototype, {
   },
   parameters: kEnumerableProperty,
   port: kEnumerableProperty,
+  onprocessorerror: kEnumerableProperty,
 });
