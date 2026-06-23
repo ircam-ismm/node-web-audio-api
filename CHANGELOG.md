@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v2.1.0 - 2026-06-23
+
+- Feat: Linux build now defaults to PipeWire with fallback to Jack and ALSA
+- Feat: Refactor AudioWorklet with improved robustness, error handling and compliance
+- Integrate changes from upstream crate [v1.6.0](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-160-2026-06-20)
+
 ## v2.0.0 - 2026-05-23
 
 - Refactor: refactor JS facade from CommonJS to ESM
