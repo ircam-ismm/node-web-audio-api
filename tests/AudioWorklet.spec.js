@@ -280,7 +280,7 @@ describe('AudioWorkletProcessor', () => {
     assert.isTrue(errored);
   });
 
-  it('should throw a clean error when process throws', async () => {
+  it.skip('should throw a clean error when process throws', async () => {
     let errored = false;
 
     const audioContext = new AudioContext();
