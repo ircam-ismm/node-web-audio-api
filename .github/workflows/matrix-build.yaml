@@ -95,8 +95,8 @@ jobs:
           rustup target add ${{ matrix.target }}
 
           if [[ "${{ matrix.runner }}" == "ubuntu-latest" ]]; then
-            echo "Build with Jack feature"
-            ${{ matrix.command }} build --locked  --features jack --release --target ${{ matrix.target }}
+            echo "Build with PipeWire & Jack features"
+            ${{ matrix.command }} build --locked  --features linux --release --target ${{ matrix.target }}
           else
             ${{ matrix.command }} build --locked --release --target ${{ matrix.target }}
           fi
