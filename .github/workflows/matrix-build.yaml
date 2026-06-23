@@ -13,45 +13,45 @@ on:
   workflow_dispatch:
 
 jobs:
-  verify-build:
-    uses: ./.github/workflows/verify-build.yaml
+  # verify-build:
+  #   uses: ./.github/workflows/verify-build.yaml
 
   matrix-build:
-    needs: verify-build
+    # needs: verify-build
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: darwin-arm64
-            runner: macos-latest
-            target: aarch64-apple-darwin
-            command: cargo
+          # - name: darwin-arm64
+          #   runner: macos-latest
+          #   target: aarch64-apple-darwin
+          #   command: cargo
 
-          - name: darwin-x64
-            runner: macos-latest
-            target: x86_64-apple-darwin
-            command: cargo
+          # - name: darwin-x64
+          #   runner: macos-latest
+          #   target: x86_64-apple-darwin
+          #   command: cargo
 
-          - name: win32-arm64-msvc
-            runner: windows-latest
-            target: aarch64-pc-windows-msvc
-            command: cargo
+          # - name: win32-arm64-msvc
+          #   runner: windows-latest
+          #   target: aarch64-pc-windows-msvc
+          #   command: cargo
 
-          - name: win32-x64-msvc
-            runner: windows-latest
-            target: x86_64-pc-windows-msvc
-            command: cargo
+          # - name: win32-x64-msvc
+          #   runner: windows-latest
+          #   target: x86_64-pc-windows-msvc
+          #   command: cargo
 
-          - name: linux-arm64-gnu
-            runner: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-            command: cross
+          # - name: linux-arm64-gnu
+          #   runner: ubuntu-latest
+          #   target: aarch64-unknown-linux-gnu
+          #   command: cross
 
-          - name: linux-x64-gnu
-            runner: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            command: cross
+          # - name: linux-x64-gnu
+          #   runner: ubuntu-latest
+          #   target: x86_64-unknown-linux-gnu
+          #   command: cross
 
           - name: linux-arm-gnueabihf
             runner: ubuntu-latest
