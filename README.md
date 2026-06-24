@@ -9,8 +9,6 @@ The library aims to provide an implementation that is both efficient and complia
 - see [`orottier/web-audio-api-rs`](https://github.com/orottier/web-audio-api-rs/) for the "real" audio guts
 - use [`napi-rs`](https://github.com/napi-rs/napi-rs/) for the Node.js bindings
 
-For library authors who want to write components that run both in Node.js and the browser, we also provide [isomorphic-web-audio-api](https://github.com/ircam-ismm/isomorphic-web-audio-api).
-
 ## Install
 
 ```
