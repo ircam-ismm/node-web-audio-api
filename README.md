@@ -151,13 +151,6 @@ sudo apt install libjack-jackd2-dev
 
 In that case, you can use the `npm run build:jack` script to enable the Jack feature.
 
-<!-- # ALSA
-sudo apt install libasound2-dev
-# Jack
-sudo apt install libjack-jackd2-dev
-# PipeWire
-sudo apt install libpipewire-0.3-dev clang -->
-
 ### Audio Backend and Latency
 
 Using the library on Linux with the ALSA backend might lead to unexpected cranky sound with the default render size (i.e. 128 frames). In such cases, a simple workaround is to pass the `playback` latency hint when creating the audio context, which will increase the render size to 1024 frames:

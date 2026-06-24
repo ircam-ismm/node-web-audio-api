@@ -23,40 +23,40 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - name: darwin-arm64
-          #   runner: macos-latest
-          #   target: aarch64-apple-darwin
-          #   command: cargo
+          - name: darwin-arm64
+            runner: macos-latest
+            target: aarch64-apple-darwin
+            command: cargo
 
-          # - name: darwin-x64
-          #   runner: macos-latest
-          #   target: x86_64-apple-darwin
-          #   command: cargo
+          - name: darwin-x64
+            runner: macos-latest
+            target: x86_64-apple-darwin
+            command: cargo
 
-          # - name: win32-arm64-msvc
-          #   runner: windows-latest
-          #   target: aarch64-pc-windows-msvc
-          #   command: cargo
+          - name: win32-arm64-msvc
+            runner: windows-latest
+            target: aarch64-pc-windows-msvc
+            command: cargo
 
-          # - name: win32-x64-msvc
-          #   runner: windows-latest
-          #   target: x86_64-pc-windows-msvc
-          #   command: cargo
+          - name: win32-x64-msvc
+            runner: windows-latest
+            target: x86_64-pc-windows-msvc
+            command: cargo
 
           - name: linux-arm64-gnu
             runner: ubuntu-latest
             target: aarch64-unknown-linux-gnu
             command: cross
 
-          # - name: linux-x64-gnu
-          #   runner: ubuntu-latest
-          #   target: x86_64-unknown-linux-gnu
-          #   command: cross
+          - name: linux-x64-gnu
+            runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            command: cross
 
-          # - name: linux-arm-gnueabihf
-          #   runner: ubuntu-latest
-          #   target: armv7-unknown-linux-gnueabihf
-          #   command: cross
+          - name: linux-arm-gnueabihf
+            runner: ubuntu-latest
+            target: armv7-unknown-linux-gnueabihf
+            command: cross
 
     name: build - ${{ matrix.name }}
     steps:
@@ -96,7 +96,7 @@ jobs:
 
           if [[ "${{ matrix.runner }}" == "ubuntu-latest" ]]; then
             echo "Build with PipeWire & Jack features"
-            ${{ matrix.command }} build --locked  --features linux --release --target ${{ matrix.target }}
+            ${{ matrix.command }} build --locked  --features jack --release --target ${{ matrix.target }}
           else
             ${{ matrix.command }} build --locked --release --target ${{ matrix.target }}
           fi
