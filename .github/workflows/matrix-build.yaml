@@ -13,8 +13,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  # verify-build:
-  #   uses: ./.github/workflows/verify-build.yaml
+  verify-build:
+    uses: ./.github/workflows/verify-build.yaml
 
   matrix-build:
     # needs: verify-build
