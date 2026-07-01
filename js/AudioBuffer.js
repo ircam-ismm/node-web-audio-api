@@ -47,7 +47,7 @@ export class AudioBuffer {
       }
 
       if (options.length === undefined) {
-        throw new TypeError(`Failed to construct 'AudioBuffer': Failed to read the 'numberOfChannels' property from AudioBufferOptions: required member is undefined`);
+        throw new TypeError(`Failed to construct 'AudioBuffer': Failed to read the 'length' property from AudioBufferOptions: required member is undefined`);
       }
 
       parsedOptions.length = conversions['unsigned long'](options.length, {
@@ -56,7 +56,7 @@ export class AudioBuffer {
       });
 
       if (options.sampleRate === undefined) {
-        throw new TypeError(`Failed to construct 'AudioBuffer': Failed to read the 'numberOfChannels' property from AudioBufferOptions: required member is undefined`);
+        throw new TypeError(`Failed to construct 'AudioBuffer': Failed to read the 'sampleRate' property from AudioBufferOptions: required member is undefined`);
       }
 
       parsedOptions.sampleRate = conversions['float'](options.sampleRate, {
