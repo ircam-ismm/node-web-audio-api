@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v2.1.0 - 2026-07-20
+
 - Feat: Refactor AudioWorklet with improved robustness, error handling and compliance
 - Integrate changes from upstream crate [v1.6.0](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-160-2026-06-20)
 
