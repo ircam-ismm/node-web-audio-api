@@ -86,13 +86,9 @@ parentPort.on('message', e => {
 
       // Copy the header, and modify the values: note that RIFF
       // is little-endian, we need to pass `true` as the last param.
-      for (let i = 0; i < wav.length; i++) {
+      for (let i = 0; i < header.length; i++) {
         wav[i] = header[i];
       }
-
-      console.log(
-        `> wav writer thread: sending back wav file: ${sampleRate}Hz, ${channelCount} channels, int16`
-      );
 
       view.setUint16(CHANNEL_OFFSET, channelCount, true);
       view.setUint32(SAMPLE_RATE_OFFSET, sampleRate, true);
@@ -108,6 +104,11 @@ parentPort.on('message', e => {
           writeIndex += 2;
         }
       }
+
+      console.log(
+        `> wav writer thread: sending back wav file: ${sampleRate}Hz, ${channelCount} channels, int16`
+      );
+
       parentPort.postMessage(wav.buffer, [wav.buffer]);
       break;
     }
