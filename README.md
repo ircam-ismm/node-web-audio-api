@@ -55,9 +55,9 @@ console.log(window.AudioContext);
 
 ## Running the Examples
 
-To run all examples locally on your machine you will need to:
+To run the examples locally on your machine you will need to:
 
-1. Clone the repo and build the binary on your machine
+1. Clone the repo
 ```sh
 git clone https://github.com/ircam-ismm/node-web-audio-api.git
 ```
@@ -108,46 +108,18 @@ We provide prebuilt binaries for the following platforms:
 
 - All provided Linux binaries are built with the `jack` flag, which should work either with properly configured [Jack](https://jackaudio.org/) or [pipewire-jack](https://pipewire.org/) backends. If this is a limitation for you, please fill an [issue](https://github.com/ircam-ismm/node-web-audio-api/issues) and we will see what we can do.
 
-### Manually install and build the library
-
-If prebuilt binaries are not shippped for your platform, you will need to:
-
-1. Install the Rust toolchain
-
-```sh
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
-
-2. Install and build from github
-
-```sh
-git clone https://github.com/ircam-ismm/node-web-audio-api.git node_modules/node-web-audio-api
-cd node_modules/node-web-audio-api
-npm install
-npm run build
-```
-
-The package will be built on your machine, which might take some time.
-
-Be aware that the package won't be listed on your `package.json` file, and that it won't be re-installed if running `npm install` again. A possible workaround would be to include the above in a postinstall script.
 
 ## Notes for Linux users
 
-### Dependencies
+### Pipewire
 
-To build the library, you will need to manually install the `libasound2-dev` package:
+The binaries shipped with the package are build with the Jack backend feature, on Linux
+ distributions that ship with the [`pipewire`](https://pipewire.org/) audio server
+ (most of them right now), the library should work by just installing `pipewire-jack`
 
-```sh
-sudo apt install libasound2-dev
 ```
-
-Optionally, if you use the Jack Audio Backend, the `libjack-jackd2-dev` package:
-
-```sh
-sudo apt install libjack-jackd2-dev
+apt install pipewire-jack
 ```
-
-In that case, you can use the `npm run build:jack` script to enable the Jack feature.
 
 ### Audio Backend and Latency
 
@@ -183,6 +155,22 @@ cd node-web-audio-api
 npm install
 npm run build
 ```
+
+### Linux
+
+To build the library, you will need to manually install the `libasound2-dev` package:
+
+```sh
+apt install libasound2-dev
+```
+
+Optionally, if you use the Jack Audio Backend, the `libjack-jackd2-dev` package:
+
+```sh
+apt install libjack-jackd2-dev
+```
+
+In that case, you can use the `npm run build:jack` script to enable the Jack feature.
 
 ### Synchronize Versioning
 
