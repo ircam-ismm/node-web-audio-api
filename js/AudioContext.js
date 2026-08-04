@@ -291,6 +291,19 @@ export class AudioContext extends BaseAudioContext {
 
     throw new Error(`AudioContext::createMediaStreamDestination() is not yet implemented, cf. https://github.com/ircam-ismm/node-web-audio-api/issues/91 for more information`);
   }
+
+  // non-standard API
+  runDiagnostics(callback) {
+    try {
+      this[kNapiObj].runDiagnostics(callback);
+    } catch (err) {
+      if (err.message === 'diagnostic feature not activated') {
+        throw new Error('Cannot execute "runDiagnostics" on AudioContext: diagnostic feature is not activated, you must build the library with `npm run build:diagnostics` to activate this method');
+      } else {
+        throw err;
+      }
+    }
+  }
 }
 
 Object.defineProperties(AudioContext, {

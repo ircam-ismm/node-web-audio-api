@@ -211,6 +211,44 @@ impl NapiAudioContext {
         Ok(())
     }
 
+    // note: #[cfg(feature = "diagnostics")] somehow conflicts with #[napi]
+    // hence we declare the method in all cases and switch cfg inside the body
+    // note that `callback` is prefixed with _ to avoid warning in "normal" build
+    #[napi(catch_unwind)]
+    pub fn run_diagnostics(&self, _callback: Function<(), ()>) -> Result<()> {
+        #[cfg(feature = "diagnostics")]
+        {
+            let tsfn = _callback
+                .build_threadsafe_function()
+                .weak::<true>() // do not prevent process to exit
+                .build_callback(
+                    move |ctx: napi::threadsafe_function::ThreadsafeCallContext<
+                        web_audio_api::context::AudioContextDiagnostics,
+                    >| {
+                        let diagnostic = crate::diagnostics::NapiAudioContextDiagnostics::from(
+                            ctx.value.clone(),
+                        );
+
+                        Ok(diagnostic)
+                    },
+                )?;
+
+            self.inner.run_diagnostics(move |e| {
+                tsfn.call(
+                    e,
+                    napi::threadsafe_function::ThreadsafeFunctionCallMode::Blocking,
+                );
+            });
+
+            return Ok(());
+        }
+
+        #[cfg(not(feature = "diagnostics"))]
+        {
+            Err(napi::Error::from_reason("diagnostic feature not activated"))
+        }
+    }
+
     // attribute EventHandler onerror;
     // [SameObject] readonly attribute AudioPlaybackStats playbackStats;
     // AudioTimestamp getOutputTimestamp ();
