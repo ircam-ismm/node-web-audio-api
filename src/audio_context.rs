@@ -211,8 +211,8 @@ impl NapiAudioContext {
         Ok(())
     }
 
-    // note: #[cfg(feature = "diagnostics")] somehow conflicts with #[napi]
-    // hence we declare the method in all cases and switch cfg inside the body
+    // Note: #[cfg(feature = "diagnostics")] somehow conflicts with #[napi]
+    // Hence we declare the method in all cases and switch cfg inside the body
     // note that `callback` is prefixed with _ to avoid warning in "normal" build
     #[napi(catch_unwind)]
     pub fn run_diagnostics(&self, _callback: Function<(), ()>) -> Result<()> {
