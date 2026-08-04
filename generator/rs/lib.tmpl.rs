@@ -13,6 +13,9 @@ use crate::offline_audio_context::NapiOfflineAudioContext;
 mod events;
 use crate::events::*;
 
+#[cfg(feature = "diagnostics")]
+mod diagnostics;
+
 mod audio_destination_node;
 use crate::audio_destination_node::NapiAudioDestinationNode;
 mod audio_param;
