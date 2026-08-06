@@ -25,7 +25,8 @@ pub fn napi_get_user_media(options: Option<Object>) -> Result<MediaStream> {
         ));
     }
 
-    let constraints_options = options.get::<Object>("audio");
+    let constraints_options = options.get::<Either<bool, Object>>("audio");
+    // is Error is it doesn't match Either<bool, Object>
     if constraints_options.is_err() {
         return Err(napi::Error::from_reason(
             "TypeError -  Failed to execute 'getUserMedia' on 'MediaDevices': audio must be requested".to_string(),
@@ -34,28 +35,72 @@ pub fn napi_get_user_media(options: Option<Object>) -> Result<MediaStream> {
 
     let constraints_options = constraints_options.unwrap();
 
-    let constraints = match constraints_options {
+    let constraints: MediaStreamConstraints = match constraints_options {
         Some(constraints_options) => {
-            let mut constraints = MediaTrackConstraints::default();
+            match constraints_options {
+                Either::A(bool_constraint) => {
+                    // explicit { audio: false } should fail
+                    if bool_constraint == false {
+                        return Err(napi::Error::from_reason(
+                            "TypeError -  Failed to execute 'getUserMedia' on 'MediaDevices': audio must be requested".to_string(),
+                        ));
+                    }
 
-            let device_id = constraints_options.get::<String>("deviceId").unwrap();
-            constraints.device_id = device_id;
+                    MediaStreamConstraints::Audio
+                }
+                Either::B(constraints_options) => {
+                    let mut constraints = MediaTrackConstraints::default();
 
-            let sample_rate = constraints_options.get::<f64>("sampleRate").unwrap_or(None);
-            match sample_rate {
-                Some(sample_rate) => constraints.sample_rate = Some(sample_rate as f32),
-                None => constraints.sample_rate = None,
+                    // pub device_id: Option<String>
+                    let device_id = constraints_options.get::<String>("deviceId");
+                    constraints.device_id = match device_id {
+                        Ok(device_id) => device_id,
+                        Err(_) => {
+                            return Err(napi::Error::from_reason(
+                                "TypeError -  Failed to execute 'getUserMedia' on 'MediaDevices': deviceId must be a string".to_string(),
+                            ));
+                        }
+                    };
+
+                    // pub sample_rate: Option<f32>
+                    let sample_rate = constraints_options.get::<f64>("sampleRate");
+                    constraints.sample_rate = match sample_rate {
+                        Ok(sample_rate) => match sample_rate {
+                            Some(sample_rate) => Some(sample_rate as f32),
+                            None => None,
+                        },
+                        Err(_) => {
+                            return Err(napi::Error::from_reason(
+                                "TypeError -  Failed to execute 'getUserMedia' on 'MediaDevices': sampleRate must be a number".to_string(),
+                            ));
+                        }
+                    };
+
+                    // pub latency: Option<f64>
+                    let latency = constraints_options.get::<f64>("latency");
+                    constraints.latency = match latency {
+                        Ok(latency) => latency,
+                        Err(_) => {
+                            return Err(napi::Error::from_reason(
+                                "TypeError -  Failed to execute 'getUserMedia' on 'MediaDevices': latency must be a number".to_string(),
+                            ));
+                        }
+                    };
+
+                    // pub channel_count: Option<u32>
+                    let channel_count = constraints_options.get::<u32>("channelCount");
+                    constraints.channel_count = match channel_count {
+                        Ok(channel_count) => channel_count,
+                        Err(_) => {
+                            return Err(napi::Error::from_reason(
+                                "TypeError -  Failed to execute 'getUserMedia' on 'MediaDevices': channelCount must be a number".to_string(),
+                            ));
+                        }
+                    };
+
+                    MediaStreamConstraints::AudioWithConstraints(constraints)
+                }
             }
-
-            let latency = constraints_options.get::<f64>("latency").unwrap_or(None);
-            constraints.latency = latency;
-
-            let channel_count = constraints_options
-                .get::<u32>("channelCount")
-                .unwrap_or(None);
-            constraints.channel_count = channel_count;
-
-            MediaStreamConstraints::AudioWithConstraints(constraints)
         }
         None => {
             return Err(napi::Error::from_reason(
