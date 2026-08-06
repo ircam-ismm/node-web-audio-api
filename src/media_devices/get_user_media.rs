@@ -40,7 +40,7 @@ pub fn napi_get_user_media(options: Option<Object>) -> Result<MediaStream> {
             match constraints_options {
                 Either::A(bool_constraint) => {
                     // explicit { audio: false } should fail
-                    if bool_constraint == false {
+                    if !bool_constraint {
                         return Err(napi::Error::from_reason(
                             "TypeError -  Failed to execute 'getUserMedia' on 'MediaDevices': audio must be requested".to_string(),
                         ));
@@ -65,10 +65,7 @@ pub fn napi_get_user_media(options: Option<Object>) -> Result<MediaStream> {
                     // pub sample_rate: Option<f32>
                     let sample_rate = constraints_options.get::<f64>("sampleRate");
                     constraints.sample_rate = match sample_rate {
-                        Ok(sample_rate) => match sample_rate {
-                            Some(sample_rate) => Some(sample_rate as f32),
-                            None => None,
-                        },
+                        Ok(sample_rate) => sample_rate.map(|sample_rate| sample_rate as f32),
                         Err(_) => {
                             return Err(napi::Error::from_reason(
                                 "TypeError -  Failed to execute 'getUserMedia' on 'MediaDevices': sampleRate must be a number".to_string(),
