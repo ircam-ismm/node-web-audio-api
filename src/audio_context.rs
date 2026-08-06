@@ -225,9 +225,8 @@ impl NapiAudioContext {
                     move |ctx: napi::threadsafe_function::ThreadsafeCallContext<
                         web_audio_api::context::AudioContextDiagnostics,
                     >| {
-                        let diagnostic = crate::diagnostics::NapiAudioContextDiagnostics::from(
-                            ctx.value.clone(),
-                        );
+                        let diagnostic =
+                            crate::diagnostics::NapiAudioContextDiagnostics::new(ctx.value.clone());
 
                         Ok(diagnostic)
                     },

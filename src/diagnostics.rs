@@ -15,7 +15,7 @@ pub struct NapiAudioContextDiagnostics {
 }
 
 impl NapiAudioContextDiagnostics {
-    pub(crate) fn from(diagnostics: AudioContextDiagnostics) -> NapiAudioContextDiagnostics {
+    pub(crate) fn new(diagnostics: AudioContextDiagnostics) -> NapiAudioContextDiagnostics {
         let AudioContextDiagnostics {
             backend,
             render_thread,
