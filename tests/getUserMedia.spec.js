@@ -49,6 +49,54 @@ describe('# mediaDevices.getUserMedia(options)', () => {
     }
   });
 
+  it('should fail if options.audio is invalid', async () => {
+    for (let value of [false, NaN, null, undefined, 'coucou', 1]) {
+      let failed = false;
+      try {
+        console.log('>', { audio: value });
+        await mediaDevices.getUserMedia({ audio: value });
+      } catch (err) {
+        console.log(err.message);
+        failed = true;
+      }
+
+      if (!failed) {
+        assert.fail('should have failed');
+      }
+    }
+  });
+
+  it('should fail if options.audio = false', async () => {
+    let failed = false;
+    try {
+      await mediaDevices.getUserMedia({ audio: false });
+    } catch (err) {
+      console.log(err.message);
+      failed = true;
+    }
+
+    if (!failed) {
+      assert.fail('should have failed');
+    }
+  });
+
+
+  it('should fail if options.audio.deviceId is not a string', async () => {
+    let failed = false;
+    try {
+      await mediaDevices.getUserMedia({ audio: {
+        deviceId: { exact: 'coucou' },
+      }});
+    } catch (err) {
+      console.log(err.message);
+      failed = true;
+    }
+
+    if (!failed) {
+      assert.fail('should have failed');
+    }
+  });
+
   it('should not fail if options.audio = true', async () => {
     // accessing microphone in CI make the process stuck
     if (CI) {
