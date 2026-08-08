@@ -14,7 +14,7 @@ crossbeam-channel = "0.5"
 napi = { version = "3.10", features=["napi9", "tokio_rt"] }
 napi-derive = "3.5"
 thread-priority = "3.1"
-web-audio-api = "1.6"
+web-audio-api = "1.7"
 # web-audio-api = { path = "../web-audio-api-rs" }
 
 [build-dependencies]
