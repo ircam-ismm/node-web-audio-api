@@ -1,6 +1,9 @@
 # CHANGELOG
 
-## Unreleased
+## v2.2.0 - 2026-08-09
+
+- Fix: Improve `getUserMedia` parameter coercion and error handling
+- Integrate changes from upstream crate [v1.7.0](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-170-2026-08-06)
 
 ## v2.1.0 - 2026-07-20
 
