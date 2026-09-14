@@ -84,7 +84,6 @@
   },
   "dependencies": {
     "caller": "^1.1.0",
-    "node-fetch": "^3.3.2",
     "webidl-conversions": "^8.0.1"
   }
 }

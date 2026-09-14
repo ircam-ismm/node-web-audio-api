@@ -14,7 +14,6 @@ import {
 // } from 'node:module';
 
 import caller from 'caller';
-import fetch from 'node-fetch';
 
 import {
   kProcessorRegistered,
