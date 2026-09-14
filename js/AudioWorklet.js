@@ -30,6 +30,38 @@ import {
 
 // const require = createRequire(import.meta.url);
 
+// Blocks SSRF-prone targets (loopback, link-local incl. cloud metadata
+// endpoints such as 169.254.169.254, and private network ranges) so that
+// `moduleUrl` cannot be used to reach internal services.
+const assertSafeFetchUrl = (url) => {
+  const { protocol, hostname } = new URL(url);
+
+  if (protocol !== 'http:' && protocol !== 'https:') {
+    throw new Error(`Unsupported protocol '${protocol}'`);
+  }
+
+  const host = hostname.replace(/^\[|\]$/g, '').toLowerCase();
+
+  if (host === 'localhost' || host === '0.0.0.0' || host === '::1') {
+    throw new Error(`Fetching from '${host}' is not allowed`);
+  }
+
+  const ipv4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+
+  if (ipv4) {
+    const [a, b] = [Number(ipv4[1]), Number(ipv4[2])];
+
+    if (
+      a === 127 || a === 10 || a === 0 ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168)
+    ) {
+      throw new Error(`Fetching from '${host}' is not allowed`);
+    }
+  }
+};
+
 /**
  * Retrieve code with different module resolution strategies
  * - file - absolute or relative to cwd pathname
@@ -51,6 +83,7 @@ const resolveModule = async (moduleUrl) => {
     }
   } else if (moduleUrl.startsWith('http')) {
     try {
+      assertSafeFetchUrl(moduleUrl);
       const res = await fetch(moduleUrl);
       code = await res.text();
     } catch (err) {
@@ -75,6 +108,7 @@ const resolveModule = async (moduleUrl) => {
       const url = baseUrl + moduleUrl;
 
       try {
+        assertSafeFetchUrl(url);
         const res = await fetch(url);
         code = await res.text();
       } catch (err) {
