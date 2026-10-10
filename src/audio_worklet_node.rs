@@ -147,6 +147,14 @@ const MAX_TIME_OUTSIDE_EVENT_LOOP: Duration = Duration::from_millis(1);
 /// How long the render thread polls for the reply of a `process` call before blocking
 const SPIN_FOR_REPLY: Duration = Duration::from_micros(30);
 
+/// Whether a thread waiting on the other side of the worklet bridge should poll
+/// rather than park: with a single core the thread that would answer cannot run
+/// while the waiting one polls. Not to be first called from the render thread.
+fn polling_helps() -> bool {
+    static MULTI_CORE: OnceLock<bool> = OnceLock::new();
+    *MULTI_CORE.get_or_init(|| std::thread::available_parallelism().is_ok_and(|n| n.get() > 1))
+}
+
 thread_local! {
     /// Denotes if the Worker thread priority has already been upped
     static HAS_THREAD_PRIO: Cell<bool> = const { Cell::new(false) };
@@ -532,6 +540,11 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
     let receiver = process_call_receiver(worklet_id as usize);
     let entered_at = Instant::now();
     let mut poll_until: Option<Instant> = None;
+    let poll_after_command = if polling_helps() {
+        POLL_AFTER_COMMAND
+    } else {
+        Duration::ZERO
+    };
 
     loop {
         let msg = match receiver.try_recv() {
@@ -586,7 +599,7 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
         if now.duration_since(entered_at) > MAX_TIME_OUTSIDE_EVENT_LOOP {
             break;
         }
-        poll_until = Some(now + POLL_AFTER_COMMAND);
+        poll_until = Some(now + poll_after_command);
     }
 }
 
@@ -783,6 +796,11 @@ impl NapiAudioWorkletNode {
             send: process_call_sender(worklet_id),
             exited: process_call_exited(worklet_id),
             reply_channel: crossbeam_channel::bounded(1),
+            spin_for_reply: if polling_helps() {
+                SPIN_FOR_REPLY
+            } else {
+                Duration::ZERO
+            },
             param_names: parameter_descriptors
                 .iter()
                 .map(|d| d.name.clone())
@@ -862,6 +880,8 @@ struct NapiAudioWorkletProcessor {
     exited: Arc<AtomicBool>,
     /// Reply channel of process calls
     reply_channel: (Sender<ProcessReply>, Receiver<ProcessReply>),
+    /// How long to poll for a reply before blocking, decided on the control thread
+    spin_for_reply: Duration,
     /// AudioParam names in descriptor order, the order the JS side expects values in
     param_names: Vec<String>,
     /// Reusable Vec for AudioParam values
@@ -941,7 +961,7 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
         // await result, polling first: a call usually completes within a few
         // microseconds, and waking a parked render thread costs about as much
         let receiver = &self.reply_channel.1;
-        let spin_until = Instant::now() + SPIN_FOR_REPLY;
+        let spin_until = Instant::now() + self.spin_for_reply;
 
         let reply = loop {
             if let Ok(reply) = receiver.try_recv() {
