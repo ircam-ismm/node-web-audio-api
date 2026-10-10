@@ -1,4 +1,4 @@
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::option::Option;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
@@ -8,7 +8,7 @@ use std::time::{Duration, Instant};
 use crossbeam_channel::{Receiver, Sender};
 
 use napi::bindgen_prelude::*;
-use napi::JsSymbol;
+use napi::{JsSymbol, SymbolRef};
 use napi_derive::napi;
 
 use web_audio_api::node::{AudioNode, AudioNodeOptions, ChannelCountMode, ChannelInterpretation};
@@ -150,6 +150,26 @@ const SPIN_FOR_REPLY: Duration = Duration::from_micros(30);
 thread_local! {
     /// Denotes if the Worker thread priority has already been upped
     static HAS_THREAD_PRIO: Cell<bool> = const { Cell::new(false) };
+    /// AudioWorkletGlobalScope currentFrame last written in the Worker
+    static GLOBAL_SCOPE_FRAME: Cell<Option<u64>> = const { Cell::new(None) };
+    /// AudioWorkletGlobalScope renderQuantumSize, read once per Worker
+    static RENDER_QUANTUM_SIZE: Cell<usize> = const { Cell::new(0) };
+    /// References to the symbols read on every process call
+    static SYMBOL_REFS: RefCell<HashMap<&'static str, SymbolRef<false>>> = RefCell::new(HashMap::new());
+}
+
+/// `env.symbol_for` through a reference created once per Worker: `Symbol.for`
+/// builds a string and searches the registry each time
+fn cached_symbol_for<'env>(env: &'env Env, description: &'static str) -> Result<JsSymbol<'env>> {
+    SYMBOL_REFS.with_borrow_mut(|refs| {
+        if let Some(symbol_ref) = refs.get(description) {
+            return symbol_ref.get_value(env);
+        }
+
+        let symbol = env.symbol_for(description)?;
+        refs.insert(description, symbol.create_ref::<false>()?);
+        Ok(symbol)
+    })
 }
 
 /// Check that given JS and Rust input / output layout are the same,
@@ -288,7 +308,9 @@ fn clear_pending_exception(env: &Env) {
 
 /// Put a processor whose call could not run in the error state, as if `process` threw
 fn mark_processor_errored(env: &Env, processors: &Object, id: u32, error: Error) -> Result<()> {
-    let processor = processors.get_named_property::<Object>(&id.to_string())?;
+    let Some(processor) = processors.get_element::<Option<Object>>(id)? else {
+        return Ok(());
+    };
 
     let k_worklet_mark_non_callable_process =
         env.symbol_for("node-web-audio-api:worklet-mark-non-callable-process")?;
@@ -321,22 +343,25 @@ fn process_audio_worklet(
         ..
     } = processor_arguments;
 
-    let mut processor = match processors.get_named_property::<Object>(&id.to_string()) {
-        Ok(processor) => processor,
-        Err(_) => {
+    let mut processor = match processors.get_element::<Option<Object>>(id) {
+        Ok(Some(processor)) => processor,
+        _ => {
             // we may run into race conditions between Rust and JS, where processor
             // exists in Rust audio thread side but not yet on JS worker thread side
             return Ok(ProcessReply::NotReady); // make sure we will be called back
         }
     };
 
-    // Update AudioWorkletGlobalScope
-    let mut global = env.get_global()?;
-    global.set_named_property("currentTime", current_time)?;
-    global.set_named_property("currentFrame", current_frame as f64)?;
+    // Update AudioWorkletGlobalScope, once per render quantum
+    if GLOBAL_SCOPE_FRAME.get() != Some(current_frame) {
+        let mut global = env.get_global()?;
+        global.set_named_property("currentTime", current_time)?;
+        global.set_named_property("currentFrame", current_frame as f64)?;
+        GLOBAL_SCOPE_FRAME.set(Some(current_frame));
+    }
 
     let k_worklet_callable_process =
-        env.symbol_for("node-web-audio-api:worklet-callable-process")?;
+        cached_symbol_for(env, "node-web-audio-api:worklet-callable-process")?;
     // Return early if worklet has been marked not callable,
     let callable_process = processor.get_property::<JsSymbol, bool>(k_worklet_callable_process)?;
 
@@ -344,16 +369,21 @@ fn process_audio_worklet(
         return Ok(ProcessReply::Done(false));
     }
 
-    let render_quantum_size = global.get_named_property::<u32>("renderQuantumSize")? as usize;
+    if RENDER_QUANTUM_SIZE.get() == 0 {
+        let global = env.get_global()?;
+        let size = global.get_named_property::<u32>("renderQuantumSize")?;
+        RENDER_QUANTUM_SIZE.set(size as usize);
+    }
+    let render_quantum_size = RENDER_QUANTUM_SIZE.get();
 
-    let k_worklet_inputs = env.symbol_for("node-web-audio-api:worklet-inputs")?;
+    let k_worklet_inputs = cached_symbol_for(env, "node-web-audio-api:worklet-inputs")?;
     let mut js_inputs = processor.get_property::<JsSymbol, Array>(k_worklet_inputs)?;
 
-    let k_worklet_outputs = env.symbol_for("node-web-audio-api:worklet-outputs")?;
+    let k_worklet_outputs = cached_symbol_for(env, "node-web-audio-api:worklet-outputs")?;
     let mut js_outputs = processor.get_property::<JsSymbol, Array>(k_worklet_outputs)?;
 
     // <param_name, buffer>
-    let k_worklet_params = env.symbol_for("node-web-audio-api:worklet-params")?;
+    let k_worklet_params = cached_symbol_for(env, "node-web-audio-api:worklet-params")?;
     let mut js_params = processor.get_property::<JsSymbol, Object>(k_worklet_params)?;
 
     // Check input and output channel layout, and rebuild JS object if something changed
@@ -399,7 +429,8 @@ fn process_audio_worklet(
     // Copy params values into the JS params buffer, which holds `render_quantum_size + 1`
     // values per param in descriptor order: a full render quantum, then a single value
     if !param_values.is_empty() {
-        let k_worklet_params_buffer = env.symbol_for("node-web-audio-api:worklet-params-buffer")?;
+        let k_worklet_params_buffer =
+            cached_symbol_for(env, "node-web-audio-api:worklet-params-buffer")?;
         let mut js_params_buffer =
             processor.get_property::<JsSymbol, Float32Array>(k_worklet_params_buffer)?;
         let params_buffer: &mut [f32] = unsafe { js_params_buffer.as_mut() };
@@ -437,20 +468,19 @@ fn process_audio_worklet(
         }
     }
 
-    // The `process` method is executed indirectly because napi-rs `apply` implementation
-    // retrieve the arguments as an array in the first argument, Then we need to unpack
-    // them first (cf. `AudioWorkletProcessor[kWorkletUnpackProcess]`)
-    let k_worklet_unpack_process = env.symbol_for("node-web-audio-api:worklet-unpack-process")?;
+    let k_worklet_unpack_process =
+        cached_symbol_for(env, "node-web-audio-api:worklet-unpack-process")?;
 
     // The `kWorkletUnpackProcess` wrapper function coerce value returned from `process`
     // to bool, if any error occurred in process, it has been catched in `kWorkletUnpackProcess``
     // which marked the processor has non-callable and returned false
     let unpack_process_function = processor
-        .get_property::<JsSymbol, Function<(Array, Array, Object), bool>>(
+        .get_property::<JsSymbol, Function<FnArgs<(Array, Array, Object)>, bool>>(
             k_worklet_unpack_process,
         )?;
 
-    let tail_time = unpack_process_function.apply(processor, (js_inputs, js_outputs, js_params))?;
+    let tail_time =
+        unpack_process_function.apply(processor, (js_inputs, js_outputs, js_params).into())?;
 
     // copy JS output buffers back into outputs
     for (output_number, output) in outputs.iter().enumerate() {
@@ -516,22 +546,20 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
         };
 
         match msg {
-            WorkletCommand::Drop(id) => {
-                match processors.get_named_property::<Object>(&id.to_string()) {
-                    Ok(processor) => {
-                        if recycle_processor(&env, processor).is_err() {
-                            clear_pending_exception(&env);
-                        }
-                        let _ = processors.delete_named_property(id.to_string());
+            WorkletCommand::Drop(id) => match processors.get_element::<Option<Object>>(id) {
+                Ok(Some(processor)) => {
+                    if recycle_processor(&env, processor).is_err() {
+                        clear_pending_exception(&env);
                     }
-                    Err(_) => {
-                        println!(
-                            "Cannot recycle process with id {:?}: processor not found",
-                            id
-                        );
-                    }
+                    let _ = processors.delete_element(id);
                 }
-            }
+                _ => {
+                    println!(
+                        "Cannot recycle process with id {:?}: processor not found",
+                        id
+                    );
+                }
+            },
             WorkletCommand::Process(processor_arguments) => {
                 // The render thread waits for this reply, so it must be sent even
                 // when the call could not run
@@ -539,12 +567,15 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
                     .unwrap_or_else(|error| {
                         clear_pending_exception(&env);
                         silence_outputs(processor_arguments.outputs);
-                        let _ = mark_processor_errored(
+                        let marked = mark_processor_errored(
                             &env,
                             &processors,
                             processor_arguments.id,
                             error,
                         );
+                        if marked.is_err() {
+                            clear_pending_exception(&env);
+                        }
                         ProcessReply::Done(false)
                     });
                 let _ = processor_arguments.reply_sender.send(reply); // allowed to fail

@@ -95,12 +95,11 @@ export class AudioWorkletProcessor {
   }
 
   // Wrapper around the "real" process method that allows to
-  // - unpack arguments from napi-rs `apply`
   // - cast return value to boolean
   // - catch and propagate error while keeping the rust side clean
   // This method is called only if a "real" process attribute has been found at construction
   // However if this is the first call we don't know yet if process is callable
-  [kWorkletUnpackProcess]([inputs, outputs, parameters]) {
+  [kWorkletUnpackProcess](inputs, outputs, parameters) {
     try {
       return !!this.process(inputs, outputs, parameters);
     } catch (err) {
