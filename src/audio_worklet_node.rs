@@ -188,6 +188,13 @@ const MAX_TIME_OUTSIDE_EVENT_LOOP: Duration = Duration::from_millis(1);
 /// How long the render thread polls for the reply of a `process` call before blocking
 const SPIN_FOR_REPLY: Duration = Duration::from_micros(30);
 
+/// How long an idle Worker waits for a command before giving the event loop a turn
+const IDLE_WAIT: Duration = Duration::from_millis(1);
+
+/// How long without a command before the Worker counts as idle and waits rather
+/// than spins: longer than the gap between render quanta of a playing context
+const IDLE_AFTER: Duration = Duration::from_millis(3);
+
 /// Whether a thread waiting on the other side of the worklet bridge should poll
 /// rather than park: with a single core the thread that would answer cannot run
 /// while the waiting one polls. Not to be first called from the render thread.
@@ -201,6 +208,8 @@ thread_local! {
     static HAS_THREAD_PRIO: Cell<bool> = const { Cell::new(false) };
     /// AudioWorkletGlobalScope currentFrame last written in the Worker
     static GLOBAL_SCOPE_FRAME: Cell<Option<u64>> = const { Cell::new(None) };
+    /// When the Worker last handled a command
+    static LAST_COMMAND_AT: Cell<Option<Instant>> = const { Cell::new(None) };
     /// AudioWorkletGlobalScope renderQuantumSize, read once per Worker
     static RENDER_QUANTUM_SIZE: Cell<usize> = const { Cell::new(0) };
     /// References to the symbols read on every process call
@@ -570,14 +579,19 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
         let _ = thread_priority::set_current_thread_priority(thread_priority::ThreadPriority::Max);
     }
 
-    // Poll for incoming commands and yield back to the event loop if there are none.
-    // recv_timeout is not an option due to realtime safety, see discussion of
-    // https://github.com/ircam-ismm/node-web-audio-api/pull/124#pullrequestreview-2053515583
+    // Handle incoming commands, then yield back to the event loop.
     //
     // Once a command has been handled, keep polling for a short while: the next
     // worklet of the same render quantum usually follows within microseconds, while
     // a turn of the event loop costs more than a whole `process` call. The event
     // loop then runs about once per render quantum instead of once per call.
+    //
+    // When no command has come for IDLE_AFTER, the Worker is idle: wait for one for
+    // up to IDLE_WAIT instead of spinning the event loop, which keeps a core busy
+    // even on a suspended context. Waking a waiting Worker costs the render thread
+    // a syscall, so it only happens after such a gap, never between the quanta of
+    // a playing context
+    // (cf. https://github.com/ircam-ismm/node-web-audio-api/pull/124#pullrequestreview-2053515583)
     let receiver = process_call_receiver(worklet_id as usize);
     let entered_at = Instant::now();
     let mut poll_until: Option<Instant> = None;
@@ -595,7 +609,17 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
                     std::hint::spin_loop();
                     continue;
                 }
-                _ => break,
+                Some(_) => break,
+                None if LAST_COMMAND_AT
+                    .get()
+                    .is_some_and(|at| at.elapsed() < IDLE_AFTER) =>
+                {
+                    break
+                }
+                None => match receiver.recv_timeout(IDLE_WAIT) {
+                    Ok(msg) => msg,
+                    Err(_) => break,
+                },
             },
         };
 
@@ -637,6 +661,7 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
         }
 
         let now = Instant::now();
+        LAST_COMMAND_AT.set(Some(now));
         if now.duration_since(entered_at) > MAX_TIME_OUTSIDE_EVENT_LOOP {
             break;
         }
