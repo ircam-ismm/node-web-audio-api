@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::option::Option;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, OnceLock, RwLock};
+use std::time::{Duration, Instant};
 
 use crossbeam_channel::{Receiver, Sender};
 
@@ -125,6 +126,13 @@ fn audio_param_descriptor_channel() -> &'static AudioParamDescriptorsChannel {
         }
     })
 }
+
+/// How long the Worker keeps polling for the next command after handling one
+const POLL_AFTER_COMMAND: Duration = Duration::from_micros(50);
+
+/// Upper bound on one `run_audio_worklet_global_scope` call, so that the event loop
+/// (MessagePort, exit) still runs when an OfflineAudioContext renders without pause
+const MAX_TIME_OUTSIDE_EVENT_LOOP: Duration = Duration::from_millis(1);
 
 thread_local! {
     /// Denotes if the Worker thread priority has already been upped
@@ -438,7 +446,27 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
     // Poll for incoming commands and yield back to the event loop if there are none.
     // recv_timeout is not an option due to realtime safety, see discussion of
     // https://github.com/ircam-ismm/node-web-audio-api/pull/124#pullrequestreview-2053515583
-    while let Ok(msg) = process_call_receiver(worklet_id as usize).try_recv() {
+    //
+    // Once a command has been handled, keep polling for a short while: the next
+    // worklet of the same render quantum usually follows within microseconds, while
+    // a turn of the event loop costs more than a whole `process` call. The event
+    // loop then runs about once per render quantum instead of once per call.
+    let receiver = process_call_receiver(worklet_id as usize);
+    let entered_at = Instant::now();
+    let mut poll_until: Option<Instant> = None;
+
+    loop {
+        let msg = match receiver.try_recv() {
+            Ok(msg) => msg,
+            Err(_) => match poll_until {
+                Some(deadline) if Instant::now() < deadline => {
+                    std::hint::spin_loop();
+                    continue;
+                }
+                _ => break,
+            },
+        };
+
         match msg {
             WorkletCommand::Drop(id) => {
                 match processors.get_named_property::<Object>(&id.to_string()) {
@@ -458,6 +486,12 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
                 let _ = process_audio_worklet(&env, &processors, processor_arguments);
             }
         }
+
+        let now = Instant::now();
+        if now.duration_since(entered_at) > MAX_TIME_OUTSIDE_EVENT_LOOP {
+            break;
+        }
+        poll_until = Some(now + POLL_AFTER_COMMAND);
     }
 }
 
