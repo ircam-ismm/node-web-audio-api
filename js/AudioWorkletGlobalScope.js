@@ -12,9 +12,7 @@ import { isConstructor } from './lib/is-constructor.js';
 import {
   kWorkletMarkNonCallableProcess,
   kWorkletGetBuffer,
-  kWorkletGetBuffer1,
   kWorkletRecycleBuffer,
-  kWorkletRecycleBuffer1,
   kWorkletMarkAsUntransferable,
 } from './lib/audio-worklet/symbols.js';
 import {
@@ -42,14 +40,13 @@ process.on('uncaughtException', err => {
 });
 
 const nameProcessorCtorMap = new Map();
+// Descriptors parsed at registration, the same ones the AudioWorkletNode is built with
+const nameParamDescriptorsMap = new Map();
 const processors = {};
 const bufferPoolRenderSize = new BufferPool(renderQuantumSize, 256);
-const bufferPoolOne = new BufferPool(1, 64);
 // Expose some function to be accessed from rust when IO layout changes
 globalThis[kWorkletGetBuffer] = () => bufferPoolRenderSize.get();
-globalThis[kWorkletGetBuffer1] = () => bufferPoolOne.get();
 globalThis[kWorkletRecycleBuffer] = buffer => bufferPoolRenderSize.recycle(buffer);
-globalThis[kWorkletRecycleBuffer1] = buffer => bufferPoolOne.recycle(buffer);
 globalThis[kWorkletMarkAsUntransferable] = obj => {
   markAsUntransferable(obj);
   return obj;
@@ -59,10 +56,14 @@ let loopStarted = false;
 let runLoopImmediateId = null;
 
 function runLoop() {
-  // block until we need to render a quantum
-  run_audio_worklet_global_scope(workletId, processors);
-  // yield to the event loop, and then repeat
-  runLoopImmediateId = setImmediate(runLoop);
+  try {
+    // block until we need to render a quantum
+    run_audio_worklet_global_scope(workletId, processors);
+  } finally {
+    // yield to the event loop, and then repeat, even if the call above threw:
+    // the render thread waits on this loop for every process call
+    runLoopImmediateId = setImmediate(runLoop);
+  }
 }
 
 // AudioWorkletGlobalScope globals
@@ -179,6 +180,7 @@ globalThis.registerProcessor = function registerProcessor(name, processorCtor) {
 
   // store constructor
   nameProcessorCtorMap.set(parsedName, processorCtor);
+  nameParamDescriptorsMap.set(parsedName, parsedParamDescriptors);
   // send worklet name and param descriptors back to main thread
   parentPort.postMessage({
     cmd: 'node-web-audio-api:worklet:processor-registered',
@@ -241,7 +243,7 @@ parentPort.on('message', async event => {
         errorPort,
         numberOfInputs: options.numberOfInputs,
         numberOfOutputs: options.numberOfOutputs,
-        parameterDescriptors: ctor.parameterDescriptors,
+        parameterDescriptors: nameParamDescriptorsMap.get(name),
         errored: null,
       };
 

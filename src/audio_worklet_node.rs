@@ -1,13 +1,14 @@
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::option::Option;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, OnceLock, RwLock};
+use std::time::{Duration, Instant};
 
 use crossbeam_channel::{Receiver, Sender};
 
 use napi::bindgen_prelude::*;
-use napi::JsSymbol;
+use napi::{JsSymbol, SymbolRef};
 use napi_derive::napi;
 
 use web_audio_api::node::{AudioNode, AudioNodeOptions, ChannelCountMode, ChannelInterpretation};
@@ -28,6 +29,14 @@ enum WorkletCommand {
     Process(ProcessorArguments),
 }
 
+/// Worker reply to a process call
+enum ProcessReply {
+    /// The call ran, or the processor cannot run anymore, with its tail time
+    Done(bool),
+    /// The JS processor does not exist yet, the call did not run
+    NotReady,
+}
+
 /// Render thread to Worker processor arguments
 struct ProcessorArguments {
     // processor unique ID
@@ -36,14 +45,16 @@ struct ProcessorArguments {
     inputs: &'static [&'static [&'static [f32]]],
     // processor ouputs (unsafely cast to static)
     outputs: &'static [&'static [&'static [f32]]],
-    // processor audio params (unsafely cast to static)
-    param_values: &'static [(&'static str, &'static [f32])],
+    // processor audio params in descriptor order (unsafely cast to static)
+    param_values: &'static [&'static [f32]],
+    // whether a param switched between a single value and a full render quantum
+    param_sizes_changed: bool,
     // AudioWorkletGlobalScope currentTime
     current_time: f64,
     // AudioWorkletGlobalScope currentFrame
     current_frame: u64,
-    // channel for tail_time return value
-    tail_time_sender: Sender<bool>,
+    // channel for the reply
+    reply_sender: Sender<ProcessReply>,
 }
 
 /// Message channel from render thread to Worker
@@ -126,9 +137,47 @@ fn audio_param_descriptor_channel() -> &'static AudioParamDescriptorsChannel {
     })
 }
 
+/// How long the Worker keeps polling for the next command after handling one
+const POLL_AFTER_COMMAND: Duration = Duration::from_micros(50);
+
+/// Upper bound on one `run_audio_worklet_global_scope` call, so that the event loop
+/// (MessagePort, exit) still runs when an OfflineAudioContext renders without pause
+const MAX_TIME_OUTSIDE_EVENT_LOOP: Duration = Duration::from_millis(1);
+
+/// How long the render thread polls for the reply of a `process` call before blocking
+const SPIN_FOR_REPLY: Duration = Duration::from_micros(30);
+
+/// Whether a thread waiting on the other side of the worklet bridge should poll
+/// rather than park: with a single core the thread that would answer cannot run
+/// while the waiting one polls. Not to be first called from the render thread.
+fn polling_helps() -> bool {
+    static MULTI_CORE: OnceLock<bool> = OnceLock::new();
+    *MULTI_CORE.get_or_init(|| std::thread::available_parallelism().is_ok_and(|n| n.get() > 1))
+}
+
 thread_local! {
     /// Denotes if the Worker thread priority has already been upped
     static HAS_THREAD_PRIO: Cell<bool> = const { Cell::new(false) };
+    /// AudioWorkletGlobalScope currentFrame last written in the Worker
+    static GLOBAL_SCOPE_FRAME: Cell<Option<u64>> = const { Cell::new(None) };
+    /// AudioWorkletGlobalScope renderQuantumSize, read once per Worker
+    static RENDER_QUANTUM_SIZE: Cell<usize> = const { Cell::new(0) };
+    /// References to the symbols read on every process call
+    static SYMBOL_REFS: RefCell<HashMap<&'static str, SymbolRef<false>>> = RefCell::new(HashMap::new());
+}
+
+/// `env.symbol_for` through a reference created once per Worker: `Symbol.for`
+/// builds a string and searches the registry each time
+fn cached_symbol_for<'env>(env: &'env Env, description: &'static str) -> Result<JsSymbol<'env>> {
+    SYMBOL_REFS.with_borrow_mut(|refs| {
+        if let Some(symbol_ref) = refs.get(description) {
+            return symbol_ref.get_value(env);
+        }
+
+        let symbol = env.symbol_for(description)?;
+        refs.insert(description, symbol.create_ref::<false>()?);
+        Ok(symbol)
+    })
 }
 
 /// Check that given JS and Rust input / output layout are the same,
@@ -218,11 +267,6 @@ fn recycle_processor(env: &Env, processor: Object) -> Result<()> {
     let recycle_buffer =
         global.get_property::<JsSymbol, Function<Float32Array, ()>>(k_worklet_recycle_buffer)?;
 
-    let k_worklet_recycle_buffer_1 =
-        env.symbol_for("node-web-audio-api:worklet-recycle-buffer-1")?;
-    let recycle_buffer_1 =
-        global.get_property::<JsSymbol, Function<Float32Array, ()>>(k_worklet_recycle_buffer_1)?;
-
     // recycle input channels
     let k_worklet_inputs = env.symbol_for("node-web-audio-api:worklet-inputs")?;
     let js_inputs = processor.get_property::<JsSymbol, Array>(k_worklet_inputs)?;
@@ -247,82 +291,108 @@ fn recycle_processor(env: &Env, processor: Object) -> Result<()> {
         }
     }
 
-    // recycle parameter buffers
-    let k_worklet_params_cache = env.symbol_for("node-web-audio-api:worklet-params-cache")?;
-    let js_params_cache = processor.get_property::<JsSymbol, Object>(k_worklet_params_cache)?;
-
-    let js_params_properties = js_params_cache.get_property_names()?;
-    let len = js_params_properties.get_array_length()?;
-
-    for i in 0..len {
-        let property_name: String = js_params_properties.get_element(i)?;
-        let cache: Object = js_params_cache.get_named_property(&property_name)?;
-
-        let param_cache_128 = cache.get_element::<Float32Array>(0)?;
-        let _ = recycle_buffer.call(param_cache_128);
-
-        let param_cache_1 = cache.get_element::<Float32Array>(1)?;
-        let _ = recycle_buffer_1.call(param_cache_1);
-    }
-
     Ok(())
 }
 
-/// Handle a AudioWorkletProcessor::process call in the Worker
+/// Silence the outputs of a process call that could not run
+fn silence_outputs(outputs: &'static [&'static [&'static [f32]]]) {
+    for output in outputs {
+        for channel in output.iter() {
+            unsafe {
+                std::ptr::write_bytes(channel.as_ptr() as *mut f32, 0, channel.len());
+            }
+        }
+    }
+}
+
+/// Clear the JS exception a failed N-API call may leave pending, every later
+/// N-API call in this Worker fails until it is cleared
+fn clear_pending_exception(env: &Env) {
+    let mut exception = std::ptr::null_mut();
+    unsafe {
+        napi::sys::napi_get_and_clear_last_exception(env.raw(), &mut exception);
+    }
+}
+
+/// Put a processor whose call could not run in the error state, as if `process` threw
+fn mark_processor_errored(env: &Env, processors: &Object, id: u32, error: Error) -> Result<()> {
+    let Some(processor) = processors.get_element::<Option<Object>>(id)? else {
+        return Ok(());
+    };
+
+    let k_worklet_mark_non_callable_process =
+        env.symbol_for("node-web-audio-api:worklet-mark-non-callable-process")?;
+    let mark_non_callable_process = processor
+        .get_property::<JsSymbol, Function<FnArgs<(&str, Object)>, ()>>(
+            k_worklet_mark_non_callable_process,
+        )?;
+
+    let js_error = env.create_error(error)?;
+    mark_non_callable_process.apply(
+        processor,
+        ("node-web-audio-api:worklet:process-error", js_error).into(),
+    )
+}
+
+/// Handle a AudioWorkletProcessor::process call in the Worker, returns the tail time
 fn process_audio_worklet(
     env: &Env,
     processors: &Object,
-    processor_arguments: ProcessorArguments,
-) -> Result<()> {
-    let ProcessorArguments {
+    processor_arguments: &ProcessorArguments,
+) -> Result<ProcessReply> {
+    let &ProcessorArguments {
         id,
         inputs,
         outputs,
         param_values,
+        param_sizes_changed,
         current_time,
         current_frame,
-        tail_time_sender,
+        ..
     } = processor_arguments;
 
-    let mut processor = match processors.get_named_property::<Object>(&id.to_string()) {
-        Ok(processor) => processor,
-        Err(_) => {
+    let mut processor = match processors.get_element::<Option<Object>>(id) {
+        Ok(Some(processor)) => processor,
+        _ => {
             // we may run into race conditions between Rust and JS, where processor
             // exists in Rust audio thread side but not yet on JS worker thread side
-            let _ = tail_time_sender.send(true); // make sure we will be called back
-            return Ok(());
+            return Ok(ProcessReply::NotReady); // make sure we will be called back
         }
     };
 
-    // Update AudioWorkletGlobalScope
-    let mut global = env.get_global()?;
-    global.set_named_property("currentTime", current_time)?;
-    global.set_named_property("currentFrame", current_frame as f64)?;
+    // Update AudioWorkletGlobalScope, once per render quantum
+    if GLOBAL_SCOPE_FRAME.get() != Some(current_frame) {
+        let mut global = env.get_global()?;
+        global.set_named_property("currentTime", current_time)?;
+        global.set_named_property("currentFrame", current_frame as f64)?;
+        GLOBAL_SCOPE_FRAME.set(Some(current_frame));
+    }
 
     let k_worklet_callable_process =
-        env.symbol_for("node-web-audio-api:worklet-callable-process")?;
+        cached_symbol_for(env, "node-web-audio-api:worklet-callable-process")?;
     // Return early if worklet has been marked not callable,
     let callable_process = processor.get_property::<JsSymbol, bool>(k_worklet_callable_process)?;
 
     if !callable_process {
-        let _ = tail_time_sender.send(false);
-        return Ok(());
+        return Ok(ProcessReply::Done(false));
     }
 
-    let render_quantum_size = global.get_named_property::<u32>("renderQuantumSize")? as usize;
+    if RENDER_QUANTUM_SIZE.get() == 0 {
+        let global = env.get_global()?;
+        let size = global.get_named_property::<u32>("renderQuantumSize")?;
+        RENDER_QUANTUM_SIZE.set(size as usize);
+    }
+    let render_quantum_size = RENDER_QUANTUM_SIZE.get();
 
-    let k_worklet_inputs = env.symbol_for("node-web-audio-api:worklet-inputs")?;
+    let k_worklet_inputs = cached_symbol_for(env, "node-web-audio-api:worklet-inputs")?;
     let mut js_inputs = processor.get_property::<JsSymbol, Array>(k_worklet_inputs)?;
 
-    let k_worklet_outputs = env.symbol_for("node-web-audio-api:worklet-outputs")?;
+    let k_worklet_outputs = cached_symbol_for(env, "node-web-audio-api:worklet-outputs")?;
     let mut js_outputs = processor.get_property::<JsSymbol, Array>(k_worklet_outputs)?;
 
     // <param_name, buffer>
-    let k_worklet_params = env.symbol_for("node-web-audio-api:worklet-params")?;
+    let k_worklet_params = cached_symbol_for(env, "node-web-audio-api:worklet-params")?;
     let mut js_params = processor.get_property::<JsSymbol, Object>(k_worklet_params)?;
-    // <param_name, [Float32Array(128), Float32Array(1)]>
-    let k_worklet_params_cache = env.symbol_for("node-web-audio-api:worklet-params-cache")?;
-    let js_params_cache = processor.get_property::<JsSymbol, Object>(k_worklet_params_cache)?;
 
     // Check input and output channel layout, and rebuild JS object if something changed
     if !is_same_io_layout(&js_inputs, inputs) {
@@ -364,35 +434,61 @@ fn process_audio_worklet(
         }
     }
 
-    // Copy params values into JS params buffers
-    // @todo(perf) - We could rely on the fact that ParameterDescriptors
-    // are ordered maps to avoid sending param names in `param_values`
-    for (name, data) in param_values.iter() {
-        let float32_arr_cache = js_params_cache.get_named_property::<Array>(name)?;
-        // retrieve right Float32Array according to actual param size, i.e. 128 or 1
-        let cache_index = if data.len() == 1 { 1 } else { 0 };
-        let mut param_values = float32_arr_cache.get::<Float32Array>(cache_index)?.unwrap();
-        // copy data into underlying ArrayBuffer
-        let buffer: &mut [f32] = unsafe { param_values.as_mut() };
-        buffer.copy_from_slice(data);
-        // replace current values with new Float32Array
-        js_params.set_named_property(name, param_values)?;
+    // Copy params values into the JS params buffer, which holds `render_quantum_size + 1`
+    // values per param in descriptor order: a full render quantum, then a single value
+    if !param_values.is_empty() {
+        let k_worklet_params_buffer =
+            cached_symbol_for(env, "node-web-audio-api:worklet-params-buffer")?;
+        let mut js_params_buffer =
+            processor.get_property::<JsSymbol, Float32Array>(k_worklet_params_buffer)?;
+        let params_buffer: &mut [f32] = unsafe { js_params_buffer.as_mut() };
+        let stride = render_quantum_size + 1;
+
+        for (index, data) in param_values.iter().enumerate() {
+            let offset = index * stride
+                + if data.len() == 1 {
+                    render_quantum_size
+                } else {
+                    0
+                };
+
+            if let Some(values) = params_buffer.get_mut(offset..offset + data.len()) {
+                values.copy_from_slice(data);
+            }
+        }
+
+        // Point each `parameters[name]` to the view matching the param size,
+        // which only changes when automations start or stop
+        if param_sizes_changed {
+            let k_worklet_params_names =
+                env.symbol_for("node-web-audio-api:worklet-params-names")?;
+            let names = processor.get_property::<JsSymbol, Array>(k_worklet_params_names)?;
+            let k_worklet_params_views =
+                env.symbol_for("node-web-audio-api:worklet-params-views")?;
+            let views = processor.get_property::<JsSymbol, Array>(k_worklet_params_views)?;
+
+            for (index, data) in param_values.iter().enumerate() {
+                let name = names.get_element::<String>(index as u32)?;
+                let view_index = 2 * index + if data.len() == 1 { 1 } else { 0 };
+                let view = views.get_element::<Float32Array>(view_index as u32)?;
+                js_params.set_named_property(&name, view)?;
+            }
+        }
     }
 
-    // The `process` method is executed indirectly because napi-rs `apply` implementation
-    // retrieve the arguments as an array in the first argument, Then we need to unpack
-    // them first (cf. `AudioWorkletProcessor[kWorkletUnpackProcess]`)
-    let k_worklet_unpack_process = env.symbol_for("node-web-audio-api:worklet-unpack-process")?;
+    let k_worklet_unpack_process =
+        cached_symbol_for(env, "node-web-audio-api:worklet-unpack-process")?;
 
     // The `kWorkletUnpackProcess` wrapper function coerce value returned from `process`
     // to bool, if any error occurred in process, it has been catched in `kWorkletUnpackProcess``
     // which marked the processor has non-callable and returned false
     let unpack_process_function = processor
-        .get_property::<JsSymbol, Function<(Array, Array, Object), bool>>(
+        .get_property::<JsSymbol, Function<FnArgs<(Array, Array, Object)>, bool>>(
             k_worklet_unpack_process,
         )?;
 
-    let tail_time = unpack_process_function.apply(processor, (js_inputs, js_outputs, js_params))?;
+    let tail_time =
+        unpack_process_function.apply(processor, (js_inputs, js_outputs, js_params).into())?;
 
     // copy JS output buffers back into outputs
     for (output_number, output) in outputs.iter().enumerate() {
@@ -412,9 +508,7 @@ fn process_audio_worklet(
         }
     }
 
-    let _ = tail_time_sender.send(tail_time); // allowed to fail
-
-    Ok(())
+    Ok(ProcessReply::Done(tail_time))
 }
 
 // #[allow(dead_code)]
@@ -438,26 +532,74 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
     // Poll for incoming commands and yield back to the event loop if there are none.
     // recv_timeout is not an option due to realtime safety, see discussion of
     // https://github.com/ircam-ismm/node-web-audio-api/pull/124#pullrequestreview-2053515583
-    while let Ok(msg) = process_call_receiver(worklet_id as usize).try_recv() {
-        match msg {
-            WorkletCommand::Drop(id) => {
-                match processors.get_named_property::<Object>(&id.to_string()) {
-                    Ok(processor) => {
-                        let _ = recycle_processor(&env, processor);
-                        let _ = processors.delete_named_property(id.to_string());
-                    }
-                    Err(_) => {
-                        println!(
-                            "Cannot recycle process with id {:?}: processor not found",
-                            id
-                        );
-                    }
+    //
+    // Once a command has been handled, keep polling for a short while: the next
+    // worklet of the same render quantum usually follows within microseconds, while
+    // a turn of the event loop costs more than a whole `process` call. The event
+    // loop then runs about once per render quantum instead of once per call.
+    let receiver = process_call_receiver(worklet_id as usize);
+    let entered_at = Instant::now();
+    let mut poll_until: Option<Instant> = None;
+    let poll_after_command = if polling_helps() {
+        POLL_AFTER_COMMAND
+    } else {
+        Duration::ZERO
+    };
+
+    loop {
+        let msg = match receiver.try_recv() {
+            Ok(msg) => msg,
+            Err(_) => match poll_until {
+                Some(deadline) if Instant::now() < deadline => {
+                    std::hint::spin_loop();
+                    continue;
                 }
-            }
+                _ => break,
+            },
+        };
+
+        match msg {
+            WorkletCommand::Drop(id) => match processors.get_element::<Option<Object>>(id) {
+                Ok(Some(processor)) => {
+                    if recycle_processor(&env, processor).is_err() {
+                        clear_pending_exception(&env);
+                    }
+                    let _ = processors.delete_element(id);
+                }
+                _ => {
+                    println!(
+                        "Cannot recycle process with id {:?}: processor not found",
+                        id
+                    );
+                }
+            },
             WorkletCommand::Process(processor_arguments) => {
-                let _ = process_audio_worklet(&env, &processors, processor_arguments);
+                // The render thread waits for this reply, so it must be sent even
+                // when the call could not run
+                let reply = process_audio_worklet(&env, &processors, &processor_arguments)
+                    .unwrap_or_else(|error| {
+                        clear_pending_exception(&env);
+                        silence_outputs(processor_arguments.outputs);
+                        let marked = mark_processor_errored(
+                            &env,
+                            &processors,
+                            processor_arguments.id,
+                            error,
+                        );
+                        if marked.is_err() {
+                            clear_pending_exception(&env);
+                        }
+                        ProcessReply::Done(false)
+                    });
+                let _ = processor_arguments.reply_sender.send(reply); // allowed to fail
             }
         }
+
+        let now = Instant::now();
+        if now.duration_since(entered_at) > MAX_TIME_OUTSIDE_EVENT_LOOP {
+            break;
+        }
+        poll_until = Some(now + poll_after_command);
     }
 }
 
@@ -469,7 +611,7 @@ pub fn exit_audio_worklet_global_scope(worklet_id: u32) {
     process_call_exited(worklet_id).store(true, Ordering::SeqCst);
     // Handle any pending message from audio thread
     if let Ok(WorkletCommand::Process(args)) = process_call_receiver(worklet_id).try_recv() {
-        let _ = args.tail_time_sender.send(false);
+        let _ = args.reply_sender.send(ProcessReply::Done(false));
     }
 }
 
@@ -647,13 +789,24 @@ impl NapiAudioWorkletNode {
         // Create AudioWorkletNodeOptions object
         // --------------------------------------------------------
         let id: u32 = INCREMENTING_ID.fetch_add(1, Ordering::Relaxed);
+        let param_count = parameter_descriptors.len();
 
         let processor_options = NapiAudioWorkletProcessor {
             id,
             send: process_call_sender(worklet_id),
             exited: process_call_exited(worklet_id),
-            tail_time_channel: crossbeam_channel::bounded(1),
-            param_values: Vec::with_capacity(32),
+            reply_channel: crossbeam_channel::bounded(1),
+            spin_for_reply: if polling_helps() {
+                SPIN_FOR_REPLY
+            } else {
+                Duration::ZERO
+            },
+            param_names: parameter_descriptors
+                .iter()
+                .map(|d| d.name.clone())
+                .collect(),
+            param_values: Vec::with_capacity(param_count),
+            param_sizes: vec![0; param_count],
         };
 
         let options = AudioWorkletNodeOptions {
@@ -725,10 +878,16 @@ struct NapiAudioWorkletProcessor {
     send: Sender<WorkletCommand>,
     /// Flag that marks the JS worklet as exited
     exited: Arc<AtomicBool>,
-    /// tail_time result channel
-    tail_time_channel: (Sender<bool>, Receiver<bool>),
+    /// Reply channel of process calls
+    reply_channel: (Sender<ProcessReply>, Receiver<ProcessReply>),
+    /// How long to poll for a reply before blocking, decided on the control thread
+    spin_for_reply: Duration,
+    /// AudioParam names in descriptor order, the order the JS side expects values in
+    param_names: Vec<String>,
     /// Reusable Vec for AudioParam values
-    param_values: Vec<(&'static str, &'static [f32])>,
+    param_values: Vec<&'static [f32]>,
+    /// AudioParam value sizes of the previous call, 0 before the first one
+    param_sizes: Vec<usize>,
 }
 
 impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
@@ -767,12 +926,20 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
         let inputs: &'static [&'static [&'static [f32]]] = unsafe { std::mem::transmute(inputs) };
         let outputs: &'static [&'static [&'static [f32]]] = unsafe { std::mem::transmute(outputs) };
 
+        let mut param_sizes_changed = false;
         self.param_values.clear();
-        self.param_values.extend(params.keys().map(|k| {
-            let label: &'static str = unsafe { std::mem::transmute(k) };
-            let value: &'static [f32] = unsafe { std::mem::transmute(&params.get(k)[..]) };
-            (label, value)
-        }));
+
+        for (name, size) in self.param_names.iter().zip(self.param_sizes.iter_mut()) {
+            let value: &'static [f32] = unsafe { std::mem::transmute(&params.get(name)[..]) };
+
+            if *size != value.len() {
+                *size = value.len();
+                param_sizes_changed = true;
+            }
+
+            self.param_values.push(value);
+        }
+
         let param_values: &'static [_] = unsafe { std::mem::transmute(&self.param_values[..]) };
 
         // end SAFETY comment
@@ -782,15 +949,41 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
             inputs,
             outputs,
             param_values,
+            param_sizes_changed,
             current_time: scope.current_time,
             current_frame: scope.current_frame,
-            tail_time_sender: self.tail_time_channel.0.clone(),
+            reply_sender: self.reply_channel.0.clone(),
         };
 
         // send command to Worker
         self.send.send(WorkletCommand::Process(item)).unwrap();
-        // await result
-        self.tail_time_channel.1.recv().unwrap()
+
+        // await result, polling first: a call usually completes within a few
+        // microseconds, and waking a parked render thread costs about as much
+        let receiver = &self.reply_channel.1;
+        let spin_until = Instant::now() + self.spin_for_reply;
+
+        let reply = loop {
+            if let Ok(reply) = receiver.try_recv() {
+                break reply;
+            }
+
+            if Instant::now() >= spin_until {
+                break receiver.recv().unwrap();
+            }
+
+            std::hint::spin_loop();
+        };
+
+        match reply {
+            ProcessReply::Done(tail_time) => tail_time,
+            ProcessReply::NotReady => {
+                // The params of this call never reached the processor, hand them
+                // over again with the next one
+                self.param_sizes.fill(0);
+                true
+            }
+        }
     }
 }
 
