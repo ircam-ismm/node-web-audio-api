@@ -134,6 +134,9 @@ const POLL_AFTER_COMMAND: Duration = Duration::from_micros(50);
 /// (MessagePort, exit) still runs when an OfflineAudioContext renders without pause
 const MAX_TIME_OUTSIDE_EVENT_LOOP: Duration = Duration::from_millis(1);
 
+/// How long the render thread polls for the reply of a `process` call before blocking
+const SPIN_FOR_REPLY: Duration = Duration::from_micros(30);
+
 thread_local! {
     /// Denotes if the Worker thread priority has already been upped
     static HAS_THREAD_PRIO: Cell<bool> = const { Cell::new(false) };
@@ -823,8 +826,23 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
 
         // send command to Worker
         self.send.send(WorkletCommand::Process(item)).unwrap();
-        // await result
-        self.tail_time_channel.1.recv().unwrap()
+
+        // await result, polling first: a call usually completes within a few
+        // microseconds, and waking a parked render thread costs about as much
+        let reply = &self.tail_time_channel.1;
+        let spin_until = Instant::now() + SPIN_FOR_REPLY;
+
+        loop {
+            if let Ok(tail_time) = reply.try_recv() {
+                return tail_time;
+            }
+
+            if Instant::now() >= spin_until {
+                return reply.recv().unwrap();
+            }
+
+            std::hint::spin_loop();
+        }
     }
 }
 
