@@ -1,12 +1,14 @@
+import { markAsUntransferable } from 'node:worker_threads';
+
 import {
   kWorkletCallableProcess,
   kWorkletMarkNonCallableProcess,
   kWorkletInputs,
   kWorkletOutputs,
   kWorkletParams,
-  kWorkletParamsCache,
-  kWorkletGetBuffer,
-  kWorkletGetBuffer1,
+  kWorkletParamsBuffer,
+  kWorkletParamsNames,
+  kWorkletParamsViews,
   kWorkletUnpackProcess,
 } from './lib/audio-worklet/symbols.js';
 import {
@@ -56,16 +58,29 @@ export class AudioWorkletProcessor {
       this[kWorkletOutputs] = Object.freeze(new Array(numberOfOutputs).fill(Object.freeze([])));
       // Object to be reused as `process` parameters argument
       this[kWorkletParams] = {};
-      // Cache of 2 Float32Array (of length 128 and 1) for each param, to be reused on
-      // each process call according to the size the param for the current render quantum
-      this[kWorkletParamsCache] = {};
+      // Values of all params in one buffer filled from rust, `renderQuantumSize + 1`
+      // values per param in descriptor order. Each param has 2 views on it, a full
+      // render quantum and a single value, and `parameters[name]` is pointed to the
+      // one matching the size of the param in the current render quantum
+      const { renderQuantumSize } = globalThis;
+      const stride = renderQuantumSize + 1;
+      const paramsBuffer = new Float32Array(parameterDescriptors.length * stride);
+      // rust writes into this memory, it must never be detached
+      markAsUntransferable(paramsBuffer.buffer);
+      this[kWorkletParamsBuffer] = paramsBuffer;
+      this[kWorkletParamsNames] = [];
+      this[kWorkletParamsViews] = [];
 
-      for (let desc of parameterDescriptors) {
-        this[kWorkletParamsCache][desc.name] = [
-          globalThis[kWorkletGetBuffer](),
-          globalThis[kWorkletGetBuffer1](),
-        ];
-      }
+      parameterDescriptors.forEach((desc, index) => {
+        const offset = index * stride;
+        const block = paramsBuffer.subarray(offset, offset + renderQuantumSize);
+        const single = paramsBuffer.subarray(offset + renderQuantumSize, offset + stride);
+        markAsUntransferable(block);
+        markAsUntransferable(single);
+
+        this[kWorkletParamsNames].push(desc.name);
+        this[kWorkletParamsViews].push(block, single);
+      });
     } catch (err) {
       this[kWorkletMarkNonCallableProcess]('node-web-audio-api:worklet:ctor-error', err);
     }
