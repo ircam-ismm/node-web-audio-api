@@ -324,4 +324,29 @@ describe('AudioWorkletProcessor', () => {
     const buffer = await audioContext.startRendering();
     assert.deepEqual(buffer.getChannelData(0), new Float32Array(128).fill(0));
   });
+
+  it('should put the processor in error state when a process call cannot be prepared', async () => {
+    // Removes processor state the Worker reads on every call, so the next call fails in Rust
+    const code = `
+      class BreaksBridge extends AudioWorkletProcessor {
+        process(inputs, outputs) {
+          outputs[0][0].fill(1);
+          delete this[Symbol.for('node-web-audio-api:worklet-outputs')];
+          return true;
+        }
+      }
+      registerProcessor('breaks-bridge', BreaksBridge);
+    `;
+    const objectUrl = URL.createObjectURL(new Blob([code], { type: 'application/javascript' }));
+    const audioContext = new OfflineAudioContext(1, 4800, 48000);
+    await audioContext.audioWorklet.addModule(objectUrl);
+
+    const node = new AudioWorkletNode(audioContext, 'breaks-bridge');
+    node.connect(audioContext.destination);
+    const errored = new Promise(resolve => node.onprocessorerror = resolve);
+
+    const buffer = await audioContext.startRendering();
+    assert.deepEqual(buffer.getChannelData(0).subarray(128), new Float32Array(4800 - 128).fill(0));
+    await errored;
+  });
 });

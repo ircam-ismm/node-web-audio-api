@@ -279,20 +279,58 @@ fn recycle_processor(env: &Env, processor: Object) -> Result<()> {
     Ok(())
 }
 
-/// Handle a AudioWorkletProcessor::process call in the Worker
+/// Silence the outputs of a process call that could not run
+fn silence_outputs(outputs: &'static [&'static [&'static [f32]]]) {
+    for output in outputs {
+        for channel in output.iter() {
+            unsafe {
+                std::ptr::write_bytes(channel.as_ptr() as *mut f32, 0, channel.len());
+            }
+        }
+    }
+}
+
+/// Clear the JS exception a failed N-API call may leave pending, every later
+/// N-API call in this Worker fails until it is cleared
+fn clear_pending_exception(env: &Env) {
+    let mut exception = std::ptr::null_mut();
+    unsafe {
+        napi::sys::napi_get_and_clear_last_exception(env.raw(), &mut exception);
+    }
+}
+
+/// Put a processor whose call could not run in the error state, as if `process` threw
+fn mark_processor_errored(env: &Env, processors: &Object, id: u32, error: Error) -> Result<()> {
+    let processor = processors.get_named_property::<Object>(&id.to_string())?;
+
+    let k_worklet_mark_non_callable_process =
+        env.symbol_for("node-web-audio-api:worklet-mark-non-callable-process")?;
+    let mark_non_callable_process = processor
+        .get_property::<JsSymbol, Function<FnArgs<(&str, Object)>, ()>>(
+            k_worklet_mark_non_callable_process,
+        )?;
+
+    let js_error = env.create_error(error)?;
+    mark_non_callable_process.apply(
+        processor,
+        ("node-web-audio-api:worklet:process-error", js_error).into(),
+    )
+}
+
+/// Handle a AudioWorkletProcessor::process call in the Worker, returns the tail time
 fn process_audio_worklet(
     env: &Env,
     processors: &Object,
-    processor_arguments: ProcessorArguments,
-) -> Result<()> {
-    let ProcessorArguments {
+    processor_arguments: &ProcessorArguments,
+) -> Result<bool> {
+    let &ProcessorArguments {
         id,
         inputs,
         outputs,
         param_values,
         current_time,
         current_frame,
-        tail_time_sender,
+        ..
     } = processor_arguments;
 
     let mut processor = match processors.get_named_property::<Object>(&id.to_string()) {
@@ -300,8 +338,7 @@ fn process_audio_worklet(
         Err(_) => {
             // we may run into race conditions between Rust and JS, where processor
             // exists in Rust audio thread side but not yet on JS worker thread side
-            let _ = tail_time_sender.send(true); // make sure we will be called back
-            return Ok(());
+            return Ok(true); // make sure we will be called back
         }
     };
 
@@ -316,8 +353,7 @@ fn process_audio_worklet(
     let callable_process = processor.get_property::<JsSymbol, bool>(k_worklet_callable_process)?;
 
     if !callable_process {
-        let _ = tail_time_sender.send(false);
-        return Ok(());
+        return Ok(false);
     }
 
     let render_quantum_size = global.get_named_property::<u32>("renderQuantumSize")? as usize;
@@ -423,9 +459,7 @@ fn process_audio_worklet(
         }
     }
 
-    let _ = tail_time_sender.send(tail_time); // allowed to fail
-
-    Ok(())
+    Ok(tail_time)
 }
 
 // #[allow(dead_code)]
@@ -474,7 +508,9 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
             WorkletCommand::Drop(id) => {
                 match processors.get_named_property::<Object>(&id.to_string()) {
                     Ok(processor) => {
-                        let _ = recycle_processor(&env, processor);
+                        if recycle_processor(&env, processor).is_err() {
+                            clear_pending_exception(&env);
+                        }
                         let _ = processors.delete_named_property(id.to_string());
                     }
                     Err(_) => {
@@ -486,7 +522,21 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
                 }
             }
             WorkletCommand::Process(processor_arguments) => {
-                let _ = process_audio_worklet(&env, &processors, processor_arguments);
+                // The render thread waits for this reply, so it must be sent even
+                // when the call could not run
+                let tail_time = process_audio_worklet(&env, &processors, &processor_arguments)
+                    .unwrap_or_else(|error| {
+                        clear_pending_exception(&env);
+                        silence_outputs(processor_arguments.outputs);
+                        let _ = mark_processor_errored(
+                            &env,
+                            &processors,
+                            processor_arguments.id,
+                            error,
+                        );
+                        false
+                    });
+                let _ = processor_arguments.tail_time_sender.send(tail_time); // allowed to fail
             }
         }
 

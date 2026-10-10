@@ -59,10 +59,14 @@ let loopStarted = false;
 let runLoopImmediateId = null;
 
 function runLoop() {
-  // block until we need to render a quantum
-  run_audio_worklet_global_scope(workletId, processors);
-  // yield to the event loop, and then repeat
-  runLoopImmediateId = setImmediate(runLoop);
+  try {
+    // block until we need to render a quantum
+    run_audio_worklet_global_scope(workletId, processors);
+  } finally {
+    // yield to the event loop, and then repeat, even if the call above threw:
+    // the render thread waits on this loop for every process call
+    runLoopImmediateId = setImmediate(runLoop);
+  }
 }
 
 // AudioWorkletGlobalScope globals
