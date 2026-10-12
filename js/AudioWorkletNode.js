@@ -41,6 +41,7 @@ const IMPLEMENTATION_MAX_NUMBER_OF_CHANNELS = 32;
 
 export class AudioWorkletNode extends AudioNode {
   #port = null;
+  #errorPort = null;
   #parameters = {};
   #onprocessorerror = null;
 
@@ -230,38 +231,55 @@ export class AudioWorkletNode extends AudioNode {
     );
 
     this.#port = messagePort;
+    this.#errorPort = errorPort;
 
     // Handle 'processorerror' events
+    //
+    // Note that the port listener is removed on `disconnect`, otherwise the reference to
+    // `this` in the callback prevents the garbage collection of the instance
     // cf. https://webaudio.github.io/web-audio-api/#dom-audioworkletnode-onprocessorerror
-    errorPort.on('message', msg => {
-      const { cmd, err } = msg;
-      // log error message to help debugging event if no `processorerror` listener has been set
-      console.log(err);
+    // cf. https://github.com/ircam-ismm/node-web-audio-api/issues/202
+    this.#errorPort.addEventListener('message', this.#onError);
+  }
 
-      switch (cmd) {
-        case 'node-web-audio-api:worklet:ctor-error': {
-          const message = `Failed to construct '${parsedName}' AudioWorkletProcessor: ${err.message}`;
-          const event = new ErrorEvent('processorerror', { message, error: err });
-          propagateEvent(this, event);
-          break;
-        }
-        case 'node-web-audio-api:worklet:process-invalid': {
-          const message = `Failed to execute 'process' on '${parsedName}' AudioWorkletProcessor: ${err.message}`;
-          const error = new TypeError(message);
-          error.stack = err.stack.replace(err.message, message);
+  #onError = (msg) => {
+    const { cmd, err } = msg;
+    // log error message to help debugging event if no `processorerror` listener has been set
+    console.log(err);
 
-          const event = new ErrorEvent('processorerror', { message, error });
-          propagateEvent(this, event);
-          break;
-        }
-        case 'node-web-audio-api:worklet:process-error': {
-          const message = `Failed to execute 'process' on '${parsedName}' AudioWorkletProcessor: ${err.message}`;
-          const event = new ErrorEvent('processorerror', { message, error: err });
-          propagateEvent(this, event);
-          break;
-        }
+    switch (cmd) {
+      case 'node-web-audio-api:worklet:ctor-error': {
+        const message = `Failed to construct '${parsedName}' AudioWorkletProcessor: ${err.message}`;
+        const event = new ErrorEvent('processorerror', { message, error: err });
+        propagateEvent(this, event);
+        break;
       }
-    });
+      case 'node-web-audio-api:worklet:process-invalid': {
+        const message = `Failed to execute 'process' on '${parsedName}' AudioWorkletProcessor: ${err.message}`;
+        const error = new TypeError(message);
+        error.stack = err.stack.replace(err.message, message);
+
+        const event = new ErrorEvent('processorerror', { message, error });
+        propagateEvent(this, event);
+        break;
+      }
+      case 'node-web-audio-api:worklet:process-error': {
+        const message = `Failed to execute 'process' on '${parsedName}' AudioWorkletProcessor: ${err.message}`;
+        const event = new ErrorEvent('processorerror', { message, error: err });
+        propagateEvent(this, event);
+        break;
+      }
+    }
+  }
+
+  connect(...args) {
+    this.#errorPort.addEventListener('message', this.#onError);
+    super.connect(...args);
+  }
+
+  disconnect(...args) {
+    this.#errorPort.removeEventListener('message', this.#onError);
+    super.disconnect(...args);
   }
 
   get parameters() {
