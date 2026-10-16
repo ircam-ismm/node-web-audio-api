@@ -191,6 +191,16 @@ const SPIN_FOR_REPLY: Duration = Duration::from_micros(30);
 /// How long an idle Worker waits for a command before giving the event loop a turn
 const IDLE_WAIT: Duration = Duration::from_millis(1);
 
+/// How long without a command before the Worker counts as idle and waits rather
+/// than spins the event loop. On Linux it waits at once, at real-time priority
+/// (`WORKER_RT_PRIORITY`). Elsewhere it spins for longer than the gap between
+/// render quanta of a playing context: on macOS a waiting Worker, at normal
+/// priority, sometimes woke late, peaking at 480% of a callback against 85%.
+#[cfg(target_os = "linux")]
+const IDLE_AFTER: Duration = Duration::ZERO;
+#[cfg(not(target_os = "linux"))]
+const IDLE_AFTER: Duration = Duration::from_millis(3);
+
 /// Real-time priority of a Worker on Linux: above the render helpers of
 /// web-audio-api (10), so a helper polling for a reply never delays it, and
 /// below the audio server's threads (PipeWire's run at 83)
@@ -210,6 +220,8 @@ thread_local! {
     static HAS_THREAD_PRIO: Cell<bool> = const { Cell::new(false) };
     /// AudioWorkletGlobalScope currentFrame last written in the Worker
     static GLOBAL_SCOPE_FRAME: Cell<Option<u64>> = const { Cell::new(None) };
+    /// When the Worker last handled a command
+    static LAST_COMMAND_AT: Cell<Option<Instant>> = const { Cell::new(None) };
     /// AudioWorkletGlobalScope renderQuantumSize, read once per Worker
     static RENDER_QUANTUM_SIZE: Cell<usize> = const { Cell::new(0) };
     /// References to the symbols read on every process call
@@ -602,11 +614,11 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
     // a turn of the event loop costs more than a whole `process` call. The event
     // loop then runs about once per render quantum instead of once per call.
     //
-    // Then the Worker waits for the next command, up to IDLE_WAIT, rather than spin
-    // the event loop until the next quantum. Spinning keeps a core busy: on a Pi 5,
-    // with a Worker per render group, the spinning Workers left no core for the
-    // ones with work, and 2 render threads missed 40% of the callbacks; waiting,
-    // none, at a third less load than 1 thread.
+    // When no command has come for IDLE_AFTER, the Worker waits for one, up to
+    // IDLE_WAIT, rather than spin the event loop. Spinning keeps a core busy: on a
+    // Pi 5, with a Worker per render group, the spinning Workers left no core for
+    // the ones with work, and 2 render threads missed 40% of the callbacks;
+    // waiting at real-time priority, none, at a third less load than 1 thread.
     // (cf. https://github.com/ircam-ismm/node-web-audio-api/pull/124#pullrequestreview-2053515583)
     let receiver = process_call_receiver(worklet_id as usize);
     let entered_at = Instant::now();
@@ -626,6 +638,12 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
                     continue;
                 }
                 Some(_) => break,
+                None if LAST_COMMAND_AT
+                    .get()
+                    .is_some_and(|at| at.elapsed() < IDLE_AFTER) =>
+                {
+                    break
+                }
                 None => match receiver.recv_timeout(IDLE_WAIT) {
                     Ok(msg) => msg,
                     Err(_) => break,
@@ -671,6 +689,7 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
         }
 
         let now = Instant::now();
+        LAST_COMMAND_AT.set(Some(now));
         if now.duration_since(entered_at) > MAX_TIME_OUTSIDE_EVENT_LOOP {
             break;
         }
@@ -1042,7 +1061,10 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
         self.send.send(WorkletCommand::Process(item)).unwrap();
 
         // await result, polling first: a call usually completes within a few
-        // microseconds, and waking a parked render thread costs about as much
+        // microseconds, and waking a parked render thread costs about as much.
+        // Then block, waking to check whether the Worker exited: one that exits
+        // between the check above and the send never replies, which hung `close()`.
+        // An exited Worker never runs a call again, so the slices are free.
         let receiver = &self.reply_channel.1;
         let spin_until = Instant::now() + self.spin_for_reply;
 
@@ -1051,11 +1073,16 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
                 break reply;
             }
 
-            if Instant::now() >= spin_until {
-                break receiver.recv().unwrap();
+            if Instant::now() < spin_until {
+                std::hint::spin_loop();
+                continue;
             }
 
-            std::hint::spin_loop();
+            match receiver.recv_timeout(IDLE_WAIT) {
+                Ok(reply) => break reply,
+                Err(_) if self.exited.load(Ordering::SeqCst) => return false,
+                Err(_) => {}
+            }
         };
 
         match reply {
