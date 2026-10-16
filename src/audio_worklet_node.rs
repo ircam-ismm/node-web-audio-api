@@ -598,6 +598,20 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
     if !HAS_THREAD_PRIO.replace(true) {
         // allowed to fail
         let _ = thread_priority::set_current_thread_priority(thread_priority::ThreadPriority::Max);
+        // DEBUG(wait-experiment): NWA_WORKER_RT=<priority> runs the Worker at SCHED_FIFO
+        #[cfg(target_os = "linux")]
+        if let Some(priority) = std::env::var("NWA_WORKER_RT")
+            .ok()
+            .and_then(|v| v.parse().ok())
+        {
+            let param = libc::sched_param {
+                sched_priority: priority,
+            };
+            // SAFETY: sets the scheduling of the calling thread, with a valid parameter
+            if unsafe { libc::sched_setscheduler(0, libc::SCHED_FIFO, &param) } != 0 {
+                eprintln!("NWA_WORKER_RT: {}", std::io::Error::last_os_error());
+            }
+        }
     }
 
     // Handle incoming commands, then yield back to the event loop.

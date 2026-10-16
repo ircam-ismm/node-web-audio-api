@@ -17,6 +17,9 @@ thread-priority = "3.1"
 web-audio-api = "1.7"
 # web-audio-api = { path = "../web-audio-api-rs" }
 
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = "0.2"
+
 [build-dependencies]
 napi-build = "2.3"
 
