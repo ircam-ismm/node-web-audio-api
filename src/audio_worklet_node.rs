@@ -191,9 +191,11 @@ const SPIN_FOR_REPLY: Duration = Duration::from_micros(30);
 /// How long an idle Worker waits for a command before giving the event loop a turn
 const IDLE_WAIT: Duration = Duration::from_millis(1);
 
-/// How long without a command before the Worker counts as idle and waits rather
-/// than spins: longer than the gap between render quanta of a playing context
-const IDLE_AFTER: Duration = Duration::from_millis(3);
+/// Real-time priority of a Worker on Linux: above the render helpers of
+/// web-audio-api (10), so a helper polling for a reply never delays it, and
+/// below the audio server's threads (PipeWire's run at 83)
+#[cfg(target_os = "linux")]
+const WORKER_RT_PRIORITY: libc::c_int = 50;
 
 /// Whether a thread waiting on the other side of the worklet bridge should poll
 /// rather than park: with a single core the thread that would answer cannot run
@@ -203,34 +205,11 @@ fn polling_helps() -> bool {
     *MULTI_CORE.get_or_init(|| std::thread::available_parallelism().is_ok_and(|n| n.get() > 1))
 }
 
-// DEBUG(wait-experiment): NWA_POLL_US, NWA_IDLE_AFTER_US and NWA_REPLY_SPIN_US override
-// the waits, in microseconds. Not to be first called from the render thread.
-fn knob(name: &str, default: Duration) -> Duration {
-    std::env::var(name)
-        .ok()
-        .and_then(|v| v.parse().ok())
-        .map_or(default, Duration::from_micros)
-}
-fn poll_after_command() -> Duration {
-    static V: OnceLock<Duration> = OnceLock::new();
-    *V.get_or_init(|| knob("NWA_POLL_US", POLL_AFTER_COMMAND))
-}
-fn idle_after() -> Duration {
-    static V: OnceLock<Duration> = OnceLock::new();
-    *V.get_or_init(|| knob("NWA_IDLE_AFTER_US", IDLE_AFTER))
-}
-fn spin_for_reply() -> Duration {
-    static V: OnceLock<Duration> = OnceLock::new();
-    *V.get_or_init(|| knob("NWA_REPLY_SPIN_US", SPIN_FOR_REPLY))
-}
-
 thread_local! {
     /// Denotes if the Worker thread priority has already been upped
     static HAS_THREAD_PRIO: Cell<bool> = const { Cell::new(false) };
     /// AudioWorkletGlobalScope currentFrame last written in the Worker
     static GLOBAL_SCOPE_FRAME: Cell<Option<u64>> = const { Cell::new(None) };
-    /// When the Worker last handled a command
-    static LAST_COMMAND_AT: Cell<Option<Instant>> = const { Cell::new(None) };
     /// AudioWorkletGlobalScope renderQuantumSize, read once per Worker
     static RENDER_QUANTUM_SIZE: Cell<usize> = const { Cell::new(0) };
     /// References to the symbols read on every process call
@@ -596,21 +575,23 @@ fn process_audio_worklet(
 pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors: Object) {
     // Try set thread priority to highest on first call
     if !HAS_THREAD_PRIO.replace(true) {
-        // allowed to fail
-        let _ = thread_priority::set_current_thread_priority(thread_priority::ThreadPriority::Max);
-        // DEBUG(wait-experiment): NWA_WORKER_RT=<priority> runs the Worker at SCHED_FIFO
+        // The render thread waits for the Worker, which on Linux at normal priority
+        // can queue for milliseconds behind other threads once it sleeps. Real-time
+        // priority needs an rtprio limit (the `audio` group); without one, fall back.
         #[cfg(target_os = "linux")]
-        if let Some(priority) = std::env::var("NWA_WORKER_RT")
-            .ok()
-            .and_then(|v| v.parse().ok())
-        {
+        let real_time = {
             let param = libc::sched_param {
-                sched_priority: priority,
+                sched_priority: WORKER_RT_PRIORITY,
             };
             // SAFETY: sets the scheduling of the calling thread, with a valid parameter
-            if unsafe { libc::sched_setscheduler(0, libc::SCHED_FIFO, &param) } != 0 {
-                eprintln!("NWA_WORKER_RT: {}", std::io::Error::last_os_error());
-            }
+            unsafe { libc::sched_setscheduler(0, libc::SCHED_FIFO, &param) == 0 }
+        };
+        #[cfg(not(target_os = "linux"))]
+        let real_time = false;
+        if !real_time {
+            // allowed to fail
+            let _ =
+                thread_priority::set_current_thread_priority(thread_priority::ThreadPriority::Max);
         }
     }
 
@@ -621,17 +602,17 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
     // a turn of the event loop costs more than a whole `process` call. The event
     // loop then runs about once per render quantum instead of once per call.
     //
-    // When no command has come for IDLE_AFTER, the Worker is idle: wait for one for
-    // up to IDLE_WAIT instead of spinning the event loop, which keeps a core busy
-    // even on a suspended context. Waking a waiting Worker costs the render thread
-    // a syscall, so it only happens after such a gap, never between the quanta of
-    // a playing context
+    // Then the Worker waits for the next command, up to IDLE_WAIT, rather than spin
+    // the event loop until the next quantum. Spinning keeps a core busy: on a Pi 5,
+    // with a Worker per render group, the spinning Workers left no core for the
+    // ones with work, and 2 render threads missed 40% of the callbacks; waiting,
+    // none, at a third less load than 1 thread.
     // (cf. https://github.com/ircam-ismm/node-web-audio-api/pull/124#pullrequestreview-2053515583)
     let receiver = process_call_receiver(worklet_id as usize);
     let entered_at = Instant::now();
     let mut poll_until: Option<Instant> = None;
     let poll_after_command = if polling_helps() {
-        poll_after_command()
+        POLL_AFTER_COMMAND
     } else {
         Duration::ZERO
     };
@@ -645,12 +626,6 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
                     continue;
                 }
                 Some(_) => break,
-                None if LAST_COMMAND_AT
-                    .get()
-                    .is_some_and(|at| at.elapsed() < idle_after()) =>
-                {
-                    break
-                }
                 None => match receiver.recv_timeout(IDLE_WAIT) {
                     Ok(msg) => msg,
                     Err(_) => break,
@@ -696,7 +671,6 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
         }
 
         let now = Instant::now();
-        LAST_COMMAND_AT.set(Some(now));
         if now.duration_since(entered_at) > MAX_TIME_OUTSIDE_EVENT_LOOP {
             break;
         }
@@ -900,7 +874,7 @@ impl NapiAudioWorkletNode {
             exited: process_call_exited(worklet_id),
             reply_channel: crossbeam_channel::bounded(1),
             spin_for_reply: if polling_helps() {
-                spin_for_reply()
+                SPIN_FOR_REPLY
             } else {
                 Duration::ZERO
             },
