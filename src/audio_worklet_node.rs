@@ -203,6 +203,27 @@ fn polling_helps() -> bool {
     *MULTI_CORE.get_or_init(|| std::thread::available_parallelism().is_ok_and(|n| n.get() > 1))
 }
 
+// DEBUG(wait-experiment): NWA_POLL_US, NWA_IDLE_AFTER_US and NWA_REPLY_SPIN_US override
+// the waits, in microseconds. Not to be first called from the render thread.
+fn knob(name: &str, default: Duration) -> Duration {
+    std::env::var(name)
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .map_or(default, Duration::from_micros)
+}
+fn poll_after_command() -> Duration {
+    static V: OnceLock<Duration> = OnceLock::new();
+    *V.get_or_init(|| knob("NWA_POLL_US", POLL_AFTER_COMMAND))
+}
+fn idle_after() -> Duration {
+    static V: OnceLock<Duration> = OnceLock::new();
+    *V.get_or_init(|| knob("NWA_IDLE_AFTER_US", IDLE_AFTER))
+}
+fn spin_for_reply() -> Duration {
+    static V: OnceLock<Duration> = OnceLock::new();
+    *V.get_or_init(|| knob("NWA_REPLY_SPIN_US", SPIN_FOR_REPLY))
+}
+
 thread_local! {
     /// Denotes if the Worker thread priority has already been upped
     static HAS_THREAD_PRIO: Cell<bool> = const { Cell::new(false) };
@@ -596,7 +617,7 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
     let entered_at = Instant::now();
     let mut poll_until: Option<Instant> = None;
     let poll_after_command = if polling_helps() {
-        POLL_AFTER_COMMAND
+        poll_after_command()
     } else {
         Duration::ZERO
     };
@@ -612,7 +633,7 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
                 Some(_) => break,
                 None if LAST_COMMAND_AT
                     .get()
-                    .is_some_and(|at| at.elapsed() < IDLE_AFTER) =>
+                    .is_some_and(|at| at.elapsed() < idle_after()) =>
                 {
                     break
                 }
@@ -865,7 +886,7 @@ impl NapiAudioWorkletNode {
             exited: process_call_exited(worklet_id),
             reply_channel: crossbeam_channel::bounded(1),
             spin_for_reply: if polling_helps() {
-                SPIN_FOR_REPLY
+                spin_for_reply()
             } else {
                 Duration::ZERO
             },
