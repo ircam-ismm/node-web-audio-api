@@ -227,6 +227,7 @@ export class AudioWorkletNode extends AudioNode {
       parsedName,
       parsedOptions,
       napiObj.id,
+      napiObj.workletId,
     );
 
     this.#port = messagePort;

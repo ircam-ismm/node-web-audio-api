@@ -55,6 +55,11 @@ globalThis[kWorkletMarkAsUntransferable] = obj => {
 let loopStarted = false;
 let runLoopImmediateId = null;
 
+// Imports of the modules being added. A scope started for a new render group gets its modules
+// and its first processor at once, so a processor is created only once these are done.
+let moduleImports = Promise.resolve();
+let pendingImports = 0;
+
 function runLoop() {
   try {
     // block until we need to render a quantum
@@ -210,15 +215,18 @@ parentPort.on('message', async event => {
     case 'node-web-audio-api:worklet:add-module': {
       const { moduleUrl, code, promiseId } = event;
 
+      // 1. If given module is a "real" file, we can import it as is,
+      // 2. If module is a blob or loaded from an URL, we use the raw text as
+      //    input. In this case, if the module uses an `import` it will crash
+      // Modules import one after another, in the order they were added
+      pendingImports += 1;
+      const imported = moduleImports.then(() => moduleUrl !== null
+        ? import(moduleUrl)
+        : import(`data:text/javascript;base64,${btoa(unescape(encodeURIComponent(code)))}`));
+      moduleImports = imported.catch(() => {});
+
       try {
-        // 1. If given module is a "real" file, we can import it as is,
-        // 2. If module is a blob or loaded from an URL, we use the raw text as
-        //    input. In this case, if the module uses an `import` it will crash
-        if (moduleUrl !== null) {
-          await import(moduleUrl);
-        } else {
-          await import(`data:text/javascript;base64,${btoa(unescape(encodeURIComponent(code)))}`);
-        }
+        await imported;
 
         parentPort.postMessage({
           cmd: 'node-web-audio-api:worklet:add-module-success',
@@ -230,10 +238,16 @@ parentPort.on('message', async event => {
           promiseId,
           err,
         });
+      } finally {
+        pendingImports -= 1;
       }
       break;
     }
     case 'node-web-audio-api:worklet:create-processor': {
+      if (pendingImports > 0) {
+        await moduleImports;
+      }
+
       const { name, id, options, messagePort, errorPort } = event;
       const ctor = nameProcessorCtorMap.get(name);
 

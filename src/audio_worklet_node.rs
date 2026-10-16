@@ -91,6 +91,47 @@ pub(crate) fn allocate_process_call_channel() -> usize {
     id
 }
 
+/// The process call channels of one (Offline)AudioContext, one per render group
+///
+/// Each channel has its own Worker, so the worklets of different render groups run in parallel,
+/// like the groups themselves. Group 0 gets its channel with the context, the others when their
+/// first AudioWorkletNode is created.
+pub(crate) struct WorkletChannels {
+    /// Render group of the nodes created from now on
+    group: AtomicU32,
+    /// Render group -> channel ID
+    ids: Mutex<HashMap<u32, usize>>,
+}
+
+impl WorkletChannels {
+    pub(crate) fn new() -> Self {
+        Self {
+            group: AtomicU32::new(0),
+            ids: Mutex::new(HashMap::from([(0, allocate_process_call_channel())])),
+        }
+    }
+
+    pub(crate) fn set_group(&self, group: u32) {
+        self.group.store(group, Ordering::Relaxed);
+    }
+
+    /// Channel of group 0
+    pub(crate) fn main(&self) -> usize {
+        self.ids.lock().unwrap()[&0]
+    }
+
+    /// Channel of the render group nodes are created in now
+    fn current(&self) -> usize {
+        let group = self.group.load(Ordering::Relaxed);
+        *self
+            .ids
+            .lock()
+            .unwrap()
+            .entry(group)
+            .or_insert_with(allocate_process_call_channel)
+    }
+}
+
 /// Obtain the WorkletCommand sender for this context ID
 fn process_call_sender(id: usize) -> Sender<WorkletCommand> {
     // optimistically assume the channel exists and we can use a shared read-lock
@@ -619,6 +660,8 @@ pub fn exit_audio_worklet_global_scope(worklet_id: u32) {
 pub struct NapiAudioWorkletNode {
     pub(crate) inner: AudioWorkletNode,
     id: u32,
+    /// Channel, and so Worker, of the render group the node was created in
+    worklet_id: u32,
     // parameters: ObjectRef,
 }
 
@@ -781,8 +824,8 @@ impl NapiAudioWorkletNode {
         // --------------------------------------------------------
 
         let worklet_id = match context {
-            Either::A(context) => context.worklet_id,
-            Either::B(context) => context.worklet_id,
+            Either::A(context) => context.worklets.current(),
+            Either::B(context) => context.worklets.current(),
         };
 
         // --------------------------------------------------------
@@ -858,12 +901,18 @@ impl NapiAudioWorkletNode {
         Self {
             inner: native_node,
             id,
+            worklet_id: worklet_id as u32,
         }
     }
 
     #[napi(getter)]
     pub fn id(&self) -> u32 {
         self.id
+    }
+
+    #[napi(getter, js_name = "workletId")]
+    pub fn worklet_id(&self) -> u32 {
+        self.worklet_id
     }
 }
 

@@ -27,6 +27,8 @@ export class OfflineAudioContext extends BaseAudioContext {
       throw new TypeError(`Failed to construct 'OfflineAudioContext': 1 argument required, but only ${arguments.length} present`);
     }
 
+    let renderThreads;
+
     // https://webaudio.github.io/web-audio-api/#dom-offlineaudiocontext-constructor-contextoptions-contextoptions
     if (arguments.length === 1) {
       const options = args[0];
@@ -45,6 +47,14 @@ export class OfflineAudioContext extends BaseAudioContext {
 
       if (options.numberOfChannels === undefined) {
         options.numberOfChannels = 1;
+      }
+
+      // non-standard: threads rendering the render groups, see `setRenderGroup`
+      if (options.renderThreads !== undefined) {
+        renderThreads = conversions['unsigned long'](options.renderThreads, {
+          enforceRange: true,
+          context: `Failed to construct 'OfflineAudioContext': Failed to read the 'renderThreads' property from OfflineAudioContextOptions; The provided value (${options.renderThreads})`,
+        });
       }
 
       args = [
@@ -74,6 +84,9 @@ export class OfflineAudioContext extends BaseAudioContext {
 
     try {
       napiObj = new nativeBinding.NapiOfflineAudioContext(numberOfChannels, length, sampleRate);
+      if (renderThreads !== undefined) {
+        napiObj.setRenderThreads(renderThreads);
+      }
     } catch (err) {
       throwSanitizedError(err);
     }

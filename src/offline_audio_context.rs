@@ -15,7 +15,7 @@ pub struct NapiOfflineAudioContext {
     inner: Arc<OfflineAudioContext>,
     destination: NapiAudioDestinationNode,
     listener: Option<NapiAudioListener>,
-    pub(crate) worklet_id: usize,
+    pub(crate) worklets: Arc<crate::audio_worklet_node::WorkletChannels>,
 }
 
 impl NapiOfflineAudioContext {
@@ -39,24 +39,30 @@ impl NapiOfflineAudioContext {
         let native_destination = native_context.destination();
         let napi_destination = NapiAudioDestinationNode::new(native_destination);
 
-        let worklet_id = crate::audio_worklet_node::allocate_process_call_channel();
+        let worklets = Arc::new(crate::audio_worklet_node::WorkletChannels::new());
 
         Self {
             inner: Arc::new(native_context),
             destination: napi_destination,
             listener: None,
-            worklet_id,
+            worklets,
         }
     }
 
     #[napi(getter, js_name = "workletId")]
     pub fn worklet_id(&self) -> u32 {
-        self.worklet_id as u32
+        self.worklets.main() as u32
     }
 
     #[napi(getter)]
     pub fn destination(&self) -> NapiAudioDestinationNode {
         self.destination.clone()
+    }
+
+    /// Non-standard: render the render groups on `threads` threads, before rendering starts
+    #[napi(js_name = "setRenderThreads")]
+    pub fn set_render_threads(&self, threads: u32) {
+        self.inner.set_render_threads(threads as usize);
     }
 
     #[napi(getter)]
