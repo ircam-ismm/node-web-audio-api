@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::option::Option;
@@ -1002,7 +1003,7 @@ impl NapiAudioWorkletNode {
 
     /// Calls `callback` with each message the processor of a native node posts
     #[napi]
-    pub fn onmessage(&self, callback: Function<serde_json::Value, ()>) -> Result<()> {
+    pub fn onmessage(&self, callback: Function<Unknown<'static>, ()>) -> Result<()> {
         let Some(native) = self.native else {
             return Ok(());
         };
@@ -1010,12 +1011,12 @@ impl NapiAudioWorkletNode {
         let tsfn = callback
             .build_threadsafe_function()
             .weak::<true>() // do not prevent process to exit
-            .build_callback(|ctx: ThreadsafeCallContext<serde_json::Value>| Ok(ctx.value))?;
+            .build_callback(move |ctx: ThreadsafeCallContext<Box<dyn Any + Send>>| {
+                (native.encode_message)(&ctx.env, ctx.value)
+            })?;
 
         self.inner.port().set_onmessage(move |message| {
-            if let Some(value) = (native.encode_message)(message) {
-                tsfn.call(value, ThreadsafeFunctionCallMode::Blocking);
-            }
+            tsfn.call(message, ThreadsafeFunctionCallMode::Blocking);
         });
 
         Ok(())

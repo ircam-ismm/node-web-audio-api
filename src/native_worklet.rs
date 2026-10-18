@@ -4,7 +4,13 @@
 //! registers its processors at load with [`register_native_processor`]. An
 //! `AudioWorkletNode` created with a registered name then runs the Rust
 //! processor on the render thread itself, with no Worker and no hand-off per
-//! render quantum. Its port carries serde values both ways.
+//! render quantum. Its port carries serde values both ways: decoded on the
+//! control thread and encoded on the JS thread, never on the render thread.
+//!
+//! Typed arrays cross as bytes. One posted to the processor reaches its
+//! deserializer as the bytes of a `Uint8Array` view, and an object
+//! `{ Float32Array: <bytes> }` the processor posts arrives as a `Float32Array`
+//! of those bytes.
 
 use std::any::Any;
 use std::sync::RwLock;
@@ -23,8 +29,8 @@ pub(crate) struct NativeProcessor {
         fn(&OfflineAudioContext, AudioWorkletNodeOptions<()>) -> AudioWorkletNode,
     /// Decodes a message posted in JS and sends it to the processor, on the control thread
     pub(crate) post_message: fn(&Env, Unknown, &AudioWorkletNode) -> Result<()>,
-    /// Encodes a message of the processor for JS, on the event loop thread
-    pub(crate) encode_message: fn(Box<dyn Any + Send>) -> Option<serde_json::Value>,
+    /// Encodes a message of the processor for JS, on the JS thread
+    pub(crate) encode_message: fn(&Env, Box<dyn Any + Send>) -> Result<Unknown<'static>>,
 }
 
 static NATIVE_PROCESSORS: RwLock<Vec<(String, NativeProcessor)>> = RwLock::new(Vec::new());
@@ -52,15 +58,22 @@ where
             node.port().post_message(message);
             Ok(())
         },
-        encode_message: |message| {
-            let message = message.downcast::<E>().ok()?;
-            serde_json::to_value(*message).ok()
-        },
+        encode_message: encode_message::<E>,
     };
 
     let mut processors = NATIVE_PROCESSORS.write().unwrap();
     processors.retain(|(registered, _)| registered != name);
     processors.push((name.to_string(), processor));
+}
+
+fn encode_message<E: Serialize + 'static>(
+    env: &Env,
+    message: Box<dyn Any + Send>,
+) -> Result<Unknown<'static>> {
+    let message = message
+        .downcast::<E>()
+        .map_err(|_| Error::from_reason("A native processor posted a message of another type"))?;
+    env.to_js_value(&*message)
 }
 
 pub(crate) fn native_processor(name: &str) -> Option<NativeProcessor> {

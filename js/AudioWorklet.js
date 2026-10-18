@@ -42,6 +42,22 @@ function asBytes(value) {
   return value;
 }
 
+// A processor's { Float32Array: bytes } arrives as a Float32Array of its bytes
+function fromBytes(value) {
+  if (Array.isArray(value)) {
+    return value.map(fromBytes);
+  }
+  if (value !== null && typeof value === 'object' && !ArrayBuffer.isView(value)) {
+    const keys = Object.keys(value);
+    if (keys.length === 1 && keys[0] === 'Float32Array' && ArrayBuffer.isView(value.Float32Array)) {
+      const bytes = value.Float32Array;
+      return new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+    }
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, fromBytes(item)]));
+  }
+  return value;
+}
+
 // const require = createRequire(import.meta.url);
 
 /**
@@ -312,7 +328,7 @@ export class AudioWorklet {
       }
     });
     port2.unref();
-    napiObj.onmessage(message => port2.postMessage(message));
+    napiObj.onmessage(message => port2.postMessage(fromBytes(message)));
     this.#nativePorts.add(port2);
 
     return port1;
