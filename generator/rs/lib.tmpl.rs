@@ -35,6 +35,10 @@ use crate::audio_playback_stats::NapiAudioPlaybackStats;
 // Generated audio nodes
 ${d.nodes.map(n => `mod ${d.slug(n)};`).join('\n')}
 
+// AudioWorkletProcessors written in Rust
+pub mod native_worklet;
+pub use crate::native_worklet::register_native_processor;
+
 // MediaDevices & MediaStream API
 mod media_streams;
 mod media_devices;

@@ -13,6 +13,7 @@ import {
   kGetParameterDescriptors,
   kPrivateConstructor,
   kCreateProcessor,
+  kCreateNativePort,
 } from './lib/symbols.js';
 import {
   kEnumerableProperty,
@@ -57,7 +58,11 @@ export class AudioWorkletNode extends AudioNode {
       context: `Failed to construct 'AudioWorkletNode': The given 'AudioWorkletProcessor' name`,
     });
 
-    if (!context.audioWorklet[kProcessorRegistered](parsedName)) {
+    // A processor written in Rust and registered under this name runs in place
+    // of a JS one (see src/native_worklet.rs)
+    const isNative = nativeBinding.hasNativeProcessor(parsedName);
+
+    if (!isNative && !context.audioWorklet[kProcessorRegistered](parsedName)) {
       throw new DOMException(`Failed to construct 'AudioWorkletNode': processor '${parsedName}' is not registered in 'AudioWorklet'`, 'InvalidStateError');
     }
 
@@ -189,7 +194,7 @@ export class AudioWorkletNode extends AudioNode {
       });
     }
 
-    const parameterDescriptors = context.audioWorklet[kGetParameterDescriptors](parsedName);
+    const parameterDescriptors = isNative ? [] : context.audioWorklet[kGetParameterDescriptors](parsedName);
     let napiObj;
 
     try {
@@ -221,6 +226,13 @@ export class AudioWorkletNode extends AudioNode {
       [kPrivateConstructor]: true,
       parameters,
     });
+
+    if (isNative) {
+      this.#port = context.audioWorklet[kCreateNativePort](napiObj);
+      // ponytail: a panic in a native processor removes its node silently;
+      // forward it as a 'processorerror' event once something listens for one
+      return;
+    }
 
     // Create JS processor
     const { messagePort, errorPort } = context.audioWorklet[kCreateProcessor](

@@ -8,6 +8,7 @@ use std::time::{Duration, Instant};
 use crossbeam_channel::{Receiver, Sender};
 
 use napi::bindgen_prelude::*;
+use napi::threadsafe_function::{ThreadsafeCallContext, ThreadsafeFunctionCallMode};
 use napi::{JsSymbol, SymbolRef};
 use napi_derive::napi;
 
@@ -18,6 +19,7 @@ use web_audio_api::worklet::{
 };
 use web_audio_api::{AudioParamDescriptor, AutomationRate};
 
+use crate::native_worklet::{native_processor, NativeProcessor};
 use crate::{NapiAudioContext, NapiAudioParam, NapiOfflineAudioContext};
 
 /// Unique ID generator for AudioWorkletProcessors
@@ -715,7 +717,8 @@ pub struct NapiAudioWorkletNode {
     id: u32,
     /// Channel, and so Worker, of the render group the node was created in
     worklet_id: u32,
-    // parameters: ObjectRef,
+    /// The processor written in Rust the node runs, if any (see `native_worklet`)
+    native: Option<NativeProcessor>,
 }
 
 audio_node_impl!(NapiAudioWorkletNode);
@@ -727,7 +730,7 @@ impl NapiAudioWorkletNode {
         env: Env,
         mut this: This,
         context: Either<&NapiAudioContext, &NapiOfflineAudioContext>,
-        _name: String,
+        name: String,
         options: Object,
         parameter_descriptors: Object,
     ) -> Self {
@@ -835,6 +838,36 @@ impl NapiAudioWorkletNode {
             audio_node_options_default.channel_interpretation
         };
 
+        let audio_node_options = AudioNodeOptions {
+            channel_count,
+            channel_count_mode,
+            channel_interpretation,
+        };
+
+        // A processor written in Rust runs on the render thread itself
+        if let Some(native) = native_processor(&name) {
+            let options = AudioWorkletNodeOptions {
+                number_of_inputs,
+                number_of_outputs,
+                output_channel_count,
+                parameter_data,
+                audio_node_options,
+                processor_options: (),
+            };
+            let inner = match context {
+                Either::A(context) => (native.create_online)(context.inner(), options),
+                Either::B(context) => (native.create_offline)(context.inner(), options),
+            };
+            set_parameters(&env, &mut this, &inner);
+
+            return Self {
+                inner,
+                id: 0,
+                worklet_id: 0,
+                native: Some(native),
+            };
+        }
+
         // --------------------------------------------------------
         // Parse ParameterDescriptors
         // --------------------------------------------------------
@@ -906,11 +939,7 @@ impl NapiAudioWorkletNode {
             number_of_outputs,
             output_channel_count,
             parameter_data,
-            audio_node_options: AudioNodeOptions {
-                channel_count,
-                channel_count_mode,
-                channel_interpretation,
-            },
+            audio_node_options,
             processor_options,
         };
 
@@ -935,22 +964,14 @@ impl NapiAudioWorkletNode {
 
         drop(guard);
 
-        let mut parameters = Object::new(&env).unwrap();
-
-        for (name, native_param) in native_node.parameters().iter() {
-            let native_param = native_param.clone();
-            let napi_param = NapiAudioParam::new(native_param);
-
-            let _ = parameters.set_named_property(name, napi_param);
-        }
-
-        let _ = this.set_named_property("parameters", parameters);
+        set_parameters(&env, &mut this, &native_node);
 
         // finalize instance creation
         Self {
             inner: native_node,
             id,
             worklet_id: worklet_id as u32,
+            native: None,
         }
     }
 
@@ -963,6 +984,54 @@ impl NapiAudioWorkletNode {
     pub fn worklet_id(&self) -> u32 {
         self.worklet_id
     }
+
+    /// Whether the node runs a processor written in Rust
+    #[napi(getter, js_name = "isNative")]
+    pub fn is_native(&self) -> bool {
+        self.native.is_some()
+    }
+
+    /// Hands a message posted to the port of a native node to its processor
+    #[napi(js_name = "postMessage")]
+    pub fn post_message(&self, env: Env, message: Unknown) -> Result<()> {
+        match self.native {
+            Some(native) => (native.post_message)(&env, message, &self.inner),
+            None => Ok(()),
+        }
+    }
+
+    /// Calls `callback` with each message the processor of a native node posts
+    #[napi]
+    pub fn onmessage(&self, callback: Function<serde_json::Value, ()>) -> Result<()> {
+        let Some(native) = self.native else {
+            return Ok(());
+        };
+
+        let tsfn = callback
+            .build_threadsafe_function()
+            .weak::<true>() // do not prevent process to exit
+            .build_callback(|ctx: ThreadsafeCallContext<serde_json::Value>| Ok(ctx.value))?;
+
+        self.inner.port().set_onmessage(move |message| {
+            if let Some(value) = (native.encode_message)(message) {
+                tsfn.call(value, ThreadsafeFunctionCallMode::Blocking);
+            }
+        });
+
+        Ok(())
+    }
+}
+
+/// Expose the AudioParams of a node as its `parameters`
+fn set_parameters(env: &Env, this: &mut This, node: &AudioWorkletNode) {
+    let mut parameters = Object::new(env).unwrap();
+
+    for (name, native_param) in node.parameters().iter() {
+        let napi_param = NapiAudioParam::new(native_param.clone());
+        let _ = parameters.set_named_property(name, napi_param);
+    }
+
+    let _ = this.set_named_property("parameters", parameters);
 }
 
 // -------------------------------------------------

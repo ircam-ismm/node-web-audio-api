@@ -19,6 +19,7 @@ import {
   kProcessorRegistered,
   kGetParameterDescriptors,
   kCreateProcessor,
+  kCreateNativePort,
   kPrivateConstructor,
   kWorkletRelease,
   kCheckProcessorsCreated,
@@ -27,6 +28,19 @@ import {
   kEnumerableProperty,
 } from './lib/utils.js';
 
+// napi's serde reads a typed array as its bytes, but only from a Uint8Array
+function asBytes(value) {
+  if (ArrayBuffer.isView(value)) {
+    return new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+  }
+  if (Array.isArray(value)) {
+    return value.map(asBytes);
+  }
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, asBytes(item)]));
+  }
+  return value;
+}
 
 // const require = createRequire(import.meta.url);
 
@@ -114,6 +128,7 @@ export class AudioWorklet {
   #promiseId = 0;
   #workletParamDescriptorsMap = new Map();
   #pendingCreateProcessors = new Set();
+  #nativePorts = new Set();
 
 
   constructor(options) {
@@ -284,7 +299,31 @@ export class AudioWorklet {
     };
   }
 
+  // The port of a node running a processor written in Rust: no Worker, the far
+  // end forwards to and from the processor, until the context closes
+  [kCreateNativePort](napiObj) {
+    const { port1, port2 } = new MessageChannel();
+
+    port2.on('message', message => {
+      try {
+        napiObj.postMessage(asBytes(message));
+      } catch (err) {
+        console.log(err);
+      }
+    });
+    port2.unref();
+    napiObj.onmessage(message => port2.postMessage(message));
+    this.#nativePorts.add(port2);
+
+    return port1;
+  }
+
   async [kWorkletRelease]() {
+    for (const port of this.#nativePorts) {
+      port.close();
+    }
+    this.#nativePorts.clear();
+
     await Promise.all(Array.from(this.#scopes.values(), ({ worker }) => new Promise(resolve => {
       worker.on('exit', resolve);
       worker.postMessage({
