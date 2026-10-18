@@ -897,10 +897,6 @@ impl NapiAudioWorkletNode {
             } else {
                 Duration::ZERO
             },
-            param_names: parameter_descriptors
-                .iter()
-                .map(|d| d.name.clone())
-                .collect(),
             param_values: Vec::with_capacity(param_count),
             param_sizes: vec![0; param_count],
         };
@@ -984,9 +980,7 @@ struct NapiAudioWorkletProcessor {
     reply_channel: (Sender<ProcessReply>, Receiver<ProcessReply>),
     /// How long to poll for a reply before blocking, decided on the control thread
     spin_for_reply: Duration,
-    /// AudioParam names in descriptor order, the order the JS side expects values in
-    param_names: Vec<String>,
-    /// Reusable Vec for AudioParam values
+    /// Reusable Vec for AudioParam values, in descriptor order, the order the JS side expects
     param_values: Vec<&'static [f32]>,
     /// AudioParam value sizes of the previous call, 0 before the first one
     param_sizes: Vec<usize>,
@@ -1031,8 +1025,9 @@ impl AudioWorkletProcessor for NapiAudioWorkletProcessor {
         let mut param_sizes_changed = false;
         self.param_values.clear();
 
-        for (name, size) in self.param_names.iter().zip(self.param_sizes.iter_mut()) {
-            let value: &'static [f32] = unsafe { std::mem::transmute(&params.get(name)[..]) };
+        // the processor's params come in the order of `parameter_descriptors`
+        for (index, size) in self.param_sizes.iter_mut().enumerate() {
+            let value: &'static [f32] = unsafe { std::mem::transmute(params.get_by_index(index)) };
 
             if *size != value.len() {
                 *size = value.len();
