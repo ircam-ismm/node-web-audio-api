@@ -1,4 +1,6 @@
+use std::future::Future;
 use std::sync::Arc;
+use std::task::{Context, Poll, Waker};
 
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
@@ -15,7 +17,7 @@ pub struct NapiOfflineAudioContext {
     inner: Arc<OfflineAudioContext>,
     destination: NapiAudioDestinationNode,
     listener: Option<NapiAudioListener>,
-    pub(crate) worklet_id: usize,
+    pub(crate) worklets: Arc<crate::audio_worklet_node::WorkletChannels>,
 }
 
 impl NapiOfflineAudioContext {
@@ -39,24 +41,30 @@ impl NapiOfflineAudioContext {
         let native_destination = native_context.destination();
         let napi_destination = NapiAudioDestinationNode::new(native_destination);
 
-        let worklet_id = crate::audio_worklet_node::allocate_process_call_channel();
+        let worklets = Arc::new(crate::audio_worklet_node::WorkletChannels::new());
 
         Self {
             inner: Arc::new(native_context),
             destination: napi_destination,
             listener: None,
-            worklet_id,
+            worklets,
         }
     }
 
     #[napi(getter, js_name = "workletId")]
     pub fn worklet_id(&self) -> u32 {
-        self.worklet_id as u32
+        self.worklets.main() as u32
     }
 
     #[napi(getter)]
     pub fn destination(&self) -> NapiAudioDestinationNode {
         self.destination.clone()
+    }
+
+    /// Non-standard: render the render groups on `threads` threads, before rendering starts
+    #[napi(js_name = "setRenderThreads")]
+    pub fn set_render_threads(&self, threads: u32) {
+        self.inner.set_render_threads(threads as usize);
     }
 
     #[napi(getter)]
@@ -70,10 +78,23 @@ impl NapiOfflineAudioContext {
         Ok(NapiAudioBuffer::from(audio_buffer))
     }
 
+    /// Registers the suspend at once, before a `startRendering` called right
+    /// after takes the renderer: as an async fn it registered on a runtime
+    /// thread, sometimes once rendering had started, and failed. The first
+    /// poll runs up to the wait for that frame; the runtime does the rest.
     #[napi(catch_unwind)]
-    pub async fn suspend(&self, suspend_time: f64) -> Result<()> {
-        self.inner.suspend(suspend_time).await;
-        Ok(())
+    pub fn suspend<'env>(&self, env: &'env Env, suspend_time: f64) -> Result<PromiseRaw<'env, ()>> {
+        let context = Arc::clone(&self.inner);
+        let mut suspended = Box::pin(async move {
+            context.suspend(suspend_time).await;
+            Ok(())
+        });
+
+        let mut cx = Context::from_waker(Waker::noop());
+        match suspended.as_mut().poll(&mut cx) {
+            Poll::Ready(result) => env.spawn_future(async move { result }),
+            Poll::Pending => env.spawn_future(suspended),
+        }
     }
 
     #[napi(catch_unwind)]

@@ -45,7 +45,7 @@ pub struct NapiAudioContext {
     render_capacity: NapiAudioRenderCapacity,
     playback_stats: NapiAudioPlaybackStats,
     listener: Option<NapiAudioListener>,
-    pub(crate) worklet_id: usize,
+    pub(crate) worklets: Arc<crate::audio_worklet_node::WorkletChannels>,
 }
 
 impl NapiAudioContext {
@@ -95,10 +95,15 @@ impl NapiAudioContext {
             None => default_sink_id,
         };
 
+        // non-standard: threads rendering the render groups, see `setRenderGroup`
+        let render_threads = options.get::<u32>("renderThreads").ok().flatten();
+        let render_threads = render_threads.unwrap_or(1) as usize;
+
         let options = AudioContextOptions {
             latency_hint,
             sample_rate,
             sink_id,
+            render_threads,
             ..Default::default()
         };
 
@@ -113,7 +118,7 @@ impl NapiAudioContext {
         let native_playback_stats = native_context.playback_stats();
         let napi_playback_stats = NapiAudioPlaybackStats::new(native_playback_stats);
 
-        let worklet_id = crate::audio_worklet_node::allocate_process_call_channel();
+        let worklets = Arc::new(crate::audio_worklet_node::WorkletChannels::new());
 
         Self {
             inner: Arc::new(native_context),
@@ -121,13 +126,13 @@ impl NapiAudioContext {
             render_capacity: napi_render_capacity,
             playback_stats: napi_playback_stats,
             listener: None,
-            worklet_id,
+            worklets,
         }
     }
 
     #[napi(getter, js_name = "workletId")]
     pub fn worklet_id(&self) -> u32 {
-        self.worklet_id as u32
+        self.worklets.main() as u32
     }
 
     #[napi(getter, js_name = "destination")]

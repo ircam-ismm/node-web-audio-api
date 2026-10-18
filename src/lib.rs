@@ -70,6 +70,10 @@ mod script_processor_node;
 mod stereo_panner_node;
 mod wave_shaper_node;
 
+// AudioWorkletProcessors written in Rust
+pub mod native_worklet;
+pub use crate::native_worklet::register_native_processor;
+
 // MediaDevices & MediaStream API
 mod media_devices;
 mod media_streams;

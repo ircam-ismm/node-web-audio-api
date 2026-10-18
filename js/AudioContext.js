@@ -58,6 +58,14 @@ export class AudioContext extends BaseAudioContext {
       targetOptions.sampleRate = null;
     }
 
+    // non-standard: threads rendering the render groups, see `setRenderGroup`
+    if (options.renderThreads !== undefined) {
+      targetOptions.renderThreads = conversions['unsigned long'](options.renderThreads, {
+        enforceRange: true,
+        context: `Failed to construct 'AudioContext': Failed to read the 'renderThreads' property from AudioContextOptions: The provided value (${options.renderThreads})`,
+      });
+    }
+
     if (options.sinkId !== undefined) {
       if (typeof options.sinkId === 'object') {
         // https://webaudio.github.io/web-audio-api/#enumdef-audiosinktype

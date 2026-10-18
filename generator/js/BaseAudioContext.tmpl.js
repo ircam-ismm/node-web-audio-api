@@ -1,3 +1,5 @@
+import conversions from 'webidl-conversions';
+
 import {
   isFunction,
   kEnumerableProperty,
@@ -111,6 +113,30 @@ export class BaseAudioContext extends EventTarget {
     }
 
     return this[kNapiObj].renderQuantumSize;
+  }
+
+  /**
+   * Non-standard: set the render group of the nodes created from now on
+   *
+   * Nodes in different render groups can render in parallel, on the threads given by the
+   * 'renderThreads' context option. Group 0 is the default. The AudioWorkletNodes of each
+   * group run in their own AudioWorkletGlobalScope.
+   */
+  setRenderGroup(group) {
+    if (!(this instanceof BaseAudioContext)) {
+      throw new TypeError("Invalid Invocation: Value of 'this' must be of type 'BaseAudioContext'");
+    }
+
+    if (arguments.length < 1) {
+      throw new TypeError(\`Failed to execute 'setRenderGroup' on 'BaseAudioContext': 1 argument required, but only \${arguments.length} present\`);
+    }
+
+    group = conversions['unsigned long'](group, {
+      enforceRange: true,
+      context: \`Failed to execute 'setRenderGroup' on 'BaseAudioContext': The provided value (\${group})\`,
+    });
+
+    this[kNapiObj].setRenderGroup(group);
   }
 
   get state() {
@@ -285,6 +311,7 @@ Object.defineProperties(BaseAudioContext.prototype, {
   sampleRate: kEnumerableProperty,
   currentTime: kEnumerableProperty,
   renderQuantumSize: kEnumerableProperty,
+  setRenderGroup: kEnumerableProperty,
   state: kEnumerableProperty,
   decodeAudioData: kEnumerableProperty,
   createBuffer: kEnumerableProperty,

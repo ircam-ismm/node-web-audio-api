@@ -50,6 +50,13 @@ macro_rules! base_audio_context_impl {
                 self.inner.render_quantum_size() as u32
             }
 
+            /// Non-standard: render group of the nodes created from now on
+            #[napi(js_name = "setRenderGroup")]
+            pub fn set_render_group(&self, group: u32) {
+                self.inner.set_render_group(group);
+                self.worklets.set_group(group);
+            }
+
             #[napi(getter, js_name = "state")]
             pub fn state(&self) -> String {
                 let str = match self.inner.state() {

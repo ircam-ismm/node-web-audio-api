@@ -324,4 +324,72 @@ describe('AudioWorkletProcessor', () => {
     const buffer = await audioContext.startRendering();
     assert.deepEqual(buffer.getChannelData(0), new Float32Array(128).fill(0));
   });
+
+  it('should put the processor in error state when a process call cannot be prepared', async () => {
+    // Removes processor state the Worker reads on every call, so the next call fails in Rust
+    const code = `
+      class BreaksBridge extends AudioWorkletProcessor {
+        process(inputs, outputs) {
+          outputs[0][0].fill(1);
+          delete this[Symbol.for('node-web-audio-api:worklet-outputs')];
+          return true;
+        }
+      }
+      registerProcessor('breaks-bridge', BreaksBridge);
+    `;
+    const objectUrl = URL.createObjectURL(new Blob([code], { type: 'application/javascript' }));
+    const audioContext = new OfflineAudioContext(1, 4800, 48000);
+    await audioContext.audioWorklet.addModule(objectUrl);
+
+    const node = new AudioWorkletNode(audioContext, 'breaks-bridge');
+    node.connect(audioContext.destination);
+    const errored = new Promise(resolve => node.onprocessorerror = resolve);
+
+    const buffer = await audioContext.startRendering();
+    assert.deepEqual(buffer.getChannelData(0).subarray(128), new Float32Array(4800 - 128).fill(0));
+    await errored;
+  });
+
+  it('should give parameters to processors created while the context renders', async function() {
+    this.timeout(10000);
+    // The render thread can call a new node before the Worker has created its
+    // processor; `busy` keeps the Worker occupied so this happens regularly
+    const code = `
+      class Busy extends AudioWorkletProcessor {
+        process(inputs, outputs) {
+          let sum = 0;
+          for (let i = 0; i < 400000; i++) sum += i;
+          outputs[0][0][0] = sum * 0;
+          return true;
+        }
+      }
+      class Probe extends AudioWorkletProcessor {
+        static get parameterDescriptors() { return [{ name: 'p', automationRate: 'k-rate' }]; }
+        constructor() { super(); this.calls = 0; }
+        process(inputs, outputs, parameters) {
+          if (++this.calls === 50) this.port.postMessage('p' in parameters);
+          return true;
+        }
+      }
+      registerProcessor('busy', Busy);
+      registerProcessor('probe', Probe);
+    `;
+    const objectUrl = URL.createObjectURL(new Blob([code], { type: 'application/javascript' }));
+    const audioContext = new AudioContext({ sinkId: { type: 'none' } });
+    await audioContext.audioWorklet.addModule(objectUrl);
+    new AudioWorkletNode(audioContext, 'busy').connect(audioContext.destination);
+    await delay(100);
+
+    const reports = [];
+    for (let i = 0; i < 150; i++) {
+      const probe = new AudioWorkletNode(audioContext, 'probe');
+      reports.push(new Promise(resolve => probe.port.onmessage = e => resolve(e.data)));
+      probe.connect(audioContext.destination);
+      await delay(3);
+    }
+
+    const hasParams = await Promise.all(reports);
+    await audioContext.close();
+    assert.equal(hasParams.filter(has => !has).length, 0);
+  });
 });
