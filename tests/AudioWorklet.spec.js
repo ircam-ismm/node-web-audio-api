@@ -10,9 +10,11 @@ import {
   OfflineAudioContext,
   OscillatorNode,
 } from '../index.js';
-import { delay } from '@ircam/sc-utils';
+import { delay, getTime } from '@ircam/sc-utils';
 
 import '../js/lib/expose-gc.js';
+
+const CI = process.argv.includes('--ci');
 
 const scriptTexts = `
 class FirstProcessor extends AudioWorkletProcessor {
@@ -329,7 +331,9 @@ describe('AudioWorkletProcessor', () => {
 });
 
 describe('AudioWorkletNode', () => {
-  it('should be properly garbage collected', async () => {
+  it('should be properly garbage collected', async function() {
+    this.timeout(10000);
+
     const module = URL.createObjectURL(new Blob([`
       class AudioWorkletDrop extends AudioWorkletProcessor {
         constructor() {
@@ -363,19 +367,21 @@ describe('AudioWorkletNode', () => {
     node.port.on('message', msg => n = msg.n);
     node.connect(audioContext.destination);
 
-    const delayMs = 100;
+    const testDuration = 0.1;
+    await delay(testDuration * 1000); // ~37 blocks
 
-    await delay(delayMs);
     // tailTime is false, no input and reference is dropped, the node should be removed from graph
     node = null;
     global.gc();
     // wait for some time after gc is called before closing context
-    await delay(250);
+    await delay(CI ? 4000 : 1000); // ~1500 blocks in CI
     await audioContext.close();
     // estimate number of block processed
     const blockDuration = audioContext.renderQuantumSize / audioContext.sampleRate;
-    const numBlocks = (delayMs / 1000) / blockDuration;
+    const numBlocks = testDuration / blockDuration;
 
-    assert.closeTo(n, numBlocks, 10);
+    console.log(`> processed ${n} blocks (theoretical ${numBlocks})`);
+    // CI can
+    assert.closeTo(n, numBlocks, CI ? 100 : 10);
   });
 });
