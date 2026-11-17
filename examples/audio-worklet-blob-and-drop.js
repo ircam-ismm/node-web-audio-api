@@ -1,11 +1,7 @@
 import { AudioContext, AudioWorkletNode } from '#node-web-audio-api';
-import v8 from 'v8';
-import vm from 'vm';
+import { delay } from '@ircam/sc-utils';
 
-if (!global.gc) {
-  v8.setFlagsFromString('--expose_gc');
-  global.gc = vm.runInNewContext('gc');
-}
+import '../js/lib/expose-gc.js';
 
 const module = URL.createObjectURL(new Blob([`
   class AudioWorkletDrop extends AudioWorkletProcessor {
@@ -40,14 +36,19 @@ let node = new AudioWorkletNode(audioContext, 'drop');
 node.port.on('message', msg => console.log(msg));
 node.connect(audioContext.destination);
 
-await new Promise(r => setTimeout(r, 100));
+await delay(100);
 
-// node.disconnect();
-node = null;
-
+// cf. https://github.com/ircam-ismm/node-web-audio-api/issues/202
+// tailTime is false, no input and reference is dropped, the node should be removed from graph
+// log should look like:
+// > { n: 10 }
+// > { n: 20 }
+// > { n: 30 }
+// > gc call
+// [...nothing more...]
 console.log('gc call');
+node = null;
 global.gc();
-setInterval(() => {
-  console.log('gc call');
-  global.gc();
-}, 1000);
+
+await delay(3000);
+audioContext.close();
