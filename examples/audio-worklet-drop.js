@@ -1,4 +1,11 @@
-import { AudioContext, AudioWorkletNode, GainNode } from '#node-web-audio-api';
+import { AudioContext, AudioWorkletNode } from '#node-web-audio-api';
+import v8 from 'v8';
+import vm from 'vm';
+
+if (!global.gc) {
+  v8.setFlagsFromString('--expose_gc');
+  global.gc = vm.runInNewContext('gc');
+}
 
 const module = URL.createObjectURL(new Blob([`
   class AudioWorkletDrop extends AudioWorkletProcessor {
@@ -19,7 +26,6 @@ const module = URL.createObjectURL(new Blob([`
         }
       }
 
-
       return false;
     }
   }
@@ -34,12 +40,9 @@ let node = new AudioWorkletNode(audioContext, 'drop');
 node.port.on('message', msg => console.log(msg));
 node.connect(audioContext.destination);
 
-// const gain = new GainNode(audioContext, {});
-// gain.connect(node);
-
 await new Promise(r => setTimeout(r, 100));
 
-node.disconnect();
+// node.disconnect();
 node = null;
 
 console.log('gc call');
