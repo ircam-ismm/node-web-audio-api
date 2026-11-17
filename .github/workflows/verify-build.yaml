@@ -48,8 +48,9 @@ jobs:
         run: npm install
 
       # check it builds
+      # build with diagnostics as some tests require it
       - name: Build
-        run: npm run build
+        run: npm run build:diagnostics
 
       # run  checks and tests
       - name: Clippy
