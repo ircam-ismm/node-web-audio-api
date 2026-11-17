@@ -129,6 +129,10 @@ fn audio_param_descriptor_channel() -> &'static AudioParamDescriptorsChannel {
 thread_local! {
     /// Denotes if the Worker thread priority has already been upped
     static HAS_THREAD_PRIO: Cell<bool> = const { Cell::new(false) };
+    /// Periodically return to JS so message ports and shutdown can run, including
+    /// during continuous offline rendering.
+    static WORKLET_EVENT_LOOP_TICK: Receiver<std::time::Instant> =
+        crossbeam_channel::tick(std::time::Duration::from_millis(1));
 }
 
 /// Check that given JS and Rust input / output layout are the same,
@@ -435,10 +439,20 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
         let _ = thread_priority::set_current_thread_priority(thread_priority::ThreadPriority::Max);
     }
 
-    // Poll for incoming commands and yield back to the event loop if there are none.
-    // recv_timeout is not an option due to realtime safety, see discussion of
-    // https://github.com/ircam-ismm/node-web-audio-api/pull/124#pullrequestreview-2053515583
-    while let Ok(msg) = process_call_receiver(worklet_id as usize).try_recv() {
+    let receiver = process_call_receiver(worklet_id as usize);
+    WORKLET_EVENT_LOOP_TICK.with(|event_loop_tick| loop {
+        // This selection path skips recv_timeout's yielding backoff before
+        // parking; sched_yield on macOS can delay the worklet for several
+        // milliseconds. Keep both receive cases: a single receive plus
+        // default(timeout) is optimized back into recv_timeout by the macro.
+        let msg = crossbeam_channel::select_biased! {
+            // Prefer the tick so a continuously ready command queue cannot starve JS.
+            recv(event_loop_tick) -> _ => break,
+            recv(receiver) -> result => match result {
+                Ok(msg) => msg,
+                Err(_) => break,
+            },
+        };
         match msg {
             WorkletCommand::Drop(id) => {
                 match processors.get_named_property::<Object>(&id.to_string()) {
@@ -458,7 +472,7 @@ pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors:
                 let _ = process_audio_worklet(&env, &processors, processor_arguments);
             }
         }
-    }
+    });
 }
 
 #[allow(dead_code)]

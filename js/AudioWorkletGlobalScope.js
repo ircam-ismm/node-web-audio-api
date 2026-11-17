@@ -59,7 +59,7 @@ let loopStarted = false;
 let runLoopImmediateId = null;
 
 function runLoop() {
-  // block until we need to render a quantum
+  // Process commands, sleeping between arrivals, until it is time to yield to JS.
   run_audio_worklet_global_scope(workletId, processors);
   // yield to the event loop, and then repeat
   runLoopImmediateId = setImmediate(runLoop);
