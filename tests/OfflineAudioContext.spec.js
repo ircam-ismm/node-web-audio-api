@@ -58,7 +58,7 @@ describe('# OfflineAudioContext', () => {
       for (let i = 0; i < 50000; i++) {
         console.log('---------------------------------');
         console.log('### iteration', i);
-        const audioContext = new OfflineAudioContext(1, 256, 48000);;
+        const audioContext = new OfflineAudioContext(1, 256, 48000);
         const src = new ConstantSourceNode(audioContext, { offset: 1 });
         src.connect(audioContext.destination);
 

@@ -294,6 +294,10 @@ export class AudioContext extends BaseAudioContext {
 
   // non-standard API
   runDiagnostics(callback) {
+    if (!isFunction(callback)) {
+      throw new TypeError(`Cannot execute "runDiagnostics (non-spec)" on AudioContext: callback is not a function"`);
+    }
+
     try {
       this[kNapiObj].runDiagnostics(callback);
     } catch (err) {
