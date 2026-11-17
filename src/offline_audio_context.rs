@@ -39,7 +39,7 @@ impl NapiOfflineAudioContext {
         let native_destination = native_context.destination();
         let napi_destination = NapiAudioDestinationNode::new(native_destination);
 
-        let worklet_id = crate::audio_worklet_node::allocate_process_call_channel();
+        let worklet_id = crate::audio_worklet_node::allocate_process_call_channel(None);
 
         Self {
             inner: Arc::new(native_context),

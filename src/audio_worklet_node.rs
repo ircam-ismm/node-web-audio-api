@@ -52,6 +52,8 @@ struct ProcessCallChannel {
     recv: Receiver<WorkletCommand>,
     // mark that the worklet has been exited to prevent any further `process` call
     exited: Arc<AtomicBool>,
+    // Render quantum size and sample rate for realtime worklets; None for offline rendering.
+    thread_priority_options: Option<(u32, u32)>,
 }
 
 /// Global map of ID -> ProcessCallChannel
@@ -62,7 +64,7 @@ struct ProcessCallChannel {
 static GLOBAL_PROCESS_CALL_CHANNEL_MAP: RwLock<Vec<ProcessCallChannel>> = RwLock::new(vec![]);
 
 /// Request a new channel + ID for a newly created (Offline)AudioContext
-pub(crate) fn allocate_process_call_channel() -> usize {
+pub(crate) fn allocate_process_call_channel(thread_priority_options: Option<(u32, u32)>) -> usize {
     // Only one process message can be sent at same time from a given context,
     // but Drop messages could be send too, so let's take some room
     let (send, recv) = crossbeam_channel::bounded(32);
@@ -70,6 +72,7 @@ pub(crate) fn allocate_process_call_channel() -> usize {
         send,
         recv,
         exited: Arc::new(AtomicBool::new(false)),
+        thread_priority_options,
     };
 
     // We need a write-lock to initialize the channel
@@ -127,7 +130,7 @@ fn audio_param_descriptor_channel() -> &'static AudioParamDescriptorsChannel {
 }
 
 thread_local! {
-    /// Denotes if the Worker thread priority has already been upped
+    /// Whether the worker has attempted priority initialization, including failed attempts.
     static HAS_THREAD_PRIO: Cell<bool> = const { Cell::new(false) };
     /// Periodically return to JS so message ports and shutdown can run, including
     /// during continuous offline rendering.
@@ -421,22 +424,18 @@ fn process_audio_worklet(
     Ok(())
 }
 
-// #[allow(dead_code)]
-// #[napi(js_name = "init_audio_worklet_global_scope")]
-// pub fn init_audio_worklet_global_scope(env: Env, worklet_id: u32) {
-//     // set thread priority
-//     // init currentTime and currentFrame
-//     todo!();
-// }
-
 /// The entry point into Rust from the Worker
 #[allow(dead_code)]
 #[napi(js_name = "run_audio_worklet_global_scope")]
 pub fn run_audio_worklet_global_scope(env: Env, worklet_id: u32, mut processors: Object) {
-    // Try set thread priority to highest on first call
+    // Only online worklets have realtime deadlines. Offline rendering can run continuously.
     if !HAS_THREAD_PRIO.replace(true) {
-        // allowed to fail
-        let _ = thread_priority::set_current_thread_priority(thread_priority::ThreadPriority::Max);
+        let options = GLOBAL_PROCESS_CALL_CHANNEL_MAP.read().unwrap()[worklet_id as usize]
+            .thread_priority_options;
+        if let Some((frames, sample_rate)) = options {
+            // Best effort; the scheduling policy lasts until the worker's OS thread exits.
+            let _ = audio_thread_priority::promote_current_thread_to_real_time(frames, sample_rate);
+        }
     }
 
     let receiver = process_call_receiver(worklet_id as usize);

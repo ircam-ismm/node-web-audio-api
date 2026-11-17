@@ -158,10 +158,10 @@ npm run build
 
 ### Linux
 
-To build the library, you will need to manually install the `libasound2-dev` package:
+To build the library, install the ALSA and D-Bus development packages.
 
 ```sh
-apt install libasound2-dev
+apt install libasound2-dev libdbus-1-dev
 ```
 
 Optionally, if you use the Jack Audio Backend, the `libjack-jackd2-dev` package:
