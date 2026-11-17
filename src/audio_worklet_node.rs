@@ -482,6 +482,13 @@ pub struct NapiAudioWorkletNode {
 
 audio_node_impl!(NapiAudioWorkletNode);
 
+// for Debug
+// impl Drop for NapiAudioWorkletNode {
+//     fn drop(&mut self) {
+//         println!("NapiAudioWorkletNode dropped");
+//     }
+// }
+
 #[napi]
 impl NapiAudioWorkletNode {
     #[napi(constructor, catch_unwind)]

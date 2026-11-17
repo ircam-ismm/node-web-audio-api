@@ -41,8 +41,10 @@ const IMPLEMENTATION_MAX_NUMBER_OF_CHANNELS = 32;
 
 export class AudioWorkletNode extends AudioNode {
   #port = null;
+  #errorPort = null;
   #parameters = {};
   #onprocessorerror = null;
+  #name = null;
 
   constructor(context, name, options) {
     if (arguments.length < 2) {
@@ -229,39 +231,60 @@ export class AudioWorkletNode extends AudioNode {
       napiObj.id,
     );
 
+    this.#name = parsedName;
     this.#port = messagePort;
+    this.#errorPort = errorPort;
 
     // Handle 'processorerror' events
     // cf. https://webaudio.github.io/web-audio-api/#dom-audioworkletnode-onprocessorerror
-    errorPort.on('message', msg => {
-      const { cmd, err } = msg;
+    this.#errorPort.addEventListener('message', this.#onError());
+  }
+
+  #onError() {
+    const name = this.#name;
+    const weakRef = new WeakRef(this);
+
+    return function(msg) {
+      const { cmd, err } = msg.data;
       // log error message to help debugging event if no `processorerror` listener has been set
       console.log(err);
 
       switch (cmd) {
         case 'node-web-audio-api:worklet:ctor-error': {
-          const message = `Failed to construct '${parsedName}' AudioWorkletProcessor: ${err.message}`;
+          const message = `Failed to construct '${name}' AudioWorkletProcessor: ${err.message}`;
           const event = new ErrorEvent('processorerror', { message, error: err });
-          propagateEvent(this, event);
+          const node = weakRef.deref();
+          // can return undefined if the target value has been garbage-collected.
+          if (node) {
+            propagateEvent(weakRef.deref(), event);
+          }
           break;
         }
         case 'node-web-audio-api:worklet:process-invalid': {
-          const message = `Failed to execute 'process' on '${parsedName}' AudioWorkletProcessor: ${err.message}`;
+          const message = `Failed to execute 'process' on '${name}' AudioWorkletProcessor: ${err.message}`;
           const error = new TypeError(message);
           error.stack = err.stack.replace(err.message, message);
 
           const event = new ErrorEvent('processorerror', { message, error });
-          propagateEvent(this, event);
+          const node = weakRef.deref();
+          // can return undefined if the target value has been garbage-collected.
+          if (node) {
+            propagateEvent(weakRef.deref(), event);
+          }
           break;
         }
         case 'node-web-audio-api:worklet:process-error': {
-          const message = `Failed to execute 'process' on '${parsedName}' AudioWorkletProcessor: ${err.message}`;
+          const message = `Failed to execute 'process' on '${name}' AudioWorkletProcessor: ${err.message}`;
           const event = new ErrorEvent('processorerror', { message, error: err });
-          propagateEvent(this, event);
+          const node = weakRef.deref();
+          // can return undefined if the target value has been garbage-collected.
+          if (node) {
+            propagateEvent(weakRef.deref(), event);
+          }
           break;
         }
       }
-    });
+    };
   }
 
   get parameters() {

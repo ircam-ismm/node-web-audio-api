@@ -10,7 +10,11 @@ import {
   OfflineAudioContext,
   OscillatorNode,
 } from '../index.js';
-import { delay } from '@ircam/sc-utils';
+import { delay, getTime } from '@ircam/sc-utils';
+
+import '../js/lib/expose-gc.js';
+
+const CI = process.argv.includes('--ci');
 
 const scriptTexts = `
 class FirstProcessor extends AudioWorkletProcessor {
@@ -323,5 +327,61 @@ describe('AudioWorkletProcessor', () => {
 
     const buffer = await audioContext.startRendering();
     assert.deepEqual(buffer.getChannelData(0), new Float32Array(128).fill(0));
+  });
+});
+
+describe('AudioWorkletNode', () => {
+  it('should be properly garbage collected', async function() {
+    this.timeout(10000);
+
+    const module = URL.createObjectURL(new Blob([`
+      class AudioWorkletDrop extends AudioWorkletProcessor {
+        constructor() {
+          super();
+
+          this.n = 0;
+        }
+
+        process() {
+          this.n += 1;
+
+          try {
+            this.port.postMessage({ n: this.n });
+          } catch (err) {
+            console.log(err);
+          }
+
+          return false;
+        }
+      }
+
+      registerProcessor('drop', AudioWorkletDrop);
+    `]), { type: 'application/javascript' });
+
+    const audioContext = new AudioContext();
+    await audioContext.audioWorklet.addModule(module);
+
+    let n = 0;
+
+    let node = new AudioWorkletNode(audioContext, 'drop');
+    node.port.on('message', msg => n = msg.n);
+    node.connect(audioContext.destination);
+
+    const testDuration = 0.1;
+    await delay(testDuration * 1000); // ~37 blocks
+
+    // tailTime is false, no input and reference is dropped, the node should be removed from graph
+    node = null;
+    global.gc();
+    // wait for some time after gc is called before closing context
+    await delay(CI ? 4000 : 1000); // ~1500 blocks in CI
+    await audioContext.close();
+    // estimate number of block processed
+    const blockDuration = audioContext.renderQuantumSize / audioContext.sampleRate;
+    const numBlocks = testDuration / blockDuration;
+
+    console.log(`> processed ${n} blocks (theoretical ${numBlocks})`);
+    // CI can
+    assert.closeTo(n, numBlocks, CI ? 100 : 10);
   });
 });
