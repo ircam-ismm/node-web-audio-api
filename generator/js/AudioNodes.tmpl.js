@@ -83,8 +83,6 @@ export class ${d.name(d.node)} extends ${d.parent(d.node)} {
         const type = d.memberType(member);
         const required = member.required;
         const defaultValue = member.default; // null or object
-        // only AudioBuffer is actually nullable
-        const nullable = member.idlType.nullable;
         let checkMember = '';
 
         if (required) {
@@ -387,11 +385,6 @@ switch (type) {
 // Setters
 // ------------------------------------------------------
 if (!attr.readonly) {
-  // nullable:
-  // - Float32Array - WaveshaperNode::curve
-  // - AudioBuffer - AudioBufferSourceNode::buffer & ConvolverNode::buffer
-  const nullable = attr.idlType.nullable;
-
   switch (type) {
     case 'boolean':
     case 'float':
@@ -503,22 +496,22 @@ if (!attr.readonly) {
     case 'AudioBuffer': {
       // - AudioBufferSourceNode::buffer
       // - ConvolverNode::buffer
-      // @todo - should be able to set back to null
       setter = `
   set ${d.name(attr)}(value) {
     if (!(this instanceof ${d.name(d.node)})) {
       throw new TypeError("Invalid Invocation: Value of 'this' must be of type '${d.name(d.node)}'");
     }
 
-    if (value === null) {
-      console.warn("Setting the '${d.name(attr)}' property on '${d.name(d.node)}' to 'null' is not supported yet");
-      return;
-    } else if (!(value instanceof AudioBuffer)) {
+    if (value !== null && !(value instanceof AudioBuffer)) {
       throw new TypeError("Failed to set the '${d.name(attr)}' property on '${d.name(d.node)}': Failed to convert value to '${type}'");
     }
 
     try {
-      this[kNapiObj].${d.name(attr)} = value[kNapiObj];
+      if (value === null) {
+        this[kNapiObj].${d.name(attr)} = null;
+      } else {
+        this[kNapiObj].${d.name(attr)} = value[kNapiObj];
+      }
     } catch (err) {
       throwSanitizedError(err);
     }
