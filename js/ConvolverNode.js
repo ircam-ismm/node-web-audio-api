@@ -154,15 +154,16 @@ export class ConvolverNode extends AudioNode {
       throw new TypeError('Invalid Invocation: Value of \'this\' must be of type \'ConvolverNode\'');
     }
 
-    if (value === null) {
-      console.warn('Setting the \'buffer\' property on \'ConvolverNode\' to \'null\' is not supported yet');
-      return;
-    } else if (!(value instanceof AudioBuffer)) {
+    if (value !== null && !(value instanceof AudioBuffer)) {
       throw new TypeError('Failed to set the \'buffer\' property on \'ConvolverNode\': Failed to convert value to \'AudioBuffer\'');
     }
 
     try {
-      this[kNapiObj].buffer = value[kNapiObj];
+      if (value === null) {
+        this[kNapiObj].buffer = null;
+      } else {
+        this[kNapiObj].buffer = value[kNapiObj];
+      }
     } catch (err) {
       throwSanitizedError(err);
     }

@@ -205,8 +205,11 @@ impl NapiAudioBufferSourceNode {
     }
 
     #[napi(setter, catch_unwind, js_name = "buffer")]
-    pub fn set_buffer(&mut self, value: &NapiAudioBuffer) {
-        self.inner.set_buffer(value.inner.clone());
+    pub fn set_buffer(&mut self, value: Either<Null, &NapiAudioBuffer>) {
+        match value {
+            Either::A(_) => self.inner.clear_buffer(),
+            Either::B(value) => self.inner.set_buffer(value.inner.clone()),
+        };
     }
 
     #[napi(getter, js_name = "loop")]

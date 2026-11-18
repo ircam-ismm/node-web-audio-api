@@ -533,8 +533,11 @@ impl ${d.napiName(d.node)} {
 
                     setter = `
     #[napi(setter, catch_unwind, js_name = "${d.name(attr)}")]
-    pub fn set_${d.slug(attr)}(&mut self, value: &NapiAudioBuffer) {
-        self.inner.set_${d.slug(attr)}(value.inner.clone());
+    pub fn set_${d.slug(attr)}(&mut self, value: Either<Null, &NapiAudioBuffer>) {
+        match value {
+            Either::A(_) => self.inner.clear_${d.slug(attr)}(),
+            Either::B(value) => self.inner.set_${d.slug(attr)}(value.inner.clone()),
+        };
     }
                     `;
                     break;
