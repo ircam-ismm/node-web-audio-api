@@ -113,7 +113,10 @@ impl NapiAudioContext {
         let native_playback_stats = native_context.playback_stats();
         let napi_playback_stats = NapiAudioPlaybackStats::new(native_playback_stats);
 
-        let worklet_id = crate::audio_worklet_node::allocate_process_call_channel();
+        let worklet_id = crate::audio_worklet_node::allocate_process_call_channel(Some((
+            native_context.render_quantum_size() as u32,
+            native_context.sample_rate() as u32,
+        )));
 
         Self {
             inner: Arc::new(native_context),
