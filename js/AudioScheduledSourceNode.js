@@ -31,14 +31,17 @@ export class AudioScheduledSourceNode extends AudioNode {
 
     super(context, options);
 
-    // Note 2024-06-05 - We use bind instead of arrow function because arrow function
-    // prevent the node to be collected by Scavenge step of GC, which can lead to
-    // oversized graphs and performance issues.
-    // cf. https://github.com/ircam-ismm/node-web-audio-api/tree/fix/118
-    this[kNapiObj].onended((function(napiEvent) {
-      const event = new Event(napiEvent.type);
-      propagateEvent(this, event);
-    }).bind(this));
+    // Use WeakRef to make sure the node can be properly garbage collected
+    const weakRef = new WeakRef(this);
+
+    this[kNapiObj].onended(function(napiEvent) {
+      const node = weakRef.deref();
+
+      if (node) {
+        const event = new Event(napiEvent.type);
+        propagateEvent(node, event);
+      }
+    });
   }
 
   get onended() {
