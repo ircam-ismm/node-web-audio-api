@@ -29,6 +29,7 @@ strip = true
 
 [features]
 jack = ["web-audio-api/cpal-jack"]
+pipewire = ["web-audio-api/cpal-pipewire"]
 linux = ["web-audio-api/cpal-pipewire", "web-audio-api/cpal-jack"]
 wpt = ["web-audio-api/spec-compliant-worklet-inputs"]
 diagnostics = ["web-audio-api/diagnostics"]
