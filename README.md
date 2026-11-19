@@ -84,7 +84,6 @@ installed `examples/node_modules`._
 
 - `AudioBuffer#getChannelData` is implemented but not reliable in some situations. Your should prefer `AudioBuffer#copyToChannel` and `AudioBuffer#copyFromChannel` when you want to access or manipulate the underlying samples in a safe way.
 - `Streams`: only a minimal audio input stream and the `MediaStreamSourceNode` are provided. All other `MediaStream` features are left on the side for now as they principally concern a different API specification, which is not a trivial problem.
-- `new AudioContext({ sinkId: { type:'none' } })`: if your system has no audio sinks (e.g. docker image, CI) use `{ sinkId: { type:'none' } }` when initializing `AudioContext`, else it will crash with `DeviceNotAvailable` [see MDN](https://developer.mozilla.org/en-US/docs/Web/API/AudioContext/AudioContext#sinkid)
 
 ## Supported Platforms - Prebuilt Binaries
 
@@ -101,25 +100,28 @@ We provide prebuilt binaries for the following platforms:
 | Linux arm64 gnu     (jack / pipewire-jack)          | ✓        |
 
 
+If you need support for another platform, please fill an [issue](https://github.com/ircam-ismm/node-web-audio-api/issues) and we will see what we can do.
 
-### Important Notes
+## Systems without a soundcard
 
-- If you need support for another platform, please fill an [issue](https://github.com/ircam-ismm/node-web-audio-api/issues) and we will see what we can do.
+If your system has no soundcard  (e.g CI, Docker image), you can use the `{ sinkId: { type:'none' } }` option when initializing the `AudioContext`:
 
-- All provided Linux binaries are built with the `jack` flag, which should work either with properly configured [Jack](https://jackaudio.org/) or [pipewire-jack](https://pipewire.org/) backends. If this is a limitation for you, please fill an [issue](https://github.com/ircam-ismm/node-web-audio-api/issues) and we will see what we can do.
+```js
+new AudioContext({ sinkId: { type: 'none' } });
+```
+
+Otherwise, your script it will crash with a `DeviceNotAvailable` error
+
+- [see MDN](https://developer.mozilla.org/en-US/docs/Web/API/AudioContext/AudioContext#sinkid)
 
 
 ## Notes for Linux users
 
 ### Pipewire
 
-The binaries shipped with the package are build with the Jack backend feature, on Linux
- distributions that ship with the [`pipewire`](https://pipewire.org/) audio server
- (most of them right now), the library should work by just installing `pipewire-jack`
+The binaries shipped with the package are build to support in order the [pipewire](https://www.pipewire.org/), [Jack](https://jackaudio.org/) and [ALSA](https://www.alsa-project.org/wiki/Main_Page) backends.
 
-```
-apt install pipewire-jack
-```
+This should work on most Linux distribution, which provide `pipewire` as the default backend.
 
 ### Audio Backend and Latency
 
@@ -139,7 +141,22 @@ WEB_AUDIO_LATENCY=playback node examples/amplitude-modulation.js
 
 ## Development Notes
 
-### Build
+### Diagnostics mode
+
+For debugging purposes, you can build the library with a diagnostic mode that allows you to inspect the
+audio graph
+
+```
+npm run build:diagnostics
+```
+
+This diagnostic mode will expose the non-standard method `runDiagnostics` on the online `AudioContext`
+
+```js
+audioContext.runDiagnostics(results => console.log(results));
+```
+
+### Local Build
 
 1. Install Rust toolchain
 
@@ -156,23 +173,37 @@ npm install
 npm run build
 ```
 
-### Linux
+### Linux Backends
+
+Pre-build binaries are shipped with pipewire, jack and alsa backends supported and tested in this order at runtime.
+
+#### Common dependencies
 
 To build the library, install the ALSA and D-Bus development packages.
 
 ```sh
 apt install libasound2-dev libdbus-1-dev
+npm run build
 ```
 
-Optionally, if you use the Jack Audio Backend, the `libjack-jackd2-dev` package:
+#### Pipewire
 
 ```sh
-apt install libjack-jackd2-dev
+apt-get install libclang-18-dev clang-18 libasound2-dev libdbus-1-dev libpipewire-0.3-dev
+npm run build:pipewire
 ```
 
-In that case, you can use the `npm run build:jack` script to enable the Jack feature.
+Note that you may need to adapt the clang version depending on your OS
 
-### Synchronize Versioning
+### Jack
+
+
+```sh
+apt install libasound2-dev libdbus-1-dev libjack-jackd2-dev
+npm run build:jack
+```
+
+### Synchronized Versioning
 
 The npm `postversion` script rely on [`cargo-bump`](https://crates.io/crates/cargo-bump) to maintain versions synced between the `package.json` and the `Cargo.toml` files. Therefore, you will need to install `cargo-bump` on your machine
 

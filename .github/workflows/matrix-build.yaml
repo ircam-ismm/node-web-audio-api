@@ -77,8 +77,7 @@ jobs:
         if: matrix.command == 'cross'
         shell: bash
         run: |
-          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
-          cargo binstall --no-confirm cross
+          cargo install cross --git https://github.com/cross-rs/cross
 
       - name: Generate Cargo.lock
         run: cargo generate-lockfile
@@ -96,7 +95,7 @@ jobs:
 
           if [[ "${{ matrix.runner }}" == "ubuntu-latest" ]]; then
             echo "Build with PipeWire & Jack features"
-            ${{ matrix.command }} build --locked  --features jack --release --target ${{ matrix.target }}
+            ${{ matrix.command }} build --locked  --features linux --release --target ${{ matrix.target }}
           else
             ${{ matrix.command }} build --locked --release --target ${{ matrix.target }}
           fi
