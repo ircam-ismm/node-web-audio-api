@@ -12,6 +12,8 @@ import {
   kNapiObj,
 } from './lib/symbols.js';
 
+const customInspectSymbol = Symbol.for('nodejs.util.inspect.custom');
+
 export class AudioBuffer {
   constructor(options) {
     if (arguments.length < 1) {
@@ -213,6 +215,10 @@ export class AudioBuffer {
     } catch (err) {
       throwSanitizedError(err);
     }
+  }
+
+  [customInspectSymbol]() {
+    return `${this.constructor.name} { duration: ${this.duration}, length: ${this.length}, numberOfChannels: ${this.numberOfChannels}, sampleRate: ${this.sampleRate} }`;
   }
 }
 

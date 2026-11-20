@@ -21,6 +21,8 @@ import { BaseAudioContext } from './BaseAudioContext.js';
 import { AudioBuffer } from './AudioBuffer.js';
 import { OfflineAudioCompletionEvent } from './Events.js';
 
+const customInspectSymbol = Symbol.for('nodejs.util.inspect.custom');
+
 export class OfflineAudioContext extends BaseAudioContext {
   constructor(...args) {
     if (arguments.length < 1) {
@@ -171,6 +173,10 @@ export class OfflineAudioContext extends BaseAudioContext {
     } catch (err) {
       throwSanitizedError(err);
     }
+  }
+
+  [customInspectSymbol]() {
+    return `${this.constructor.name} { sampleRate: ${this.sampleRate}, currentTime: ${this.currentTime}, state: ${this.state} }`;
   }
 }
 

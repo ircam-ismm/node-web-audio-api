@@ -46,6 +46,8 @@ import {
   PeriodicWave,
 } from './PeriodicWave.js';
 
+const customInspectSymbol = Symbol.for('nodejs.util.inspect.custom');
+
 import {
   BaseAudioContext,
 } from './BaseAudioContext.js';
@@ -126,6 +128,10 @@ export class StereoPannerNode extends AudioNode {
     }
 
     return this.#pan;
+  }
+
+  [customInspectSymbol]() {
+    return `${this.constructor.name} { pan: ${this.pan} }`;
   }
 
 }

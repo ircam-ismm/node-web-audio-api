@@ -46,6 +46,8 @@ import {
   PeriodicWave,
 } from './PeriodicWave.js';
 
+const customInspectSymbol = Symbol.for('nodejs.util.inspect.custom');
+
 import {
   AudioContext,
 } from './AudioContext.js';
@@ -101,6 +103,10 @@ export class MediaStreamAudioSourceNode extends AudioNode {
     }
 
     return this[kNapiObj].mediaStream;
+  }
+
+  [customInspectSymbol]() {
+    return `${this.constructor.name} { mediaStream: ${this.mediaStream} }`;
   }
 
 }

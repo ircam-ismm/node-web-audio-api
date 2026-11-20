@@ -46,6 +46,8 @@ import {
   PeriodicWave,
 } from './PeriodicWave.js';
 
+const customInspectSymbol = Symbol.for('nodejs.util.inspect.custom');
+
 import {
   BaseAudioContext,
 } from './BaseAudioContext.js';
@@ -548,6 +550,10 @@ export class PannerNode extends AudioNode {
     } catch (err) {
       throwSanitizedError(err);
     }
+  }
+
+  [customInspectSymbol]() {
+    return `${this.constructor.name} { panningModel: ${this.panningModel}, distanceModel: ${this.distanceModel}, refDistance: ${this.refDistance}, maxDistance: ${this.maxDistance}, rolloffFactor: ${this.rolloffFactor}, coneInnerAngle: ${this.coneInnerAngle}, coneOuterAngle: ${this.coneOuterAngle}, coneOuterGain: ${this.coneOuterGain}, positionX: ${this.positionX}, positionY: ${this.positionY}, positionZ: ${this.positionZ}, orientationX: ${this.orientationX}, orientationY: ${this.orientationY}, orientationZ: ${this.orientationZ} }`;
   }
 
 }

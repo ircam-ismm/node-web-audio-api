@@ -46,6 +46,8 @@ import {
   PeriodicWave,
 } from './PeriodicWave.js';
 
+const customInspectSymbol = Symbol.for('nodejs.util.inspect.custom');
+
 import {
   BaseAudioContext,
 } from './BaseAudioContext.js';
@@ -329,6 +331,10 @@ export class AnalyserNode extends AudioNode {
     } catch (err) {
       throwSanitizedError(err);
     }
+  }
+
+  [customInspectSymbol]() {
+    return `${this.constructor.name} { fftSize: ${this.fftSize}, frequencyBinCount: ${this.frequencyBinCount}, minDecibels: ${this.minDecibels}, maxDecibels: ${this.maxDecibels}, smoothingTimeConstant: ${this.smoothingTimeConstant} }`;
   }
 
 }

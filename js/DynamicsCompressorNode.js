@@ -46,6 +46,8 @@ import {
   PeriodicWave,
 } from './PeriodicWave.js';
 
+const customInspectSymbol = Symbol.for('nodejs.util.inspect.custom');
+
 import {
   BaseAudioContext,
 } from './BaseAudioContext.js';
@@ -214,6 +216,10 @@ export class DynamicsCompressorNode extends AudioNode {
     }
 
     return this[kNapiObj].reduction;
+  }
+
+  [customInspectSymbol]() {
+    return `${this.constructor.name} { reduction: ${this.reduction}, threshold: ${this.threshold}, knee: ${this.knee}, ratio: ${this.ratio}, attack: ${this.attack}, release: ${this.release} }`;
   }
 
 }

@@ -46,6 +46,8 @@ import {
   PeriodicWave,
 } from './PeriodicWave.js';
 
+const customInspectSymbol = Symbol.for('nodejs.util.inspect.custom');
+
 import {
   BaseAudioContext,
 } from './BaseAudioContext.js';
@@ -223,6 +225,10 @@ export class OscillatorNode extends AudioScheduledSourceNode {
     } catch (err) {
       throwSanitizedError(err);
     }
+  }
+
+  [customInspectSymbol]() {
+    return `${this.constructor.name} { type: ${this.type}, frequency: ${this.frequency}, detune: ${this.detune} }`;
   }
 
 }

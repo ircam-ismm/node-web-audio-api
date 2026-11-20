@@ -1,5 +1,7 @@
 import { kEnumerableProperty } from './lib/utils.js';
 
+const customInspectSymbol = Symbol.for('nodejs.util.inspect.custom');
+
 export class OfflineAudioCompletionEvent extends Event {
   #renderedBuffer = null;
 
@@ -19,6 +21,10 @@ export class OfflineAudioCompletionEvent extends Event {
 
   get renderedBuffer() {
     return this.#renderedBuffer;
+  }
+
+  [customInspectSymbol]() {
+    return `${this.constructor.name} { renderedBuffer: ${this.renderedBuffer} }`;
   }
 }
 
@@ -66,6 +72,10 @@ export class AudioProcessingEvent extends Event {
 
   get outputBuffer() {
     return this.#outputBuffer;
+  }
+
+  [customInspectSymbol]() {
+    return `${this.constructor.name} { playbackTime: ${this.playbackTime}, inputBuffer: ${this.inputBuffer}, outputBuffer: ${this.outputBuffer} }`;
   }
 }
 
@@ -122,6 +132,10 @@ export class AudioRenderCapacityEvent extends Event {
 
   get underrunRatio() {
     return this.#underrunRatio;
+  }
+
+  [customInspectSymbol]() {
+    return `${this.constructor.name} { timestamp: ${this.timestamp}, averageLoad: ${this.averageLoad}, peakLoad: ${this.peakLoad}, underrunRatio: ${this.underrunRatio} }`;
   }
 }
 
@@ -206,6 +220,10 @@ export class ErrorEvent extends Event {
 
   get error() {
     return this.#error;
+  }
+
+  [customInspectSymbol]() {
+    return `${this.constructor.name} { message: ${this.message}, error: ${this.error} }`;
   }
 }
 
