@@ -21,6 +21,8 @@ import { AudioRenderCapacity } from './AudioRenderCapacity.js';
 import { AudioPlaybackStats } from './AudioPlaybackStats.js';
 import { MediaStreamAudioSourceNode } from './MediaStreamAudioSourceNode.js';
 
+const customInspectSymbol = Symbol.for('nodejs.util.inspect.custom');
+
 let contextId = 0;
 
 export class AudioContext extends BaseAudioContext {
@@ -307,6 +309,10 @@ export class AudioContext extends BaseAudioContext {
         throw err;
       }
     }
+  }
+
+  [customInspectSymbol]() {
+    return `${this.constructor.name} { sampleRate: ${this.sampleRate}, currentTime: ${this.currentTime}, state: ${this.state} }`;
   }
 }
 

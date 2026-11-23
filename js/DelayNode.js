@@ -46,6 +46,8 @@ import {
   PeriodicWave,
 } from './PeriodicWave.js';
 
+const customInspectSymbol = Symbol.for('nodejs.util.inspect.custom');
+
 import {
   BaseAudioContext,
 } from './BaseAudioContext.js';
@@ -134,6 +136,10 @@ export class DelayNode extends AudioNode {
     }
 
     return this.#delayTime;
+  }
+
+  [customInspectSymbol]() {
+    return `${this.constructor.name} { delayTime: ${this.delayTime} }`;
   }
 
 }

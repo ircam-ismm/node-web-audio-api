@@ -46,6 +46,8 @@ import {
   PeriodicWave,
 } from './PeriodicWave.js';
 
+const customInspectSymbol = Symbol.for('nodejs.util.inspect.custom');
+
 import {
   BaseAudioContext,
 } from './BaseAudioContext.js';
@@ -114,6 +116,10 @@ export class ChannelSplitterNode extends AudioNode {
       [kNapiObj]: napiObj,
     });
 
+  }
+
+  [customInspectSymbol]() {
+    return `${this.constructor.name} {  }`;
   }
 
 }

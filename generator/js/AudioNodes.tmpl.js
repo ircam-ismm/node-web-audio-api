@@ -22,6 +22,8 @@ import { AudioParam } from './AudioParam.js';
 import { AudioBuffer } from './AudioBuffer.js';
 import { PeriodicWave } from './PeriodicWave.js';
 
+const customInspectSymbol = Symbol.for('nodejs.util.inspect.custom');
+
 ${(function() {
   // import either BaseAudioContext or AudioContext
   const arg = d.constructor(d.node).arguments[0];
@@ -607,6 +609,13 @@ ${d.methods(d.node, false).map(method => {
     }
   }
 `}).join('')}
+
+${(function() {
+  return `
+  [customInspectSymbol]() {
+    return \`\${this.constructor.name} { ${d.attributes(d.node).map(attr => `${d.name(attr)}: \${this.${d.name(attr)}}`).concat(d.audioParams(d.node).map(attr => `${d.name(attr)}: \${this.${d.name(attr)}}`)).join(', ')} }\`
+  }
+`}())}
 }
 
 ${(function() {

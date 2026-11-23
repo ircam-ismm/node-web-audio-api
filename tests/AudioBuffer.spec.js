@@ -230,8 +230,7 @@ describe('AudioBuffer', () => {
       const buffer = fs.readFileSync(pathname).buffer;
       const audioBuffer = await audioContext.decodeAudioData(buffer);
 
-      const convolver = audioContext.createConvolver();
-      convolver.buffer = audioBuffer;
+      const convolver = new ConvolverNode(audioContext, { buffer: audioBuffer });
       convolver.connect(audioContext.destination);
 
       const src = audioContext.createBufferSource();

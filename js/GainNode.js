@@ -46,6 +46,8 @@ import {
   PeriodicWave,
 } from './PeriodicWave.js';
 
+const customInspectSymbol = Symbol.for('nodejs.util.inspect.custom');
+
 import {
   BaseAudioContext,
 } from './BaseAudioContext.js';
@@ -126,6 +128,10 @@ export class GainNode extends AudioNode {
     }
 
     return this.#gain;
+  }
+
+  [customInspectSymbol]() {
+    return `${this.constructor.name} { gain: ${this.gain} }`;
   }
 
 }

@@ -46,6 +46,8 @@ import {
   PeriodicWave,
 } from './PeriodicWave.js';
 
+const customInspectSymbol = Symbol.for('nodejs.util.inspect.custom');
+
 import {
   BaseAudioContext,
 } from './BaseAudioContext.js';
@@ -309,6 +311,10 @@ export class AudioBufferSourceNode extends AudioScheduledSourceNode {
     } catch (err) {
       throwSanitizedError(err);
     }
+  }
+
+  [customInspectSymbol]() {
+    return `${this.constructor.name} { buffer: ${this.buffer}, loop: ${this.loop}, loopStart: ${this.loopStart}, loopEnd: ${this.loopEnd}, playbackRate: ${this.playbackRate}, detune: ${this.detune} }`;
   }
 
 }
