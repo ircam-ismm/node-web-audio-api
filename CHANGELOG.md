@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## v2.3.0 - 2026-11-23
+
+- Chore: default to `pipewire` backend on Linux, with fallback to Jack and ALSA
+- Integrate changes from upstream crate [v1.8.0](https://github.com/orottier/web-audio-api-rs/blob/main/CHANGELOG.md#version-180-2026-11-12)
+- Perf: better polling strategy for AudioWorklet
+- Fix: properly garbage collect AudioWorklets and AudioBufferSourceNode
+
 ## v2.2.0 - 2026-08-09
 
 - Fix: Improve `getUserMedia` parameter coercion and error handling
